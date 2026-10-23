@@ -1675,7 +1675,7 @@ fn simple_name(name: &str) -> Result<()> {
     }
     Ok(())
 }
-fn store_location(store: &Store, path: &Path) -> Result<(File, String, String)> {
+pub(crate) fn store_location(store: &Store, path: &Path) -> Result<(File, String, String)> {
     let relative = path.strip_prefix(store.root().join("media")).map_err(|_| {
         ApiError::invalid("Native asset files must be inside this library media store")
     })?;

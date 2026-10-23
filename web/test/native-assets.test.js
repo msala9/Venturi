@@ -18,7 +18,7 @@ function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,
   const prepare=deferred(),calls=[],polls=[],pauses=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],statuses=[],applied=[];
   const prepared=['relink','relink_folder','import_tree'].includes(action.kind),relink=['relink','relink_folder'].includes(action.kind);
   const job=(state='ready',patch={})=>({id:'job-1',state,project_epoch:'epoch',generation:'7',kind:prepared?'library_edit':action.kind,bytes:0,total_bytes:64,result:action.kind==='import_tree'?{...treeSummary(),errors:treeErrors()}:relink?{asset_id:action.asset_id,revision:action.revision,missing_count:1,relinked_files:2}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch});
-  const receipt={command_id:'command-once',project_epoch:'epoch',...(action.kind==='import_tree'?treeSummary():{media_ids:['9007199254740995']}),...(relink?{missing_count:1,relinked_files:2}:{})};
+  const receipt={command_id:'command-once',project_epoch:'epoch',...(action.kind==='import_tree'?treeSummary():{media_ids:['9007199254740995']}),...(action.kind==='import_set' && !placement?{changed:true,new_count:1,reused_count:0,errors:[]}:{}),...(relink?{missing_count:1,relinked_files:2}:{})};
   const transfer=createNativeAssetTransfer({
     getContext:()=>context,canCommit:()=>writable,onStatus:value=>{statuses.push(value);onStatus?.(value,transfer);},
     api(path,body,options={}){
@@ -58,6 +58,19 @@ test('ordered native assets use one strict import-set prepare and one atomic tim
   assert.deepEqual(h.calls[0].body,{project_epoch:'epoch',if_generation:'7',action:placing});assert.equal(h.calls[0].body.action.target,undefined);
   h.prepare.resolve(h.job('ready',{result:{assets:placing.assets.map(item=>({...item,name:'Native asset'}))}}));assert.equal(await pending,h.receipt);
   assert.deepEqual(h.timelineWrites,[{kind:'place_native_assets',job_id:'job-1',assets:placing.assets,start_frame:72,target:placement.target,overwrite:false}]);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.deletes,[]);
+});
+
+test('ordered native asset sets import through one pool-only project command without a timeline destination or side effect',async()=>{
+  const h=harness(placing),pending=h.run();assert.deepEqual(h.calls[0].body.action,placing);
+  h.prepare.resolve(h.job('ready',{result:{assets:placing.assets}}));assert.equal(await pending,h.receipt);
+  assert.deepEqual(h.projectWrites,[{kind:'import_native_asset_set',job_id:'job-1',assets:placing.assets}]);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.deletes,[]);assert.deepEqual(h.applied[0].report,{destination:'pool'});assert.match(h.statuses.at(-1),/Media pool.*one Undo.*timeline unchanged/);
+  const reused={command_id:'reused',project_epoch:'epoch',media_ids:['existing-root'],changed:false,new_count:0,reused_count:1,errors:[]},again=harness(placing,{projectCommit:async()=>reused}),reuse=again.run();again.prepare.resolve(again.job('ready',{result:{assets:placing.assets}}));await reuse;assert.match(again.statuses.at(-1),/already in Media pool/);assert.doesNotMatch(again.statuses.at(-1),/Undo/);assert.deepEqual(again.timelineWrites,[]);
+});
+
+test('pool-only batch bounds, stale preparation and unknown final command never place or automatically replay assets',async()=>{
+  for(const assets of [[],Array.from({length:33},(_,index)=>({asset_id:`asset-${index}`,revision:'r'})),[null],[placing.assets[0],placing.assets[0]]]){const h=harness({kind:'import_set',assets});assert.equal(await h.run(),null);assert.deepEqual(h.calls,[]);}
+  const stale=harness(placing),pending=stale.run();stale.setSourceValid(false);stale.transfer.invalidate();stale.prepare.resolve(stale.job('ready',{result:{assets:placing.assets}}));assert.equal(await pending,null);assert.equal(stale.deletes.length,1);assert.deepEqual(stale.projectWrites,[]);assert.deepEqual(stale.timelineWrites,[]);
+  const gate=deferred(),h=harness(placing,{projectCommit:()=>gate.promise}),write=h.run();h.prepare.resolve(h.job('ready',{result:{assets:placing.assets}}));await flush();assert.equal(h.projectWrites.length,1);assert.equal(await h.run(),null);assert.equal(h.transfer.cancel(),false);h.setWritable(false);gate.reject(Object.assign(Error('Unknown native import outcome'),{code:'OUTCOME_UNKNOWN'}));await assert.rejects(write,/Unknown/);assert.equal(await h.run(),null);assert.equal(h.projectWrites.length,1);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.deletes,[]);
 });
 
 test('reordered, stale or incomplete ready asset sets refuse the whole placement',async()=>{

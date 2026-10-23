@@ -36,6 +36,84 @@ const MAX_CACHE_FILES: usize = 16;
 pub struct SourceQuery {
     pub project_epoch: String,
 }
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeSourceQuery {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub revision: String,
+    #[serde(default)]
+    pub source_version: Option<String>,
+}
+pub struct NativeSourceSnapshot {
+    pub spec: SourceSpec,
+    pub item: Value,
+}
+pub(crate) fn native_asset_snapshot(
+    store: &crate::asset_store::Store,
+    id: &str,
+    query: &NativeSourceQuery,
+    require_version: bool,
+) -> Result<NativeSourceSnapshot> {
+    if query
+        .if_generation
+        .parse::<u64>()
+        .ok()
+        .is_none_or(|generation| generation.to_string() != query.if_generation)
+    {
+        return Err(ApiError::invalid(
+            "Choose a captured native Source generation",
+        ));
+    }
+    let asset = store.load(id, &query.revision)?;
+    let payload = crate::asset_payload::decode(&asset)?;
+    let media = payload.media_items().next().ok_or_else(ApiError::missing)?;
+    if media.compound.is_some() || (!media.meta.has_video && !media.meta.has_audio) {
+        return Err(ApiError::invalid(
+            "Preview the first ordinary file in a native asset; compound assets must be imported into the Program viewer",
+        ));
+    }
+    store.validate_root()?;
+    let (directory, name, _) = crate::asset_jobs::store_location(store, &media.path)?;
+    let file = crate::asset_store::regular(&directory, &name)?;
+    let version = source_version(&file)?;
+    if require_version && query.source_version.is_none()
+        || query
+            .source_version
+            .as_ref()
+            .is_some_and(|expected| expected != &version)
+    {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Library source changed; open its preview again",
+        ));
+    }
+    // Recheck both catalog and path after opening the raw source.
+    store.load(id, &query.revision)?;
+    store.validate_root()?;
+    let (live_directory, live_name, _) = crate::asset_jobs::store_location(store, &media.path)?;
+    if source_version(&crate::asset_store::regular(&live_directory, &live_name)?)? != version {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Library source changed; open its preview again",
+        ));
+    }
+    let media_id = format!(
+        "native-asset:{id}:{}:{}",
+        query.revision, query.if_generation
+    );
+    let meta = media.meta.clone();
+    let item = json!({"id":media_id,"name":asset.name,"folder":null,"content_hash":media.content_hash.to_string(),"duration_frames":meta.duration_frames,"fps":meta.fps,"width":meta.width,"height":meta.height,"sample_rate":meta.sample_rate,"channels":meta.channels,"is_image":meta.is_image(),"has_video":meta.has_video,"has_audio":meta.has_audio,"audio_stream_count":meta.audio_stream_count(),"compound_timeline_id":null,"offline":false,"native_asset":{"id":id,"revision":query.revision,"if_generation":query.if_generation,"source_version":version}});
+    Ok(NativeSourceSnapshot {
+        spec: SourceSpec {
+            file,
+            epoch: query.project_epoch.clone(),
+            media_id,
+            meta,
+        },
+        item,
+    })
+}
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SourceWindow {

@@ -10,8 +10,25 @@ export function sourceSelection(start, end, duration) {
   return { source_in:start, source_out:end };
 }
 
+function nativeSource(item){
+  const value=item?.native_asset;
+  if(!value)return null;
+  if(typeof value.id!=='string' || !/^[A-Za-z0-9_-]{1,80}$/.test(value.id)
+    || typeof value.revision!=='string' || !/^[a-f0-9]{64}$/.test(value.revision)
+    || typeof value.if_generation!=='string' || !/^(0|[1-9][0-9]*)$/.test(value.if_generation)
+    || typeof value.source_version!=='string' || !value.source_version || value.source_version.length>256)throw Error('Library Source identity is invalid; open its preview again');
+  return value;
+}
+export function sourceMediaPath(item,suffix='',{absolute=true}={}){
+  const native=nativeSource(item),base=native?`/native-assets/items/${encodeURIComponent(native.id)}/source`:`/media/${encodeURIComponent(typeof item==='string'?item:item.id)}`;
+  return `${absolute?'/api/v1':''}${base}${suffix}`;
+}
+export function sourceMediaQuery(item,epoch){
+  const native=nativeSource(item);
+  return {project_epoch:epoch,...(native?{if_generation:native.if_generation,revision:native.revision,source_version:native.source_version}:{})};
+}
 export function sourceAssetURL(media, job, name, epoch) {
-  return `/api/v1/media/${encodeURIComponent(media)}/jobs/${encodeURIComponent(job)}/${name}?${new URLSearchParams({ project_epoch: epoch })}`;
+  return `${sourceMediaPath(media,`/jobs/${encodeURIComponent(job)}/${name}`)}?${new URLSearchParams(sourceMediaQuery(media,epoch))}`;
 }
 function delay(signal,setTimer,clearTimer) {
   return new Promise((resolve, reject) => {
@@ -37,7 +54,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     notify('preparing');
   }
   const sourceAsset=job=>job.source_asset ?? 'source.mp4';
-  const sourcePath=(media,job,epoch)=>`/api/v1/media/${encodeURIComponent(media)}/jobs/${encodeURIComponent(job)}?${new URLSearchParams({project_epoch:epoch})}`;
+  const sourcePath=(media,job,epoch)=>`${sourceMediaPath(media,`/jobs/${encodeURIComponent(job)}`)}?${new URLSearchParams(sourceMediaQuery(media,epoch))}`;
   const current=value=>!disposed && binding===value && value.sequence===sequence && value.path===jobPath && !value.signal.aborted;
   const attached=value=>current(value) && (value.element.getAttribute?.('src') ?? value.element.src)===value.url;
   function stopHeartbeat(){if(heartbeatTimer!==null)clearTimer(heartbeatTimer);heartbeatTimer=null;heartbeatController?.abort();heartbeatController=null;}
@@ -99,15 +116,16 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       beginState(item,epoch,0,'open',audioSelection);
       if(seq!==sequence || signal.aborted)return;
       const prepareFetch=(path,options={})=>fetcher(path,{...options,signal:AbortSignal.any([signal,options.signal].filter(Boolean))});
-      let job = await api(`/media/${encodeURIComponent(item.id)}/prepare`, { project_epoch: epoch, quality,...audioPayload(item,audioSelection) },prepareFetch);
+      let job = await api(sourceMediaPath(item,'/prepare',{absolute:false}), { ...sourceMediaQuery(item,epoch), quality,...audioPayload(item,audioSelection) },prepareFetch);
       // Prepare deduplicates jobs across clients: obsolete ACKs must never cancel a shared job.
       if (seq !== sequence) return;
       if(typeof job.id!=='string' || !job.id)throw Error('Source preparation returned an invalid job; reopen Source');
       const sourceVersion=job.source_version;
       if(sourceVersion!=null && (typeof sourceVersion!=='string' || !sourceVersion || sourceVersion.length>256))throw Error('Source identity is unavailable; reopen Source');
+      if(item.native_asset && sourceVersion!==item.native_asset.source_version)throw Error('Library Source identity changed; open its preview again');
       const id=job.id,asset=sourceAsset(job);
       if(!['source.mp4','source.png','source.jpg','source.webp'].includes(asset))throw Error('Source preparation returned an unsupported asset; reopen Source');
-      const path=sourcePath(item.id,id,epoch);jobPath=path;jobState=job.state;
+      const path=sourcePath(item,id,epoch);jobPath=path;jobState=job.state;
       cancel.disabled = false;
       while (job.state === "queued" || job.state === "running") {
         status.textContent = `${item.name} · ${job.state} · ${job.frames} frames`;
@@ -124,7 +142,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       }
       if (job.state !== "ready") throw new Error(`${job.error || `Source ${job.state}`} · reopen Source`);
       const still=asset!=='source.mp4';
-      const url=sourceAssetURL(item.id,id,asset,epoch);
+      const url=sourceAssetURL(item,id,asset,epoch);
       if (still) {
         if (!image) throw new Error("Image viewer unavailable");
         image.src=url;
@@ -178,7 +196,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(typeof job?.id!=='string' || !job.id || ticket.id && job.id!==ticket.id || sourceAsset(job)!=='source.mp4' || job.project_epoch!=null && job.project_epoch!==ticket.from.epoch)throw Error('The next Source job changed');
     const range=checkedWindow(job.source_window,ticket.item,ticket.request,ticket.from.window.source_version,ticket.audioSelection);
     if(ticket.range && !sameWindow(ticket.range,range,ticket.audioSelection))throw Error('The next Source window changed');
-    ticket.id=job.id;ticket.range=range;ticket.path=sourcePath(ticket.item.id,job.id,ticket.from.epoch);
+    ticket.id=job.id;ticket.range=range;ticket.path=sourcePath(ticket.item,job.id,ticket.from.epoch);
     return job;
   }
   async function readFuture(ticket,signal=ticket.controller.signal){
@@ -207,7 +225,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   }
   async function prepareFuture(ticket){
     try{
-      let job=await api(`/media/${encodeURIComponent(ticket.item.id)}/prepare`,{project_epoch:ticket.from.epoch,quality:ticket.from.quality,window:ticket.request,...audioPayload(ticket.item,ticket.audioSelection)},(url,options={})=>fetcher(url,{...options,signal:AbortSignal.any([ticket.controller.signal,options.signal].filter(Boolean))}));
+      let job=await api(sourceMediaPath(ticket.item,'/prepare',{absolute:false}),{...sourceMediaQuery(ticket.item,ticket.from.epoch),quality:ticket.from.quality,window:ticket.request,...audioPayload(ticket.item,ticket.audioSelection)},(url,options={})=>fetcher(url,{...options,signal:AbortSignal.any([ticket.controller.signal,options.signal].filter(Boolean))}));
       if(!futureCurrent(ticket))return null;
       checkFuture(ticket,job);
       while(['queued','running'].includes(job.state)){
@@ -304,10 +322,10 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
         if(!job || candidate.state!=='ready')throw Error(candidate.error || 'The next Source window is unavailable; press Play to retry');
         job=await readFuture(candidate,signal);if(!active())return;checkFuture(candidate,job);
         if(job.state!=='ready')throw Error(job.error || 'The next Source window is no longer ready');
-      }else job=await api(`/media/${encodeURIComponent(item.id)}/prepare`,{project_epoch:epoch,quality,window:requested,...audioPayload(item,audioSelection)},prepareFetch);
+      }else job=await api(sourceMediaPath(item,'/prepare',{absolute:false}),{...sourceMediaQuery(item,epoch),quality,window:requested,...audioPayload(item,audioSelection)},prepareFetch);
       if(!active())return;
       if(typeof job.id!=='string' || !job.id || sourceAsset(job)!=='source.mp4')throw Error('Source preparation returned an invalid window job');
-      const id=job.id,path=sourcePath(item.id,id,epoch);pendingPath=path;jobState=job.state;
+      const id=job.id,path=sourcePath(item,id,epoch);pendingPath=path;jobState=job.state;
       while(['queued','running'].includes(job.state)){
         status.textContent=`${item.name} · ${job.state} · Source window`;
         await delay(signal,setTimer,clearTimer);if(!active())return;
@@ -322,7 +340,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(continuation)await beforeWindowChange();
       if(!active())return;
       if(candidate)clearFuture();
-      const url=sourceAssetURL(item.id,id,'source.mp4',epoch);ready=false;jobPath=path;video.src=url;
+      const url=sourceAssetURL(item,id,'source.mp4',epoch);ready=false;jobPath=path;video.src=url;
       if(image){image.hidden=true;image.removeAttribute('src');}video.hidden=false;
       binding={sequence:seq,path,signal,job:id,asset:'source.mp4',epoch,url,element:video,item,quality,window:range,verified:false,audioSelection};
       await seekMedia((startFrame-range.start_frame)*range.fps.den/range.fps.num,signal);
@@ -341,7 +359,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(disposed)return;
     let audioSelection;try{audioSelection=selectedAudio(item,options);}catch(error){detach(error.message);return;}
     if(!windowed || item.is_image)return openLegacy(item,epoch,quality,audioSelection);
-    return prepareWindow(item,epoch,quality,startFrame,{audioSelection});
+    return prepareWindow(item,epoch,quality,startFrame,{audioSelection,version:item.native_asset?.source_version});
   }
   async function seekFrame(frame,{retain=false}={}){
     const value=binding,context=value?.window?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window.source_version,audioSelection:value.audioSelection}:windowContext;

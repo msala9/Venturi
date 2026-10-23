@@ -684,7 +684,9 @@ directory alone does not establish NAS availability or concurrent desktop writes
 
 `POST /api/v1/native-assets/prepare` accepts
 `{project_epoch,if_generation,action}`. The action is either
-`{kind:"capture",media_id,name}` or `{kind:"import",asset_id,revision}`.
+`{kind:"capture",media_id,name}`, `{kind:"import",asset_id,revision}` or
+`{kind:"import_set",assets:[{asset_id,revision},...]}` for an ordered set of at
+most 32 distinct asset IDs.
 Preparation reads a bound snapshot without a writer lease or history change.
 Capture selects exactly one pool item, including its complete nested dependency
 closure. Missing references, cycles, depth, nonfinite values, invalid native keys
@@ -792,6 +794,45 @@ Browser hide, selection/project changes and lease loss cancel pending preparatio
 an already submitted mutation is resolved through its original receipt, never
 replayed. A failed read after an ACK retains the applied outcome and stops a batch.
 Physical drag and broader sharing remain separate parity work.
+
+`import_native_asset_set{job_id,assets:[{asset_id,revision},...]}` on the same
+project command route consumes the exact ordered ready `import_set`. It validates
+all revisions, cancellation and copied-file witnesses, trials the complete native
+merge, then applies native `AddEntities` commands as one `ImportMedia` history
+step. It does not choose a timeline target or place clips. The receipt returns
+unique selected root `media_ids`, `changed`, `new_count`, `reused_count` and
+`errors`; counts refer to roots, not private dependencies. Cached closures retain
+edited children. An all-reused set changes no history, Redo, allocator or import
+cache. Existing single-import and timeline `place_native_assets` stay separate.
+
+### Library Source before project import
+
+`POST /native-assets/items/{id}/source` accepts strict
+`{project_epoch,if_generation,revision}` and returns
+`{project_epoch,generation,item}` without a writer lease or project/history edit.
+The item has ordinary media metadata, a `native-asset:` Source identity and
+`native_asset:{id,revision,if_generation,source_version}`. The native payload's
+first media entry is opened as a raw managed file; compound/generator entries
+without that ordinary file are refused. Metadata resolution does not probe or
+decode media, copy it into the project, or compose compound timelines.
+
+The item's Source namespace supports `POST /source/prepare`, `GET`/`DELETE
+/source/jobs/{job}`, `GET /source/jobs/{job}/{asset}`, `GET /source/audio.wav`
+and `POST /source/audio/window` below the same `/native-assets/items/{id}` root.
+Every request carries epoch, asset revision, captured generation and exact strong
+`source_version`; preparation also takes ordinary quality/window/audio options.
+Audio window requests retain the existing `{query,window}` shape. All routes
+reuse existing Source jobs, bounded windows, stills, stream selection and native
+audition/tempo tasks. No browser audio DSP or project import is introduced.
+
+The initial resolution requires the current generation. Later version-bound raw
+reads retain that captured generation only as a stable job namespace: unrelated
+project edits, pool import and Undo do not invalidate the same Library file.
+Epoch, current asset revision, managed-root/regular-file confinement and strong
+file version remain checked; source/catalog/path replacement is refused. Browser
+resolution ACKs also bind the current panel selection/session and generation;
+obsolete ACKs never replace a newer Source. Project-only derivatives and timeline
+Source placement require an imported pool item.
 
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages

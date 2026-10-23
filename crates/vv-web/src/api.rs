@@ -91,6 +91,30 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/native-assets/pages/{page}", get(native_asset_list))
         .route("/api/v1/native-assets/items/{id}", get(native_asset_item))
         .route(
+            "/api/v1/native-assets/items/{id}/source",
+            post(native_source),
+        )
+        .route(
+            "/api/v1/native-assets/items/{id}/source/prepare",
+            post(prepare_native_source),
+        )
+        .route(
+            "/api/v1/native-assets/items/{id}/source/jobs/{job}",
+            get(native_source_status).delete(cancel_native_source),
+        )
+        .route(
+            "/api/v1/native-assets/items/{id}/source/jobs/{job}/{name}",
+            get(native_source_asset),
+        )
+        .route(
+            "/api/v1/native-assets/items/{id}/source/audio/window",
+            post(native_source_audio_window),
+        )
+        .route(
+            "/api/v1/native-assets/items/{id}/source/audio.wav",
+            get(native_source_audition),
+        )
+        .route(
             "/api/v1/native-assets/items/{id}/download",
             get(native_asset_download),
         )
@@ -1683,6 +1707,223 @@ async fn program_asset(
         &headers,
     )
     .await
+}
+async fn native_source(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<crate::source::NativeSourceQuery>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid library Source request"))?
+        .0;
+    let snapshot = state
+        .host
+        .native_source_snapshot(id, query.clone(), false)
+        .await?;
+    Ok(native_asset_json(
+        json!({"project_epoch":query.project_epoch,"generation":query.if_generation,"item":snapshot.item}),
+    ))
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrepareNativeSource {
+    project_epoch: String,
+    if_generation: String,
+    revision: String,
+    source_version: String,
+    #[serde(default = "medium")]
+    quality: String,
+    window: Option<SourceWindow>,
+    #[serde(default)]
+    audio_stream_index: u32,
+    #[serde(default)]
+    audio_mode: crate::source_audio::AudioMode,
+}
+impl PrepareNativeSource {
+    fn query(&self) -> crate::source::NativeSourceQuery {
+        crate::source::NativeSourceQuery {
+            project_epoch: self.project_epoch.clone(),
+            if_generation: self.if_generation.clone(),
+            revision: self.revision.clone(),
+            source_version: Some(self.source_version.clone()),
+        }
+    }
+}
+async fn prepare_native_source(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<PrepareNativeSource>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid library Source preparation"))?
+        .0;
+    let spec = state
+        .host
+        .native_source_snapshot(id, payload.query(), true)
+        .await?
+        .spec;
+    state
+        .source
+        .prepare_audio(
+            spec,
+            &payload.quality,
+            payload.window,
+            payload.audio_mode,
+            payload.audio_stream_index,
+        )
+        .map(Json)
+}
+async fn native_source_status(
+    State(state): State<AppState>,
+    Path((id, job)): Path<(String, String)>,
+    query: std::result::Result<
+        Query<crate::source::NativeSourceQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid library Source query"))?
+        .0;
+    let spec = state
+        .host
+        .native_source_snapshot(id, query, true)
+        .await?
+        .spec;
+    state.source.status(&job, &spec, false).map(Json)
+}
+async fn cancel_native_source(
+    State(state): State<AppState>,
+    Path((id, job)): Path<(String, String)>,
+    query: std::result::Result<
+        Query<crate::source::NativeSourceQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid library Source query"))?
+        .0;
+    let spec = state
+        .host
+        .native_source_snapshot(id, query, true)
+        .await?
+        .spec;
+    state.source.status(&job, &spec, true).map(Json)
+}
+async fn native_source_asset(
+    State(state): State<AppState>,
+    Path((id, job, name)): Path<(String, String, String)>,
+    query: std::result::Result<
+        Query<crate::source::NativeSourceQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+    headers: axum::http::HeaderMap,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid library Source query"))?
+        .0;
+    let spec = state
+        .host
+        .native_source_snapshot(id, query, true)
+        .await?
+        .spec;
+    let file = state.source.asset(&job, &spec, &name)?;
+    let mime = match name.as_str() {
+        "source.mp4" => "video/mp4",
+        "source.png" => "image/png",
+        "source.jpg" => "image/jpeg",
+        "source.webp" => "image/webp",
+        _ => return Err(ApiError::missing()),
+    };
+    crate::source::stream_file(file, mime, &job, &headers).await
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeSourceAudioQuery {
+    project_epoch: String,
+    if_generation: String,
+    revision: String,
+    source_version: String,
+    frame: i64,
+    #[serde(default)]
+    audio_mode: crate::source_audio::AudioMode,
+    #[serde(default)]
+    audio_stream_index: u32,
+}
+impl NativeSourceAudioQuery {
+    fn context(&self) -> crate::source::NativeSourceQuery {
+        crate::source::NativeSourceQuery {
+            project_epoch: self.project_epoch.clone(),
+            if_generation: self.if_generation.clone(),
+            revision: self.revision.clone(),
+            source_version: Some(self.source_version.clone()),
+        }
+    }
+}
+async fn native_source_audition(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<
+        Query<NativeSourceAudioQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid library Source audition query"))?
+        .0;
+    let context = query.context();
+    let spec = state
+        .host
+        .native_source_snapshot(id.clone(), context.clone(), true)
+        .await?
+        .spec;
+    let bytes = render_audition(crate::audition::Task::source_options(
+        spec,
+        query.frame,
+        query.audio_mode,
+        query.audio_stream_index,
+    )?)
+    .await?;
+    state.host.native_source_snapshot(id, context, true).await?;
+    Ok(audio_response(bytes))
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeSourceAudioWindow {
+    query: NativeSourceAudioQuery,
+    window: crate::audition::WindowParams,
+}
+async fn native_source_audio_window(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<NativeSourceAudioWindow>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid library Source audio window"))?
+        .0;
+    let query = payload.query.context();
+    let spec = state
+        .host
+        .native_source_snapshot(id.clone(), query.clone(), true)
+        .await?
+        .spec;
+    let task = crate::audition::Task::source_options(
+        spec,
+        payload.query.frame,
+        payload.query.audio_mode,
+        payload.query.audio_stream_index,
+    )?;
+    let window = render_audio(move |cancel| task.window(payload.window, cancel)).await?;
+    state.host.native_source_snapshot(id, query, true).await?;
+    Ok(window_response(window))
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]

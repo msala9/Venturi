@@ -127,6 +127,10 @@ pub enum Operation {
         asset_id: String,
         revision: String,
     },
+    ImportNativeAssetSet {
+        job_id: String,
+        assets: Vec<crate::asset_store::ImportRef>,
+    },
     PlaceNativeAssets {
         job_id: String,
         assets: Vec<crate::asset_store::ImportRef>,
@@ -643,7 +647,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 "Native asset library writes require the native asset command endpoint",
             ));
         }
-        Operation::ImportNativeAsset { .. } | Operation::PlaceNativeAssets { .. } => {
+        Operation::ImportNativeAsset { .. }
+        | Operation::ImportNativeAssetSet { .. }
+        | Operation::PlaceNativeAssets { .. } => {
             return Err(ApiError::invalid(
                 "Native asset imports require the project command endpoint",
             ));

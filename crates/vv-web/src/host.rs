@@ -93,6 +93,12 @@ pub enum Action {
     EqResponse(String, usize, FrameQuery),
     CompressorResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
+    NativeSourceSnapshot(
+        String,
+        crate::source::NativeSourceQuery,
+        bool,
+        oneshot::Sender<Result<crate::source::NativeSourceSnapshot>>,
+    ),
     ProxySourceSnapshot(
         String,
         SourceQuery,
@@ -930,6 +936,12 @@ impl Editor {
                 job_id,
                 asset_id,
                 revision,
+                &request.project_epoch,
+                &request.if_generation,
+            )?,
+            Operation::ImportNativeAssetSet { job_id, assets } => self.import_native_asset_set(
+                job_id,
+                assets,
                 &request.project_epoch,
                 &request.if_generation,
             )?,
@@ -2112,6 +2124,106 @@ impl Editor {
         );
         Ok(())
     }
+    fn import_native_asset_set(
+        &mut self,
+        job: &str,
+        references: &[crate::asset_store::ImportRef],
+        epoch: &str,
+        generation: &str,
+    ) -> Result<()> {
+        use vv_core::{Command, CommandLabel, Id, pool::AddEntities};
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before importing native assets",
+            ));
+        }
+        let payloads = self
+            .asset_jobs
+            .import_set_payloads(job, references, epoch, generation)?;
+        let mut trial = self.session.project.clone();
+        let mut roots = Vec::new();
+        let mut reused = Vec::new();
+        for (reference, payload) in references.iter().zip(&payloads) {
+            let cached = self
+                .asset_imports
+                .get(&(
+                    self.session.epoch(),
+                    reference.asset_id.clone(),
+                    reference.revision.clone(),
+                ))
+                .filter(|cached| {
+                    cached
+                        .media
+                        .iter()
+                        .all(|id| trial.media_pool.contains_key(*id))
+                        && cached
+                            .timelines
+                            .iter()
+                            .all(|id| trial.timelines.contains_key(*id))
+                })
+                .map(|cached| cached.selected.clone());
+            let selected = if let Some(selected) = &cached {
+                selected.clone()
+            } else {
+                let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+                let selected = payload.clone().merge_into(&mut trial, &mut additions).media;
+                additions.apply(&mut trial);
+                selected
+            };
+            roots.extend(selected);
+            reused.push(cached);
+        }
+        crate::files::validate_project(&trial)?;
+        let mut seen = HashSet::new();
+        roots.retain(|id| seen.insert(*id));
+        let new_count = roots
+            .iter()
+            .filter(|id| !self.session.project.media_pool.contains_key(**id))
+            .count();
+        // This is the final cancel/revision/source witness check before native allocation and apply.
+        self.asset_jobs
+            .import_set_payloads(job, references, epoch, generation)?;
+        let before = self.session.history.generation();
+        let mark = self.session.history.begin_group();
+        let mut actual = Vec::new();
+        let mut imported = Vec::new();
+        for ((reference, payload), cached) in references.iter().zip(payloads).zip(reused) {
+            let was_cached = cached.is_some();
+            let selected = if let Some(selected) = cached {
+                selected
+            } else {
+                let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+                let selected = payload
+                    .merge_into(&mut self.session.project, &mut additions)
+                    .media;
+                if !additions.is_empty() {
+                    self.session.apply(Box::new(additions));
+                }
+                selected
+            };
+            actual.extend(selected.iter().copied());
+            if !was_cached {
+                imported.push((reference, selected));
+            }
+        }
+        if self.session.history.generation() != before {
+            self.session
+                .history
+                .end_group_as(mark, CommandLabel::ImportMedia);
+        }
+        let mut seen = HashSet::new();
+        actual.retain(|id| seen.insert(*id));
+        debug_assert_eq!(actual, roots);
+        for (reference, selected) in imported {
+            self.remember_native_asset(&reference.asset_id, &reference.revision, selected);
+        }
+        self.media_import_receipt = Some(json!({
+            "media_ids":actual.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),
+            "changed":self.session.history.generation()!=before,
+            "new_count":new_count,"reused_count":actual.len()-new_count,"errors":[],
+        }));
+        Ok(())
+    }
     fn import_native_asset(
         &mut self,
         job: &str,
@@ -2741,6 +2853,24 @@ impl Editor {
                 let _ = reply.send(result);
                 Ok(Value::Null)
             }
+            Action::NativeSourceSnapshot(id, query, require_version, reply) => {
+                // An already-open raw library file survives unrelated project edits.
+                let result = self
+                    .validate_asset_epoch(
+                        &query.project_epoch,
+                        (!require_version).then_some(query.if_generation.as_str()),
+                    )
+                    .and_then(|()| {
+                        crate::source::native_asset_snapshot(
+                            &self.assets,
+                            &id,
+                            &query,
+                            require_version,
+                        )
+                    });
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::SourceSnapshot(media_id, query, reply) => {
                 let result = (|| {
                     if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -3133,6 +3263,17 @@ impl Host {
     pub async fn source_snapshot(&self, id: String, query: SourceQuery) -> Result<SourceSpec> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::SourceSnapshot(id, query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn native_source_snapshot(
+        &self,
+        id: String,
+        query: crate::source::NativeSourceQuery,
+        require_version: bool,
+    ) -> Result<crate::source::NativeSourceSnapshot> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::NativeSourceSnapshot(id, query, require_version, tx))
+            .await?;
         rx.await.map_err(|_| ApiError::io())?
     }
     pub async fn proxy_source_snapshot(

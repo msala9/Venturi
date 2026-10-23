@@ -6,6 +6,171 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn native_library_source_http_is_read_only_strict_and_requires_pinned_identity_after_resolve()
+{
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-source-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let store = crate::asset_store::Store::new(&root.join(".assets")).unwrap();
+    let directory = root.join(".assets/media/0123456789abcdef");
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("raw.mp4");
+    std::fs::write(&path, b"only snapshot metadata is read by this HTTP test").unwrap();
+    let mut source = vv_session::Session::default();
+    let media = source.add_media(
+        path,
+        vv_core::MediaMeta {
+            duration_frames: 48,
+            fps: vv_core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+    );
+    let asset = crate::asset_payload::capture(
+        &source,
+        media,
+        "Library before import",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: source.epoch(),
+        },
+    )
+    .unwrap();
+    store.create("source", &asset).unwrap();
+    let revision = store.item("source", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("another-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        let request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("origin", "http://127.0.0.1:8787")
+            .header("content-type", "application/json");
+        request
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    let payload = json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"revision":revision});
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/items/source/source",
+            payload.clone(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let resolved: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(resolved["item"]["name"], "Library before import");
+    assert_eq!(resolved["item"]["native_asset"]["revision"], revision);
+    assert!(
+        resolved["item"]["id"]
+            .as_str()
+            .unwrap()
+            .starts_with("native-asset:")
+    );
+    assert!(
+        !resolved.to_string().contains(root.to_str().unwrap()),
+        "no filesystem paths or temporary imported media are exposed"
+    );
+    for (path, body, status) in [
+        (
+            "/api/v1/native-assets/items/source/source",
+            json!({"project_epoch":"old","if_generation":before["generation"],"revision":revision}),
+            StatusCode::CONFLICT,
+        ),
+        (
+            "/api/v1/native-assets/items/source/source",
+            json!({"project_epoch":before["project_epoch"],"if_generation":"999","revision":revision}),
+            StatusCode::CONFLICT,
+        ),
+        (
+            "/api/v1/native-assets/items/source/source",
+            json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"revision":revision,"path":"/tmp/arbitrary"}),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "/api/v1/native-assets/items/source/source/prepare",
+            payload.clone(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "/api/v1/native-assets/items/source/source/prepare",
+            json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"revision":revision,"source_version":"old","quality":"low"}),
+            StatusCode::CONFLICT,
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", path, body))
+                .await
+                .unwrap()
+                .status(),
+            status,
+            "{path}"
+        );
+    }
+    let query = format!(
+        "project_epoch={}&if_generation={}&revision={revision}",
+        before["project_epoch"].as_str().unwrap(),
+        before["generation"].as_str().unwrap()
+    );
+    for method in ["GET", "DELETE"] {
+        let response = app
+            .clone()
+            .oneshot(make(
+                method,
+                &format!("/api/v1/native-assets/items/source/source/jobs/missing?{query}"),
+                Value::Null,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::CONFLICT,
+            "a job ID cannot skip source-version binding"
+        );
+    }
+    let after = host.call(Action::Session).await.unwrap();
+    assert_eq!(after, before);
+    assert_eq!(
+        store.export("source").unwrap(),
+        serde_json::to_vec_pretty(&asset).unwrap()
+    );
+}
+
+#[tokio::test]
 async fn native_font_catalog_http_is_cached_lease_free_strict_and_preserves_session_and_undo() {
     let root = std::env::temp_dir().join(format!(
         "vv-native-fonts-http-{}",

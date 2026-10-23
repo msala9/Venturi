@@ -8,7 +8,7 @@ const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
 const draggableAsset=(id,name=id)=>({id,name,revision:`revision-${id}`,media_count:1,file_count:1,archived:false,placement:{project_epoch:'epoch',generation:'7',error:null,items:[{source_in:0,source_out:48,fps:{num:24,den:1},has_video:true,has_audio:true,audio_streams:1,is_image:false}]}});
 function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancelable:true});event.dataTransfer={effectAllowed:'none',setData:(type,value)=>values.set(type,value)};return {event,values};}
-function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd}={}){
+function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
@@ -24,17 +24,17 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
     click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
   }
   const body=new Element('body'),root=new Element('root');body.append(root);
-  globalThis.document={body,createElement:tag=>new Element(tag)};
+  let modal=false;globalThis.document={body,createElement:tag=>new Element(tag),querySelector:()=>modal?{}:null};
   globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],notices=[],deleteGate=deferred();
+  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
-  const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),
+  const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
     libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(prepared?{missing_count:0,relinked_files:1}:{})});},
-    projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:['new-media']});},
+    projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:operation.kind==='import_native_asset_set'?operation.assets.map(item=>`new-${item.asset_id}`):['new-media'],...(operation.kind==='import_native_asset_set'?{changed:true,new_count:operation.assets.length,reused_count:0,errors:[]}: {})});},
     timelineCommit(operation){timelineWrites.push(structuredClone(operation));return timelineCommit?timelineCommit(operation):Promise.resolve({command_id:'placed',project_epoch:context.project_epoch,media_ids:['new-media'],clip_ids:['placed-video','placed-audio']});},
     api(path,body,options={}){
       if(path.startsWith('/native-assets/folders?')){
@@ -60,10 +60,11 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
   const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),
+  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
     chooseAssets(indexes){const node=field('Native assets');for(const [index,option] of node.children.entries())option.selected=indexes.includes(index);node.dispatchEvent(new Event('change'));},
+    key(target=field('Native assets'),patch={}){const event=new Event('keydown',{cancelable:true});for(const [name,value] of Object.entries({key:'Enter',target,...patch}))Object.defineProperty(event,name,{value});root.dispatchEvent(event);return event;},
     chooseFiles(tokens){const node=field('Approved source files');for(const option of node.children)option.selected=tokens.includes(option.value);node.dispatchEvent(new Event('change'));},
     moveAssets:()=>find(node=>node.tag==='button' && /^Move \d* ?native assets to folder$/.test(node.textContent),'move assets button'),
     capture:()=>find(node=>node.tag==='button' && node.textContent.startsWith('Save ') && node.textContent.endsWith('selected media as native assets'),'capture button'),
@@ -288,7 +289,7 @@ test('multiasset folder move binds every selected raw revision and disables sing
   const h=harness();try{
     const items=[{id:'asset-a',revision:assetRevision,name:'A',media_count:1,file_count:0,archived:false},{id:'asset-b',revision:'b'.repeat(64),name:'B',media_count:1,file_count:0,archived:false}];
     h.setItems(items);await h.open();h.chooseAssets([0,1]);
-    assert.equal(h.field('Native assets').selectedOptions.length,2);assert.equal(h.button('Import native asset into project').disabled,true);assert.equal(h.button('Rename native asset').disabled,true);assert.equal(h.button('Archive native asset').disabled,true);
+    assert.equal(h.field('Native assets').selectedOptions.length,2);assert.equal(h.button('Import native asset into project').disabled,false);assert.equal(h.button('Rename native asset').disabled,true);assert.equal(h.button('Archive native asset').disabled,true);
     assert.equal(h.moveAssets().disabled,false);h.field('Move native assets to').value='inner';h.moveAssets().click();await settle();
     assert.deepEqual(h.libraryWrites,[{kind:'edit_native_asset_library',edit:{action:'move_assets',folders_revision:foldersRevision,items:items.map(({id,revision})=>({id,revision})),folder:'inner'}}]);
     assert.equal(h.projectWrites.length+h.prepares.length,0);assert.deepEqual(items.map(item=>item.revision),[assetRevision,'b'.repeat(64)]);
@@ -418,4 +419,39 @@ test('an invalidated folder chooser aborts its source read and cannot start a co
     await h.open();h.button('Import source folder').click();assert.equal(h.sourceReads.length,1);h.setContext({...h.context(),project_epoch:'new-epoch'});h.panel.invalidate();assert.equal(h.sourceReads[0].options.signal.aborted,true);
     stale.resolve({project_epoch:'epoch',directory_token:'',parent_token:null,page:0,pages:1,entries:[{kind:'directory',name:'Old',path_token:'Old'}]});await settle();await h.open();assert.throws(()=>h.button('Open folder Old'),/Expected/);assert.equal(h.prepares.length+h.libraryWrites.length,0);
   }finally{h.destroy();}
+});
+
+test('selected native assets import in panel order through one project command and retain Library selection without placement',async()=>{
+  const h=harness();try{
+    h.setItems([draggableAsset('c'),draggableAsset('a'),draggableAsset('b')]);await h.open();h.chooseAssets([2,0]);const add=h.button('Import native asset into project');assert.equal(add.disabled,false);assert.equal(add.getAttribute('aria-label'),'Import 2 native assets into project');
+    const enter=h.key();assert.equal(enter.defaultPrevented,true);h.key();add.click();assert.equal(h.prepares.length,1);const assets=[{asset_id:'c',revision:'revision-c'},{asset_id:'b',revision:'revision-b'}];assert.deepEqual(h.prepares[0].body.action,{kind:'import_set',assets});
+    h.prepares[0].resolve(h.job(0,{result:{assets}}));await settle();assert.deepEqual(h.projectWrites,[{kind:'import_native_asset_set',job_id:'job-1',assets}]);assert.deepEqual(h.imported,[['new-c','new-b']]);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.placed,[]);assert.equal(h.field('Native assets').selectedOptions.length,2);assert.match(h.status(),/Media pool.*one Undo.*timeline unchanged/);
+  }finally{h.destroy();}
+});
+
+test('native Enter imports from row or list while modified, composing, readonly and oversized selections never prepare',async()=>{
+  const dnd={end(){},type:'native-assets',start(){return 'trusted';}},h=harness({assetDnd:dnd,onPreview(){}});try{
+    h.setItems([draggableAsset('a'),draggableAsset('b')]);await h.open();const row=h.button('a');
+    for(const patch of [{repeat:true},{isComposing:true},{keyCode:229},{ctrlKey:true},{metaKey:true},{altKey:true},{shiftKey:true},{getModifierState:()=>true},{defaultPrevented:true}])h.key(row,patch);
+    h.key(h.field('Native asset name'));h.setModal(true);h.key(row);h.setModal(false);h.setWritable(false);assert.equal(h.key(row).defaultPrevented,true);assert.equal(h.prepares.length,0);h.setWritable(true);h.panel.invalidate();
+    h.key(row);assert.deepEqual(h.prepares[0].body.action,{kind:'import',asset_id:'a',revision:'revision-a'});assert.deepEqual(h.previews,[]);h.prepares[0].resolve(h.job());await settle();assert.equal(h.projectWrites.length,1);assert.deepEqual(h.timelineWrites,[]);
+  }finally{h.destroy();}
+  const oversized=harness();try{oversized.setItems(Array.from({length:33},(_,index)=>draggableAsset(`asset-${index}`)));await oversized.open();oversized.chooseAssets(Array.from({length:33},(_,index)=>index));assert.equal(oversized.button('Import native asset into project').disabled,true);oversized.key();assert.equal(oversized.prepares.length,0);assert.ok(oversized.texts().some(text=>/up to 32/.test(text)));}finally{oversized.destroy();}
+});
+
+test('native asset doubleclick previews its unchanged row without importing and async preview ownership follows current selection',async()=>{
+  const dnd={end(){},type:'native-assets',start(){return 'trusted';}},pending=deferred(),h=harness({assetDnd:dnd,onPreview:asset=>asset.id==='a'?pending.promise:Promise.resolve()});try{
+    h.setItems([draggableAsset('a'),draggableAsset('b')]);await h.open();const row=h.button('a');row.click();row.click();row.dispatchEvent(new Event('dblclick',{cancelable:true}));await settle();assert.equal(h.previews.length,1);assert.equal(h.previews[0][0].id,'a');assert.equal(h.previews[0][1].isCurrent(),true);assert.equal(h.prepares.length,0);assert.deepEqual(h.projectWrites,[]);assert.equal(h.button('a'),row);
+    h.button('b').click();assert.equal(h.previews[0][1].isCurrent(),false);pending.reject(Error('Obsolete preview failed'));await settle();assert.deepEqual(h.notices,[]);assert.equal(h.prepares.length,0);
+    h.setWritable(false);h.panel.invalidate();h.button('Preview native asset').click();await settle();assert.equal(h.previews.length,2);assert.equal(h.previews[1][0].id,'b');h.panel.hide();assert.equal(h.previews[1][1].isCurrent(),false);assert.deepEqual(h.timelineWrites,[]);
+  }finally{h.destroy();}
+});
+
+test('stale or canceled pool batch acknowledgment never commits even when the prepare transport finishes late',async()=>{
+  for(const action of ['generation','hide','cancel']){
+    const h=harness();try{h.setItems([draggableAsset('a'),draggableAsset('b')]);await h.open();h.chooseAssets([0,1]);h.button('Import native asset into project').click();const assets=h.prepares[0].body.action.assets;
+      if(action==='generation'){h.context().generation='8';h.panel.invalidate();}else if(action==='hide')h.panel.hide();else h.button('Cancel native asset preparation').click();
+      h.prepares[0].resolve(h.job(0,{result:{assets}}));await settle();assert.deepEqual(h.projectWrites,[],action);assert.deepEqual(h.timelineWrites,[],action);assert.deepEqual(h.imported,[],action);assert.equal(h.deletes.length,1,action);
+    }finally{h.destroy();}
+  }
 });

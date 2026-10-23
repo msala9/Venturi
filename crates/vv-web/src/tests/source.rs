@@ -1,5 +1,212 @@
 use super::*;
 
+fn native_preview_fixture() -> (
+    PathBuf,
+    crate::asset_store::Store,
+    PathBuf,
+    NativeSourceQuery,
+) {
+    let root =
+        std::env::temp_dir().join(format!("vv-library-source-{}", crate::asset_jobs::nonce()));
+    let store = crate::asset_store::Store::new(&root).unwrap();
+    let directory = root.join("media").join("0123456789abcdef");
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("first.mp4");
+    std::fs::write(&path, b"snapshot tests never decode media").unwrap();
+    let mut session = vv_session::Session::default();
+    let media = session.add_media(path.clone(), window_fixture_meta());
+    let asset = crate::asset_payload::capture(
+        &session,
+        media,
+        "First raw item",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: session.epoch(),
+        },
+    )
+    .unwrap();
+    store.create("first", &asset).unwrap();
+    let revision = store.item("first", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    (
+        root,
+        store,
+        path,
+        NativeSourceQuery {
+            project_epoch: "preview:1".into(),
+            if_generation: "7".into(),
+            revision,
+            source_version: None,
+        },
+    )
+}
+
+#[test]
+fn native_asset_source_snapshot_is_raw_read_only_and_bound_to_catalog_and_current_file() {
+    let (root, store, path, mut query) = native_preview_fixture();
+    let bytes = store.export("first").unwrap();
+    let resolved = native_asset_snapshot(&store, "first", &query, false).unwrap();
+    assert_eq!(resolved.item["name"], "First raw item");
+    assert!(resolved.item["compound_timeline_id"].is_null());
+    assert_eq!(
+        resolved.item["duration_frames"],
+        resolved.spec.meta.duration_frames
+    );
+    assert_eq!(
+        resolved.spec.file.metadata().unwrap().ino(),
+        File::open(&path).unwrap().metadata().unwrap().ino()
+    );
+    assert_eq!(store.export("first").unwrap(), bytes);
+    assert_eq!(
+        native_asset_snapshot(&store, "first", &query, true)
+            .err()
+            .unwrap()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    query.source_version = Some(resolved.spec.identity().unwrap());
+    let current = native_asset_snapshot(&store, "first", &query, true).unwrap();
+    assert_eq!(
+        current.spec.identity().unwrap(),
+        resolved.spec.identity().unwrap()
+    );
+    std::fs::rename(&path, path.with_extension("old")).unwrap();
+    std::fs::write(&path, b"new source at the same path").unwrap();
+    assert_eq!(
+        native_asset_snapshot(&store, "first", &query, true)
+            .err()
+            .unwrap()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    query.source_version = None;
+    assert_ne!(
+        native_asset_snapshot(&store, "first", &query, false)
+            .unwrap()
+            .spec
+            .identity()
+            .unwrap(),
+        resolved.spec.identity().unwrap()
+    );
+    store
+        .edit(
+            "rename",
+            &crate::asset_store::Edit::Update {
+                id: "first".into(),
+                revision: query.revision.clone(),
+                name: "Renamed".into(),
+            },
+        )
+        .unwrap();
+    assert!(native_asset_snapshot(&store, "first", &query, false).is_err());
+    assert_eq!(
+        resolved.spec.file.metadata().unwrap().len(),
+        b"snapshot tests never decode media".len() as u64
+    );
+    drop((resolved, current, store));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_source_cache_authority_cannot_be_reused_as_project_media_or_after_library_path_swap()
+ {
+    use std::os::unix::fs::symlink;
+    let (root, store, path, mut query) = native_preview_fixture();
+    let spec = native_asset_snapshot(&store, "first", &query, false)
+        .unwrap()
+        .spec;
+    query.source_version = Some(spec.identity().unwrap());
+    let service = MediaJobs::start().unwrap();
+    let directory = service.root.join("library-ready");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("source.mp4"), b"prepared raw preview").unwrap();
+    let mut job = cache_fixture_job(directory, "ready", 20);
+    job.key = source_key(&spec, ProxyQuality::Low, None, &spec.identity().unwrap(), 0);
+    service.jobs.lock().unwrap().push_back(job);
+    assert_eq!(
+        service.status("cache-fixture", &spec, false).unwrap()["state"],
+        "ready"
+    );
+    assert!(service.asset("cache-fixture", &spec, "source.mp4").is_ok());
+    let mut project_spec = cloned_source(&spec);
+    project_spec.media_id = "1".into();
+    assert!(
+        service
+            .status("cache-fixture", &project_spec, false)
+            .is_err()
+    );
+    let mut next = query.clone();
+    next.if_generation = "8".into();
+    let next_spec = native_asset_snapshot(&store, "first", &next, true)
+        .unwrap()
+        .spec;
+    assert!(service.status("cache-fixture", &next_spec, false).is_err());
+    std::fs::rename(&path, path.with_extension("old")).unwrap();
+    symlink(path.with_extension("old"), &path).unwrap();
+    assert!(native_asset_snapshot(&store, "first", &query, true).is_err());
+    std::fs::remove_file(&path).unwrap();
+    std::fs::rename(path.with_extension("old"), &path).unwrap();
+    std::fs::rename(path.parent().unwrap(), root.join("moved-hash")).unwrap();
+    symlink(root.join("moved-hash"), path.parent().unwrap()).unwrap();
+    assert!(native_asset_snapshot(&store, "first", &query, false).is_err());
+    drop((spec, project_spec, next_spec, service, store));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_source_refuses_compound_composition_and_unmanaged_raw_paths() {
+    let (root, store, _, query) = native_preview_fixture();
+    let mut session = vv_session::Session::default();
+    let child = session.create_timeline(vv_core::Timeline {
+        name: "Nested".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let compound = session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, media)| media.compound == Some(child))
+        .unwrap()
+        .0;
+    let origin = vv_core::clipboard::ClipboardOrigin {
+        instance: 1,
+        epoch: session.epoch(),
+    };
+    let asset = crate::asset_payload::capture(&session, compound, "Compound", origin).unwrap();
+    store.create("compound", &asset).unwrap();
+    let mut request = query.clone();
+    request.revision = store.item("compound", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .into();
+    assert!(
+        native_asset_snapshot(&store, "compound", &request, false)
+            .err()
+            .unwrap()
+            .2
+            .contains("compound")
+    );
+    let foreign = root.join("outside.mp4");
+    std::fs::write(&foreign, b"not in the managed library store").unwrap();
+    let media = session.add_media(foreign, window_fixture_meta());
+    let asset = crate::asset_payload::capture(&session, media, "Unmanaged", origin).unwrap();
+    store.create("unmanaged", &asset).unwrap();
+    request.revision = store.item("unmanaged", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .into();
+    assert!(native_asset_snapshot(&store, "unmanaged", &request, false).is_err());
+    assert!(native_asset_snapshot(&store, "../first", &query, false).is_err());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn shared_media_roots_source_manager_passes_registry_to_proxy_original_validation() {
     let base =

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "../js/source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime,sourceMediaPath,sourceMediaQuery } from "../js/source.js";
 
 test("source selection preserves exclusive integer bounds and refuses invalid values before JSON encoding", () => {
   assert.deepEqual(sourceSelection(6,18,48),{source_in:6,source_out:18});
@@ -231,6 +231,51 @@ function windowHarness({fps={num:30_000,den:1001},total=10_000,api,fetcher,befor
   const finish=()=>{const c=player.current(),range=notifications.at(-1).source_window;video.position=(range.end_frame-range.start_frame)*fps.den/fps.num;video.ended=true;video.pause();video.dispatchEvent(new Event('ended'));return c;};
   return {player,video,status,item,version,requests,fetches,notifications,timers,ready,finish,open:(start=0)=>player.open(item,'epoch','medium',start)};
 }
+
+const libraryItem=(version='pinned-library-source')=>({id:'native-asset:asset-a:revision:7',name:'Library raw file',is_image:true,native_asset:{id:'asset-a',revision:'a'.repeat(64),if_generation:'7',source_version:version}});
+
+test('Library Source URLs keep their read-only catalog generation and FD identity out of project-media routes',()=>{
+  const item=libraryItem(),query={project_epoch:'epoch',if_generation:'7',revision:'a'.repeat(64),source_version:'pinned-library-source'};
+  assert.equal(sourceMediaPath(item,'/prepare',{absolute:false}),'/native-assets/items/asset-a/source/prepare');
+  assert.equal(sourceMediaPath(item,'/audio/window'),'/api/v1/native-assets/items/asset-a/source/audio/window');
+  assert.equal(sourceMediaPath(item,'/audio.wav'),'/api/v1/native-assets/items/asset-a/source/audio.wav');
+  assert.deepEqual(sourceMediaQuery(item,'epoch'),query);
+  assert.equal(sourceAssetURL(item,'ready','source.png','epoch'),`/api/v1/native-assets/items/asset-a/source/jobs/ready/source.png?${new URLSearchParams(query)}`);
+  assert.equal(sourceMediaPath('10','/prepare',{absolute:false}),'/media/10/prepare');
+  assert.deepEqual(sourceMediaQuery({id:'10'},'epoch'),{project_epoch:'epoch'});
+  for(const patch of [{id:'../outside'},{revision:'unknown'},{if_generation:'7.5'},{source_version:''}])assert.throws(()=>sourceMediaPath({...item,native_asset:{...item.native_asset,...patch}}));
+});
+
+test('opening a Library still uses ordinary Source preparation and heartbeat without project import or native library edits',async()=>{
+  const item=libraryItem(),h=sourceHarness({asset:'source.png',api:()=>({id:'library-still',state:'ready',source_asset:'source.png',source_version:item.native_asset.source_version}),fetcher:()=>h.response({id:'library-still',state:'ready',source_asset:'source.png',source_version:item.native_asset.source_version})});
+  try{
+    await h.open(item,'epoch');
+    assert.deepEqual(h.prepared,[{path:'/native-assets/items/asset-a/source/prepare',body:{...sourceMediaQuery(item,'epoch'),quality:'medium'}}]);
+    assert.equal(h.image.src,sourceAssetURL(item,'library-still','source.png','epoch'));
+    h.image.complete=true;h.image.naturalWidth=16;
+    assert.deepEqual(h.player.verifiedSource(),{epoch:'epoch',media_id:item.id,job:'library-still',source_version:item.native_asset.source_version});
+    await h.advance(10_000);
+    assert.equal(h.requests[0].path,`${sourceMediaPath(item,'/jobs/library-still')}?${new URLSearchParams(sourceMediaQuery(item,'epoch'))}`);
+    assert.equal(h.prepared.length,1);assert.equal(h.video.plays,0);
+  }finally{h.player.dispose();}
+});
+
+test('Library Source windows retain raw-file authority across seek and EOF while stale preparation cannot attach another asset',async()=>{
+  const h=windowHarness({fps:{num:24,den:1},total:1450});h.item.native_asset=libraryItem(h.version).native_asset;
+  try{
+    await h.open();assert.deepEqual(h.requests[0],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:0,end_frame:1440}});
+    assert.ok(h.video.src.startsWith('/api/v1/native-assets/items/asset-a/source/jobs/'));
+    await h.player.toggle();h.finish();await settle();
+    assert.equal(h.player.current().frame,1440);assert.equal(h.requests.length,2);assert.deepEqual(h.requests[1],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:1440,end_frame:1450}});
+    await h.player.seekFrame(17);assert.equal(h.player.current().frame,17);assert.equal(h.requests[2].source_version,h.version);
+  }finally{h.player.dispose();}
+  const ack=deferred(),old=libraryItem(),next=libraryItem('new-file'),still=sourceHarness({asset:'source.png',api:(_path,body)=>body.source_version===old.native_asset.source_version?ack.promise:{id:'new',state:'ready',source_asset:'source.png',source_version:'new-file'}});
+  try{
+    const pending=still.open(old,'epoch');await still.open(next,'epoch');
+    const url=still.image.src;ack.resolve({id:'old',state:'ready',source_asset:'source.png',source_version:old.native_asset.source_version});await pending;
+    assert.equal(still.image.src,url);assert.equal(still.ready.length,1);assert.ok(!url.includes('/old/'));
+  }finally{still.player.dispose();}
+});
 
 test('windowed Source opens paused at an absolute fractional-fps origin and seeks/steps across exclusive boundaries',async()=>{
   const h=windowHarness();try{

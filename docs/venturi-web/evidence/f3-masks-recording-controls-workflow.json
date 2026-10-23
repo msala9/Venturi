@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "83bb2d16a71a2bc1f3e8bf4e53ba048f96c149ef",
+  "url": "http://127.0.0.1:8855/",
+  "service": "venturi-web-halo1-masks-recording.service",
+  "pid": 249647,
+  "binary_sha256": "85abac2dafdd2f270491b2bbdf2d82663e16b4d7846b7dfc4dac2023a44e0574",
+  "project": "Venturi_Masks_Recording_V1.vvproj",
+  "project_sha256": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+  "production": [
+    "Mask scalar scrubs use native speeds1 pixels/.5 ranged values, Shift precision, native limits, precise fields and retained key/reset actions.",
+    "Rotation/Roundness/Feather/Opacity have local range drafts with one native command on release and no pointermove HTTP.",
+    "Reusable mask cancellation restores drafts and abandons queued writes; final disposal removes bindings. Dispatched/unknown outcomes remain fenced.",
+    "Voiceover displays native100Hz max-absolute peaks across input channels and chunk/hold boundaries, using one fixed30000-bin/120KB buffer. Original PCM, final flush, retained-take upload/retry and native placement remain unchanged.",
+    "Recording progress binds the captured project/generation/timeline/revision; waveform drawing visits only visible columns on captured audio lanes."
+  ],
+  "gate": {
+    "client_cases_passed": 136,
+    "build_seconds": 41.49,
+    "peak_bytes": 1661390848,
+    "source_hashes": {
+      "web/js/capture-buffer.js": "1094cd36750ee8d533b4d1cce0c046401da4b3b132d68d62bd9857ef03ef3729",
+      "web/js/inspector.js": "ad50c9e6b91fb14610d88962aaec2a7103a130371bb39577a21d7504ad048878",
+      "web/js/main.js": "3e28c46be136b250be3f227692816b0d775164d03ed9bfafe52c13d198fb1b33",
+      "web/js/masks.js": "83981d2290bf5d8f2945dcf509370d0fbcd70b47d86012846b1bad2ae330d1b8",
+      "web/js/timeline/draw.js": "31aeed302143833626a870ff1ea2355a04c1dac2571c3694357259fafe823cdd",
+      "web/js/voiceover.js": "aaf049b308e027a6e003f86c52f5b6c51a5196e760d89113ce335a830ebcd1cc",
+      "web/style/native-inspector.css": "61ef3cf284de2738f7ee591e84de929dcfae35a21cfb8c17e94542abbd67d91c",
+      "web/test/capture.test.js": "1ab2d394fe737296791a9aefdf0b4a65ad9c4673938e34b78f5c7cf997026b6e",
+      "web/test/masks.test.js": "11bc0013e9d04460ac4710d57bb617aa869266bf66a2840950ba5a78938e350a",
+      "web/test/recording-waveform.test.js": "bf42135824bf6a7ea52ee18bd6c699bf6f6fed6eebebebe76ca0842f016fde47",
+      "web/test/voiceover.test.js": "f540c2dcf9734f053faf371ba7e84f1ec3c5bd3fa289e96bd59ea94d366c9b97"
+    },
+    "native_checks": "Unchanged native/Rust/Clippy and existing renderer/export evidence reused."
+  },
+  "windows": {
+    "clip_id": "20",
+    "mask_shape": "Rectangle",
+    "center_x_scrub": {
+      "from": 0,
+      "to": 20,
+      "one_native_undo": true
+    },
+    "escape_then_fresh_slider_edit": true,
+    "feather_slider": {
+      "from": 0,
+      "to": 181.1166534423828,
+      "one_native_undo": true,
+      "exact_undo_redo": true
+    },
+    "save_reopen": {
+      "models_exact": true,
+      "saved_bytes_exact": true,
+      "saved_empty_undo": true,
+      "other_three_timelines_and_master_exact": true,
+      "color_grade_preserved": true
+    }
+  },
+  "recording_qualification": "Deterministic real CaptureBuffer/voiceover progress and drawing tests cover native bins, stereo/partial chunks/cap, final-flush retention, stale context and clearing. No physical microphone or actual recording screenshot is claimed.",
+  "preservation": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 2,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true,
+    "prior_color_project_sha256": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641"
+  },
+  "reused_evidence": [
+    "f3-mask-inspector-workflow.json: native mask renderer/keys/geometry agreement",
+    "f4-color-audio-controls-workflow.json: unchanged Color/audio engine and native frame/PCM proof"
+  ],
+  "remaining": [
+    "Physical microphone/device/output, physical blur/modifier/DPI and full M7 acceptance remain open.",
+    "At775px the open Inspector drawer can cover Clip list pointer targets; collapsing Inspector makes them accessible. Fix popup stacking/dismissal in the next compact UI block."
+  ],
+  "screenshot": {
+    "name": "f3-mask-direct-controls.png",
+    "sha256": "339f735b700e8e904e4b5ccdd1c156e01af84398b99b6d14d7384f4805c35ff6"
+  },
+  "ledger": {
+    "done": 52,
+    "partial": 38,
+    "excluded": 2
+  }
+}

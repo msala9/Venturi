@@ -1,5 +1,29 @@
 # Implementation status
 
+## Mask gestures and live recording waveform — 2026-10-23
+
+Current mask/recording controls: **http://127.0.0.1:8855/**,
+source `83bb2d1`, binary `85abac2dafdd`, service
+`venturi-web-halo1-masks-recording.service`, PID249647. Native mask pixel/range scrubs,
+four scalar sliders and reusable cancellation are delivered. Voiceover now draws
+actual captured amplitude using native100Hz bins, bounded to120KB, without a new
+audio engine or changes to retained PCM/take recovery.
+
+The136-case affected client gate and41.49s embedded build pass on halo1 with
+peak1,661,390,848 bytes. Existing native/Clippy/render/export checks are reused.
+Actual Windows adds Rectangle, scrubs CenterX0to20, cancels with Escape, then edits
+Feather0to181.1166534 with the slider; each edit adds one Undo. Undo/Redo and exact
+Saved reopen pass. Master, Color grade, other timelines and the prior Color Saved
+project remain unchanged;39 prior Sessions/40 PIDs, NAS/proxy protection pass.
+See `evidence/f3-masks-recording-controls-workflow.json` and its screenshot.
+
+Recording waveform is verified through capture/progress/drawing regressions;
+physical microphone/output and OS blur/modifier/DPI/M7 acceptance remain open.
+Next compact UI fix: at775px the Inspector drawer can cover Clip list targets;
+collapse the drawer to access them until popup stacking/dismissal is corrected.
+Ledger remains **52 done /38 partial /2 excluded**, full F1-F7/M7 active.
+
+
 ## Native Color/compressor direct controls — 2026-10-23
 
 Delivered `aa84c4c` on halo1/8855: compact Color scalar/range and compressor

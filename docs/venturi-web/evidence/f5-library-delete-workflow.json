@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "139418d",
+  "delivery": {
+    "url": "http://127.0.0.1:8848/",
+    "host": "halo1",
+    "service": "venturi-web-halo1-library-delete.service",
+    "pid": 202681,
+    "root": "/home/halo/VenturiWeb-library-delete-20261023",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-749e97fa8c20",
+    "binary_sha256": "749e97fa8c204016cd7cd1835543e007418298bd612a24496ed40b4c962b88dd",
+    "saved_project": "Venturi_Library_Delete_V1.vvproj",
+    "saved_sha256": "ffc98814d061219bf0cc59b3bb0f016c4b10b31d05e3730580503c13c519c1cd",
+    "saved_empty_undo": true,
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "runtime_memory_peak_bytes": 215527424,
+    "preview_device": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "production": {
+    "edit": {
+      "action": "delete_assets",
+      "items": "1..32 distinct ordered {id,revision}",
+      "archived": "optional false default; explicit metadata namespace"
+    },
+    "preparation": "Existing full Mutation, bounded job, writer/epoch/generation/fingerprint guards and original receipt reconciliation. No new route or transaction engine.",
+    "journal": "Removal version 2 prevents protected older readers from silently consuming an interrupted deletion. New readers still recover ordinary version 1 journals.",
+    "commit": "Strong selected metadata identity and SHA checked before durable intent. Authorized partial removals roll forward; foreign replacements and unrelated absence are preserved/refused. Durable original Completion precedes optional cleanup.",
+    "cleanup": "Same shared EX lock, <=10000 directory entries, <=16MiB aggregate metadata and <=4096 retained paths. Active, archived and backup refs count; malformed/unsupported/unconfined refs preserve all candidate media. <=64 unique candidate files, no recursive media scan. Missing cleanup after interruption can leave orphans safely.",
+    "cleanup_failure": "Never changes durable metadata success into a replayable failure; project copies and unrelated files remain outside removal.",
+    "receipt": "Ordered deleted_ids and deleted_assets retained in ready result and original/recovered ACK; existing 4096-byte completion limit is enforced.",
+    "client": "Delete, Backspace, Edit Delete and collapsed Asset actions share an accessible selection/revision-bound modal. Cancel is focused by default. Stale, readonly, pending, malformed and oversized requests cannot apply.",
+    "source": "Validated ACK calls onRemoved even if the panel has closed; matching epoch/Library ID only. Matching pending resolution is aborted, matching Source resets to Program. Ordinary project Source remains intact.",
+    "project_undo": "No project entities, generation, Saved state or history step is changed by Library removal."
+  },
+  "qualification": {
+    "gate_service": "venturi-halo1-library-delete-r1-20261023.service",
+    "terminal_pid": 0,
+    "native_cases": 78,
+    "native_results": [
+      "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 621 filtered out; finished in 0.05s",
+      "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 623 filtered out; finished in 0.01s",
+      "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 584 filtered out; finished in 0.67s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 632 filtered out; finished in 0.03s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 629 filtered out; finished in 0.03s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 632 filtered out; finished in 0.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 632 filtered out; finished in 0.00s"
+    ],
+    "client_cases": 75,
+    "client_results": [
+      "ℹ tests 75",
+      "ℹ suites 0",
+      "ℹ pass 75",
+      "ℹ fail 0",
+      "ℹ cancelled 0",
+      "ℹ skipped 0",
+      "ℹ todo 0",
+      "ℹ duration_ms 106.267355"
+    ],
+    "native_coverage": [
+      "Active/archive/late-backup reference retention and last-reference cleanup",
+      "Uncertain retained metadata and unmanaged retained paths suppress cleanup",
+      "Stale/bad/duplicate/oversized/32x80-character ID selections",
+      "Cancellation and foreign metadata/media replacement",
+      "Authorized partial deletion roll-forward, legacy v1 and removal v2 separation",
+      "Project copy/Saved bytes/history preserved through delete, exact retry and restart receipt",
+      "Existing asset worker and native folder regressions"
+    ],
+    "client_coverage": [
+      "Exact ordered ready/ACK verification",
+      "Modal cancellation/stale/readonly/read-error/oversize refusal",
+      "Hidden panel Source callback after applied ACK",
+      "Recovered receipt, mismatched receipt and unknown outcome without replay",
+      "Unchanged import/relink/folder/ownership regressions"
+    ],
+    "formatting": "passed",
+    "main_js_syntax": "passed",
+    "all_target_clippy_D_warnings": "passed",
+    "embedded_build": "passed",
+    "worker_memory_peak_bytes": 2020155392,
+    "cpu_limit": 8,
+    "memory_limit_bytes": 4294967296,
+    "swap_limit_bytes": 0,
+    "source_hashes": {
+      "crates/vv-web/src/asset_journal.rs": "aaac30ad5332f8f3afd44fcd899894de1fae8141b1203439a15a7b7f8ad503a8",
+      "crates/vv-web/src/asset_store.rs": "bce5c807e68df0362c5b826963cfeec2b6feb55b8d58fd69b6f0367e345ad814",
+      "crates/vv-web/src/host.rs": "6d403cb87e89b4b759d2cc363e02a8dbb2ef1f113dda3387d5381c752b91b3a3",
+      "crates/vv-web/src/tests/asset_journal.rs": "718b33a675ce6074a7c1b28c548763a15075dc8a729a9c156d7506fba5d5ab96",
+      "crates/vv-web/src/tests/asset_store.rs": "a8e8e20eca11e771d29a83bb2732159586f1a87c3c9001ebe47877fe3da9536a",
+      "crates/vv-web/src/tests/host.rs": "27455d91a46851e5c72c66d8b0d4991de4362c48d01f219b1fba482425a2a331",
+      "web/js/main.js": "dbad979cae3dfa7e78cafdd19e05ec098c0bc79da03b6fe6cf2058a613e424b3",
+      "web/js/native-assets.js": "949ebc6296a836487ea749a07d2d2a55f24d8e62eee93416b632e7d23e75b2b9",
+      "web/test/native-assets-panel.test.js": "7a2f49f6f205d57845afb3533618dd4bedca0b04d446baa270fad55cbf26a63c",
+      "web/test/native-assets.test.js": "42e64757699b49dc2d7b7de6a04fc96d48e1264d551881867c50de82933613fc"
+    },
+    "actual_windows": {
+      "single_confirmation": "Permanently delete 1 native asset?\n\nThis permanently removes the selected library entries. Project imports and timelines are unchanged. Project Undo cannot restore this deletion. Use Archive to keep an entry recoverable.\n\nds4-f3923115fe638051-53f3bea1ec1589a0.mp4\nCancel permanent deletion\nPermanently delete native assets",
+      "multiple_keyboard_confirmation": "Permanently delete 2 native assets?\n\nThis permanently removes the selected library entries. Project imports and timelines are unchanged. Project Undo cannot restore this deletion. Use Archive to keep an entry recoverable.\n\nds4-f3923115fe638051-53f3bea1ec1589a0.mp4\nTimeline 1\nCancel permanent deletion\nPermanently delete native assets",
+      "edit_menu_confirmation": "Permanently delete 2 native assets?\n\nThis permanently removes the selected library entries. Project imports and timelines are unchanged. Project Undo cannot restore this deletion. Use Archive to keep an entry recoverable.\n\nds4-f3923115fe638051-53f3bea1ec1589a0.mp4\nTimeline 1\nCancel permanent deletion\nPermanently delete native assets",
+      "cancel_and_escape_close_without_confirmation": true,
+      "permanent_delete_clicked": false,
+      "desktop_viewport": [
+        1280,
+        720
+      ],
+      "inspector_collapsed": true,
+      "exact_session_and_saved_bytes_unchanged_after_all_cancels": true,
+      "saved_reopen": true,
+      "desktop_viewport_restored_to": [
+        726,
+        964
+      ]
+    },
+    "actual_browser_confirmed_permanent_removal": false,
+    "native_destructive_fixture_scope": "Owned temporary Linux directories in the bounded halo1 gate; no existing NAS assets removed",
+    "fresh_export_claimed": false,
+    "reused": [
+      "Unchanged renderer matrix",
+      "f3-palette-fonts-workflow.json: 701-frame Full HD native H264/AAC export with actual Windows EOF",
+      "f5-library-pool-workflow.json: native NAS catalog/import/Source workflow"
+    ]
+  },
+  "preservation": {
+    "prior_sessions": 32,
+    "prior_pids": 33,
+    "prior_saved_files": 31,
+    "candidate_saved_files": 2,
+    "local_original_files_unchanged": 29,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_candidate_saved_empty_history": true,
+    "candidate_session_unchanged": true,
+    "prior_color_editor_saved_eight_undo_entries_preserved": true,
+    "prior_effects_editor_saved_seven_undo_entries_preserved": true,
+    "prior_context_editor_unchanged": true,
+    "prior_focus_editor_saved_empty_undo_unchanged": true,
+    "prior_library_editor_saved_empty_undo_unchanged": true,
+    "fixed_native_library_files": {
+      "files": {
+        "/mnt/madrock-share/madrock-library/assets/0823179a-6985-4e4d-af73-a7ffdf9c3523.json": {
+          "bytes": 860,
+          "dev": 56,
+          "inode": 89915475,
+          "mtime_ns": 1792701140117141000,
+          "ctime_ns": 1792701140121232100,
+          "sha256": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7"
+        },
+        "/mnt/madrock-share/madrock-library/media/53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b/ds4-f3923115fe638051-53f3bea1ec1589a0.mp4": {
+          "bytes": 657278,
+          "dev": 56,
+          "inode": 89915473,
+          "mtime_ns": 1792701139857223800,
+          "ctime_ns": 1792701139857223800,
+          "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+        },
+        "/mnt/madrock-share/madrock-library/assets/50870a9b-d79c-45a6-85dd-0c5f03ada5d6.json": {
+          "bytes": 2991,
+          "dev": 56,
+          "inode": 89915476,
+          "mtime_ns": 1792706965576150200,
+          "ctime_ns": 1792706965580150300,
+          "sha256": "956d4e578b3fd9305e67c5b17475722ae89e8608332833b7a84737add4204f8d"
+        }
+      },
+      "count": 3
+    },
+    "native_library_identity_bytes_and_timestamps_unchanged": 3,
+    "new_nas_writes": 0,
+    "timeline_clip_counts": {
+      "1": 10,
+      "2": 5,
+      "3": 2
+    },
+    "all_original_pool_timelines_effect_values_and_markers_unchanged": true,
+    "proxy_capacity_unchanged": {
+      "charged_bytes": 2206594,
+      "max_bytes": 2147483648,
+      "max_job_bytes": 536870912,
+      "max_jobs": 32,
+      "used_entries": 1,
+      "used_jobs": 0
+    },
+    "local_git_maintenance": "Commit unexpectedly triggered auto repack; exact owned pack/repack/gc processes were stopped. Repository-local gc.auto=0 and maintenance.auto=false now prevent automatic local packing. Commit and push succeeded."
+  },
+  "screenshots": [
+    {
+      "file": "f5-library-delete-confirmation.png",
+      "sha256": "28869eda269cdb211bff3685ee4bfc6547ed9f7240b6207dccd6f5da74272fd0"
+    },
+    {
+      "file": "f5-library-delete-workspace.png",
+      "sha256": "d9f4507fd65d1995e9ea7b6f75136e5e79025f5f9855f68473c74f7dfb8fda6c"
+    }
+  ],
+  "ledger": {
+    "done": 49,
+    "partial": 41,
+    "excluded": 2,
+    "goal_complete": false
+  },
+  "limits": [
+    "Browser post-confirm permanent deletion and Source-stop are not physical acceptance claims here; native/client regression evidence is explicit",
+    "No fresh destructive CIFS/recovery campaign, export, physical DPI or full F1-F7/M7 closure is inferred",
+    "Native portable-copy layout/name parity and broader Library/preset/physical/release criteria remain tracked"
+  ],
+  "private_capture_sha256": {
+    "halo1-library-delete-opened.json": "360dfeb624b5d7f37f1a88e1c52d577835aee8eea50d66a195692a54e7ff2e75",
+    "halo1-library-delete-canceled.json": "977fcb944e2fae358b2473217c142a29576733e48bbb08f3ebfd1d82d698aec1",
+    "halo1-library-delete-final.json": "471f876c7ef7c6b61847ea0b2e84a500e9cc3af3828fd9ef2e0a615f75c418ef",
+    "halo1-library-delete-deployed.json": "03eefa7583d0666501bc52b4d4b7e0b643656655d4cdcf3dacd4ea56a04ea330",
+    "halo1-library-delete-r1-observed.json": "54f8bd38783f50593764b6758383515ec570c64d751e9de6f8b7935057ab1bb2",
+    "halo1-library-delete-gate-counts.json": "03314bd492372be80f6a7eb239da577db8e21216bbfa9c3269d20720dbf8cda1",
+    "halo1-library-delete-protected.json": "3a1e5670d8233a583dc773a24dcd234b95c6c3eb320929b3fe34efe361983f8a",
+    "halo1-library-delete-native-final-check.json": "6286c231f26ce8f9f024aea38084a7c48c6b2ed3ee2b0b8124ab4da24e39f886",
+    "halo1-library-delete-browser-flow.json": "c905540eb4719cb413e56f626cc5265d38cf1dfa19e9fca37235c6691b17c026"
+  }
+}

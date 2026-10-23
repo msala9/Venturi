@@ -32,7 +32,37 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current Library pool/Source delivery: **http://127.0.0.1:8847/**, source
+Current Library removal delivery: **http://127.0.0.1:8848/**, source
+`139418d`, binary `749e97fa8c20`, service
+`venturi-web-halo1-library-delete.service`. Native Library selections now have
+confirmed permanent removal from Delete/Backspace, Edit Delete and collapsed
+Asset actions. Active/archived revisions bind the complete set. The existing
+prepared job, shared locks, durable journal and receipt infrastructure is reused;
+removal v2 journals refuse older readers without losing ordinary v1 recovery.
+Cleanup retains active/archive/backup references and uncertain or replaced files;
+project copies/history are unchanged. A validated ACK stops only matching
+Library Source, including when its panel has closed.
+
+The single bounded gate passes **78 native / 75 client cases**, formatting,
+main syntax, all-target Clippy and embedded build, peak 2,020,155,392 bytes.
+Actual destructive/recovery checks use owned temporary Linux fixtures. Actual
+Windows checks single/multiple confirmation, keyboard Delete, Edit ownership,
+Cancel/Escape and exact unchanged Session/Saved bytes afterward. No permanent
+browser deletion or new destructive CIFS campaign is claimed. Save As/reopen
+leaves `Venturi_Library_Delete_V1.vvproj` Saved/frame 0/empty Undo, SHA
+`ffc98814d061219bf0cc59b3bb0f016c4b10b31d05e3730580503c13c519c1cd`.
+
+All 32 prior Sessions, 33 PIDs, 31 prior Saved files, 29 fixed local originals,
+the archived NAS original, both native manifests/shared media and global proxy
+remain unchanged. No NAS writes were made. Desktop1280x720 is checked; ordinary
+viewport is restored. Runtime peak is 215,527,424 bytes. See
+`evidence/f5-library-delete-workflow.json` and confirmation/workspace images.
+Reuse unchanged renderer/export evidence. Ledger stays **49 done / 41 partial /
+2 excluded**; broader physical/Library/preset/release work and the full goal stay
+active. Git auto packing unexpectedly started locally during commit; the owned
+job was stopped and repository automatic maintenance is now disabled.
+
+Preserved Library pool/Source delivery: **http://127.0.0.1:8847/**, source
 `024a7ee`, binary `a23a77c45e87`, service
 `venturi-web-halo1-library-pool.service`. Ordered native Library selections now
 import into the project pool with one native Undo and no timeline placement.
@@ -637,31 +667,28 @@ uses its own project root and the existing tunnel on 8812. The full ledger
 was 45 done / 45 partial at that delivery; this interface acceptance does not close unrelated
 functional or release criteria.
 
-## Next implementation block — native Library removal lifecycle
+## Next implementation block — native portable Library copies
 
-Batch pool import and pre-import raw Source preview are delivered above. Next
-implement confirmed multi-asset permanent removal, reusing the existing native
-Library preparation, journal, revision checks, shared locks and receipts. Native
-Delete captures the selection and asks for confirmation; opening or canceling
-must not mutate metadata, media or project history. Stop an affected Source when
-removal succeeds. Keep Archive separate and preserve project copies.
+Pool import, pre-import raw Source and confirmed removal are implemented above.
+Close the remaining native project-copy filename/layout mismatch: ordinary native
+Add to Project copies to project/library/<originalname>; Web currently exposes
+flat asset-<fullsha>-<originalname> names in Media pool. Reuse the existing bounded
+copy worker and strong identity/content checks, approved project-root confinement,
+one-Undo imports and cached closure semantics. Preserve existing flat copies and
+all delivered projects; no migration, new storage policy or project engine.
 
-Clean up managed media only after committed metadata removal and only when no
-retained active, archived or backup asset references it. Uncertain parsing,
-unknown files or confinement failures must preserve data. Qualify destructive
-behavior with owned disposable assets; never delete the existing shared assets
-or other agents' work to demonstrate this feature. No project Undo is involved.
+Original upstream b3b03bf already copies managed Library files into projects.
+Permanent native NAS references are not a missing native capability. The ds4
+reference grant remains provider-specific. Keep native portable-copy parity
+separate from the accepted ds4 Reference workflow and retain stronger content
+verification than native size-only collision reuse.
 
-Read-only native audit of original upstream b3b03bf confirms that Add to Project
-copies managed Library files into project/library/<originalname>, remapping
-paths outside Undo; unsaved projects copy on Save. Current Web project copies
-already preserve that portability intent. Filename/layout/timing differ; retain
-strong content checks rather than native size-only collision reuse. Persistent
-native NAS references would be a new policy, not a missing native behavior, and
-the ds4-specific reference grant must not be applied to native AssetFile records.
-
-Continue remaining F1-F7/M7 production criteria after this lifecycle block;
-reuse unchanged renderer/audio evidence and preserve all delivered editor history.
+Then close the connected shared-preset crossproject Apply interaction and the
+remaining F1-F7/M7 criteria. Native Library browser post-confirm removal/Source
+stop and destructive CIFS recovery remain explicit acceptance limits, supported
+here by temporary native/client regressions rather than an invented physical
+claim. Preserve original shared assets and every prior editor/history; reuse
+unchanged renderer/audio/export evidence throughout.
 
 ## Delivery blocks
 

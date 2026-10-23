@@ -22,6 +22,21 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F5 native Library removal (`139418d`, halo1/8848): see
+`evidence/f5-library-delete-workflow.json`. 78 native /75client cases, syntax,
+formatting, all-target Clippy and embedded build pass in one bounded halo1 gate.
+Affected native store/journal/worker and Host regressions include active/archive/
+backup retention, last-reference cleanup, malformed/unmanaged/foreign files,
+cancel/stale/32-item bounds, partial removal recovery, version2/legacyv1 refusal
+rules, Saved project-copy/history preservation and original retry/restart ACK.
+Client cases cover modal selection ownership, exact ready/receipt binding,
+hidden-panel Source callback and unknown outcomes without replay. Actual Windows
+single/multi Delete/Edit/Cancel/Escape, unchanged Session/Saved bytes and Saved
+reopen pass. No permanent browser deletion or destructive CIFS case was run;
+temporary Linux native fixtures supply that destructive regression coverage.
+Prior editors/files/NAS originals/proxy remain unchanged. No fresh export or
+physical/full release acceptance is inferred from this block.
+
 F5 native Library pool/Source (`024a7ee`, halo1/8847): see
 `evidence/f5-library-pool-workflow.json`. Ten native /277client cases, main JS
 syntax, formatting, all-target Clippy and embedded build pass. Initial failures

@@ -1250,17 +1250,38 @@ control with text, modal and composition guards.
 
 - GET `/library` reads the configured ds4-appliance catalog off the actor.
   It returns configured/archive reachability, retention, sequence and bounded
-  items; archive filesystem paths are omitted. Seeds are strings or null to
-  preserve every u64 bit in JavaScript. An unconfigured server returns
+  items, plus `shared_originals` indicating configured read-only shared-root
+  support from explicit `--assets-root` approval; the default local asset folder
+  does not grant shared-root access. Archived items may include authoritative relative `archive_rel`;
+  remote absolute filesystem paths are not import authority. Seeds are strings
+  or null to preserve every u64 bit in JavaScript. An unconfigured server returns
   `{configured:false,items:[]}` without contacting any service.
-- POST `/library/items/{id}/prepare` with `{project_epoch}` prepares an explicit
-  project copy from the authoritative SSD/archive file API. GET/DELETE
+- POST `/library/items/{id}/prepare` accepts strict
+  `{project_epoch,mode?}`, with `mode:"copy"` by default or explicit
+  `mode:"reference"`. Copy uses the authoritative SSD/archive file API;
+  Reference requires an archived item and its exact approved shared-root locator,
+  with no automatic copy fallback. GET/DELETE
   `/library/jobs/{job}?project_epoch=...` reports progress or requests cancel.
   One transfer runs with one queued; eight process-local results are retained.
-  Each item is at most 512 MiB with a three-minute HTTP deadline. Catalog reads
-  are at most 4 MiB/5000 items and two concurrent requests. Service origin is
+  Copy is limited to 512 MiB per item with a three-minute HTTP deadline; a larger
+  indexed item remains browsable but is refused for copy before queueing/writing.
+  Reference reads the verified original in place without a project media copy.
+  Catalog reads are at most 4 MiB/5000 items and two concurrent requests. Service origin is
   configured only at startup, with no credentials/query/path or HTTP redirects.
-- Transfers validate IDs, names, media signatures, native streams/timing and
+- A Ready Reference result includes `path_token`, provenance `origin` and
+  `source_version`. Its opaque token is
+  `library://<relative>?source=<64 lowercase hex>`: the suffix is SHA256 of the
+  strong file identity, **not a content SHA256**. Explicit import/relink carries
+  that exact token; before probe and commit the qualifier must match the pinned
+  file identity and current project-side provenance grant. A newer grant never
+  authorizes an old token. Changed/missing grants or sources are refused as
+  SOURCE_CHANGED and require explicit preparation again.
+  Shared originals remain native absolute paths in Saved projects. Files/Open,
+  Source, requested resolvers, proxies, Take and native asset/clipboard/OTIO
+  reads use the approved registry. Project writes, scans and replacement
+  pickers remain project-only. Durable export keeps its existing native
+  absolute-path pipeline; this contract does not claim a broader FD-reopen fix.
+- Copy transfers validate IDs, names, media signatures, native streams/timing and
   byte count before a no-replace publish under the actor's exact root directory
   descriptor. SHA-256 names and .origin.json sidecars retain provenance; an
   existing different file, symlink or changed prepared source is refused.

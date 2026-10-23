@@ -22,7 +22,35 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8839/**, source `b6becaf`,
+The current halo1 delivery is **http://127.0.0.1:8840/**, source `dc42d2a`,
+binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.
+Library now offers an explicit archived-original Reference through the configured
+read-only shared root, alongside the existing project copy. Qualified tokens bind
+the prepared strong file identity; import/relink cannot borrow a newer grant for
+an old acknowledgment. Project writes, scans and replacement pickers stay
+project-only. Approved shared originals work through Source, proxy/Take,
+capture/clipboard/OTIO, save/reopen and existing native export.
+
+The bounded gate passes **56 distinct native cases / 59 executions** and
+**11 client cases**, formatting, all-target Clippy and embedded build; the initial
+test-only missing Id import was corrected before the passing gate. Actual Windows
+references the 657,278-byte NAS clip without a project copy, plays Source to EOF,
+appends one linked 124-frame pair at frame 457, and preserves the five existing
+clips through Undo/Redo. Save As/reopen retains the shared paths with empty Undo.
+Program reaches terminal frame 580; its player resets after EOF. The native
+581-frame Full HD export reaches actual browser EOF 24.213 seconds/ended=true.
+Final state is Saved/frame 580 in `Venturi_Shared_Originals_V1.vvproj`.
+All 24 prior Sessions/25 PIDs/15 Saved files, three local originals, the NAS
+original identity/bytes and the shared proxy movie are unchanged. See
+`evidence/f5-shared-originals-workflow.json` and its workspace/export images.
+
+Ledger remains **49 done / 41 partial / 2 excluded**; shared Library stays partial
+and no new shared-preset acceptance is claimed. Durable export's existing native
+absolute-path audio/video pipeline is unchanged; this is not a broader FD-reopen
+fix. Continue the full F1–F7 functional and release work, including physical,
+representative/dense/DPI and M7 requirements.
+
+Preserved interactive audio-graph delivery: **http://127.0.0.1:8839/**, source `b6becaf`,
 binary `9aa00b8af85a`, in `venturi-web-halo1-audio-graphs.service`.
 Native EQ and compressor inserts now have interactive parameter handles over
 SVG curves from revision-bound native response queries. EQ keeps its +/-27 dB

@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "scope": "Explicit ds4 shared archive originals through import/edit/save/reopen/Source/Program/export",
+  "source_commit": "dc42d2a",
+  "branch": "feat/venturi-web",
+  "delivery": {
+    "url": "http://127.0.0.1:8840/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-shared-originals.service",
+    "pid": 178965,
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-afa9c0ebffc6",
+    "sha256": "afa9c0ebffc620b561d74d85ad24219f1838993ef5da979150be3fbf34a705fc",
+    "project": "Venturi_Shared_Originals_V1.vvproj",
+    "saved_sha256": "cd38a9b8628ec44bbfedd422c84a82df8901169eeeb2cf1a3c659a26783adf00",
+    "saved": true,
+    "undo_labels": [],
+    "timeline_id": "1",
+    "program_frame": 580
+  },
+  "implementation": {
+    "catalog_locator": "authoritative ds4 archive_rel; no date/name inference or ds4 API change",
+    "source_authority": "explicit --assets-root; separately opened read-only MediaRoots archive descriptor; project write/scanner roots unchanged",
+    "copy_mode": "legacy default HTTP copy, explicit 512 MiB per-item limit independent of catalog visibility",
+    "reference_mode": "explicit reference; archive locator/filename/size/header/native probe/current catalog/strong FD identity verified; no automatic copy fallback",
+    "prepared_token": "library://<relative>?source=<SHA256(strong source identity)>; identity hash is not a content digest",
+    "stale_ack": "import/relink require the token identity and current project-side provenance grant before probing and committing; old ACK cannot borrow a new grant",
+    "read_adapters": [
+      "Files/Open/offline restore",
+      "original video/still/audio resolvers",
+      "Source pinned FD factories",
+      "proxy original checks",
+      "native asset capture",
+      "clipboard/OTIO witnesses",
+      "Take replacement witnesses",
+      "project ByName online checks"
+    ],
+    "native_export": "existing absolute-original native export/audio pipeline retained; actual NAS flow qualified; pre-existing broader raw-path FD-confinement limit is not claimed fixed"
+  },
+  "gate": {
+    "native_unique_cases": 56,
+    "native_executions": 59,
+    "client_cases": 11,
+    "client_top_level_cases": 6,
+    "client_subcases": 5,
+    "formatting": "passed",
+    "all_target_clippy": "passed",
+    "embedded_build": "passed",
+    "first_attempt": "test-only missing vv_core::Id import corrected before r2 terminal pass",
+    "memory_peak_bytes": 1924485120,
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "f599ca7167f7845f5b810ed9575578e874c6f03a4768811b16073e123edaf8f7",
+      "crates/vv-web/src/asset_jobs.rs": "05f680012a5786d82ab5147e2fe487d504d58d8df87f64b06e595929fd6bc1aa",
+      "crates/vv-web/src/files.rs": "d2767d9ca37adb185226ce11184069de45da23837e228ff1740307bad83c8f37",
+      "crates/vv-web/src/frame_sources.rs": "a99b186ddbcada8ad5a8de186fff14887e9653d7f6c62871e3ab37793727ce43",
+      "crates/vv-web/src/host.rs": "70fcaa5eeb097d42b878bbacca71492d07262d67da3e252cc2b58f934988ef1a",
+      "crates/vv-web/src/library.rs": "6d009de76b8256f870665d3f75d34de0effee9235da85644b6480d88489be6d1",
+      "crates/vv-web/src/main.rs": "b03ad2b985f8932815f097c9b2b003b0a8bb2be466f403edd7c31f23867d38fc",
+      "crates/vv-web/src/media_roots.rs": "8337674e32f9779736ce49cfff38688f595e0d87ea2428913f57c0befad97a44",
+      "crates/vv-web/src/project_media.rs": "ace555c4fac878e7d953c0fead03362249d5d1cbeac2c93023c1836de858e9d8",
+      "crates/vv-web/src/project_media_worker.rs": "d281a60e96b06f87739c232f535b1ae17ee3f01b2e8143b29d5e662cea0ddec7",
+      "crates/vv-web/src/proxy.rs": "43c75cce70da7b13e5ab1ce2f52a1fb2bc165e0560dfc26dcc64d2eeafafa3b1",
+      "crates/vv-web/src/source.rs": "b473f3784b200fdc7bf7efaffe392d30aedb1b9198c262a1a42274a4fdc47f54",
+      "crates/vv-web/src/take.rs": "162f4096df8c87586fdc667880da63db9bd068d2abc9ab2521baafc725d21955",
+      "crates/vv-web/src/tests/asset_jobs.rs": "5aae8ffd40bff2dc53d08cd5a89f4b4e0f8de0da25c25663503cf4035be07b94",
+      "crates/vv-web/src/tests/files.rs": "db2a08c1a68a18b220c0c9e7a1779c11b50ee5597a1a0aaf86a58539d4950c78",
+      "crates/vv-web/src/tests/frame_sources.rs": "515405ffae32707a4099600db585deb74b5a3893bef44707672047ed0d6cc76e",
+      "crates/vv-web/src/tests/library.rs": "1172970ec04a0356e7c3aac0d61f6f60d5dcaf96a940f2a27e4995cd48d4450a",
+      "crates/vv-web/src/tests/media_roots.rs": "5b35ac83eaa8b3490a3e6cdc9907df347a833096b1fb30b0edf2be7c5bdc277b",
+      "crates/vv-web/src/tests/proxy.rs": "a2bfa977607f54bba3aeeb0e449d66b3fae9438bcd730e934ddc7daf672fc9ff",
+      "crates/vv-web/src/tests/source.rs": "697280330f7a0fd8afe49cd98d94cec29420b055fc141300ec14131a869514d4",
+      "crates/vv-web/src/tests/take.rs": "72102ff38c3300d9cf2272075e99e7dce69d1362f9acd242382f86a826f69695",
+      "web/js/library.js": "da8f75e62fa86fe3af2ff77677f4d7bba68c11b6ea9893b84c3d234270c9ff27",
+      "web/test/library.test.js": "880455714badcab067a6c402da08212bb3aa4fd362b635bee3b38bd7dcd63bc7"
+    },
+    "native_cases": [
+      "api::tests::health_assets_snapshot_and_host_boundary",
+      "asset_jobs::tests::shared_media_roots_capture_clipboard_otio_and_explicit_import_keep_approved_originals",
+      "asset_jobs::tests::shared_media_roots_project_by_name_skips_reachable_shared_media_without_scanning",
+      "files::tests::a_project_root_has_one_nonblocking_process_owner_and_releases_on_drop",
+      "files::tests::approved_nested_sources_open_and_reopen_offline_without_broadening_project_file_names",
+      "files::tests::atomic_persistence_and_path_boundary",
+      "files::tests::compound_nesting_stops_at_the_native_render_limit",
+      "files::tests::external_project_changes_preserve_the_file_and_backup_until_an_explicit_reopen",
+      "files::tests::media_import_tokens_preserve_full_native_domain_order_and_explicit_batch_bounds",
+      "files::tests::native_probe_accepts_media_without_reading_symlink_targets",
+      "files::tests::otio_foreign_auto_background_import_uses_native_cpu_title_metrics",
+      "files::tests::otio_roundtrip_keeps_native_effects_rates_and_refuses_file_escapes",
+      "files::tests::pasted_image_paths_open_only_the_exact_native_managed_directory_and_regular_file",
+      "files::tests::pasted_image_saved_projects_reopen_and_preserve_missing_managed_images_offline",
+      "files::tests::project_folder_validation_refuses_cycles_before_a_tree_can_be_opened",
+      "files::tests::project_validation_refuses_compound_cycles_and_missing_nested_timelines",
+      "files::tests::reusable_otio_parser_rejects_input_and_url_limits_before_any_native_probe",
+      "files::tests::root_listing_includes_all_native_media_types_without_probing_or_following_links",
+      "files::tests::save_detects_equal_size_writes_with_restored_mtime_and_missing_or_replaced_files",
+      "files::tests::shared_media_roots_save_reopen_offline_and_keep_project_names_and_picker_private",
+      "frame_sources::tests::audio_resolver_rejects_links_fifos_and_changed_bytes_with_restored_mtime",
+      "frame_sources::tests::audio_resolver_shares_requested_witnesses_without_retaining_idle_decode_leases",
+      "frame_sources::tests::decoder_lease_pins_original_but_replacement_cannot_publish_or_reopen",
+      "frame_sources::tests::links_special_files_and_unapproved_paths_fail_without_blocking",
+      "frame_sources::tests::only_requested_sources_are_opened_and_cache_manifest_reopens_only_touched_files",
+      "frame_sources::tests::parent_lineage_and_in_place_restored_mtime_are_part_of_the_first_witness",
+      "frame_sources::tests::proxy_allowlist_pins_decode_fd_and_still_requires_the_original_witness",
+      "frame_sources::tests::shared_media_roots_resolvers_pin_only_requested_video_audio_and_root_bound_manifest",
+      "library::tests::catalog_validates_opaque_ids_names_urls_and_keeps_exact_u64_seed_provenance",
+      "library::tests::declared_movie_type_refuses_playlist_bytes_before_native_probing",
+      "library::tests::oversized_catalog_item_stays_visible_but_cannot_queue_or_download_a_project_copy",
+      "library::tests::shared_asset_download_preserves_native_samples_and_import_provenance_without_overwrites",
+      "library::tests::shared_original_reference_uses_verified_archive_locator_without_downloading_media",
+      "library::tests::truncated_library_transfer_never_publishes_project_media",
+      "media_roots::tests::media_roots_refuse_traversal_aliases_links_and_special_sources_without_scanning",
+      "media_roots::tests::media_roots_shared_tokens_are_exact_read_only_and_do_not_change_project_authority",
+      "media_roots::tests::media_roots_witness_missing_entries_parent_replacement_and_restored_mtime_changes",
+      "project_media::tests::prepared_relink_uses_nearest_exact_basename_skips_online_and_rechecks_absence_and_empty_branches",
+      "project_media::tests::project_import_witnesses_missing_files_cancel_context_and_nested_parent_changes_atomically",
+      "project_media::tests::project_media_dtos_and_preflight_refuse_ambiguous_shapes_paths_duplicate_ids_and_wrong_jobs",
+      "project_media::tests::project_tree_import_preserves_native_folder_merge_probe_failure_order_and_one_undo",
+      "proxy::tests::shared_media_roots_proxy_leases_bind_exact_original_without_requiring_project_copy",
+      "source::tests::shared_media_roots_source_manager_passes_registry_to_proxy_original_validation",
+      "take::tests::frozen_native_preview_keeps_long_linked_holds_and_binds_one_undo_to_unchanged_b_file",
+      "take::tests::frozen_replacement_defaults_preserve_legacy_bytes_and_only_accept_explicit_string_policies",
+      "take::tests::native_web_preview_reports_explicit_audio_remap_and_refuses_missing_streams_without_partial_edits",
+      "take::tests::previewed_source_changes_locked_targets_and_shortening_policy_never_partially_mutate",
+      "take::tests::replacement_audio_policy_defaults_to_preserve_and_rejects_ambiguous_or_malformed_stream_choices",
+      "take::tests::replacement_native_pasted_image_b_preserves_managed_path_original_bytes_and_one_undo",
+      "take::tests::replacement_nested_b_uses_exact_approved_path_not_a_same_named_root_file_and_rejects_parent_links",
+      "take::tests::replacement_preview_is_read_only_and_binds_one_native_undo_to_the_actual_source_file",
+      "take::tests::shared_media_roots_take_preserves_approved_b_path_and_refuses_parent_substitution",
+      "take::tests::take_probe_revalidates_audio_rate_channels_and_stream_count_before_plan_or_mutation",
+      "take::tests::take_worker_snapshot_is_probe_free_and_cancellation_and_restored_mtime_changes_fail_closed",
+      "take::tests::verified_take_rejects_changed_source_session_metadata_request_and_planning_mode_without_editing",
+      "take::tests::web_unfreeze_requires_explicit_shortening_and_reports_nullable_moving_frames"
+    ]
+  },
+  "workflow": {
+    "item": {
+      "id": "10",
+      "name": "f3923115fe638051.mp4",
+      "width": 864,
+      "height": 480,
+      "duration_frames": 124,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "has_audio": true,
+      "has_video": true,
+      "audio_stream_count": 1,
+      "offline": false
+    },
+    "nas_source": {
+      "path": "/mnt/madrock-share/madrock-library/2026-10/f3923115fe638051.mp4",
+      "bytes": 657278,
+      "dev": 56,
+      "inode": 89915463,
+      "mtime_ns": 1792599893846041800,
+      "ctime_ns": 1792599893849041900,
+      "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+    },
+    "nas_source_unchanged": true,
+    "content_sha256_attribution": "read directly from this selected 657278-byte original for before/after preservation; not provided by ds4",
+    "project_media_copy": false,
+    "source_browser_eof": [
+      {
+        "duration": 5.184,
+        "ended": true,
+        "height": 480,
+        "paused": true,
+        "ready": 4,
+        "src": "http://127.0.0.1:8840/api/v1/media/10/jobs/1792747326653662887/source.mp4?project_epoch=1792747204697286454%3A1",
+        "time": 5.184,
+        "width": 864
+      }
+    ],
+    "placement": {
+      "added_clips": [
+        {
+          "id": "11",
+          "media_id": "10",
+          "start_frame": 457,
+          "length_frames": 124,
+          "linked_group": "4",
+          "track": "V1"
+        },
+        {
+          "id": "10",
+          "media_id": "10",
+          "start_frame": 457,
+          "length_frames": 124,
+          "linked_group": "4",
+          "track": "A1"
+        }
+      ],
+      "original_clips_preserved": 5,
+      "occupied_destination_refused": true,
+      "undo_position_before": 2,
+      "undo_position_after": 1,
+      "redo_position": 2
+    },
+    "save_reopen": {
+      "saved_path_is_canonical_nas_original": true,
+      "saved": true,
+      "empty_undo": true,
+      "original_candidate_saved_unchanged": true
+    },
+    "program_browser": {
+      "terminal_frame": 580,
+      "total_frames": 581,
+      "used_cached_ready_composition": true,
+      "dom_video_reset_after_terminal_frame": true
+    },
+    "export": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "f3046f626135446c3a3b4c0e48d1d2cd04356f950eebffd5c9d07e6f2e1971b9",
+      "frames": 0,
+      "id": "1792747907497046888",
+      "previous_state": null,
+      "program": {
+        "audio_present": true,
+        "end_frame": 581,
+        "export_settings": {
+          "audio": true,
+          "audio_bitrate_kbps": 128,
+          "audio_codec": "aac",
+          "audio_fast_coder": false,
+          "preset": "veryfast",
+          "quality": 18,
+          "scale_percent": 100
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 1080,
+        "project_epoch": "1792747204697286454:2",
+        "revision": "9beba24e04968d3a",
+        "start_frame": 0,
+        "width": 1920
+      },
+      "progress": {
+        "compose_fps": 462.98640484091123,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 581,
+        "decode_fps": 429.5894588335298,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 2874.3482609999996,
+        "encode_fps": 221.9304433205949,
+        "encoder": "X264",
+        "fps": 202.13277837037995,
+        "startup_ms": 103.530627,
+        "total_frames": 581
+      },
+      "project_epoch": "1792747204697286454:2",
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "export_browser_eof": [
+      {
+        "duration": 24.213,
+        "ended": true,
+        "height": 1080,
+        "paused": true,
+        "ready": 4,
+        "src": "http://127.0.0.1:8840/api/v1/exports/1792747907497046888/export.mp4?project_epoch=1792747204697286454%3A2",
+        "time": 24.213,
+        "width": 1920
+      }
+    ]
+  },
+  "protection": {
+    "sessions": 24,
+    "pids": 25,
+    "saved_projects": 15,
+    "originals": 3,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_saved_sha256": "cd38a9b8628ec44bbfedd422c84a82df8901169eeeb2cf1a3c659a26783adf00",
+    "original_candidate_saved_unchanged": true,
+    "final_saved_empty_undo": true,
+    "shared_originals_copy": "Venturi_Shared_Originals_V1.vvproj"
+  },
+  "resource_limits": {
+    "cpu_quota_percent": 800,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks_max": 128,
+    "heavy_workloads": "one at a time; nonblocking HALO_BENCHMARK lock",
+    "runtime_peak_bytes": 529149952,
+    "workstation": "existing Windows browser; source edits/Git/short SSH only; no local build/render or browser install"
+  },
+  "images": {
+    "f5-shared-originals-workspace.jpg": {
+      "bytes": 143520,
+      "sha256": "4085300c2ac0f81ee18d55b2a41aed58913a9a5ef3de6684e7b27ca01799cac8"
+    },
+    "f5-shared-originals-export.jpg": {
+      "bytes": 168055,
+      "sha256": "1786fb87fbab61e5b1eab57771c1eed011cb4e52e5c037ebde3c17fcdafacc48"
+    }
+  },
+  "remaining_scope": "Shared-library row stays partial; native preset/asset GUI lifecycle, broader F1-F7/M7, physical/hardware and representative/dense/DPI acceptance remain in the full goal. No ledger status promoted by this scoped workflow."
+}

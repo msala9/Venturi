@@ -32,7 +32,35 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8839/**, source `b6becaf`,
+The current halo1 delivery is **http://127.0.0.1:8840/**, source `dc42d2a`,
+binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.
+Library now offers an explicit archived-original Reference through the configured
+read-only shared root, alongside the existing project copy. Qualified tokens bind
+the prepared strong file identity; import/relink cannot borrow a newer grant for
+an old acknowledgment. Project writes, scans and replacement pickers stay
+project-only. Approved shared originals work through Source, proxy/Take,
+capture/clipboard/OTIO, save/reopen and existing native export.
+
+The bounded gate passes **56 distinct native cases / 59 executions** and
+**11 client cases**, formatting, all-target Clippy and embedded build; the initial
+test-only missing Id import was corrected before the passing gate. Actual Windows
+references the 657,278-byte NAS clip without a project copy, plays Source to EOF,
+appends one linked 124-frame pair at frame 457, and preserves the five existing
+clips through Undo/Redo. Save As/reopen retains the shared paths with empty Undo.
+Program reaches terminal frame 580; its player resets after EOF. The native
+581-frame Full HD export reaches actual browser EOF 24.213 seconds/ended=true.
+Final state is Saved/frame 580 in `Venturi_Shared_Originals_V1.vvproj`.
+All 24 prior Sessions/25 PIDs/15 Saved files, three local originals, the NAS
+original identity/bytes and the shared proxy movie are unchanged. See
+`evidence/f5-shared-originals-workflow.json` and its workspace/export images.
+
+Ledger remains **49 done / 41 partial / 2 excluded**; shared Library stays partial
+and no new shared-preset acceptance is claimed. Durable export's existing native
+absolute-path audio/video pipeline is unchanged; this is not a broader FD-reopen
+fix. Continue the full F1–F7 functional and release work, including physical,
+representative/dense/DPI and M7 requirements.
+
+Preserved interactive audio-graph delivery: **http://127.0.0.1:8839/**, source `b6becaf`,
 binary `9aa00b8af85a`, in `venturi-web-halo1-audio-graphs.service`.
 Native EQ and compressor inserts now have interactive parameter handles over
 SVG curves from revision-bound native response queries. EQ keeps its +/-27 dB
@@ -657,38 +685,39 @@ physical/hardware/representative/dense/DPI/M7 requirements.
 
 Capabilities: `shared_library`, `shared_presets`.
 
-Current next block: reference archived ds4 originals from the configured shared
-root without a full project copy. Upstream already publishes authoritative
+Delivered in dc42d2a/halo1/8840: explicit archived-original references from the
+configured shared root without a project copy. Upstream publishes authoritative
 `archive_rel` for archived items (`ds4-appliance/src/library/library.c`,
 `library_item_json` / `library_item_path`); do not infer paths from dates, names
 or a remote absolute root. No ds4 API change or new mount is needed.
 
-Separate catalog metadata validation from the 512 MiB HTTP copy budget first:
-one larger indexed item must not hide otherwise usable catalog entries. Keep
-the per-item copy limit explicit in the API/UI and reject it before queueing or
-writing a temporary file. ds4 currently also caps uploads at 512 MiB; this handles
+Catalog metadata validation is separate from the 512 MiB HTTP copy budget:
+a larger indexed item stays browsable, with its unavailable-copy reason.
+Over-budget copies are refused before queueing or writing. ds4 also caps uploads
+at 512 MiB; this handles
 larger imported/future indexes, not a claim that ordinary current uploads exceed it.
 The catalog/copy-budget correction passes five native and four client cases plus
 formatting on halo1 (1,930,084,352-byte peak). Catalog browsing keeps larger items
 visible and shows their unavailable-copy reason; prepare refuses them before
 queueing or file writes. See `evidence/f5-library-copy-budget-gate.json`.
-This source increment does not replace the current 8839 runtime; include it in
-the connected shared-original integration build and deployment below.
+That correction is included in the connected 8840 delivery.
 
-Then offer an explicit shared-original reference for archived items with a
-validated locator, preserving project-copy import for SSD items. Carry the
-approved read-only root through import/relink, Files/Open, Source, original
-video/audio resolvers, proxy checks, save/reopen and export. Verify the selected
-file through directory FDs, native metadata and strong identity; do not scan the
-archive or claim a content digest supplied by ds4. Keep native asset dependency
-copies, which match desktop behavior, distinct from ds4 original references.
-Use one shared approved-source registry rather than relaxing path checks at
-individual endpoints. SourceSpec already holds a pinned FD; project-only proxy
-validation, preparation witnesses and durable export must use the same authority.
-Project writes, scans and replacement pickers remain confined to their current
-project root; the extra archive descriptor grants only original-media reads.
-Use one bounded integration gate after that connected functional change; retain
-the current 8839 editor and all earlier Sessions/Undo/Saved bytes.
+One approved-source registry now carries read-only shared originals through
+import/relink, Files/Open, Source, requested resolvers, proxy/Take witnesses and
+native asset/clipboard/OTIO reads. Explicit import tokens carry SHA256 of strong
+file identity, not content, and require matching provenance before probe and
+commit. Project writes/scans/pickers remain project-only; native asset dependency
+copies retain their separate desktop semantics. Durable export keeps its existing
+native absolute-path pipeline, qualified with the actual NAS original here.
+The connected reference/Source/linked insertion/Undo/Redo/Save/reopen/Program/
+Full HD export workflow is recorded in `evidence/f5-shared-originals-workflow.json`.
+The 8839 editor and all earlier protected state remain preserved. Continue the
+full F1–F7 scope rather than treating further NAS micro-refinement as the goal.
+
+A source-only startup follow-up uses the native asset store's canonical root
+when granting read access, preserving relative `--assets-root` configuration.
+The qualified absolute NAS deployment remains dc42d2a; include that small
+compatibility correction in the next bundled integration build.
 
 Retain the existing ds4-appliance HTTP catalog and actual NAS evidence. Complete
 native preset/compound asset sharing and its deployment/UX qualification with
@@ -705,8 +734,10 @@ service. Halo2 currently has no mount/client credential handle. The owner then
 requested moving work to free halo1 because halo2 is shared with an H3 agent.
 Halo1 already mounts the authoritative share; use that access for F5 rather than
 adding a second mount. Its Venturi multimedia runtime is now prepared.
-The filesystem's actual locking/atomic publication must be qualified before
-calling F5 complete. Do not substitute a separate library root or disturb ds4.
+Existing actual CIFS lock/transaction qualification is recorded in
+`evidence/f5-native-web-cifs-catalog-gate.json`; shared-original read/edit/export
+qualification is recorded above. Broader native GUI/lifecycle and release
+requirements still apply. Do not substitute a separate library root or disturb ds4.
 
 Source `2cc447d` completes the connected catalog coordination/relink increment:
 compatible native desktop/web locks, stale-record checks, native recovery,
@@ -714,10 +745,10 @@ media reference retention, desktop Refresh/root configuration, and cancellable
 contextual relink with durable result counts. The focused implementation gate
 passes 85 JavaScript, 135 unique web Rust and 24 native library cases, affected
 Clippy and build; see `evidence/f5-shared-native-library-gate.json`.
-The canonical NAS root, compatible deployment and the real shared filesystem
-transaction workflow remain open. Halo2 currently has
-no CIFS/NFS mount. Keep `shared_library`/`shared_presets` partial; do not infer
-NAS qualification from isolated filesystem tests or the ds4 HTTP archive.
+That earlier gate alone did not qualify the canonical NAS deployment. Reuse the
+later actual CIFS and8840 shared-original evidence above; halo2 still has no
+CIFS/NFS mount. Keep `shared_library`/`shared_presets` partial for their remaining
+scope; isolated filesystem tests or the ds4 HTTP archive are not NAS qualification.
 
 The next connected increment adds the approved source folder browser, native
 ImportTree and recursive RelinkFolder. Its implementation gate passes 61 focused

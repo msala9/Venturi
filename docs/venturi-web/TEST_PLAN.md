@@ -22,7 +22,28 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
-M5 interactive audio graphs (`b6becaf`, halo1/8839): **14 native cases** and
+F5 shared originals (`dc42d2a`, halo1/8840): **56 distinct native cases /
+59 executions** and **11 client cases** (6 top-level plus 5 subcases), formatting,
+all-target Clippy and embedded build pass. The first test-only missing Id import
+was fixed before the passing second gate. Worker peak is 1,924,485,120 bytes
+within 8 CPUs/4 GiB/no swap. Coverage binds approved root/parent/strong identity,
+version-qualified import/relink plus provenance, old-ACK/new-grant refusal,
+shared requested-source/proxy/Take/clipboard/OTIO reads and unchanged project-only
+scans/writes. Existing copy mode and its budget remain separate.
+
+Actual Windows references a 657,278-byte 864x480/audio NAS original without copying
+it into the project. Source reaches EOF 5.184 seconds; one linked pair is inserted
+at 457 with length 124 while five original clips remain unchanged. Undo/Redo,
+Save As/reopen with empty Undo and cached Program terminal frame 580 pass; the
+Program player resets after EOF, so ended=true is not inferred. Native 581-frame
+1920x1080 export 1792747907497046888 is Ready in 2874.348 ms and browser playback
+reaches actual EOF 24.213/ended=true. Final state is Saved/frame 580. NAS bytes/
+dev/inode/mtime/ctime, 24 prior Sessions/25 PIDs/15 Saved files/three originals/
+shared proxy are preserved. Runtime peak is 529,149,952 bytes. No broader native
+raw-path FD-reopen fix or full F4/M7 acceptance is inferred. See
+`evidence/f5-shared-originals-workflow.json` and its workspace/export images.
+
+M5 interactive audio graphs (`b6becaf`, preserved halo1/8839): **14 native cases** and
 **58 client cases** pass, plus formatting, all-target Clippy and embedded build.
 Native filters contain 12 audio cases (including 3 Source-audio cases), one
 revision-bound Host query and one API boundary. Client total comprises 40 prior

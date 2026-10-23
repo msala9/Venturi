@@ -18,6 +18,23 @@ persistent Viewer controls. Verify one connected stop/edit/play/save/export flow
 Retain any unshipped real-time prototype privately; do not ship unused cursors,
 video lease APIs or a second audio-routing architecture for this deferred detail.
 
+## Shared original references — 2026-10-23
+
+`dc42d2a` on halo1/8840 offers an explicit Reference option for archived ds4
+items whose locator is approved under the configured shared root. Project copy
+remains the default and remains available for SSD items. Reference avoids copying
+the original into the project; it does not scan the archive, infer a NAS path
+or fall back automatically to copying.
+Prepared tokens bind the verified file version. A changed source needs explicit
+preparation again; another tab's refreshed grant cannot make an old token current.
+
+The real NAS clip is verified through Source EOF, one linked timeline insertion,
+Undo/Redo, Save As/reopen, Program terminal-frame playback and a native Full HD
+export played to actual EOF. Existing clips and protected editors remain.
+This changes neither native asset dependency-copy semantics nor the owner V1
+stopped-audio decision. See `evidence/f5-shared-originals-workflow.json` and its
+workspace/export images. Full F1–F7/M7 work remains active.
+
 ## Interactive native audio graphs — 2026-10-23
 
 `b6becaf` on halo1/8839 adds EQ frequency/gain handles, Q wheel/keyboard,

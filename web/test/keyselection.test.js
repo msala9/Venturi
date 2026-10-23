@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {keySelectionOperation,retainedCrossKeys,mergeCrossSelection} from "../js/keyselection.js";
+import {keySelectionOperation,retainedCrossKeys,mergeCrossSelection,renderKeySelection} from "../js/keyselection.js";
 
 test("cross-page selection retains hidden native picks and changes only the displayed list",()=>{
   const a={target:{kind:"transform",param:"ZoomX"},source_frame:2},b={target:{kind:"text"},source_frame:2200},c={target:{kind:"gain"},source_frame:2};
@@ -31,4 +31,18 @@ test("selection survives rejection and tracks confirmed movement without confusi
   assert.deepEqual(retainedCrossKeys(pending,after),ids(after));
   assert.deepEqual(retainedCrossKeys(ids(before),[before[1]]),[ids(before)[1]]);
   assert.deepEqual(retainedCrossKeys(pending,[]),[]);
+});
+
+test('Edit Delete can discover native key ownership without sending clip edits through readonly or canceled key controls',async()=>{
+  const previousDocument=globalThis.document,previousOption=globalThis.Option;
+  class Element extends EventTarget{constructor(tag){super();this.tag=tag;this.children=[];this.dataset={};this.isConnected=true;this.value='';}append(...nodes){this.children.push(...nodes);}replaceChildren(...nodes){this.children=nodes;}setAttribute(){}reportValidity(){return true;}focus(){}}
+  globalThis.document={createElement:tag=>new Element(tag)};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
+  const target={kind:'transform',param:'ZoomX'},picks=[{target,source_frame:10}],root=new Element('div'),commands=[];let chosen=picks,listener,allowed=false,control;
+  const selection={get:()=>chosen,set(value){chosen=value;listener?.();},subscribe(callback){listener=callback;return()=>{listener=null;};}};
+  try{
+    control=renderKeySelection(root,{clip_id:'clip',curves:{tracks:[{name:'Zoom X',target,key_count:1,keys:[{source_frame:10,timeline_frame:20}]}]}},{disabled:false,commit:async operation=>{commands.push(operation);},notice(){},openState:new Map(),canInteract:()=>allowed,keySelection:selection});
+    assert.equal(control.hasSelectedKeys(),true);await control.removeSelected();assert.deepEqual(commands,[]);assert.equal(control.hasSelectedKeys(),true);
+    allowed=true;await control.removeSelected();assert.deepEqual(commands,[{kind:'edit_key_selection',clip_id:'clip',edit:{picks,link_zoom:false,action:{kind:'delete'}}}]);assert.equal(control.hasSelectedKeys(),false);
+    selection.set(picks);control.cancel();assert.equal(control.hasSelectedKeys(),true,'Canceled visible key selection keeps Delete ownership until Inspector replacement');await control.removeSelected();assert.equal(commands.length,1);
+  }finally{control?.cancel();globalThis.document=previousDocument;globalThis.Option=previousOption;}
 });

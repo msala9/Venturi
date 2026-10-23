@@ -1881,6 +1881,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/color-picker.js", 200),
         ("/style/color-picker.css", 200),
         ("/style/context-menu.css", 200),
+        ("/js/command-ownership.js", 200),
         ("/js/timeline/context-actions.js", 200),
         ("/js/timeline/context-menu.js", 200),
         ("/js/curve-viewport.js", 200),

@@ -26,11 +26,18 @@
         <button id="undo" disabled>Undo <kbd>Ctrl Z</kbd></button><button id="redo" disabled>Redo <kbd>Ctrl Shift Z</kbd></button>
         <button id="split" disabled title="T">Split</button
           ><button id="delete" disabled>Delete</button
-          ><hr><div id="clipboard-menu"></div><details><summary>Media clipboard</summary><div id="media-clipboard-menu"></div></details>
+          ><button type="button" data-selection-command="ripple" disabled>Ripple delete selected clips or gap</button>
+          <details><summary>Selected clips</summary><div class="menu-action-list">
+            <button type="button" data-selection-command="link" disabled>Link selected clips</button><button type="button" data-selection-command="unlink" disabled>Unlink selected clips</button>
+            <button type="button" data-selection-command="disable" disabled>Disable selected clips</button><button type="button" data-selection-command="enable" disabled>Enable selected clips</button>
+            <button type="button" data-selection-command="paste_attributes" disabled>Paste selected properties…</button>
+          </div></details><hr><div id="clipboard-menu"></div><details><summary>Media clipboard</summary><div id="media-clipboard-menu"></div></details>
       </div></details>
       <details class="app-menu"><summary>Timeline</summary><div class="menu-items">
         <button id="insert-media" disabled title="Insert selected project media in panel order, using each full source">Insert selected media</button
           ><button id="add-solid" disabled>Add solid</button
+          ><button type="button" data-timeline-command="select_all" disabled>Select all timeline clips</button><button type="button" data-timeline-command="select_from_playhead" disabled>Select clips from playhead</button
+          ><button type="button" data-selection-command="slip" disabled>Slip selected clips…</button><button type="button" data-selection-command="compound" disabled>Make compound from selection…</button
           ><button id="open-compound" type="button" disabled title="Enter · open the selected compound timeline">Open selected compound</button><button id="close-gap" type="button" disabled title="IntlBackslash · close the selected gap on all unlocked tracks and trim overlaps using native ripple delete. Undo restores the edit.">Close selected gap</button
           ><hr><label>Edit tool <select id="edit-tool"><option value="move">Move / trim</option><option value="slip">Slip</option></select></label><button id="retime-handles" type="button" aria-pressed="false" disabled title="Ctrl+R · toggle speed strips for selected media clips; other clips keep their controls">Selected speed handles</button><label title="Allows trim, Alt-duplicate, speed and Library asset drags to replace overlapping clips. Undo restores the edit."><input id="retime-overwrite" type="checkbox" disabled>Allow overwrite for timeline drags</label
           ><label title="Allows transition drops to replace an occupied edge or cut. Undo restores the previous transition."><input id="transition-replace" type="checkbox">Replace existing transition</label
@@ -167,7 +174,7 @@
       <button type="button" data-speech-close>Close speech analysis</button>
     </dialog>
     <main id="editor" data-workspace="Edit">
-      <aside id="browser" class="panel" data-browser-panel="Media"><button id="close-browser" class="drawer-close" aria-label="Close media browser">×</button>
+      <aside id="browser" class="panel" data-browser-panel="Media" data-command-owner="media"><button id="close-browser" class="drawer-close" aria-label="Close media browser">×</button>
         <div class="panel-body">
           <label class="search-label"
             >Search media<input

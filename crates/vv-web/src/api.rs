@@ -2303,6 +2303,7 @@ async fn assets(request: Request) -> Response {
 
         "/js/proxies.js" => asset!("/web/js/proxies.js", "text/javascript"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
+        "/js/command-ownership.js" => asset!("/web/js/command-ownership.js", "text/javascript"),
         "/js/compound-navigation.js" => asset!("/web/js/compound-navigation.js", "text/javascript"),
         "/js/project-view.js" => asset!("/web/js/project-view.js", "text/javascript"),
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),

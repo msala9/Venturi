@@ -15,6 +15,9 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 .menu-items > button:hover { background: #444; }
 .menu-items kbd { margin-left: auto; padding-left: 12px; }
 .menu-items hr { margin: 3px 0; width: 100%; border: 0; border-top: 1px solid var(--border); }
+.menu-action-list { display: grid; gap: 2px; padding: 2px 0 2px 8px; }
+.menu-action-list > button { text-align: left; border: 0; background: transparent; min-height: 26px; }
+.menu-action-list > button:hover:not(:disabled) { background: #444; }
 .menu-items > label { display: flex; align-items: center; gap: 5px; padding: 4px; font-size: 11px; white-space: normal; }
 .menu-items > label select { margin-left: auto; }
 .menu-items output { max-width: 300px; font-size: 10px; color: var(--muted); white-space: normal; }

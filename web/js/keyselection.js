@@ -83,7 +83,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   interpolate.addEventListener("click",()=>{try{if(mode.value==="Bezier" && !values.every(input=>input.reportValidity()))return;send({kind:"interpolation",interpolation:curveInterpolation(mode.value,values.map(input=>Number(input.value)))});}catch(error){notice(error.message);}});
   const unsubscribe=keySelection?.subscribe(()=>{selectedIds=keySelection.get().map(identity);show();});
   remove.addEventListener("click",()=>send({kind:"delete"}));show();
-  return {removeSelected:()=>send({kind:'delete'}),cancel(){
+  return {hasSelectedKeys:()=>selectedIds.length>0,removeSelected:()=>send({kind:'delete'}),cancel(){
     if(document.activeElement===list)remember({ids:selectedIds,focus:true});
     unsubscribe?.();owner.dispose();disposed=true;
   }};

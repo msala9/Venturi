@@ -11,14 +11,15 @@ function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancela
 function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
-    constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
     get value(){return this.tag==='select'?this.selectedOptions[0]?.value??this._value:this._value;}
     set value(value){this._value=String(value);if(this.tag==='select')for(const child of this.children)child.selected=child.value===this._value;}
     get selectedOptions(){return this.children.filter(child=>child.tag==='option' && child.selected);}
     get isConnected(){return this===body || Boolean(this.parent?.isConnected);}
     append(...children){for(const child of children){this.children.push(child);if(child instanceof Element)child.parent=this;}}
     replaceChildren(...children){for(const child of this.children)if(child instanceof Element)child.parent=null;this.children=[];this.append(...children);}
-    setAttribute(name,value){this.attributes.set(name,String(value));}getAttribute(name){return this.attributes.get(name)??null;}
+    setAttribute(name,value){this.attributes.set(name,String(value));if(name.startsWith('data-'))this.dataset[name.slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=String(value);}getAttribute(name){return this.attributes.get(name)??null;}
+    closest(selector){for(let node=this;node;node=node.parent)if(selector.split(',').some(part=>part.trim()==='[contenteditable]'?node.attributes.has('contenteditable'):node.tag===part.trim()))return node;return null;}
     dispatchEvent(event){const result=super.dispatchEvent(event);this[`on${event.type}`]?.(event);return result;}
     click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
   }
@@ -199,9 +200,13 @@ test('reopening in the same project also isolates the new panel from old import 
 
 test('Delete and Backspace stay inside the native assets pane without suppressing normal text handling',async()=>{
   const h=harness();try{
+    assert.equal(h.root.dataset.commandOwner,'library');
     await h.open();for(const key of ['Delete','Backspace']){
-      let stopped=0;const event=new Event('keydown',{cancelable:true});Object.defineProperty(event,'key',{value:key});event.stopPropagation=()=>{stopped++;};
-      h.root.dispatchEvent(event);assert.equal(stopped,1,key);assert.equal(event.defaultPrevented,false,key);
+      let stopped=0;const event=new Event('keydown',{cancelable:true});Object.defineProperties(event,{key:{value:key},target:{value:h.button('Archive native asset')}});event.stopPropagation=()=>{stopped++;};
+      h.root.dispatchEvent(event);assert.equal(stopped,1,key);assert.equal(event.defaultPrevented,true,key);
+      assert.match(h.notices.at(-1),/Library Delete is unavailable.*timeline clips are unchanged/);
+      const notices=h.notices.length,text=new Event('keydown',{cancelable:true});Object.defineProperties(text,{key:{value:key},target:{value:h.field('Native asset name')}});text.stopPropagation=()=>{stopped++;};
+      h.root.dispatchEvent(text);assert.equal(stopped,2,key);assert.equal(text.defaultPrevented,false,'text editing keeps its native key behavior');assert.equal(h.notices.length,notices);
     }
     let stopped=0;const event=new Event('keydown');Object.defineProperty(event,'key',{value:'ArrowLeft'});event.stopPropagation=()=>{stopped++;};h.root.dispatchEvent(event);assert.equal(stopped,0);
     assert.equal(h.prepares.length+h.libraryWrites.length+h.projectWrites.length,0);

@@ -1,6 +1,7 @@
 import {mediaThumbnail} from './source-assets.js';
 import {CATALOG_DRAG_TYPE,makeCatalogDrag,createCatalogInteractions} from './catalog-interactions.js';
 import {createCatalogMenu} from './catalog-menu.js';
+import {deleteCommandOwner,projectMediaDeleteOperation} from './command-ownership.js';
 function compareText(a,b){
   const left=a[Symbol.iterator](),right=b[Symbol.iterator]();
   while(true){const x=left.next(),y=right.next();if(x.done || y.done)return x.done===y.done?0:x.done?-1:1;const difference=x.value.codePointAt(0)-y.value.codePointAt(0);if(difference)return Math.sign(difference);}
@@ -71,6 +72,7 @@ export function renderMediaProxyStatus(card,job){
 
 export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,onAction=()=>{},onPresentationChange=()=>{},proxyStatus=()=>null,intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
+  root.dataset.commandOwner='media';
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
   const folders = folderPaths(documentState.folders || []);
   state.layout=['list','details','grid'].includes(state.layout)?state.layout:'details';
@@ -94,7 +96,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   }
   const breadcrumbs=document.createElement('nav');breadcrumbs.className='catalog-breadcrumbs';breadcrumbs.setAttribute('aria-label','Project media folder breadcrumbs');root.append(breadcrumbs);
   const list = document.createElement("div"); list.className="catalog-rows";list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
-  let visible = [],disposed=false,relinkSequence=0,dragging=null,dragWitness=null,renameTimer=null,interactions=null,contextMenu=null;
+  let visible = [],disposed=false,removing=false,relinkSequence=0,dragging=null,dragWitness=null,renameTimer=null,interactions=null,contextMenu=null;
   const cancelRename=()=>{if(renameTimer!==null)clearTimeout(renameTimer);renameTimer=null;};
   const backgroundFolder=()=>state.layout==='grid' && filter.value==='*' && !(state.query || '').trim()?state.gridFolder:null;
   const presentationKey=()=>JSON.stringify([state.layout,state.expanded,state.gridFolder,filter.value,kind.value,state.query,state.sort]);
@@ -213,7 +215,14 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     }
   }
   const move = button("Move selected media", operations, () => run({kind: "move_media", media_ids: ids(), folder: destination.value || null}));
-  const remove = button("Remove selected from project", operations, () => run({kind: "remove_media", media_ids: ids()}));
+  async function removeSelected(){
+    if(disposed || removing || !writable || root.isConnected===false)return false;
+    const operation=projectMediaDeleteOperation(ids());
+    if(!operation)return false;
+    removing=true;
+    try{return await run(operation.edit);}finally{removing=false;}
+  }
+  const remove = button("Remove selected from project", operations, () => void removeSelected());
   const relink = button("Relink selected media", operations, async () => {
     clearRelink();const owner=relinkSequence,selection=JSON.stringify(state.selected),targets=ids();
     try {
@@ -326,6 +335,9 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     update(userIntent || pruned,notify || pruned);
   }
   list.addEventListener("keydown", (event) => {
+    if(deleteCommandOwner(event,{owner:'media',dialogOpen:Boolean(root.ownerDocument?.querySelector?.('dialog[open]'))})==='media'){
+      event.preventDefault();event.stopPropagation();void removeSelected();return;
+    }
     if(disposed || event.defaultPrevented || event.isComposing || event.keyCode===229 || event.altKey || event.getModifierState?.('AltGraph'))return;
     if(event.key==='F2' && !event.repeat && !event.ctrlKey && !event.metaKey && !event.shiftKey){event.preventDefault();event.stopPropagation();if(state.selectedFolder)renameEntry('folder',state.selectedFolder);else if(state.selected.length===1)renameEntry('media',state.selected[0]);return;}
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") { event.preventDefault(); event.stopPropagation(); clearRelink();state.selectedFolder=null;state.selected = visible.map((m) => m.id); update(true); return; }
@@ -361,7 +373,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     }
     return false;
   }
-  return {acceptReceipt,selectedItems,search(query) {if(disposed)return;const changed=query!==(state.query || '');if(changed)clearRelink();state.query = query; render(changed);},reveal(ids){
+  return {acceptReceipt,selectedItems,removeSelected,search(query) {if(disposed)return;const changed=query!==(state.query || '');if(changed)clearRelink();state.query = query; render(changed);},reveal(ids){
     if(disposed || root.isConnected===false || !Array.isArray(ids))return;
     const wanted=[...new Set(ids)].filter(id=>documentState.media.some(item=>item.id===id));if(!wanted.length)return;
     const targets=wanted.map(id=>documentState.media.find(item=>item.id===id)),open=new Set(state.expanded),map=new Map(folders.map(folder=>[folder.id,folder]));

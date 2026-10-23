@@ -72,7 +72,18 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
 }
 
 export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
-  root.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
+  root.dataset.commandOwner='library';
+  root.addEventListener('keydown',event=>{
+    if(!['Delete','Backspace'].includes(event.key))return;
+    event.stopPropagation();
+    if(event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229
+      || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
+      || event.getModifierState?.('AltGraph') || event.target?.isContentEditable
+      || event.target?.closest?.('input,textarea,select,[contenteditable],dialog')
+      || root.ownerDocument?.querySelector?.('dialog[open]'))return;
+    event.preventDefault();
+    if(active)notice('Library Delete is unavailable here. Use Asset actions to archive an asset; timeline clips are unchanged.');
+  });
   let active=false,sequence=0,panelSession=0,transferSession=0,readController=null,pendingReload=false,transferRefreshFailed=false,page=0,pages=1,search='',archived=false,selected=null,busy=false,batch=false,stopped=false,reading=false,readEpoch=null,rows=[],chosen=[],catalog=null,folder=null,folderLabels=new Map(),controls=[],folderControls=[],list,status,caption,name,capture,stop,importButton,rename,archive,previous,next,restore,download,folderFilter,folderName,folderCreateParent,folderParent,assetDestination,createFolder,renameFolder,moveFolder,removeFolder,moveAssets,relinkMenu,relinkButton,relinkArea,relinkDraft=null,relinkReader=null,relinkReading=false,relinkFiles,relinkApply,relinkCancel;
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
   let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null;

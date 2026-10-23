@@ -107,6 +107,38 @@ function catalogTransfer(initial=[]){const data=new Map(initial.map(type=>[type,
 const settleCatalog=async()=>{for(let index=0;index<20;index++)await Promise.resolve();};
 const menuButton=label=>{const menu=document.body.querySelectorAll('.catalog-context-menu')[0];assert.ok(menu,'context menu');const node=menu.querySelectorAll('button').find(node=>node.textContent===label);assert.ok(node,label);return node;};
 
+test('rendered Media Delete removes only project media and consumes readonly or empty pool commands before timeline fallback',async()=>withCatalogDom(async()=>{
+  const timelineSelection=['existing-timeline-clip'];
+  for(const writable of [true,false]){
+    const h=catalogHarness({writable});
+    try{
+      const list=h.root.querySelectorAll('.catalog-rows')[0];
+      let timelineDeletes=0;
+      const dispatch=(key,target)=>{
+        const event=list.fire('keydown',{key,target});
+        if(!event.stopped)timelineDeletes++;
+        assert.equal(event.defaultPrevented,true);
+        assert.equal(event.stopped,true);
+      };
+      dispatch('Delete',list);
+      assert.deepEqual(h.commits,[],'an empty pool selection is not a timeline Delete');
+      h.row('a').fire('click');
+      h.row('b').fire('click',{ctrlKey:true});
+      dispatch('Delete',h.row('a'));
+      await settleCatalog();
+      assert.deepEqual(h.commits,writable?[{kind:'edit_catalog',edit:{kind:'remove_media',media_ids:['a','b']}}]:[]);
+      assert.deepEqual(timelineSelection,['existing-timeline-clip']);
+      assert.equal(timelineDeletes,0);
+      if(writable){
+        await h.panel.removeSelected();
+        assert.deepEqual(h.commits[1],h.commits[0],'Edit menu uses the same guarded native catalog action');
+      }
+      h.panel.dispose();
+      assert.equal(await h.panel.removeSelected(),false,'a detached controller cannot remove media');
+    }finally{h.panel.dispose();}
+  }
+}));
+
 test('sortable headers preserve selection and Source intent while Shift keyboard ranges and batch order follow the newly drawn rows',async()=>withCatalogDom(async()=>{
   const h=catalogHarness();try{
     assert.deepEqual(h.rows().map(row=>row.dataset.mediaId),['c','a','b']);h.row('b').fire('click');const events=h.selection.length;

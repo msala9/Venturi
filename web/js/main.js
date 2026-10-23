@@ -955,6 +955,7 @@ function timelineContext(target){
 }
 function openTimelineContextMenu(target){
   if(document.querySelector('dialog[open]') || view.recording || busy || unresolved || !canvasTimeline.navigationIdle())return false;
+  fastTransport?.stop();audioScrub?.stop();programPlayer?.pauseLocal();updatePlayAvailability();
   retimeMenu?.close(false);return timelineContextMenu?.open(target) ?? false;
 }
 function contextOwnerCurrent(owner){

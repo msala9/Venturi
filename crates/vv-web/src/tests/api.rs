@@ -126,6 +126,206 @@ async fn timeline_waveform_http_is_strict_read_only_and_revision_bound() {
 }
 
 #[tokio::test]
+async fn native_library_thumbnail_http_uses_read_only_source_authority_and_only_serves_png() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-thumbnail-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let store = crate::asset_store::Store::new(&root.join(".assets")).unwrap();
+    let directory = root.join(".assets/media/0123456789abcdef");
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("image.png");
+    let original =
+        crate::preview::encode_png(&[170, 60, 25, 255].repeat(64 * 36), (64, 36)).unwrap();
+    std::fs::write(&path, &original).unwrap();
+    let mut session = vv_session::Session::default();
+    let media = session.add_media(path.clone(), vv_media::probe_image(&path).unwrap());
+    let asset = crate::asset_payload::capture(
+        &session,
+        media,
+        "Thumbnail before import",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: session.epoch(),
+        },
+    )
+    .unwrap();
+    store.create("thumbnail", &asset).unwrap();
+    let revision = store.item("thumbnail", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("another-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let jobs = MediaJobs::start().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: jobs.clone(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("origin", "http://127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    let base = "/api/v1/native-assets/items/thumbnail/source";
+    let context = json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"revision":revision});
+    let response = app
+        .clone()
+        .oneshot(make("POST", base, context.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let resolved: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let mut body = context.clone();
+    body["source_version"] = resolved["item"]["native_asset"]["source_version"].clone();
+    body["audio_stream_index"] = json!(0);
+    body["include_waveform"] = json!(false);
+    let route = format!("{base}/assets/prepare");
+    for (field, value, expected) in [
+        (
+            "include_waveform",
+            json!(true),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "audio_stream_index",
+            json!(1),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        ("source_version", json!("old"), StatusCode::CONFLICT),
+        ("project_epoch", json!("old"), StatusCode::CONFLICT),
+        (
+            "path",
+            json!("/tmp/unsafe"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let mut invalid = body.clone();
+        invalid[field] = value;
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", &route, invalid))
+                .await
+                .unwrap()
+                .status(),
+            expected,
+            "{field}"
+        );
+    }
+    let response = app
+        .clone()
+        .oneshot(make("POST", &route, body.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let prepared: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let id = prepared["id"].as_str().unwrap();
+    let query = format!(
+        "project_epoch={}&if_generation={}&revision={revision}&source_version={}",
+        body["project_epoch"].as_str().unwrap(),
+        body["if_generation"].as_str().unwrap(),
+        body["source_version"].as_str().unwrap()
+    );
+    let status_url = format!("{base}/jobs/{id}?{query}");
+    let started = std::time::Instant::now();
+    loop {
+        let response = app
+            .clone()
+            .oneshot(make("GET", &status_url, Value::Null))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let status: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(started.elapsed() < std::time::Duration::from_secs(10));
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            &format!("{base}/jobs/{id}/thumb.png?{query}"),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CONTENT_TYPE], "image/png");
+    let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+    assert_eq!(&bytes[..8], b"\x89PNG\r\n\x1a\n");
+    assert_eq!(u32::from_be_bytes(bytes[16..20].try_into().unwrap()), 64);
+    for name in ["source.mp4", "waveform.json"] {
+        assert_ne!(
+            app.clone()
+                .oneshot(make(
+                    "GET",
+                    &format!("{base}/jobs/{id}/{name}?{query}"),
+                    Value::Null
+                ))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::OK
+        );
+    }
+    let repeated = app
+        .clone()
+        .oneshot(make("POST", &route, body.clone()))
+        .await
+        .unwrap();
+    let repeated: Value =
+        serde_json::from_slice(&to_bytes(repeated.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(repeated["id"], prepared["id"]);
+    store
+        .edit(
+            "rename",
+            &crate::asset_store::Edit::Update {
+                id: "thumbnail".into(),
+                revision,
+                name: "Changed revision".into(),
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        app.clone()
+            .oneshot(make("GET", &status_url, Value::Null))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::CONFLICT
+    );
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    assert_eq!(std::fs::read(path).unwrap(), original);
+}
+
+#[tokio::test]
 async fn native_library_source_http_is_read_only_strict_and_requires_pinned_identity_after_resolve()
 {
     let root = std::env::temp_dir().join(format!(

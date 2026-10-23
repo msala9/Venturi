@@ -1,5 +1,232 @@
 use super::*;
 
+#[test]
+fn native_library_thumbnail_video_is_96_pixel_only_deduplicated_and_source_bound() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("library-video.mp4");
+    let settings = vv_media::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder = vv_media::Encoder::new(
+        &path,
+        160,
+        90,
+        vv_core::Rational::new(24, 1),
+        &settings,
+        None,
+    )
+    .unwrap();
+    let mut frame = vec![72; 160 * 90];
+    frame.extend(vec![128; 160 * 90 / 2]);
+    for _ in 0..4 {
+        encoder.write_video_frame(&frame).unwrap();
+    }
+    encoder.finish().unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "library:1".into(),
+        media_id: "native-asset:first:revision:0".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    let pending = service
+        .prepare_library_thumbnail(cloned_source(&spec))
+        .unwrap();
+    let id = pending["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, id);
+    assert_eq!(ready["source_assets"]["thumbnail_width"], 96);
+    assert_eq!(ready["source_assets"]["include_waveform"], false);
+    assert_eq!(
+        ready["source_assets"]["source_version"],
+        spec.identity().unwrap()
+    );
+    assert!(ready["source_asset"].is_null());
+    assert!(ready["program"].is_null());
+    let mut header = [0; 24];
+    service
+        .asset(id, &spec, "thumb.png")
+        .unwrap()
+        .read_exact_at(&mut header, 0)
+        .unwrap();
+    assert_eq!(&header[..8], b"\x89PNG\r\n\x1a\n");
+    assert_eq!(u32::from_be_bytes(header[16..20].try_into().unwrap()), 96);
+    assert_eq!(u32::from_be_bytes(header[20..24].try_into().unwrap()), 54);
+    assert_eq!(std::fs::read_dir(service.root.join(id)).unwrap().count(), 1);
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+    assert!(service.asset(id, &spec, "waveform.json").is_err());
+    assert_eq!(
+        service
+            .prepare_library_thumbnail(cloned_source(&spec))
+            .unwrap()["id"],
+        pending["id"]
+    );
+    let project = service
+        .prepare_assets_options(cloned_source(&spec), 0, false)
+        .unwrap();
+    assert_ne!(project["id"], pending["id"]);
+    wait_for_assets(&service, &spec, project["id"].as_str().unwrap());
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    let mut wrong = cloned_source(&spec);
+    wrong.epoch = "other:1".into();
+    assert!(service.status(id, &wrong, false).is_err());
+    assert!(service.asset(id, &wrong, "thumb.png").is_err());
+    File::options()
+        .append(true)
+        .open(&path)
+        .unwrap()
+        .write_all(b"changed")
+        .unwrap();
+    assert!(service.status(id, &spec, false).is_err());
+    assert!(service.asset(id, &spec, "thumb.png").is_err());
+}
+
+#[test]
+fn native_library_thumbnail_stills_use_first_image_without_upscaling_or_source_copy() {
+    let service = MediaJobs::start().unwrap();
+    for (width, height) in [(160, 90), (64, 36)] {
+        let path = service.root.join(format!("library-{width}.png"));
+        let original = encode_png(
+            &[180, 70, 25, 127].repeat((width * height) as usize),
+            (width, height),
+        )
+        .unwrap();
+        std::fs::write(&path, &original).unwrap();
+        let spec = SourceSpec {
+            file: File::open(&path).unwrap(),
+            epoch: "library:1".into(),
+            media_id: format!("native-asset:image-{width}:revision:0"),
+            meta: vv_media::probe_image(&path).unwrap(),
+        };
+        let pending = service
+            .prepare_library_thumbnail(cloned_source(&spec))
+            .unwrap();
+        let id = pending["id"].as_str().unwrap();
+        wait_for_assets(&service, &spec, id);
+        let mut header = [0; 24];
+        service
+            .asset(id, &spec, "thumb.png")
+            .unwrap()
+            .read_exact_at(&mut header, 0)
+            .unwrap();
+        assert_eq!(
+            u32::from_be_bytes(header[16..20].try_into().unwrap()),
+            width.min(96)
+        );
+        assert_eq!(
+            u32::from_be_bytes(header[20..24].try_into().unwrap()),
+            height.min(54)
+        );
+        assert_eq!(std::fs::read_dir(service.root.join(id)).unwrap().count(), 1);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+}
+
+#[test]
+fn native_library_thumbnail_rejects_real_media_metadata_mismatch_before_output() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("mismatched.png");
+    std::fs::write(
+        &path,
+        encode_png(&[80, 130, 45, 255].repeat(32 * 18), (32, 18)).unwrap(),
+    )
+    .unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "library:1".into(),
+        media_id: "native-asset:mismatch:revision:0".into(),
+        meta: vv_media::probe_image(&path).unwrap(),
+    };
+    spec.meta.width = 16;
+    let directory = service.root.join("mismatch-output");
+    std::fs::create_dir(&directory).unwrap();
+    let error = generate_assets_profile(&spec, &directory, &AtomicBool::new(false), 0, false, true)
+        .unwrap_err();
+    assert_eq!(error.1, "SOURCE_CHANGED");
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 0);
+    spec.meta.width = 8193;
+    assert!(service.prepare_library_thumbnail(spec).is_err());
+    assert!(service.jobs.lock().unwrap().is_empty());
+}
+
+#[test]
+fn native_library_thumbnail_accepts_legacy_audio_count_without_changing_project_profile_or_metadata()
+ {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("legacy-av.mp4");
+    let settings = vv_media::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let audio = vv_media::AudioSettings::default();
+    let mut encoder = vv_media::Encoder::new(
+        &path,
+        16,
+        16,
+        vv_core::Rational::new(24, 1),
+        &settings,
+        Some((48_000, 1, &audio)),
+    )
+    .unwrap();
+    let mut frame = vec![64; 256];
+    frame.extend(vec![128; 128]);
+    for _ in 0..24 {
+        encoder.write_video_frame(&frame).unwrap();
+    }
+    encoder.write_audio_samples(&vec![0.1; 48_000]).unwrap();
+    encoder.finish().unwrap();
+    let mut meta = vv_media::probe_media(&path).unwrap();
+    assert!(meta.has_video && meta.has_audio);
+    assert_eq!(meta.audio_stream_count(), 1);
+    meta.audio_streams = 0;
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "library:1".into(),
+        media_id: "native-asset:legacy:revision:0".into(),
+        meta,
+    };
+    let metadata = serde_json::to_value(&spec.meta).unwrap();
+    let identity = spec.identity().unwrap();
+    assert!(
+        service
+            .prepare_assets_options(cloned_source(&spec), 0, false)
+            .is_err()
+    );
+    let pending = service
+        .prepare_library_thumbnail(cloned_source(&spec))
+        .unwrap();
+    let id = pending["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, id);
+    assert_eq!(ready["source_assets"]["has_audio"], true);
+    assert_eq!(ready["source_assets"]["include_waveform"], false);
+    assert_eq!(std::fs::read_dir(service.root.join(id)).unwrap().count(), 1);
+    assert!(service.asset(id, &spec, "thumb.png").is_ok());
+    assert_eq!(serde_json::to_value(&spec.meta).unwrap(), metadata);
+    assert_eq!(spec.identity().unwrap(), identity);
+    assert!(validate_assets_meta(&spec.meta).is_err());
+}
+
+#[test]
+fn native_library_thumbnail_rejects_audio_and_canceled_work_before_decoding() {
+    let (root, store, _, query) = native_preview_fixture();
+    let spec = native_asset_snapshot(&store, "first", &query, false)
+        .unwrap()
+        .spec;
+    let service = MediaJobs::start().unwrap();
+    let mut audio = cloned_source(&spec);
+    audio.meta.has_video = false;
+    assert!(service.prepare_library_thumbnail(audio).is_err());
+    assert!(service.jobs.lock().unwrap().is_empty());
+    let directory = service.root.join("canceled-thumbnail");
+    std::fs::create_dir(&directory).unwrap();
+    assert!(
+        generate_assets_profile(&spec, &directory, &AtomicBool::new(true), 0, false, true).is_err()
+    );
+    assert_eq!(std::fs::read_dir(directory).unwrap().count(), 0);
+    drop((spec, store));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn native_preview_fixture() -> (
     PathBuf,
     crate::asset_store::Store,

@@ -19,7 +19,7 @@ import { createProgramPlayer } from "./program.js";
 import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
-import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
+import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail,nativeThumbnailItem } from "./source-assets.js";
 import { createInspectorViewportKeeper,inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import {createFontCatalogReader} from './fonts.js';
@@ -446,6 +446,20 @@ let sourceAssets=null,timelineWaveforms=null,derivativesTransportPending=false;
 const sourceRanges = new Map();
 let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
+let nativeThumbnailDemand={epoch:null,items:[]};
+function nativeThumbnailCurrent(item,epoch){
+  const reference=item.native_asset;
+  return Boolean(reference && epoch===documentState?.project_epoch && reference.if_generation===documentState?.generation && nativeThumbnailDemand.epoch===epoch && nativeThumbnailDemand.items.some(value=>value.id===item.id && value.native_asset.id===reference.id && value.native_asset.revision===reference.revision && value.native_asset.if_generation===reference.if_generation));
+}
+function nativeThumbnail(asset){
+  const item=nativeThumbnailItem(asset,documentState),cached=item && mediaThumbnail(mediaAssets,item.id);
+  return cached?.nativeAsset && cached.nativeAsset.revision===asset.revision && cached.nativeAsset.if_generation===documentState?.generation?cached:null;
+}
+function demandNativeThumbnails(assets,context,{force=false}={}){
+  const epoch=context?.project_epoch,items=context && epoch===documentState?.project_epoch && context.generation===documentState?.generation?assets.map(asset=>nativeThumbnailItem(asset,context)).filter(Boolean):[];
+  nativeThumbnailDemand={epoch,items};
+  sourceAssets?.demand('native_pool',items.map(item=>({item,includeWaveform:false,force})),epoch);
+}
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false,layout:'details',expanded:[],gridFolder:null,selectedFolder:null};
 try {const layout=localStorage.getItem('venturi-media-pool-layout');if(['details','list','grid'].includes(layout))mediaState.layout=layout;} catch {}
 function paintProxyBadges(){
@@ -1337,6 +1351,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";mediaState.expanded=[];mediaState.gridFolder=null;mediaState.selectedFolder=null;
     for (const asset of mediaAssets.values()) releaseMediaAsset(asset);
     mediaAssets.clear();
+    nativeThumbnailDemand={epoch:null,items:[]};
     viewerModeSet("program");
   }
   const previousId = projectChanged ? null : timeline?.id,
@@ -2160,22 +2175,22 @@ function removeMediaAssets(id){
   updateMediaThumbnail(id);canvasTimeline.invalidate();refreshSourceWaveform();
 }
 function installMediaAsset({item,epoch,thumbnail,waveform,waveformBytes=0,bytes,thumbnailURL,sourceVersion,audioStreamIndex=0}) {
-  if(documentState?.project_epoch!==epoch || documentState.media.find(media=>media.id===item.id)?.content_hash!==item.content_hash || !Number.isSafeInteger(bytes) || bytes<0 || bytes>16*1024*1024)return false;
+  if(documentState?.project_epoch!==epoch || (item.native_asset?!nativeThumbnailCurrent(item,epoch):documentState.media.find(media=>media.id===item.id)?.content_hash!==item.content_hash) || !Number.isSafeInteger(bytes) || bytes<0 || bytes>16*1024*1024)return false;
   const key=sourceAssetKey(item.id,audioStreamIndex),previous=mediaAssets.get(key),retainedWave=previous?.sourceVersion===sourceVersion && !waveform?previous:null;
   const total=bytes+(retainedWave?.waveformBytes || 0);if(total>16*1024*1024)return false;
   if([...mediaAssets.values()].some(asset=>asset.mediaId===item.id && asset.sourceVersion!==sourceVersion))removeMediaAssets(item.id);
   if(mediaAssets.get(key)===previous)releaseMediaAsset(previous);mediaAssets.delete(key);
-  mediaAssets.set(key,{mediaId:item.id,contentHash:item.content_hash,audioStreamIndex,thumbnail,waveform:waveform || retainedWave?.waveform || null,waveformBytes:waveform?waveformBytes:retainedWave?.waveformBytes || 0,bytes:total,thumbnailURL,sourceVersion,fps:item.fps});
+  mediaAssets.set(key,{mediaId:item.id,contentHash:item.content_hash,nativeAsset:item.native_asset?{...item.native_asset}:null,audioStreamIndex,thumbnail,waveform:waveform || retainedWave?.waveform || null,waveformBytes:waveform?waveformBytes:retainedWave?.waveformBytes || 0,bytes:total,thumbnailURL,sourceVersion,fps:item.fps});
   updateMediaThumbnail(item.id);
   while(mediaAssets.size>64 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>64*1024*1024){
     const oldest=mediaAssets.keys().next().value,asset=mediaAssets.get(oldest);releaseMediaAsset(asset);mediaAssets.delete(oldest);updateMediaThumbnail(asset.mediaId);
   }
-  canvasTimeline.invalidate();refreshSourceWaveform();return true;
+  nativeAssets?.refreshThumbnails();canvasTimeline.invalidate();refreshSourceWaveform();return true;
 }
 const derivativesIdle=()=>Boolean(documentState && !document.hidden && !busy && !unresolved && !derivativesTransportPending && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle() && programPlayer?.state()!=='preparing' && !sourcePlayer?.preparing() && $('source-video').paused && $('program-video').paused && $('export-preview-video').paused && !fastTransport?.active());
-sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>documentState,onReady:installMediaAsset,onStatus:message=>{$("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))}),getState:()=>documentState,
+sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>documentState,isNativeCurrent:nativeThumbnailCurrent,onReady:installMediaAsset,onStatus:(message,item)=>{if(item?.native_asset)nativeAssets?.thumbnailStatus(item,message);else $("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))}),getState:()=>documentState,isNativeCurrent:nativeThumbnailCurrent,
   isIdle:derivativesIdle,
-  hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
+  hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);if(entry.item.native_asset)return Boolean(nativeThumbnailCurrent(entry.item,entry.epoch) && thumbnail?.nativeAsset?.revision===entry.item.native_asset.revision && thumbnail.nativeAsset.if_generation===entry.item.native_asset.if_generation);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
 timelineWaveforms=createTimelineWaveforms({
   getContext:()=>documentState && timeline && timeline.id!=='fixture'?{query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960},timeline,media:documentState.media}:null,
   canRead:derivativesIdle,
@@ -2263,7 +2278,7 @@ nativeAssets=createNativeAssetPanel({
   assetDnd:canvasTimeline.assetDnd,timelineCommit:operation=>{
     nativePlacementCompletion=null;const pending=commit(operation),owner={intent:nativePlacementIntent,navigation:timelineOpenSequence,frame:view.playhead};
     return pending.then(receipt=>{nativePlacementCompletion={owner,command:receipt.command_id};return receipt;});
-  },onImported:nativeImportedMedia,onPreview:previewNativeAsset,
+  },onImported:nativeImportedMedia,onPreview:previewNativeAsset,getThumbnail:nativeThumbnail,onThumbnailDemand:demandNativeThumbnails,
   onRemoved:retireNativeAssetPreview,
   onRelinked:(id,receipt)=>retireNativeAssetPreview([id],receipt),
   onPlaced:receipt=>{

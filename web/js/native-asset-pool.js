@@ -12,7 +12,8 @@ export function nativePoolQuery({sort='name',descending=false,layout='details',f
   return {sort:sort==='duration'?'duration':'name',descending:String(Boolean(descending)),...(!(layout==='grid' && query.trim()) && (layout==='grid' || folder!==null)?{folder:folder ?? ''}:{})};
 }
 
-export function createNativeAssetPool({root,list,state,getContext,getAssets,getFolders,getSelection,canWrite,onSelection,onNavigate,onPresentation,onRename,onAction,onMove,notice=()=>{}}){
+export function nativePoolThumbnailEligible(asset){return Boolean(asset?.presentation?.has_video && asset.presentation.kind!=='timeline' && !asset.archived && !asset.error && !(asset.missing_count>0));}
+export function createNativeAssetPool({root,list,state,getContext,getAssets,getFolders,getSelection,canWrite,onSelection,onNavigate,onPresentation,onRename,onAction,onMove,getThumbnail=()=>null,onDemand=()=>{},notice=()=>{}}){
   const doc=root.ownerDocument ?? document,toolbar=doc.createElement('div'),breadcrumbs=doc.createElement('nav'),header=doc.createElement('div');
   toolbar.className='catalog-presentation native-pool-presentation';breadcrumbs.className='catalog-breadcrumbs';breadcrumbs.setAttribute('aria-label','Native library folder breadcrumbs');header.className='catalog-sort-header native-pool-sort-header';header.setAttribute('aria-label','Sort native assets');header.setAttribute('role','group');
   root.append(toolbar,breadcrumbs,header,list);list.className='catalog-rows native-pool-rows';list.tabIndex=0;list.setAttribute('aria-label','Native library pool');list.setAttribute('role','group');
@@ -24,6 +25,15 @@ export function createNativeAssetPool({root,list,state,getContext,getAssets,getF
   };
   const current=()=>!disposed && root.isConnected!==false && !doc.hidden && !doc.querySelector?.('dialog[open]') && getContext()?.available!==false && Boolean(getContext());
   const writable=()=>current() && canWrite();
+  const intersections=new Set(),Observer=doc.defaultView?.IntersectionObserver ?? globalThis.IntersectionObserver;
+  const observer=typeof Observer==='function'?new Observer(entries=>{for(const entry of entries){if(entry.target.parentElement!==list)continue;if(entry.isIntersecting)intersections.add(entry.target);else intersections.delete(entry.target);}demand();}):null;
+  function demand(){
+    const items=current() && state.layout!=='list'?visible.filter(item=>{const row=buttons.find(value=>value.item.id===item.id)?.row;if(!row || !nativePoolThumbnailEligible(item))return false;if(observer)return intersections.has(row);const rect=row.getBoundingClientRect?.();return Boolean(rect && rect.width>0 && rect.height>0 && rect.bottom>0 && rect.right>0 && rect.top<(doc.defaultView?.innerHeight ?? globalThis.innerHeight ?? 0) && rect.left<(doc.defaultView?.innerWidth ?? globalThis.innerWidth ?? 0));}):[];
+    onDemand(items,getContext());
+  }
+  function refreshThumbnails(){
+    for(const {row,item}of buttons){const slot=[...row.children].find(node=>node.className==='catalog-thumbnail');if(!slot)continue;const asset=state.layout!=='list' && nativePoolThumbnailEligible(item)?getThumbnail(item):null;if(asset?.thumbnailURL && slot.children[0]?.src===asset.thumbnailURL)continue;slot.replaceChildren();slot.textContent=item.error || item.missing_count>0?'!':nativePoolInfo(item).glyph;if(asset?.thumbnailURL){const image=doc.createElement('img');image.alt='';image.src=asset.thumbnailURL;slot.replaceChildren(image);}}
+  }
   const changed=()=>{cancelRename();menu.close(false);interactions?.cancel();witness=null;onPresentation();};
   for(const [id,label,glyph]of [['grid','Grid','▦'],['list','List','☰'],['details','Details','▤']])layoutButtons.set(id,button(toolbar,glyph,()=>{if(!current() || state.layout===id)return;state.layout=id;changed();},`Show native assets ${label.toLowerCase()} view`));
   for(const key of ['name','duration']){const node=button(header,key==='name'?'Name':'Duration',()=>{if(!current())return;if(state.sort===key)state.descending=!state.descending;else{state.sort=key;state.descending=false;}changed();},`Sort native assets by ${key}`);node.className=`catalog-sort-${key}`;sortButtons.set(key,node);}
@@ -32,6 +42,7 @@ export function createNativeAssetPool({root,list,state,getContext,getAssets,getF
     for(const [layout,node]of layoutButtons){node.disabled=!current();node.setAttribute('aria-pressed',String(layout===state.layout));}
     for(const [key,node]of sortButtons){node.disabled=!current();node.textContent=`${key==='name'?'Name':'Duration'}${state.sort===key?state.descending?' ▾':' ▴':''}`;node.setAttribute('aria-pressed',String(state.sort===key));}
     for(const row of list.children)if(row.dataset.folderId!==undefined){row.draggable=writable();for(const node of row.children)if(node.className==='catalog-folder-name'){node.disabled=!current();node.draggable=row.draggable;node.setAttribute('aria-pressed',String(row.dataset.folderId===selectedFolder));}}
+    refreshThumbnails();demand();
   }
   function cancelRename(){if(!rename)return;const before=rename;rename=null;before.input.remove();before.wrapper?.remove();before.label.hidden=false;}
   function beginRename(kind,id){
@@ -78,7 +89,7 @@ export function createNativeAssetPool({root,list,state,getContext,getAssets,getF
       if(!node.dataset.nativePoolBound){node.dataset.nativePoolBound='true';listen(node,'dragstart',event=>{if(event.defaultPrevented)return;beginDrag(event,'media',getSelection().map(item=>item.id));});listen(node,'dragend',endDrag);}
       visible.push(item);nodes.push(node);
     }
-    list.replaceChildren(...nodes);sync();
+    observer?.disconnect();intersections.clear();list.replaceChildren(...nodes);for(const {row}of buttons)if(row.parentElement===list)observer?.observe(row);refreshThumbnails();sync();
   }
   function key(event){
     if(event.defaultPrevented || event.isComposing || event.keyCode===229 || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target?.closest?.('input,textarea,select,[contenteditable]') || !current())return;
@@ -94,5 +105,7 @@ export function createNativeAssetPool({root,list,state,getContext,getAssets,getF
     menu.open({kind:hit.kind==='media'?'clip':hit.kind==='folder'?'track':'background',clip_id:hit.kind==='media'?hit.id:undefined,track_id:hit.kind==='folder'?hit.id:undefined,clientX:hit.x,clientY:hit.y,returnFocus:hit.event.target});
   },onDrop:async({payload,target,isCurrent})=>{if(!witness || witness.payload!==JSON.stringify(payload) || witness.snapshot!==snapshot || witness.key!==context()?.presentation || !isCurrent())return;witness=null;await onMove(payload,target.folder_id ?? null,isCurrent);}});
   const clicked=event=>{if(event.defaultPrevented || !current())return;if(event.target===list){selectedFolder=null;onSelection([]);sync();return;}for(let node=event.target;node && node!==list;node=node.parentElement)if(node.dataset?.mediaId!==undefined){selectedFolder=null;sync();break;}};listen(list,'click',clicked);
-  return {render,sync,beginRename,visible:()=>[...visible],cancel(){cancelRename();menu.close(false);interactions.cancel();witness=null;},dispose(){if(disposed)return;disposed=true;cancelRename();menu.dispose();interactions.dispose();list.removeEventListener('keydown',key);list.removeEventListener('click',clicked);}};
+  const scroll=()=>demand();doc.addEventListener?.('scroll',scroll,true);
+  const resume=()=>sync();doc.addEventListener?.('close',resume,true);doc.addEventListener?.('visibilitychange',resume);
+  return {render,sync,refreshThumbnails,beginRename,visible:()=>[...visible],cancel(){cancelRename();menu.close(false);interactions.cancel();witness=null;},dispose(){if(disposed)return;disposed=true;observer?.disconnect();intersections.clear();onDemand([],null);doc.removeEventListener?.('scroll',scroll,true);doc.removeEventListener?.('close',resume,true);doc.removeEventListener?.('visibilitychange',resume);cancelRename();menu.dispose();interactions.dispose();list.removeEventListener('keydown',key);list.removeEventListener('click',clicked);}};
 }

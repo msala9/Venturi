@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "../js/source-assets.js";
+import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail,nativeThumbnailItem } from "../js/source-assets.js";
 import {visibleAssetDemand} from '../js/timeline/draw.js';
 
 function deferred() {
@@ -25,6 +25,7 @@ function harness(options = {}) {
     source_assets: { source_version: "fd-version", total_frames: item.duration_frames, fps: { ...item.fps }, has_video: item.has_video, has_audio: item.has_audio,audio_stream_index:0,include_waveform:true } });
   const loader = createSourceAssets({
     getState: () => state,
+    isNativeCurrent:options.isNativeCurrent,
     onReady: value => { ready.push(value); return options.onReady?.(value); },
     onError: error => errors.push(error), onStatus: message => statuses.push(message),
     api: async (path, body, fetcher) => { calls.push({ kind: "api", path, body }); return options.api ? options.api(path, body, fetcher, job) : job(); },
@@ -319,16 +320,67 @@ test('the real derivative loader admits a new FD version on a later stream witho
   }finally{h.loader.dispose();}
 });
 
-function queueHarness({complete=true}={}){
+function queueHarness({complete=true,isNativeCurrent}={}){
   const items=Array.from({length:70},(_,index)=>({id:`m${index}`,name:`Media ${index}`,content_hash:`hash${index}`,duration_frames:240,fps:{num:24,den:1},has_video:true,has_audio:true,audio_stream_count:2}));
   let state={project_epoch:'epoch',media:items},idle=true,timerId=0,cancels=0;
   const calls=[],cache=new Set(),timers=new Map(),pending=[];
   const identity=(item,index,wave)=>JSON.stringify([item.id,index,wave]);
   const loader={load(item,epoch,options){calls.push({item,epoch,options});if(complete){cache.add(identity(item,options.audioStreamIndex,options.includeWaveform));return Promise.resolve({item});}const gate=deferred();pending.push(gate);return gate.promise;},cancel(){cancels++;},dispose(){}};
-  const queue=createSourceAssetQueue({loader,getState:()=>state,isIdle:()=>idle,hasAsset:entry=>cache.has(identity(entry.item,entry.audioStreamIndex,entry.includeWaveform)),setTimer:callback=>{timers.set(++timerId,callback);return timerId;},clearTimer:id=>timers.delete(id)});
+  const queue=createSourceAssetQueue({loader,getState:()=>state,isNativeCurrent,isIdle:()=>idle,hasAsset:entry=>cache.has(identity(entry.item,entry.audioStreamIndex,entry.includeWaveform)),setTimer:callback=>{timers.set(++timerId,callback);return timerId;},clearTimer:id=>timers.delete(id)});
   const entry=(index,stream=0,wave=false)=>({item:items[index],audioStreamIndex:stream,includeWaveform:wave});
   return {queue,items,calls,pending,cache,timers,entry,get cancels(){return cancels;},setIdle(value){idle=value;queue.refresh();},setState(value){state=value;queue.refresh();},tick(){const next=timers.entries().next().value;assert.ok(next,'One scheduled derivative task');timers.delete(next[0]);next[1]();},clearCache(){cache.clear();},identity};
 }
+
+function nativeItem(meta={}){
+  return nativeThumbnailItem({id:'library-shot',name:'Library shot',revision:'a'.repeat(64),missing_count:0,presentation:{kind:'video',duration_frames:24_000,fps:{num:24,den:1},has_video:true,has_audio:true,is_image:false,audio_streams:1,...meta}},{project_epoch:'epoch',generation:'7'});
+}
+
+test('Library thumbnails resolve one version-bound Source descriptor then fetch only native PNG assets',async()=>{
+  const item=nativeItem(),resolved={...item,content_hash:'native-hash',native_asset:{...item.native_asset,source_version:'fd-version'}},h=harness({isNativeCurrent:()=>true,
+    api:(path,_body,_fetcher,job)=>path.endsWith('/source')?{project_epoch:'epoch',generation:'7',item:resolved}:{...job('queued'),source_assets:{...job().source_assets,include_waveform:false,thumbnail_width:96}},
+    fetcher:path=>path.endsWith('source_version=fd-version') && !path.includes('thumb.png')?Response.json({...h.job(),source_assets:{...h.job().source_assets,include_waveform:false,thumbnail_width:96}}):new Response(png())});
+  try{
+    const pending=h.loader.load(item,'epoch',{includeWaveform:false,audioStreamIndex:0});await flush();assert.equal(h.timers.size,1);h.tick();const result=await pending;
+    assert.equal(result.item.id,item.id);assert.equal(result.sourceVersion,'fd-version');assert.equal(result.waveform,null);assert.equal(h.ready.length,1);
+    assert.deepEqual(h.calls.filter(call=>call.kind==='api').map(call=>({path:call.path,body:call.body})),[
+      {path:'/native-assets/items/library-shot/source',body:{project_epoch:'epoch',if_generation:'7',revision:'a'.repeat(64)}},
+      {path:'/native-assets/items/library-shot/source/assets/prepare',body:{project_epoch:'epoch',if_generation:'7',revision:'a'.repeat(64),source_version:'fd-version',audio_stream_index:0,include_waveform:false}}]);
+    for(const call of h.calls.filter(call=>call.kind==='fetch')){const url=new URL(call.path,'http://fixture');assert.equal(url.searchParams.get('revision'),'a'.repeat(64));assert.equal(url.searchParams.get('if_generation'),'7');assert.equal(url.searchParams.get('source_version'),'fd-version');assert.match(url.pathname,/^\/api\/v1\/native-assets\/items\/library-shot\/source\/jobs\/job/);}
+    assert(h.calls.every(call=>!call.path.includes('/media/') && !call.path.includes('.mp4') && !call.path.includes('waveform')));
+  }finally{h.loader.dispose();}
+});
+
+test('Library still thumbnails preserve native sentinel metadata and reject changed FD/profile without a project fallback',async t=>{
+  for(const variant of ['still','fd','profile'])await t.test(variant,async()=>{
+    const item=nativeItem(variant==='still'?{kind:'image',duration_frames:1_000_000_000,is_image:true,has_audio:false}:{}),resolved={...item,content_hash:'hash',native_asset:{...item.native_asset,source_version:'fd-version'}},h=harness({isNativeCurrent:()=>true,api:(path,_body,_fetcher,job)=>path.endsWith('/source')?{project_epoch:'epoch',generation:'7',item:resolved}:{...job(),source_assets:{...job().source_assets,total_frames:item.duration_frames,has_audio:item.has_audio,source_version:variant==='fd'?'other-fd':'fd-version',include_waveform:false,thumbnail_width:variant==='profile'?256:96}}});
+    try{const result=await h.loader.load(item,'epoch',{includeWaveform:false,audioStreamIndex:0});if(variant==='still'){assert.equal(result.item.duration_frames,1_000_000_000);assert.equal(h.errors.length,0);}else{assert.equal(result,null);assert.equal(h.ready.length,0);assert.equal(h.errors.length,1);assert.equal(h.calls.filter(call=>call.kind==='fetch').length,0);}assert(h.calls.every(call=>!call.path.includes('/media/')));}finally{h.loader.dispose();}
+  });
+});
+
+test('a detached Library row cannot prepare or publish after a late Source descriptor and never cancels a shared server job',async()=>{
+  const gate=deferred(),item=nativeItem();let current=true;
+  const h=harness({isNativeCurrent:()=>current,api:()=>gate.promise});try{
+    const pending=h.loader.load(item,'epoch',{includeWaveform:false,audioStreamIndex:0});current=false;h.loader.cancel();gate.resolve({project_epoch:'epoch',generation:'7',item:{...item,native_asset:{...item.native_asset,source_version:'fd-version'}}});await pending;
+    assert.equal(h.calls.length,1);assert.equal(h.ready.length,0);assert.equal(h.errors.length,0);assert(h.calls.every(call=>call.init?.method!=='DELETE'));
+    assert.equal(await h.loader.load(item,'epoch',{includeWaveform:false,force:true}),null);assert.equal(h.calls.length,1);
+  }finally{h.loader.dispose();}
+});
+
+test('Library derivative demand shares project serialization, resumes canceled visibility and retains one explicit retry through redraw',async()=>{
+  const item=nativeItem(),h=queueHarness({complete:false,isNativeCurrent:()=>true}),entry={item,includeWaveform:false};try{
+    h.queue.demand('native_pool',[entry]);h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();assert.equal(h.calls[0].item.id,'m0');h.pending[0].resolve(null);await flush();h.tick();await flush();assert.equal(h.calls[1].item.id,item.id);
+    h.setIdle(false);assert.equal(h.cancels,1);h.pending[1].resolve(null);await flush();h.setIdle(true);h.tick();await flush();assert.equal(h.calls[2].options.force,true);h.pending[2].resolve({item});await flush();
+    h.queue.demand('native_pool',[{...entry,force:true}]);h.queue.demand('native_pool',[entry]);h.tick();await flush();assert.equal(h.calls.length,4);assert.equal(h.calls[3].options.force,true);h.pending[3].resolve(null);await flush();h.queue.demand('native_pool',[entry]);h.tick();await flush();assert.equal(h.calls.length,4,'Real failure never retries on each paint');
+  }finally{h.queue.dispose();assert.equal(h.timers.size,0);}
+});
+
+test('Library visibility withdrawal resumes only its same-epoch canceled read when the row returns',async()=>{
+  let admitted=true;const item=nativeItem(),h=queueHarness({complete:false,isNativeCurrent:()=>admitted}),entry={item,includeWaveform:false};try{
+    h.setState({project_epoch:'epoch',generation:'7',media:h.items});h.queue.demand('native_pool',[entry]);h.tick();await flush();assert.equal(h.calls.length,1);
+    admitted=false;h.queue.demand('native_pool',[]);assert.equal(h.cancels,1);h.pending[0].resolve(null);await flush();admitted=true;h.queue.demand('native_pool',[entry]);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);
+    h.setState({project_epoch:'other-epoch',generation:'7',media:h.items});h.pending[1].resolve(null);await flush();h.queue.demand('native_pool',[entry],'epoch');h.tick();await flush();assert.equal(h.calls.length,2);
+  }finally{h.queue.dispose();}
+});
 
 test('visible pool/timeline derivative demand coalesces and runs exactly one client preparation at a time',async()=>{
   const h=queueHarness({complete:false});h.queue.demand('pool',[h.entry(0),h.entry(1)]);h.queue.demand('timeline',[h.entry(0,1,true)]);assert.equal(h.timers.size,1);h.tick();await flush();

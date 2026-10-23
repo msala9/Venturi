@@ -319,6 +319,7 @@ enum Work {
     SourceAll(Box<SourceSpec>, (ProxyQuality, u32), Option<SourceWindow>),
     Program(Box<ProgramTask>),
     Assets(Box<SourceSpec>, u32, bool),
+    LibraryThumbnail(Box<SourceSpec>),
 }
 impl MediaJobs {
     pub fn software_lock_path(&self) -> PathBuf {
@@ -491,6 +492,9 @@ impl MediaJobs {
                         ),
                         Work::Assets(spec, index, waveform) => {
                             generate_assets(&spec, &directory, &cancel, index, waveform)
+                        }
+                        Work::LibraryThumbnail(spec) => {
+                            generate_assets_profile(&spec, &directory, &cancel, 0, false, true)
                         }
                         Work::Program(task) => {
                             task.generate(
@@ -760,7 +764,28 @@ impl MediaJobs {
         audio_stream_index: u32,
         include_waveform: bool,
     ) -> Result<Value> {
-        validate_assets_meta(&spec.meta)?;
+        self.prepare_assets_profile(spec, audio_stream_index, include_waveform, false)
+    }
+    pub(crate) fn prepare_library_thumbnail(&self, spec: SourceSpec) -> Result<Value> {
+        if !spec.meta.has_video {
+            return Err(ApiError::invalid(
+                "Library thumbnails require ordinary video or images",
+            ));
+        }
+        self.prepare_assets_profile(spec, 0, false, true)
+    }
+    fn prepare_assets_profile(
+        &self,
+        spec: SourceSpec,
+        audio_stream_index: u32,
+        include_waveform: bool,
+        library_thumbnail: bool,
+    ) -> Result<Value> {
+        if library_thumbnail {
+            validate_assets_meta_profile(&spec.meta, true)?;
+        } else {
+            validate_assets_meta(&spec.meta)?;
+        }
         validate_source_audio(&spec.meta, audio_stream_index)?;
         if !spec.meta.has_video && !include_waveform {
             return Err(ApiError::invalid(
@@ -768,7 +793,10 @@ impl MediaJobs {
             ));
         }
         let identity = spec.identity()?;
-        let key = assets_key(&spec, &identity, audio_stream_index, include_waveform);
+        let mut key = assets_key(&spec, &identity, audio_stream_index, include_waveform);
+        if library_thumbnail {
+            key.push_str(":library-thumbnail:96");
+        }
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter_mut().find(|job| {
             job.key == key
@@ -806,14 +834,15 @@ impl MediaJobs {
             source_asset: None, render_tag: "originals".into(), export_epoch: None, program_query: None,
             durable: None, explicit_cancel: false, durability_error: false,
         });
-        if self
-            .send
-            .try_send((
-                id,
-                Work::Assets(Box::new(spec), audio_stream_index, include_waveform),
-            ))
-            .is_err()
-        {
+        if library_thumbnail {
+            jobs.back_mut().unwrap().source_assets.as_mut().unwrap()["thumbnail_width"] = json!(96);
+        }
+        let work = if library_thumbnail {
+            Work::LibraryThumbnail(Box::new(spec))
+        } else {
+            Work::Assets(Box::new(spec), audio_stream_index, include_waveform)
+        };
+        if self.send.try_send((id, work)).is_err() {
             reject_ephemeral(&mut jobs);
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
@@ -1274,6 +1303,9 @@ fn assets_key(
     )
 }
 fn validate_assets_meta(meta: &vv_core::MediaMeta) -> Result<()> {
+    validate_assets_meta_profile(meta, false)
+}
+fn validate_assets_meta_profile(meta: &vv_core::MediaMeta, library_thumbnail: bool) -> Result<()> {
     let seconds = meta.duration_frames as f64 / meta.fps.as_f64();
     if meta.fps.num <= 0
         || meta.fps.den <= 0
@@ -1283,7 +1315,13 @@ fn validate_assets_meta(meta: &vv_core::MediaMeta) -> Result<()> {
         || (!meta.has_video && !meta.has_audio)
         || (meta.has_video && (meta.width == 0 || meta.height == 0))
         || (meta.has_audio
-            && (meta.sample_rate == 0 || meta.channels == 0 || meta.audio_streams == 0))
+            && (meta.sample_rate == 0
+                || meta.channels == 0
+                || if library_thumbnail {
+                    meta.audio_stream_count() == 0
+                } else {
+                    meta.audio_streams == 0
+                }))
         || meta.width > 8192
         || meta.height > 8192
     {
@@ -1294,6 +1332,13 @@ fn validate_assets_meta(meta: &vv_core::MediaMeta) -> Result<()> {
     Ok(())
 }
 fn same_assets_meta(expected: &vv_core::MediaMeta, actual: &vv_core::MediaMeta) -> bool {
+    same_assets_meta_profile(expected, actual, false)
+}
+fn same_assets_meta_profile(
+    expected: &vv_core::MediaMeta,
+    actual: &vv_core::MediaMeta,
+    library_thumbnail: bool,
+) -> bool {
     expected.duration_frames == actual.duration_frames
         && expected.fps == actual.fps
         && expected.width == actual.width
@@ -1302,9 +1347,19 @@ fn same_assets_meta(expected: &vv_core::MediaMeta, actual: &vv_core::MediaMeta) 
         && expected.has_audio == actual.has_audio
         && expected.sample_rate == actual.sample_rate
         && expected.channels == actual.channels
-        && expected.audio_streams == actual.audio_streams
+        && if library_thumbnail && expected.has_audio {
+            expected.audio_stream_count() == actual.audio_stream_count()
+        } else {
+            expected.audio_streams == actual.audio_streams
+        }
 }
-fn assets_probe(spec: &SourceSpec, path: &Path, identity: &str, cancel: &AtomicBool) -> Result<()> {
+fn assets_probe(
+    spec: &SourceSpec,
+    path: &Path,
+    identity: &str,
+    cancel: &AtomicBool,
+    library_thumbnail: bool,
+) -> Result<()> {
     let actual = if spec.meta.is_image() {
         crate::asset_probe::probe(&spec.file, true, cancel)
             .map_err(|_| ApiError::invalid("Source assets image is unreadable"))?
@@ -1312,8 +1367,10 @@ fn assets_probe(spec: &SourceSpec, path: &Path, identity: &str, cancel: &AtomicB
         vv_media::probe_media(path)
             .map_err(|_| ApiError::invalid("Source assets media is unreadable"))?
     };
-    validate_assets_meta(&actual)?;
-    if !same_assets_meta(&spec.meta, &actual) || spec.identity()? != identity {
+    validate_assets_meta_profile(&actual, library_thumbnail)?;
+    if !same_assets_meta_profile(&spec.meta, &actual, library_thumbnail)
+        || spec.identity()? != identity
+    {
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
             "Reimport changed media before analyzing source assets",
@@ -1342,21 +1399,46 @@ fn generate_assets(
     audio_stream_index: u32,
     include_waveform: bool,
 ) -> Result<()> {
-    validate_assets_meta(&spec.meta)?;
+    generate_assets_profile(
+        spec,
+        directory,
+        cancel,
+        audio_stream_index,
+        include_waveform,
+        false,
+    )
+}
+fn generate_assets_profile(
+    spec: &SourceSpec,
+    directory: &Path,
+    cancel: &AtomicBool,
+    audio_stream_index: u32,
+    include_waveform: bool,
+    library_thumbnail: bool,
+) -> Result<()> {
+    if library_thumbnail {
+        validate_assets_meta_profile(&spec.meta, true)?;
+    } else {
+        validate_assets_meta(&spec.meta)?;
+    }
     validate_source_audio(&spec.meta, audio_stream_index)?;
     admit_source_memory(&spec.meta, 256, true)?;
     let started = Instant::now();
     let identity = spec.identity()?;
     let path = PathBuf::from(format!("/proc/self/fd/{}", spec.file.as_raw_fd()));
-    assets_probe(spec, &path, &identity, cancel)?;
+    assets_probe(spec, &path, &identity, cancel, library_thumbnail)?;
     let budget =
         || ApiError::invalid("Source assets analysis canceled or exceeded its resource budget");
     if !assets_keep_running(directory, cancel, started) {
         return Err(budget());
     }
-    let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
+    let seconds = if library_thumbnail && spec.meta.is_image() {
+        0.0
+    } else {
+        spec.meta.duration_frames as f64 / spec.meta.fps.as_f64()
+    };
     if spec.meta.has_video {
-        if spec.meta.is_image() {
+        if spec.meta.is_image() && !library_thumbnail {
             let thumbnail = owned_image_output(&directory.join("thumb.png"))?;
             crate::image_derivative::generate_thumbnail(
                 &spec.file,
@@ -1366,7 +1448,8 @@ fn generate_assets(
                 || assets_keep_running(directory, cancel, started),
             )?;
         } else {
-            let thumb = vv_media::thumbnail::generate_thumbnail_bounded(&path, seconds, 256)
+            let width = if library_thumbnail { 96 } else { 256 };
+            let thumb = vv_media::thumbnail::generate_thumbnail_bounded(&path, seconds, width)
                 .map_err(|_| ApiError::invalid("Source thumbnail generation failed"))?;
             if !assets_keep_running(directory, cancel, started) {
                 return Err(budget());
@@ -1406,7 +1489,7 @@ fn generate_assets(
         }
         write_asset(directory, "waveform.json", &bytes, 4 * 1024 * 1024)?;
     }
-    assets_probe(spec, &path, &identity, cancel)?;
+    assets_probe(spec, &path, &identity, cancel, library_thumbnail)?;
     if !assets_keep_running(directory, cancel, started) {
         return Err(budget());
     }

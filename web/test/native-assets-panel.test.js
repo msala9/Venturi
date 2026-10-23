@@ -10,8 +10,9 @@ const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
 const draggableAsset=(id,name=id)=>({id,name,revision:`revision-${id}`,media_count:1,file_count:1,archived:false,placement:{project_epoch:'epoch',generation:'7',error:null,items:[{source_in:0,source_out:48,fps:{num:24,den:1},has_video:true,has_audio:true,audio_streams:1,is_image:false}]}});
 function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancelable:true});event.dataTransfer={effectAllowed:'none',setData:(type,value)=>values.set(type,value)};return {event,values};}
-function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked}={}){
-  const original={document:globalThis.document,Option:globalThis.Option};
+function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked,getThumbnail,onThumbnailDemand,intersectionObserver}={}){
+  const original={document:globalThis.document,Option:globalThis.Option,IntersectionObserver:globalThis.IntersectionObserver};
+  if(intersectionObserver)globalThis.IntersectionObserver=intersectionObserver;
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.style={setProperty(){}};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
     get tagName(){return this.tag.toUpperCase();}get parentElement(){return this.parent;}
@@ -41,6 +42,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],relinked=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
   const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,onRemoved:(ids,receipt)=>{removed.push({ids,receipt});return onRemoved?.(ids,receipt);},
+    getThumbnail,onThumbnailDemand,
     onRelinked:(id,receipt)=>{relinked.push({id,receipt});return onRelinked?.(id,receipt);},
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
     libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(operation.edit?.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:prepared?{missing_count:0,relinked_files:1}:{})});},
@@ -97,6 +99,23 @@ test('cold native asset panel selects the first result and enables only valid wr
 
 function poolEvent(h,type,target,patch={}){const event=new Event(type,{cancelable:true});for(const [name,value]of Object.entries({target,...patch}))Object.defineProperty(event,name,{value});h.field('Native library pool').dispatchEvent(event);return event;}
 function poolContext(h,target){const event=new Event('contextmenu',{cancelable:true});for(const [name,value]of Object.entries({target,clientX:30,clientY:30}))Object.defineProperty(event,name,{value});h.field('Native library pool').parent.dispatchEvent(event);return event;}
+
+test('Library thumbnails demand only intersecting Grid/Details roots and update rows without opening Source or changing selection',async()=>{
+  let observer;class Observer{constructor(callback){this.callback=callback;this.targets=[];observer=this;}observe(node){this.targets.push(node);}disconnect(){this.targets=[];}show(nodes){this.callback(this.targets.map(target=>({target,isIntersecting:nodes.includes(target)})));}}
+  const presentation={kind:'video',width:640,height:360,fps:{num:24,den:1},duration_frames:240,has_video:true,has_audio:false,is_image:false},asset=(id,patch={})=>({...draggableAsset(id,id),revision:assetRevision,presentation:{...presentation},...patch}),demands=[],cached=new Map(),h=harness({intersectionObserver:Observer,getThumbnail:item=>cached.get(item.id),onThumbnailDemand:(items,context,options)=>demands.push({ids:items.map(item=>item.id),context,options})});
+  h.setItems([asset('video'),asset('still',{presentation:{...presentation,kind:'image',is_image:true}}),asset('offline',{missing_count:1}),asset('audio',{presentation:{...presentation,kind:'audio',has_video:false,has_audio:true}}),asset('compound',{presentation:{...presentation,kind:'timeline'}})]);
+  try{
+    await h.open();const row=id=>h.field(`Native asset ${id}`);assert.deepEqual(demands.at(-1).ids,[]);observer.show(['video','still','offline','audio','compound'].map(row));assert.deepEqual(demands.at(-1).ids,['video','still']);assert.equal(demands.at(-1).context.generation,'7');
+    h.chooseAssets([1]);cached.set('video',{thumbnailURL:'blob:native-thumb'});h.panel.refreshThumbnails();assert.equal(row('video').children[0].children[0].src,'blob:native-thumb');assert.equal(h.field('Native asset name').value,'still');assert.equal(h.previews.length+h.prepares.length+h.projectWrites.length,0);
+    h.panel.thumbnailStatus({native_asset:{id:'video',revision:assetRevision,if_generation:'7'}},'Preparing thumbnail');assert.equal(row('video').children[0].title,'Preparing thumbnail');h.panel.thumbnailStatus({native_asset:{id:'video',revision:'old',if_generation:'7'}},'Stale');assert.equal(row('video').children[0].title,'Preparing thumbnail');assert.match(h.status(),/Page/);
+    h.document.hidden=true;h.document.dispatchEvent(new Event('visibilitychange'));assert.deepEqual(demands.at(-1).ids,[]);assert.equal(h.field('Show native assets list view').disabled,true);h.document.hidden=false;h.document.dispatchEvent(new Event('visibilitychange'));assert.deepEqual(demands.at(-1).ids,['video','still']);assert.equal(h.field('Show native assets list view').disabled,false,'Returning to the visible document restores mounted layout controls');
+    h.setModal(true);h.panel.invalidate();assert.deepEqual(demands.at(-1).ids,[]);assert.equal(h.field('Show native assets list view').disabled,true);h.setModal(false);h.document.dispatchEvent(new Event('close'));assert.deepEqual(demands.at(-1).ids,['video','still']);assert.equal(h.field('Show native assets list view').disabled,false,'Closing a dialog restores mounted layout controls without an unrelated invalidate');
+    h.field('Show native assets list view').click();await settle();assert.equal(h.field('Native library pool').dataset.layout,'list');observer.show([row('video')]);assert.deepEqual(demands.at(-1).ids,[]);assert.equal(row('video').children[0].children.length,0);
+    h.field('Show native assets grid view').click();await settle();observer.show([row('video')]);assert.deepEqual(demands.at(-1).ids,['video']);assert.equal(row('video').children[0].children[0].src,'blob:native-thumb');
+    h.button('Refresh native assets').click();await settle();observer.show([row('video')]);assert.equal(demands.at(-1).options.force,true);h.panel.invalidate();assert.equal(demands.at(-1).options.force,false);
+    h.panel.hide();assert.deepEqual(demands.at(-1).ids,[]);assert.equal(observer.targets.length,0);
+  }finally{h.destroy();}
+});
 
 test('native pool switches all three layouts and sends global duration sort and Grid folder/search queries without local resorting',async()=>{
   const a={...draggableAsset('a','Alpha'),presentation:{kind:'video',width:640,height:360,fps:{num:24,den:1},duration_frames:240,has_video:true,has_audio:false,is_image:false}},b={...draggableAsset('b','Beta'),effective_folder:'inner',presentation:{kind:'audio',fps:{num:48000,den:1},duration_frames:48000,has_video:false,has_audio:true,sample_rate:48000,channels:2,is_image:false}},h=harness({pageReader:(_index,path)=>{const query=new URL(path,'http://fixture').searchParams;let items=query.get('sort')==='duration'?[b,a]:[a,b];if(query.get('folder')==='')items=items.filter(item=>!item.effective_folder);if(query.get('search'))items=items.filter(item=>item.name.includes(query.get('search')));return Promise.resolve({page:0,pages:1,total:items.length,catalog_total:2,page_size:32,items});}});try{

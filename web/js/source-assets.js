@@ -1,5 +1,5 @@
 import { request } from "./api.js";
-import { sourceAssetURL } from "./source.js";
+import { sourceAssetURL, sourceMediaPath, sourceMediaQuery } from "./source.js";
 
 const PNG_LIMIT = 1024 * 1024;
 const WAVE_LIMIT = 4 * 1024 * 1024;
@@ -9,6 +9,11 @@ const PAUSED = "Media analysis paused for playback · Refresh when idle";
 function abortError() { return new DOMException("Canceled", "AbortError"); }
 export const sourceAssetKey=(id,index=0)=>JSON.stringify([id,index]);
 export function mediaThumbnail(assets,id){const first=assets.get(sourceAssetKey(id));return first?.thumbnail?first:[...assets.values()].find(asset=>asset.mediaId===id && asset.thumbnail);}
+export function nativeThumbnailItem(asset,context){
+  const meta=asset?.presentation;
+  if(meta?.has_video!==true || meta.kind==='timeline' || asset.archived || asset.error || asset.missing_count>0 || typeof asset.id!=='string' || !/^[A-Za-z0-9_-]{1,80}$/.test(asset.id) || typeof asset.revision!=='string' || !/^[a-f0-9]{64}$/.test(asset.revision) || typeof context?.generation!=='string' || !/^(0|[1-9][0-9]*)$/.test(context.generation) || typeof context.project_epoch!=='string' || !context.project_epoch)return null;
+  return {...meta,id:`native-asset:${asset.id}:${asset.revision}:${context.generation}`,name:asset.name,content_hash:null,audio_stream_count:meta.audio_streams,native_asset:{id:asset.id,revision:asset.revision,if_generation:context.generation}};
+}
 function validateDescriptor(job, item, epoch, sourceVersion, audioStreamIndex, explicitStream,includeWaveform,explicitWaveform) {
   const descriptor = job.source_assets;
   if (!descriptor || (job.project_epoch != null && job.project_epoch !== epoch) || job.source_asset != null || job.program != null || job.source_window != null ||
@@ -78,6 +83,7 @@ function parseWaveform(bytes) {
 }
 
 export function createSourceAssets({ getState, onReady, onStatus = () => {}, onError = () => {}, api = request, fetcher = fetch,
+  isNativeCurrent = () => false,
   setTimer = setTimeout, clearTimer = clearTimeout, decodeImage = blob => createImageBitmap(blob),
   createURL = blob => URL.createObjectURL(blob), revokeURL = url => URL.revokeObjectURL(url) }) {
   let current = null, disposed = false;
@@ -86,15 +92,15 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
   function owns(attempt) {
     const state = getState();
     return !disposed && current === attempt && !attempt.controller.signal.aborted && state?.project_epoch === attempt.epoch &&
-      state.media?.some(item => item.id === attempt.item.id && item.content_hash === attempt.item.content_hash &&
+      (attempt.item.native_asset ? isNativeCurrent(attempt.item,attempt.epoch) : state.media?.some(item => item.id === attempt.item.id && item.content_hash === attempt.item.content_hash &&
         item.duration_frames === attempt.item.duration_frames && item.fps?.num === attempt.item.fps?.num && item.fps?.den === attempt.item.fps?.den &&
-        item.has_video === attempt.item.has_video && item.has_audio === attempt.item.has_audio && item.is_image === attempt.item.is_image && item.audio_stream_count===attempt.item.audio_stream_count && item.compound_timeline_id===attempt.item.compound_timeline_id);
+        item.has_video === attempt.item.has_video && item.has_audio === attempt.item.has_audio && item.is_image === attempt.item.is_image && item.audio_stream_count===attempt.item.audio_stream_count && item.compound_timeline_id===attempt.item.compound_timeline_id));
   }
   function cancel() {
     const previous = current;
     current = null;
     previous?.controller.abort();
-    if (!disposed && previous?.pending) onStatus("Media analysis status disconnected · Refresh when idle");
+    if (!disposed && previous?.pending) onStatus(previous.item.native_asset?"Thumbnail preparation disconnected · Refresh when idle":"Media analysis status disconnected · Refresh when idle",previous.item);
   }
   function delay(attempt) {
     return new Promise((resolve, reject) => {
@@ -106,30 +112,42 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
     });
   }
   async function run(attempt) {
-    const { item, epoch, audioStreamIndex, explicitStream,includeWaveform,explicitWaveform } = attempt, signal = attempt.controller.signal;
+    const { epoch, audioStreamIndex, explicitStream,includeWaveform,explicitWaveform } = attempt, signal = attempt.controller.signal;
+    let item=attempt.item;
     let thumbnail = null, thumbnailURL = null, transferred = false;
     const alive = () => { if (!owns(attempt)) throw abortError(); };
     const guardedFetch = (url, options = {}) => fetcher(url, { ...options, cache: "no-store", signal: AbortSignal.any([signal, options.signal, AbortSignal.timeout(20_000)].filter(Boolean)) });
     try {
       alive();
-      onStatus(`${item.name} · Analyzing full-source media`);
+      if(item.native_asset){
+        onStatus(`${item.name} · Preparing thumbnail`,item);alive();
+        const reference=item.native_asset;
+        const resolved=await api(`/native-assets/items/${encodeURIComponent(reference.id)}/source`,{project_epoch:epoch,if_generation:reference.if_generation,revision:reference.revision},guardedFetch);
+        alive();
+        const next=resolved?.item,native=next?.native_asset;
+        if(resolved.project_epoch!==epoch || resolved.generation!==reference.if_generation || next?.id!==item.id || native?.id!==reference.id || native.revision!==reference.revision || native.if_generation!==reference.if_generation || !native.source_version || attempt.sourceVersion!=null && native.source_version!==attempt.sourceVersion || next.compound_timeline_id || next.offline || !next.has_video || next.duration_frames!==item.duration_frames || next.fps?.num!==item.fps?.num || next.fps?.den!==item.fps?.den || next.has_audio!==item.has_audio || next.is_image!==item.is_image)throw Error('Library thumbnail identity changed · Refresh when idle');
+        sourceMediaQuery(next,epoch);
+        item=attempt.item={...next,fps:{...next.fps},native_asset:{...native}};attempt.sourceVersion=native.source_version;
+      }
+      if(!item.native_asset)onStatus(`${item.name} · Analyzing full-source media`,item);
       alive();
-      let job = await api(`/media/${encodeURIComponent(item.id)}/assets/prepare`, { project_epoch: epoch,...(explicitStream || audioStreamIndex?{audio_stream_index:audioStreamIndex}:{}),...(explicitWaveform?{include_waveform:includeWaveform}:{}) }, guardedFetch);
+      let job = await api(sourceMediaPath(item,'/assets/prepare',{absolute:false}), { ...sourceMediaQuery(item,epoch),...(explicitStream || audioStreamIndex?{audio_stream_index:audioStreamIndex}:{}),...(explicitWaveform?{include_waveform:includeWaveform}:{}) }, guardedFetch);
       alive();
       if (typeof job.id !== "string" || !job.id) throw Error("Media analysis returned an invalid job");
       const jobId = job.id;
-      const path = `/api/v1/media/${encodeURIComponent(item.id)}/jobs/${encodeURIComponent(jobId)}?${new URLSearchParams({ project_epoch: epoch })}`;
+      const path = `${sourceMediaPath(item,`/jobs/${encodeURIComponent(jobId)}`)}?${new URLSearchParams(sourceMediaQuery(item,epoch))}`;
       while (true) {
         alive();
         if (job.id !== jobId) throw Error("Media analysis job changed");
         const descriptor = validateDescriptor(job, item, epoch, attempt.sourceVersion,audioStreamIndex,explicitStream,includeWaveform,explicitWaveform);
+        if(item.native_asset && (descriptor.thumbnail_width!==96 || includeWaveform))throw Error('Library thumbnail profile changed · Refresh when idle');
         attempt.sourceVersion=descriptor.source_version;
-        if (job.state === "canceled") { onStatus(PAUSED); return null; }
+        if (job.state === "canceled") { onStatus(item.native_asset?'Thumbnail preparation paused · Refresh when idle':PAUSED,item); return null; }
         if (job.state === "failed") throw Error(`${job.error || "Media analysis failed"} · Refresh when idle`);
         if (job.state === "ready") {
           let waveform = null, waveBytes = 0, png = null, dimensions = null;
           if (descriptor.has_audio && includeWaveform) {
-            const response = await guardedFetch(sourceAssetURL(item.id, jobId, "waveform.json", epoch));
+            const response = await guardedFetch(sourceAssetURL(item, jobId, "waveform.json", epoch));
             alive();
             const bytes = await readBounded(response, WAVE_LIMIT, signal);
             alive();
@@ -137,11 +155,12 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
             waveBytes = bytes.byteLength + waveform.peaks.length * 8;
           }
           if (descriptor.has_video) {
-            const response = await guardedFetch(sourceAssetURL(item.id, jobId, "thumb.png", epoch));
+            const response = await guardedFetch(sourceAssetURL(item, jobId, "thumb.png", epoch));
             alive();
             const bytes = await readBounded(response, PNG_LIMIT, signal);
             alive();
             dimensions = pngDimensions(bytes);
+            if(item.native_asset && dimensions.width>96)throw Error('Library thumbnail exceeds its native profile');
             png = new Blob([bytes], { type: "image/png" });
           }
           const bytes = waveBytes + (png ? png.size + dimensions.width * dimensions.height * 4 : 0);
@@ -156,7 +175,7 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
           const result = { item, epoch, sourceVersion:attempt.sourceVersion,audioStreamIndex,includeWaveform,waveformBytes:waveBytes, thumbnail, thumbnailURL, waveform, bytes };
           if (onReady(result) === false) return null;
           transferred = true;
-          if (owns(attempt)) onStatus(`${item.name} · Full-source media analysis ready`);
+          if (owns(attempt)) onStatus(`${item.name} · ${item.native_asset?'Thumbnail ready':'Full-source media analysis ready'}`,item);
           return result;
         }
         if (job.state !== "queued" && job.state !== "running") throw Error("Media analysis returned an invalid state");
@@ -170,7 +189,7 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
     } catch (error) {
       if (owns(attempt) && error.name !== "AbortError") {
         const message = error.message || "Media analysis failed";
-        onStatus(message.includes("Refresh") ? message : `${message} · Refresh when idle`);
+        onStatus(message.includes("Refresh") ? message : `${message} · Refresh when idle`,item);
         onError(error);
       }
       return null;
@@ -182,7 +201,7 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
   function load(item, epoch, options = {}) {
     if (disposed) return Promise.resolve(null);
     const {sourceVersion,force=false,audioStreamIndex=0,includeWaveform=true}=options,explicitStream=Object.hasOwn(options,'audioStreamIndex'),explicitWaveform=Object.hasOwn(options,'includeWaveform');
-    if(typeof includeWaveform!=='boolean' || !includeWaveform && !item.has_video)return Promise.resolve(null);
+    if(typeof includeWaveform!=='boolean' || !includeWaveform && !item.has_video || item.native_asset && (includeWaveform || !isNativeCurrent(item,epoch)))return Promise.resolve(null);
     if(!Number.isSafeInteger(audioStreamIndex) || audioStreamIndex<0 || audioStreamIndex>0 && (!item.has_audio || !Number.isSafeInteger(item.audio_stream_count) || audioStreamIndex>=item.audio_stream_count))return Promise.resolve(null);
     const key = identity(item, epoch,audioStreamIndex,includeWaveform,sourceVersion);
     if (!force && current?.key === key && (sourceVersion==null || current.sourceVersion === sourceVersion) && current.pending) return current.promise;
@@ -207,15 +226,17 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
   return { load, cancel, dispose() { disposed = true; cancel(); attempted.clear(); } };
 }
 
-export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdle=()=>true,setTimer=setTimeout,clearTimer=clearTimeout}){
+export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdle=()=>true,isNativeCurrent=()=>false,setTimer=setTimeout,clearTimer=clearTimeout}){
   const scopes=new Map(),attempted=new Map();
   let epoch=null,active=null,timer=null,disposed=false,sourceRequest=null;
   const baseKey=entry=>JSON.stringify([entry.epoch,entry.item.id,entry.item.content_hash,entry.audioStreamIndex,entry.sourceVersion ?? null]);
   const key=entry=>JSON.stringify([baseKey(entry),entry.includeWaveform]);
   const visibleWaveform=id=>(scopes.get('source_waveform') || []).some(entry=>key(entry)===id);
-  const retryable=(attempt,id)=>Boolean(attempt?.resumable && visibleWaveform(id) || attempt?.ready && attempt.left);
+  const visibleNative=id=>(scopes.get('native_pool') || []).some(entry=>key(entry)===id);
+  const retryable=(attempt,id)=>Boolean(attempt?.resumable && (visibleWaveform(id) || visibleNative(id)) || attempt?.ready && attempt.left);
   const valid=entry=>{
-    const state=getState(),item=state?.media?.find(item=>item.id===entry.item.id);
+    const state=getState();if(entry.item.native_asset)return entry.epoch===state?.project_epoch && !entry.includeWaveform && entry.audioStreamIndex===0 && isNativeCurrent(entry.item,entry.epoch);
+    const item=state?.media?.find(item=>item.id===entry.item.id);
     return entry.epoch===state?.project_epoch && item?.content_hash===entry.item.content_hash && !item.offline && !item.compound_timeline_id && (item.has_video || item.has_audio) && (entry.includeWaveform || item.has_video) && Number.isSafeInteger(entry.audioStreamIndex) && entry.audioStreamIndex>=0 && (!entry.audioStreamIndex || item.has_audio && Number.isSafeInteger(item.audio_stream_count) && entry.audioStreamIndex<item.audio_stream_count);
   };
   function cancel(){
@@ -230,7 +251,7 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
   }
   function wanted(){
     const entries=new Map();
-    for(const scope of ['source','source_waveform','timeline','pool'])for(const entry of scopes.get(scope) || []){
+    for(const scope of ['source','source_waveform','timeline','pool','native_pool'])for(const entry of scopes.get(scope) || []){
       if(entries.size>=64 && !entries.has(baseKey(entry)))continue;
       if(valid(entry) && (!entries.has(baseKey(entry)) || !entries.get(baseKey(entry)).includeWaveform && entry.includeWaveform))entries.set(baseKey(entry),entry);
     }
@@ -263,7 +284,8 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
     try{
       const result=await loader.load(entry.item,entry.epoch,{audioStreamIndex:entry.audioStreamIndex,includeWaveform:entry.includeWaveform,sourceVersion:entry.sourceVersion,force:Boolean(entry.force || reload)});
       if(!token.canceled && result)attempted.set(token.key,{ready:true,left:!wanted().has(token.key)});
-      if(token.canceled && !entry.force && valid(entry))attempted.set(token.key,{ready:false,left:true,resumable:true});
+      const nativeOwner=entry.item.native_asset,state=getState(),nativeCanceled=nativeOwner && entry.epoch===state?.project_epoch && nativeOwner.if_generation===state.generation;
+      if(token.canceled && ((!entry.force && valid(entry)) || nativeCanceled))attempted.set(token.key,{ready:false,left:true,resumable:true});
       settleSource(entry,token.canceled?null:result);
     }finally{
       if(active===token)active=null;
@@ -272,9 +294,10 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
     }
   }
   function demand(scope,items,demandEpoch=getState()?.project_epoch){
-    if(disposed || !['pool','timeline','source_waveform'].includes(scope))return;
+    if(disposed || !['pool','timeline','source_waveform','native_pool'].includes(scope))return;
     currentEpoch();
     const entries=items.slice(0,64).map(entry=>({item:{...entry.item,fps:entry.item.fps && {...entry.item.fps}},epoch:demandEpoch,audioStreamIndex:entry.audioStreamIndex ?? 0,includeWaveform:entry.includeWaveform!==false,sourceVersion:entry.sourceVersion,force:entry.force===true}));
+    if(scope==='native_pool')for(const entry of entries){const previous=scopes.get(scope)?.find(value=>key(value)===key(entry));if(previous?.force && active?.entry!==previous)entry.force=true;}
     scopes.set(scope,entries);
     for(const entry of entries)if(entry.force){const id=key(entry);attempted.delete(id);if(active?.key===id){active.canceled=true;loader.cancel();}}
     refresh();

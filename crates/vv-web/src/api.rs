@@ -99,6 +99,10 @@ pub fn router(state: AppState) -> Router {
             post(prepare_native_source),
         )
         .route(
+            "/api/v1/native-assets/items/{id}/source/assets/prepare",
+            post(prepare_native_source_assets),
+        )
+        .route(
             "/api/v1/native-assets/items/{id}/source/jobs/{job}",
             get(native_source_status).delete(cancel_native_source),
         )
@@ -1791,6 +1795,48 @@ async fn prepare_native_source(
         )
         .map(Json)
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrepareNativeSourceAssets {
+    project_epoch: String,
+    if_generation: String,
+    revision: String,
+    source_version: String,
+    #[serde(default)]
+    audio_stream_index: u32,
+    #[serde(default)]
+    include_waveform: bool,
+}
+async fn prepare_native_source_assets(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<PrepareNativeSourceAssets>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid library thumbnail request"))?
+        .0;
+    if payload.audio_stream_index != 0 || payload.include_waveform {
+        return Err(ApiError::invalid("Library thumbnails do not analyze audio"));
+    }
+    let spec = state
+        .host
+        .native_source_snapshot(
+            id,
+            crate::source::NativeSourceQuery {
+                project_epoch: payload.project_epoch,
+                if_generation: payload.if_generation,
+                revision: payload.revision,
+                source_version: Some(payload.source_version),
+            },
+            true,
+        )
+        .await?
+        .spec;
+    state.source.prepare_library_thumbnail(spec).map(Json)
+}
 async fn native_source_status(
     State(state): State<AppState>,
     Path((id, job)): Path<(String, String)>,
@@ -1847,7 +1893,7 @@ async fn native_source_asset(
     let file = state.source.asset(&job, &spec, &name)?;
     let mime = match name.as_str() {
         "source.mp4" => "video/mp4",
-        "source.png" => "image/png",
+        "source.png" | "thumb.png" => "image/png",
         "source.jpg" => "image/jpeg",
         "source.webp" => "image/webp",
         _ => return Err(ApiError::missing()),

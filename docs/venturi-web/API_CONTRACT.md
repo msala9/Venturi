@@ -1067,6 +1067,33 @@ resolution ACKs also bind the current panel selection/session and generation;
 obsolete ACKs never replace a newer Source. Project-only derivatives and timeline
 Source placement require an imported pool item.
 
+### Native Library pool thumbnails
+
+`POST /native-assets/items/{id}/source/assets/prepare` accepts strict
+`{project_epoch,if_generation,revision,source_version,audio_stream_index?,include_waveform?}`.
+The strong `source_version` from Library Source resolution is required;
+`audio_stream_index` defaults to zero and `include_waveform` to false. Other
+stream indices, waveform requests and unknown fields are refused. This read-only
+operation requires no writer lease and does not import or edit project media.
+
+Ordinary online video and still-image roots reuse the existing Source job queue,
+status/cancellation routes and bounded asset cache. Compound and audio-only roots
+retain their pool glyphs. The separate `library-thumbnail:96` profile produces
+only `thumb.png` (`image/png`), with `source_assets.thumbnail_width=96` and no
+movie or waveform. Project thumbnails keep their existing 256 profile. Native
+thumbnail generation caps width at 96 without upscaling, samples video at
+min(duration/2,1 second), and samples stills at zero. Real metadata probes before
+and after decoding retain input-dimension, metadata and file-identity checks.
+Library-only audio metadata comparison uses the native effective stream count,
+including legacy `has_audio=true,audio_streams=0`; project derivative validation
+is unchanged.
+
+The UI requests only intersecting Grid/Details rows through the existing shared
+derivative queue and cache. Hidden panels, dialogs, page/layout changes and
+obsolete epoch/generation/revision ownership withdraw demand. Ready results
+replace only the matching thumbnail; selection, drag state, Source and project
+history stay unchanged. Failures require explicit Refresh to retry.
+
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages
 are zero-based and expose up to 256 native keys per parameter, with exact

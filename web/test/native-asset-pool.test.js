@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nativePoolItem,nativePoolInfo,nativePoolQuery,NATIVE_POOL_DRAG_TYPE} from '../js/native-asset-pool.js';
+import {nativePoolItem,nativePoolInfo,nativePoolQuery,nativePoolThumbnailEligible,NATIVE_POOL_DRAG_TYPE} from '../js/native-asset-pool.js';
 import {CATALOG_DRAG_TYPE} from '../js/catalog-interactions.js';
 import {mediaRowInfo} from '../js/catalog.js';
 
@@ -15,4 +15,9 @@ test('native pool queries use server sort and direct Grid folders while search i
   assert.deepEqual(nativePoolQuery(),{sort:'name',descending:'false'});assert.deepEqual(nativePoolQuery({sort:'duration',descending:true}),{sort:'duration',descending:'true'});
   assert.deepEqual(nativePoolQuery({layout:'grid'}),{sort:'name',descending:'false',folder:''});assert.deepEqual(nativePoolQuery({layout:'grid',folder:'shots'}),{sort:'name',descending:'false',folder:'shots'});
   assert.deepEqual(nativePoolQuery({layout:'grid',folder:'shots',query:'River'}),{sort:'name',descending:'false'});assert.deepEqual(nativePoolQuery({folder:'shots'}),{sort:'name',descending:'false',folder:'shots'});
+});
+
+test('native Library thumbnail eligibility follows the first ordinary online video root including still images',()=>{
+  const video={presentation:{kind:'video',has_video:true},missing_count:0};assert.equal(nativePoolThumbnailEligible(video),true);assert.equal(nativePoolThumbnailEligible({...video,presentation:{kind:'image',has_video:true,is_image:true}}),true);
+  for(const patch of [{presentation:{kind:'timeline',has_video:true}},{presentation:{kind:'audio',has_video:false}},{missing_count:1},{archived:true},{error:'Offline'}])assert.equal(nativePoolThumbnailEligible({...video,...patch}),false);
 });

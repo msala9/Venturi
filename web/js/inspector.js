@@ -78,8 +78,14 @@ export function bindInspectorNumber(input,{canInteract,apply,speed=1,windowRef=i
   const live=()=>!disposed && input.isConnected!==false && !input.disabled && canInteract();
   const release=id=>{try{if(input.hasPointerCapture?.(id))input.releasePointerCapture(id);}catch{}};
   const cancel=()=>{if(!gesture)return;const before=gesture;gesture=null;input.value=before.text;release(before.id);};
-  const draft=event=>{const distance=event.clientX-gesture.x;if(!gesture.moved && Math.abs(distance)<3)return;event.preventDefault?.();gesture.moved=true;const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);const value=gesture.value+distance*speed*(event.shiftKey ? 0.1 : 1);input.value=String(Number(Math.max(min,Math.min(max,value)).toFixed(6)));};
-  listen(input,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,text:input.value,value:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
+  const draft=event=>{
+    const distance=event.clientX-gesture.x;if(!gesture.moved && Math.abs(distance)<3)return;event.preventDefault?.();gesture.moved=true;
+    const delta=event.clientX-gesture.lastX;gesture.lastX=event.clientX;if(delta===0)return;
+    const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);
+    gesture.draftValue=Math.max(min,Math.min(max,gesture.draftValue+delta*(event.shiftKey ? speed/10 : speed)));
+    input.value=String(Number(gesture.draftValue.toFixed(6)));
+  };
+  listen(input,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,lastX:event.clientX,text:input.value,value:Number(input.value),draftValue:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
   listen(input,'pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
   listen(input,'pointerup',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live()){cancel();return;}if(gesture.moved || Math.abs(event.clientX-gesture.x)>=3)draft(event);const before=gesture;gesture=null;release(before.id);if(before.moved && Number(input.value)!==before.value)apply();});
   listen(input,'pointercancel',cancel);listen(input,'lostpointercapture',cancel);listen(input,'blur',cancel);

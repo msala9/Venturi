@@ -1886,14 +1886,17 @@ fn reopen_written_stage(file: File, directory: &File, name: &str) -> Result<File
 fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> Result<Copied> {
     copy_checked(inner, source, work, budget, None, |_, _, _| Ok(()))
 }
-fn project_copy_name(name: &str, candidate: usize) -> Result<String> {
-    let name = if name.as_bytes().get(16) == Some(&b'-')
+fn original_media_name(name: &str) -> &str {
+    if name.as_bytes().get(16) == Some(&b'-')
         && name.as_bytes()[..16].iter().all(u8::is_ascii_hexdigit)
     {
         &name[17..]
     } else {
         name
-    };
+    }
+}
+fn project_copy_name(name: &str, candidate: usize) -> Result<String> {
+    let name = original_media_name(name);
     simple_name(name)?;
     if candidate == 1 {
         return Ok(name.into());
@@ -2377,7 +2380,10 @@ fn run_relink(
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or_else(ApiError::missing)?;
-        let Some(token) = names.get(filename) else {
+        let Some(token) = names
+            .get(original_media_name(filename))
+            .or_else(|| names.get(filename))
+        else {
             continue;
         };
         budget.check(inner.store.media())?;

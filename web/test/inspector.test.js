@@ -37,6 +37,29 @@ test('Inspector numeric scrubs stay local until final release and restore typed 
   events.pointerdown(point(0));events.pointermove(point(10,{shiftKey:true}));events.pointerup(point(10,{shiftKey:true}));assert.equal(commits.at(-1),13.5);control.dispose();assert.equal(windowEvents.blur,undefined);assert.deepEqual(Object.keys(events),[]);
 });
 
+test('Inspector scrub integrates each motion at its current Shift speed and modifier-only release does not jump',()=>{
+  const events={},commits=[],input={value:'0',min:'-100',max:'100',isConnected:true,disabled:false,addEventListener:(key,fn)=>events[key]=fn,removeEventListener:key=>delete events[key],setPointerCapture(){},hasPointerCapture:()=>false};
+  const control=bindInspectorNumber(input,{canInteract:()=>true,apply:()=>commits.push(Number(input.value)),windowRef:null}),point=(x,shiftKey=false)=>({button:0,pointerId:1,buttons:1,clientX:x,shiftKey,preventDefault(){}});
+  try{
+    events.pointerdown(point(0));events.pointermove(point(20));assert.equal(input.value,'20');
+    events.pointermove(point(21,true));assert.equal(input.value,'20.1');events.pointermove(point(21));assert.equal(input.value,'20.1');
+    events.pointermove(point(22));assert.equal(input.value,'21.1');assert.deepEqual(commits,[]);
+    events.pointerup(point(22,true));assert.deepEqual(commits,[21.1]);
+    input.value='0';events.pointerdown(point(0));events.pointermove(point(20,true));assert.equal(input.value,'2');events.pointerup(point(20));assert.deepEqual(commits,[21.1,2]);
+  }finally{control.dispose();}
+});
+
+test('Inspector scrub reverses immediately from either native bound and returning to the initial value is a no-op',()=>{
+  const events={},commits=[],input={value:'5',min:'0',max:'10',isConnected:true,disabled:false,addEventListener:(key,fn)=>events[key]=fn,removeEventListener:key=>delete events[key],setPointerCapture(){},hasPointerCapture:()=>false};
+  const control=bindInspectorNumber(input,{canInteract:()=>true,apply:()=>commits.push(Number(input.value)),windowRef:null}),point=(x,shiftKey=false)=>({button:0,pointerId:1,buttons:1,clientX:x,shiftKey,preventDefault(){},stopPropagation(){}});
+  try{
+    events.pointerdown(point(0));events.pointermove(point(100));assert.equal(input.value,'10');events.pointermove(point(99));assert.equal(input.value,'9');events.pointermove(point(98,true));assert.equal(input.value,'8.9');events.pointerup(point(98));assert.deepEqual(commits,[8.9]);
+    input.value='5';events.pointerdown(point(0));events.pointermove(point(-100));assert.equal(input.value,'0');events.pointermove(point(-99));assert.equal(input.value,'1');events.pointerup(point(-99));assert.deepEqual(commits,[8.9,1]);
+    input.value='5';events.pointerdown(point(0));events.pointermove(point(20));events.pointermove(point(15));assert.equal(input.value,'5');events.pointerup(point(15));assert.deepEqual(commits,[8.9,1]);
+    input.value='1.23456789';events.pointerdown(point(0));events.pointermove(point(10));events.keydown({...point(10),key:'Escape'});events.pointerup(point(11));assert.equal(input.value,'1.23456789');assert.deepEqual(commits,[8.9,1]);
+  }finally{control.dispose();}
+});
+
 const settleInspector=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 function selectedLifecycleHarness(t,{commit}={}){
   const oldDocument=globalThis.document,commands=[],notices=[];

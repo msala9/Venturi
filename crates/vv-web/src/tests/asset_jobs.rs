@@ -675,6 +675,93 @@ fn native_tree_import_prunes_empty_sources_without_creating_an_invented_folder()
 }
 
 #[test]
+fn native_asset_relink_normalizes_legacy_uppercase_hash_names_for_selected_and_recursive_sources() {
+    for (recursive, literal) in [(false, false), (true, false), (false, true)] {
+        let fixture = Fixture::new();
+        let mut asset = fixture.asset.clone();
+        let mut payload = asset_payload::decode(&asset).unwrap();
+        let mut missing_path = None;
+        for item in payload.files_mut() {
+            item.path = fixture
+                .store
+                .root()
+                .join("media")
+                .join(format!("{:016x}", item.content_hash))
+                .join("0123456789ABCDEF-Camera take.png");
+            missing_path = Some(item.path.clone());
+        }
+        let missing_path = missing_path.unwrap();
+        asset.payload = payload.to_text();
+        fixture.store.create("legacy-offline", &asset).unwrap();
+        let revision = fixture.store.item("legacy-offline", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let replacement_name = if literal {
+            "0123456789ABCDEF-Camera take.png"
+        } else {
+            "Camera take.png"
+        };
+        let replacement = if recursive {
+            let directory = fixture.project.join("Replacements/deep");
+            std::fs::create_dir_all(&directory).unwrap();
+            directory.join(replacement_name)
+        } else {
+            fixture.project.join(replacement_name)
+        };
+        std::fs::copy(&fixture.path, &replacement).unwrap();
+        let edit = if recursive {
+            asset_store::Edit::RelinkFolder {
+                id: "legacy-offline".into(),
+                revision,
+                directory_token: "Replacements".into(),
+            }
+        } else {
+            asset_store::Edit::Relink {
+                id: "legacy-offline".into(),
+                revision,
+                path_tokens: vec![replacement_name.into()],
+            }
+        };
+        let before = fixture.store.export("legacy-offline").unwrap();
+        let ready = prepare_relink(&fixture, "legacy-repair", edit.clone());
+        assert_eq!(
+            ready["state"], "ready",
+            "recursive={recursive}, literal={literal}: {ready}"
+        );
+        assert_eq!(ready["result"]["missing_count"], 0);
+        assert_eq!(ready["result"]["relinked_files"], 1);
+        assert_eq!(
+            fixture.store.export("legacy-offline").unwrap(),
+            before,
+            "preparation does not publish asset metadata"
+        );
+        let report = fixture
+            .jobs
+            .commit_edit("legacy-repair", [7; 32], "epoch", "7", &edit)
+            .unwrap();
+        assert_eq!(report["relinked_files"], 1);
+        assert_eq!(
+            std::fs::read(&missing_path).unwrap(),
+            std::fs::read(&fixture.path).unwrap()
+        );
+        let reopened = Store::new(fixture.store.root()).unwrap();
+        assert_eq!(
+            reopened.item("legacy-offline", false).unwrap()["missing_count"],
+            0
+        );
+        let restored = asset_payload::parse(&reopened.export("legacy-offline").unwrap()).unwrap();
+        assert_eq!(
+            asset_payload::decode(&restored).unwrap().to_text(),
+            payload.to_text(),
+            "only the missing managed file is restored; IDs, metadata, hashes and compound references stay exact"
+        );
+        drop(reopened);
+        fixture.close();
+    }
+}
+
+#[test]
 fn native_recursive_relink_uses_approved_nested_files_preserves_payload_and_guards_tree_changes() {
     for changed in [false, true] {
         let fixture = Fixture::new();

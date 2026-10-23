@@ -1,5 +1,33 @@
 # Implementation status
 
+## Native Title/Source controls and compact Inspector — 2026-10-23
+
+Current Title/filter/Source controls: **http://127.0.0.1:8855/**,
+source `b85e333`, binary `aefe8ae43d4c`, service
+`venturi-web-halo1-native-scalars-source-r2.service`, PID261197. Compact native Title/background
+scalars and non-Color filters now have native-speed scrubs and inline sliders.
+The narrow Inspector ends above the timeline; actual Clip list selection works
+with the drawer open. Numeric/slider/reset share one28px Title row.
+
+R1 passes264 affected client cases/build42.24s; R2 passes126 overlapping Source
+cases/build41.36s after fixing two actual browser findings: the absolute grid
+row end and the visible Proxies handler. Peak memory stays below1.73GB on halo1;
+unchanged native/Clippy/render/export checks are reused, with no local workloads.
+
+Actual Windows775x964/DPR1.25 verifies20px Title width0to0.1 and Shadow
+softness10to20 scrubs, a font-size slider keyboard edit, one Undo per command,
+Shadow Undo/Redo and exact Saved reopen. Other timelines, master, prior Color
+and Mask Saved projects,39 Sessions/40 PIDs and fixed NAS/proxy files are retained.
+Source60to12 seek resumes Play; frame-step pauses. Visible quality changes retain
+Source A/frame60/marks12to96 while pool B stays selected; proxies remain disabled
+and quality returns to medium. The recentered window starts at absolute60, so
+its local video time0 is correct. See `evidence/f3-title-source-controls-workflow.json`.
+
+Ledger **53 done /37 partial /2 excluded**. Full F1-F7/M7 and physical/DPI/dense/
+device acceptance remain open. Next production block: native compressor input
+levels/GR and active response from existing prepared telemetry.
+
+
 ## Color-wheel capability acceptance — 2026-10-23
 
 The current ledger is **53 done /37 partial /2 excluded**. `color_wheels` is

@@ -54,7 +54,32 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current mask/recording controls: **http://127.0.0.1:8855/**,
+Current Title/filter/Source controls: **http://127.0.0.1:8855/**,
+source `b85e333`, binary `aefe8ae43d4c`, service
+`venturi-web-halo1-native-scalars-source-r2.service`, PID261197. Compact native Title/background
+scalars and non-Color filters now have native-speed scrubs and inline sliders.
+The narrow Inspector ends above the timeline; actual Clip list selection works
+with the drawer open. Numeric/slider/reset share one28px Title row.
+
+R1 passes264 affected client cases/build42.24s; R2 passes126 overlapping Source
+cases/build41.36s after fixing two actual browser findings: the absolute grid
+row end and the visible Proxies handler. Peak memory stays below1.73GB on halo1;
+unchanged native/Clippy/render/export checks are reused, with no local workloads.
+
+Actual Windows775x964/DPR1.25 verifies20px Title width0to0.1 and Shadow
+softness10to20 scrubs, a font-size slider keyboard edit, one Undo per command,
+Shadow Undo/Redo and exact Saved reopen. Other timelines, master, prior Color
+and Mask Saved projects,39 Sessions/40 PIDs and fixed NAS/proxy files are retained.
+Source60to12 seek resumes Play; frame-step pauses. Visible quality changes retain
+Source A/frame60/marks12to96 while pool B stays selected; proxies remain disabled
+and quality returns to medium. The recentered window starts at absolute60, so
+its local video time0 is correct. See `evidence/f3-title-source-controls-workflow.json`.
+
+Ledger **53 done /37 partial /2 excluded**. Full F1-F7/M7 and physical/DPI/dense/
+device acceptance remain open. Next production block: native compressor input
+levels/GR and active response from existing prepared telemetry.
+
+Previous mask/recording qualification (runtime upgraded): **http://127.0.0.1:8855/**,
 source `83bb2d1`, binary `85abac2dafdd`, service
 `venturi-web-halo1-masks-recording.service`, PID249647. Native mask pixel/range scrubs,
 four scalar sliders and reusable cancellation are delivered. Voiceover now draws

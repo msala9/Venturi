@@ -1,0 +1,235 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "b85e333a218e2587f3a35c9100ae9cbc191a88a9",
+  "url": "http://127.0.0.1:8855/",
+  "service": "venturi-web-halo1-native-scalars-source-r2.service",
+  "pid": 261197,
+  "binary_sha256": "aefe8ae43d4ce4773bec08373003b7e70c2d0929601786f5281826919d67c000",
+  "project": "Venturi_Scalar_Source_V1.vvproj",
+  "project_sha256": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+  "production": [
+    "Title typography/background scalars use native scrub speeds, inline ranges and same-row resets; filter Exposure/blur/Shadow controls retain native keys, precise values and selected-target semantics.",
+    "Source seeks preserve ordinary Play intent through owned internal pauses; frame stepping remains paused. Quality reopen retains its own media, audio selection, strong version and absolute frame, independently of pool selection.",
+    "Visible Playback/Proxies and the hidden quality control share the current-Source reopen path. Marks remain owned by that Source.",
+    "Narrow Inspector drawer is confined to the upper grid row; Clip list remains accessible above the timeline, within its panel height."
+  ],
+  "gate": {
+    "r1_client_cases": 264,
+    "r2_client_cases": 126,
+    "counts_overlap": true,
+    "r1_build_seconds": 42.24,
+    "r2_build_seconds": 41.36,
+    "r1_peak_bytes": 1725612032,
+    "r2_peak_bytes": 1536622592,
+    "source_hashes": {
+      "web/js/inspector.js": "805959b5c915543cb80958bda7e106531d1b9647c01571316245f664771dee92",
+      "web/js/main.js": "fbcc99b471b26e477f8d2db3cf872794494a7e87b06719bf74dadb2af26a499d",
+      "web/js/source.js": "ccabf8a2360fdd11fc972f951d6ecc65ddfb2649fb3623c543f502f2547aa23d",
+      "web/js/visual.js": "3a868bdf490b429d57eb09dbd9e60912c39a4b5286e90ba1ef2b8fcc6f4a4b31",
+      "web/style/native-inspector.css": "80ddb847bea5e8fbb4b91aba0eee3ca5b0ccf64950667c8abd24b0a169662c08",
+      "web/style/native-shell.css": "f151cecaeede02f4f174e4f647722387f2dc20b81e7e87e63cecf484c8fdb693",
+      "web/test/inspector-selection.test.js": "382ba7f1c4895bfca26fa34f09b070a4c06a4a9a8f98b3324aed9dae43d8b196",
+      "web/test/source-windows.test.js": "12a6688803bf4be3f961e358ceeb3b18dcbf673a918f60df5f4563d892aff0bf",
+      "web/test/source.test.js": "50b292451f245382ac25d9ca62c88cc7e05ccf00665a374d5273fb87a4b7f182",
+      "web/test/visual.test.js": "d86de757fa0f2d56d7bf27e149f078ab3c64adcc4f49f8955820190e57daf358"
+    },
+    "native_checks": "Unchanged native/Rust/Clippy and renderer/export evidence reused."
+  },
+  "windows": {
+    "layout": {
+      "clipList": {
+        "bottom": 883.7000427246094,
+        "height": 205.6000061035156,
+        "left": 369.2000122070313,
+        "right": 769.2000122070312,
+        "top": 678.1000366210938,
+        "width": 400,
+        "x": 369.2000122070313,
+        "y": 678.1000366210938
+      },
+      "gridRow": "1 / 2",
+      "inspector": {
+        "bottom": 651,
+        "height": 601,
+        "left": 435.2000122070313,
+        "right": 775.2000122070312,
+        "top": 50,
+        "width": 340,
+        "x": 435.2000122070313,
+        "y": 50
+      },
+      "selected": [
+        "20",
+        "19"
+      ],
+      "timeline": {
+        "bottom": 944,
+        "height": 289,
+        "left": 214,
+        "right": 775.2000122070312,
+        "top": 655,
+        "width": 561.2000122070312,
+        "x": 214,
+        "y": 655
+      },
+      "viewport": {
+        "dpr": 1.25,
+        "height": 964,
+        "width": 775
+      }
+    },
+    "title_row": {
+      "input": {
+        "bottom": 377.3000183105469,
+        "height": 26,
+        "left": 670,
+        "right": 722,
+        "top": 351.3000183105469,
+        "width": 52,
+        "x": 670,
+        "y": 351.3000183105469
+      },
+      "reset": {
+        "bottom": 377.3000183105469,
+        "height": 26,
+        "left": 726,
+        "right": 750,
+        "top": 351.3000183105469,
+        "width": 24,
+        "x": 726,
+        "y": 351.3000183105469
+      },
+      "row": {
+        "bottom": 378.3000183105469,
+        "height": 28,
+        "left": 445,
+        "right": 751,
+        "top": 350.3000183105469,
+        "width": 306,
+        "x": 445,
+        "y": 350.3000183105469
+      },
+      "slider": {
+        "bottom": 374.3000183105469,
+        "height": 20,
+        "left": 540.1875,
+        "right": 663,
+        "top": 354.3000183105469,
+        "width": 122.8125,
+        "x": 540.1875,
+        "y": 354.3000183105469
+      },
+      "value": "0.10000000149011612"
+    },
+    "models": {
+      "title_width": 0.10000000149011612,
+      "font_size": 81.98999786376953,
+      "shadow_radius": 20.0,
+      "one_undo_each": true,
+      "shadow_exact_undo_redo": true,
+      "exact_saved_reopen": true,
+      "other_three_timelines_and_master_exact": true,
+      "other_inspected_effects_exact": true,
+      "proxy_catalog_restored": true
+    },
+    "source_quality": {
+      "before": {
+        "enabled": false,
+        "frame": "60",
+        "in": "12",
+        "out": "96",
+        "paused": true,
+        "quality": "medium",
+        "selected": [
+          "\u25a4",
+          "Name \u25b4",
+          "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4Video \u00b7 864\u00d7480 \u00b7 Audio \u00b7 24 fps0:05"
+        ],
+        "src": "http://127.0.0.1:8855/api/v1/media/11/jobs/1792780414359872593/source.mp4?project_epoch=1792780389069446335%3A1",
+        "time": 2.5
+      },
+      "low": {
+        "enabled": false,
+        "frame": "60",
+        "in": "12",
+        "out": "96",
+        "paused": true,
+        "quality": "low",
+        "selected": [
+          "\u25a4",
+          "Name \u25b4",
+          "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4Video \u00b7 864\u00d7480 \u00b7 Audio \u00b7 24 fps0:05"
+        ],
+        "src": "http://127.0.0.1:8855/api/v1/media/11/jobs/1792780437354782898/source.mp4?project_epoch=1792780389069446335%3A1",
+        "time": 0
+      },
+      "restored": {
+        "enabled": false,
+        "frame": "60",
+        "in": "12",
+        "out": "96",
+        "paused": true,
+        "quality": "medium",
+        "ready": 4,
+        "selected": [
+          "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4Video \u00b7 864\u00d7480 \u00b7 Audio \u00b7 24 fps0:05"
+        ],
+        "src": "http://127.0.0.1:8855/api/v1/media/11/jobs/1792780437354782898/source.mp4?project_epoch=1792780389069446335%3A1",
+        "status": "Source frame 60 / 123",
+        "time": 0
+      },
+      "note": "Source window is recentered at absolute frame60: video.currentTime0 belongs to window60..124. Proxies stay disabled; no resolution switch or generated proxy claimed."
+    },
+    "source_seek": {
+      "before": {
+        "paused": true,
+        "ready": 4,
+        "src": "http://127.0.0.1:8855/api/v1/media/11/jobs/1792779635212622878/source.mp4?project_epoch=1792779526244522190%3A1",
+        "time": 2.5
+      },
+      "after": {
+        "ended": false,
+        "paused": false,
+        "ready": 4,
+        "src": "http://127.0.0.1:8855/api/v1/media/11/jobs/1792779635212622878/source.mp4?project_epoch=1792779526244522190%3A1",
+        "status": "Source frame 16 / 123",
+        "time": 0.711033
+      }
+    },
+    "source_frame_step": {
+      "paused": true,
+      "ready": 4,
+      "status": "Source frame 4 / 123",
+      "time": 0.166666
+    }
+  },
+  "preservation": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 4,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "reused_evidence": [
+    "f3-effects-montage-workflow.json: native title/filter renderer and FullHD export",
+    "f3-masks-recording-controls-workflow.json: prior Mask model and controls",
+    "f4-color-audio-controls-workflow.json: unchanged native Color/audio engine"
+  ],
+  "remaining": [
+    "Physical blur/modifier/DPI, representative dense/high-resolution media, microphone/output and full F1-F7/M7 acceptance remain open.",
+    "Visible quality ownership is proven with proxies disabled: effective Source quality remains original; no new proxy-resolution or gapless playback claim."
+  ],
+  "screenshot": {
+    "name": "f3-title-source-direct-controls.png",
+    "sha256": "0f8424c2bc5a91f04742ae12e9bc73d6d56a15e1964a246110c4d8324e0b4ccb"
+  },
+  "ledger": {
+    "done": 53,
+    "partial": 37,
+    "excluded": 2
+  }
+}

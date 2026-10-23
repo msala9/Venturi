@@ -4,7 +4,35 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8822/**, source `9ecf29d`,
+The current halo1 delivery is **http://127.0.0.1:8824/**, source `f1fd010`,
+binary `ae29b4545c2a`, in `venturi-web-halo1-source-waveform-r4.service`.
+Audio-only Source displays the full native waveform for every audio stream,
+marked-range shading and a fluid absolute playhead, without video zoom. Click
+and scoped keyboard commands seek; dragging inserts the marked All range.
+Visible-lane demand keeps all128 streams reachable without raising the shared
+64-entry/64-MiB asset cache,16-MiB canvas limit or single-loader concurrency.
+Both inner loader and queue bind attempts to strong FD versions. Interrupted
+reads resume only for visible waveform lanes when idle; failed analysis and
+canceled explicit retries retain the manual Refresh policy.
+
+The initial96-case client gate, two affected native embed/Host cases, formatting,
+all-target Clippy and build pass. A final67-case assets-only gate/build covers
+the FD-attempt and canceled-observer corrections; unchanged cases are reused.
+The actual Windows67.021-second two-stream48-kHz audio file loads both lanes
+without Refresh, seeks to1889 beyond the first1800-frame window, replays from
+2010 to0 and shows the advancing waveform clock while audio plays. Dragging
+Source30–120 at30fps creates linked A1/A2 clips0–72 at24fps without seeking.
+One Undo removes both clips and A2; Redo restores the exact model. Save, client
+reload, natural Program EOF71 and Full HD/AAC exported-file EOF pass. The
+decoded3.008-second export has mean -29.5dBFS and peak -20.5dBFS; this proves
+file signal, not physical output. See `evidence/f2-source-waveform-workflow.json`.
+All earlier nine halo1 Sessions/Undo, their project bytes, ds4 and NAS remain
+preserved; halo2 is untouched. Ledger47done/43partial/2excluded and full F1-F7/M7
+remain active. Next complete speculative Source continuation and remaining F2.
+
+### Preserved Source-placement delivery
+
+The preserved halo1 delivery is **http://127.0.0.1:8822/**, source `9ecf29d`,
 binary `2f3f3cdc11d1`, in `venturi-web-halo1-source-placement-r5.service`.
 Marked Source video/image and compact video/audio handles place verified
 original-media ranges in existing/new native tracks, with a collapsed keyboard
@@ -26,8 +54,8 @@ Source from7274 to0, plays the264-frame montage to natural EOF and remembers263
 without a CAS warning, and plays its Full HD/AAC export to natural EOF.
 See `evidence/f2-source-placement-workflow.json` and screenshots. Earlier
 halo1 Sessions, files, PIDs and live Undo, ds4 and NAS remain preserved; halo2
-is untouched. The ledger stays47done/43partial/2excluded. Next complete the
-audio-only Source waveform surface and remaining F2 behavior; full F1-F7/M7,
+is untouched. The ledger stays47done/43partial/2excluded. The
+audio-only Source waveform surface is delivered in f1fd010; remaining F2 behavior, full F1-F7/M7,
 physical audio, long4K and dense/DPI acceptance remain open.
 
 ### Preserved floating Curves delivery

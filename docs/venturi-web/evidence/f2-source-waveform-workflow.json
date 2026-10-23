@@ -1,0 +1,785 @@
+{
+  "date": "2026-10-23",
+  "status": "qualified_audio_only_Source_waveform_block_full_F2_remains_partial",
+  "source_commit": "f1fd010411b7e1051d426a1fd1f762779195eb5d",
+  "url": "http://127.0.0.1:8824/",
+  "runtime_unit": "venturi-web-halo1-source-waveform-r4.service",
+  "binary_sha256": "ae29b4545c2ab29d0619906e216b5529eb22a80a47c56fb3f40c0c9295b6fe38",
+  "projects_root": "/home/halo/VenturiWeb-source-waveform-r4-20261023",
+  "project": "Venturi_Audio_Source_Workflow.vvproj",
+  "project_sha256": "168f3ae58fd3480ff7e0f6aa405b6477b1241508b734567bd53f2c8a089ed0ab",
+  "runtime_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "Restart=no",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "WorkingDirectory=/home/halo/VenturiWeb-source-waveform-r4-20261023",
+    "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-source-waveform-r4-20261023/.xdg",
+    "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+    "Environment=WGPU_BACKEND=vulkan",
+    "Environment=TOKIO_WORKER_THREADS=4",
+    "StandardOutput=append:/home/halo/VenturiWeb-source-waveform-r4-20261023/.server.log",
+    "StandardError=append:/home/halo/VenturiWeb-source-waveform-r4-20261023/.server.log"
+  ],
+  "build_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128",
+    "RuntimeMaxSec=180",
+    "TimeoutStopSec=20",
+    "KillMode=control-group",
+    "Restart=no",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/source-waveform-r4.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/source-waveform-r4.log"
+  ],
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "29456252e9e0508035bd90841b287d0a07a1d8263fafd0db219a356ce3f708b2",
+    "crates/vv-web/src/tests/api.rs": "3c89ba22aaa893af15d044d151af68e16a43d4c1208346f8f689556b9bdbbf25",
+    "web/index.html": "bf78fb86efc931faa190a4d04ccb33877727860c67131d764624fa0fb86b9dd1",
+    "web/js/main.js": "da022f5f960426e794fbc1997a35a1e3cf9ba396890350d9da15ee21b783583c",
+    "web/js/source-assets.js": "876a36a11425a9eaf67fe68f697089059ea236293b42bfcfc1626546dbbb4ade",
+    "web/style/native-shell.css": "fbae1db4b097148cbf3ea02a80e585d245a49997eb52d23bb86866df43eace04",
+    "web/test/source-assets.test.js": "0e7ed17d5e1540f6a9827453bae503cc62101a14518ecf20eaccd38019d9ba56",
+    "web/js/source-waveform.js": "b5d23d5a4795d697c1057422897abe6a6bc1a4a3b4cce17b161cf6ae85296a97",
+    "web/test/source-waveform.test.js": "0665e3a23a8c4d40dd403f840e3f467ee47e9fa551905e092a4e78abbb194458"
+  },
+  "source_fixture": {
+    "name": "River_Two_Streams_67s.mkv",
+    "bytes": 2197638,
+    "sha256": "988415c5b2abeb92860292aae563fb42c41ca64c3b3d21e4c46355f9c44e4fcb",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ],
+      "format": {
+        "duration": "67.021000",
+        "size": "2197638"
+      }
+    }
+  },
+  "checks": {
+    "javascript_initial": [
+      "# tests 96",
+      "# pass 96",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 293.487473"
+    ],
+    "javascript_final_assets": [
+      "# tests 67",
+      "# pass 67",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 120.455984"
+    ],
+    "unique_cases_covered": 100,
+    "counting": "96 initial focused cases plus four additional FD/canceled-observer regressions; final assets suite includes reused cases",
+    "native_affected": [
+      "api::tests::health_assets_snapshot_and_host_boundary",
+      "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime"
+    ],
+    "native_affected_result": "2/2 pass; remaining previously qualified547-case native coverage reused, not rerun",
+    "formatting": "pass",
+    "clippy_all_targets": "pass, -D warnings",
+    "embedded_build": "pass; final asset correction rebuild35.65s",
+    "local_production_sources_match_qualified_hashes": true
+  },
+  "browser": {
+    "environment": "existing Windows browser, one work tab; no Linux browser installation",
+    "first_open_without_refresh": {
+      "busy": "false",
+      "label": "Source audio waveform · 2 streams · frame 0 of 2011",
+      "loaded": "2",
+      "state": "ready",
+      "visible": "2"
+    },
+    "late_original_frame_seek": {
+      "click": {
+        "expected": 1889,
+        "x": 911,
+        "y": 127
+      },
+      "result": {
+        "loaded": "2",
+        "position": "Source frame 1889 / 2010",
+        "sourceIn": "30",
+        "sourceOut": "120",
+        "state": "ready",
+        "status": "River_Two_Streams_67s.mkv · SOURCE WINDOW · 1889–2011 / 2011 frames · medium · all audio streams",
+        "videoTime": 0,
+        "waveform": "Source audio waveform · 2 streams · frame 1889 of 2011"
+      }
+    },
+    "end_key_original_frame": 2010,
+    "replay_from_absolute_eof": {
+      "currentTime": 10.49961,
+      "label": "Source audio waveform · 2 streams · frame 312 of 2011",
+      "loaded": "2",
+      "paused": false,
+      "position": "Source frame 308 / 2010",
+      "status": "River_Two_Streams_67s.mkv · SOURCE WINDOW · 0–1800 / 2011 frames · medium · all audio streams",
+      "videoWidth": 0,
+      "zoomDisabled": true
+    },
+    "source_marks": {
+      "in": 30,
+      "out_exclusive": 120,
+      "fps": {
+        "num": 30,
+        "den": 1
+      }
+    },
+    "drag_source_position_before_and_after": 331,
+    "native_drop": {
+      "generation": "2",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "timelines": [
+        {
+          "id": "1",
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 72,
+                  "linked_group": "0",
+                  "media_id": "2",
+                  "name": "River_Two_Streams_67s.mkv",
+                  "retime": {
+                    "max_length": 7200,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 72,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    -24,
+                    1513
+                  ],
+                  "source_in_frames": 30,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      1585
+                    ],
+                    "start": [
+                      0,
+                      71
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 1,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "1",
+                  "kind": "media",
+                  "length_frames": 72,
+                  "linked_group": "0",
+                  "media_id": "2",
+                  "name": "River_Two_Streams_67s.mkv",
+                  "retime": {
+                    "max_length": 7200,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 72,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    -24,
+                    1513
+                  ],
+                  "source_in_frames": 30,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      1585
+                    ],
+                    "start": [
+                      0,
+                      71
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "2",
+              "kind": "audio",
+              "label": "A2",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "markers": []
+        }
+      ]
+    },
+    "undo": {
+      "generation": "3",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 0
+      },
+      "restores_original_two_empty_tracks": true
+    },
+    "redo": {
+      "generation": "4",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "exact_drop_model_restored": true
+    },
+    "save_and_client_reload": {
+      "generation": "4",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "unsaved": false,
+      "model_unchanged": true,
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 71
+        }
+      }
+    },
+    "final_ui": {
+      "canvas": {
+        "height": 377,
+        "width": 927
+      },
+      "footer": "Connected · writer\nReconnect\nConnected to native Venturi session",
+      "project": "Venturi_Audio_Source_Workflow.vvproj",
+      "saved": "Saved",
+      "sourceIn": "30",
+      "sourceOut": "120",
+      "sourceStatus": "River_Two_Streams_67s.mkv · SOURCE WINDOW · 0–1800 / 2011 frames · medium · all audio streams",
+      "waveform": {
+        "label": "Source audio waveform · 2 streams · frame 0 of 2011",
+        "loaded": "2",
+        "state": "ready",
+        "visible": "2"
+      },
+      "zoomDisabled": true
+    },
+    "screenshot": "f2-source-waveform-halo1.png"
+  },
+  "export": {
+    "job": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "74bc62c63808e495d3955501b83d6d9e1e11fdb5e569f42ee3788be9f088f56a",
+      "frames": 0,
+      "id": "1792717164351212304",
+      "previous_state": null,
+      "program": {
+        "audio_present": true,
+        "end_frame": 72,
+        "export_settings": {
+          "audio": true,
+          "audio_bitrate_kbps": 128,
+          "audio_codec": "aac",
+          "audio_fast_coder": false,
+          "preset": "veryfast",
+          "quality": 18,
+          "scale_percent": 100
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "4",
+        "height": 1080,
+        "project_epoch": "1792716934948880212:1",
+        "revision": "e7948343b0facea4",
+        "start_frame": 0,
+        "width": 1920
+      },
+      "progress": {
+        "compose_fps": 760.5767546489884,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 72,
+        "decode_fps": 857.4324243215851,
+        "decoder_fallback": false,
+        "decoders": [],
+        "elapsed_ms": 318.599882,
+        "encode_fps": 285.3345269722032,
+        "encoder": "X264",
+        "fps": 225.98878426452148,
+        "startup_ms": 38.089545,
+        "total_frames": 72
+      },
+      "project_epoch": "1792716934948880212:1",
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "file": {
+      "bytes": 57585,
+      "sha256": "bbfd9bb97ef4d1e5029f889816e4cf4724273ddb2cd5782df5838727785d4922",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "24/1",
+            "duration": "3.000000",
+            "nb_frames": "72"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "3.008000",
+            "nb_frames": "142"
+          }
+        ],
+        "format": {
+          "duration": "3.008000",
+          "size": "57585"
+        }
+      }
+    },
+    "browser_eof": {
+      "currentTime": 3.008,
+      "duration": 3.008,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "muted": false,
+      "paused": true,
+      "width": 1920
+    },
+    "decoded_audio": {
+      "decoded_audio": {
+        "mean_volume": -29.5,
+        "max_volume": -20.5
+      },
+      "properties": [
+        "User=halo",
+        "Group=halo",
+        "CPUQuota=800%",
+        "MemoryMax=512M",
+        "MemorySwapMax=0",
+        "OOMScoreAdjust=1000",
+        "Nice=19",
+        "IOWeight=10",
+        "TasksMax=32",
+        "RuntimeMaxSec=15",
+        "TimeoutStopSec=5",
+        "Restart=no",
+        "NoNewPrivileges=yes"
+      ]
+    },
+    "interpretation": "Video is intentionally black because V1 is empty. Decoded levels prove file signal, not physical audio output."
+  },
+  "resource_bounds": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "runtime_observation": "ActiveState=active\nMainPID=127416\nResult=success\nMemoryCurrent=149622784\nMemoryPeak=335499264\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+    "source_canvas_max_bytes": 16777216,
+    "source_cache_max_entries": 64,
+    "source_cache_max_bytes": 67108864,
+    "shared_asset_loader_concurrency": 1,
+    "stream_limit": 128,
+    "stream_policy": "Virtual scroll admits only visible lanes through the existing shared loader; no extra native decoder or unbounded canvas/cache.",
+    "heavy_work_host": "halo1",
+    "gpu_lock": "/tmp/HALO_BENCHMARK.lock, nonblocking",
+    "headroom_floors": {
+      "available_memory_gib": 8,
+      "free_disk_gib": 16
+    }
+  },
+  "preservation": {
+    "prior_sessions": {
+      "8813": {
+        "project_name": "Venturi_Halo1.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      },
+      "8816": {
+        "project_name": "Venturi_Color_Audio.vvproj",
+        "generation": "7",
+        "history": {
+          "labels": [
+            "MixerGain",
+            "SoloTrack",
+            "MuteTrack"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 123
+          }
+        },
+        "view_revision": "01edb170d97c41ee4939951a3f87204a53c942159996aa914d53cb81f8305ad3"
+      },
+      "8817": {
+        "project_name": "Venturi_Library_Edit.vvproj",
+        "generation": "3",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 391
+          }
+        },
+        "view_revision": "f8320c7305ce4f4ba16eb04d2d5ceafb15bfd64ae7f73d7870050f151eb492da"
+      },
+      "8818": {
+        "project_name": "Venturi_Native_Curves.vvproj",
+        "generation": "8",
+        "history": {
+          "labels": [
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetInterpolation"
+          ],
+          "position": 6
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8819": {
+        "project_name": "Venturi_Curve_Window.vvproj",
+        "generation": "5",
+        "history": {
+          "labels": [
+            "SetKeyframe"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8820": {
+        "project_name": "Venturi_Long_Playback.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips"
+          ],
+          "position": 2
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 7199
+          }
+        },
+        "view_revision": "42f33edf76e5d4d1431ab12a7ad0018a168d42b9a09ffedf3ea79e717c598115"
+      },
+      "8821": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "9",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips"
+          ],
+          "position": 5
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8822": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 0
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8823": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      }
+    },
+    "prior_project_hashes": {
+      "8813": {
+        "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+      },
+      "8816": {
+        "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+      },
+      "8817": {
+        "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+      },
+      "8818": {
+        "/home/halo/VenturiWeb-native-curves-20261023/Venturi_Native_Curves.vvproj": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab"
+      },
+      "8819": {
+        "/home/halo/VenturiWeb-curve-window-20261023/Venturi_Curve_Window.vvproj": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+      },
+      "8820": {
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Long_Playback.vvproj": "5cb04e90bb346ea7c8a23791b3b7b43959a6f21b290b1ce03d1524916ef39a6f",
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Program_Lookahead.vvproj": "96b2b0060d567444971b0bebf66a87606a9b2ced9c663134af1b5b524620383b"
+      },
+      "8821": {
+        "/home/halo/VenturiWeb-source-placement-20261023/Venturi_Source_Workflow.vvproj": "2fceb30a5f83ec6d5345f8f329ab86f0d0fa427fa4694fd67759af2ff7e0d3c2"
+      },
+      "8822": {
+        "/home/halo/VenturiWeb-source-placement-r5-20261023/Venturi_Source_Workflow.vvproj": "50d0545fc3fafff1d4560f79ba87f0bfcf59398d670f3d183c5990665b47c06f"
+      },
+      "8823": {
+        "/home/halo/VenturiWeb-source-waveform-20261023/Venturi_Audio_Source_Workflow.vvproj": "f4a7755d8e716d8ec2131e669f24acc503c018eacdc3373645c4e6d6ae0ae960"
+      }
+    },
+    "prior_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "ds4-console.service": "58396"
+    },
+    "comparison": "All nine prior edit/view/Undo states, nine project sets and ten protected PIDs match predeployment baselines.",
+    "halo2": "No work performed or editors restarted on halo2.",
+    "nas": "No files or mounts changed; canonical existing shared library roots retained."
+  },
+  "remaining": [
+    "Speculative Source continuation and full remaining F2 behavior.",
+    "Real128-stream/large-media pressure and physical DPI acceptance.",
+    "Physical audio output and long4K/full F1-F7/M7 acceptance.",
+    "Client reload preserves the live Session here; server restart retaining live Undo is not claimed."
+  ],
+  "ledger": {
+    "done": 47,
+    "partial": 43,
+    "excluded": 2,
+    "excluded_csv_status": "not-started",
+    "excluded_features": [
+      "speed_ramp_reverse",
+      "node_graph"
+    ],
+    "full_goal": "active"
+  }
+}

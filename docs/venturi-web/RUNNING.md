@@ -2,6 +2,39 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8824/** in the existing Windows browser. Source `f1fd010`,
+binary `vv-web-ae29b4545c2a`, runs as unprivileged `halo` in
+`venturi-web-halo1-source-waveform-r4.service`, with projects in
+`/home/halo/VenturiWeb-source-waveform-r4-20261023`. Open Saved
+`Venturi_Audio_Source_Workflow.vvproj`: a 1920×1080/24fps timeline with two
+linked audio clips, 72 frames long, inserted from Source frames30–120 at30fps.
+The video track is empty. Export job1792717164351212304 retains the Full HD
+H.264/AAC result, verified through browser EOF with non-silent decoded audio.
+
+Double-click `River_Two_Streams_67s.mkv`. Audio-only Source shows one waveform
+lane per audio stream over the full original duration. Click or use the focused
+waveform's Left/Right/Home/End keys to seek. Set Source options > In/Out and
+drag the waveform to place the marked All range; a drag does not seek. The
+existing keyboard insertion alternative also works. Video zoom is disabled;
+the underlying player remains attached for audio. Visible lanes share the
+existing serial asset loader and64-entry/64-MiB cache. Scroll to reach further
+streams. Interrupted visible reads can resume when idle; actual failures and
+canceled explicit retries require Refresh.
+
+The same-port hidden tunnel forwards8824 to halo1. Canonical roots are
+`/mnt/madrock-share/madrock-library` for assets, its `presets/` directory for
+presets, and the existing ds4 API on8787 for archive media. Eight-CPU/4-GiB,
+no-swap, low-priority limits and the nonblocking shared GPU lock remain in use.
+There is no automatic restart, boot enablement or qualification deadline for
+this live editor. Save before deliberately stopping it; live Undo requires the
+running server. Its Saved project retains generation4 and one InsertClips Undo.
+All nine earlier halo1 Sessions and their project bytes/history remain intact;
+halo2 is untouched. See `evidence/f2-source-waveform-workflow.json` and
+`evidence/f2-source-waveform-halo1.png`. Full F1–F7/M7 remains active, including
+speculative Source continuation and physical audio/large-media acceptance.
+
+### Preserved Source-placement instance
+
 Use **http://127.0.0.1:8822/** in the existing Windows browser. Source `9ecf29d`,
 binary `vv-web-2f3f3cdc11d1`, runs as unprivileged `halo` in
 `venturi-web-halo1-source-placement-r5.service`, with projects in

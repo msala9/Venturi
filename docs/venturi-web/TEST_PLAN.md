@@ -10,6 +10,22 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 audio Source waveform (`f1fd010`, halo1/8824):96 affected client cases,
+two native embedded-module/Host cases, formatting, all-target Clippy and build
+pass. Final67 assets cases/build cover version identity through the real loader,
+interrupted visible demand, late first-paint demand and manual failure/Refresh
+policy. Reuse the other unchanged native547-case and client gates; no full
+renderer matrix or native suite was repeated. The actual Windows scenario uses
+a67.021-second two-stream AAC48-kHz file at native30fps, loads both full-source
+waveforms without Refresh, clicks to1889 after60seconds, replays from2010 to0,
+drags marks30–120 into two native72-frame audio clips at24fps, exercises one
+Undo/Redo, Save/client reload, Program EOF71 and Full HD/AAC export EOF.
+One finite decoded-file level check proves non-silent AAC; it does not qualify
+physical audio.128-stream reachability/virtualization and the16-MiB canvas cap
+are deterministic client cases, not a128-stream hardware pressure claim.
+See `evidence/f2-source-waveform-workflow.json`. Speculative Source continuity,
+physical output, representative large-file pressure and M7 remain open.
+
 F2 Source placement (`9ecf29d`, halo1/8822): the initial full client run passes
 1234/1235 cases; the remaining baseline fake-window oracle discarded capture
 listeners. Its faithful multiple-listener harness passes44 focused cases.
@@ -24,7 +40,8 @@ post-drop availability. No native suite was repeated for these two UI correction
 The existing Windows tab verifies marked all/video/audio placement, new tracks,
 one Undo/Redo, Save/reopen, Source absolute EOF Replay, Program EOF and remembered
 position without CAS error, and Full HD/AAC exported-file EOF. See
-`evidence/f2-source-placement-workflow.json`. Audio-only Source waveform display,
+`evidence/f2-source-placement-workflow.json`. Audio-only Source waveform display is
+qualified separately in `evidence/f2-source-waveform-workflow.json`; remaining
 gapless/physical audio, long4K and full F2/M7 acceptance remain open.
 
 F2 lookahead (`672b495`, halo1/8820): 113 affected JavaScript cases and embedded

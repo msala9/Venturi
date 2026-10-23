@@ -58,6 +58,16 @@ at playhead for keyboard users. These controls stay collapsed during ordinary
 editing and regain availability after a drop. Source Play at the full file's
 final frame returns to absolute zero, preserving quality/audio preview choices.
 
+Audio-only Source replaces the video surface with full-original-file waveforms,
+one lane per stream, independent of audition selection. Native outside-mark
+shading and a common absolute playhead remain visible. Click release seeks with
+the native floor/clamp rule; a real drag inserts the marked range without also
+seeking. Focused Left/Right/Home/End navigate Source while text and timeline
+owners keep their shortcuts. Video zoom is disabled for waveforms. Many streams
+scroll through readable lanes; only visible lanes demand analysis through the
+existing serial queue/cache. Preparing/analysis states remain explicit; loaded
+lanes can keep painting during playback, while new analysis waits for idle.
+
 ## 5. Timeline spec
 
 Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high

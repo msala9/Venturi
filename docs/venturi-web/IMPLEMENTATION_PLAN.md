@@ -18,15 +18,26 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-Current delivery: halo1/8822, source `9ecf29d`, binary `2f3f3cdc11d1`.
+Current delivery: halo1/8824, source `f1fd010`, binary `ae29b4545c2a`.
+Audio-only Source displays native full-source peaks per stream, marks and an
+absolute playhead. Click/keyboard seek and marked All drag share verified Source
+identity; all128 stream ordinals remain reachable through visible-lane demand.
+The existing single derivative queue/cache stays bounded and resumes interrupted
+visible reads without automatically retrying real failures. Actual Windows
+two-stream loading, late seek, Replay, linked insertion, Undo/Redo, Save/client
+reload, Program EOF and non-silent Full HD/AAC exported-file EOF pass. See
+`evidence/f2-source-waveform-workflow.json`. Next complete speculative Source
+continuation and remaining F2 behavior. The full goal remains active.
+
+Preserved Source-placement delivery: halo1/8822, source `9ecf29d`, binary `2f3f3cdc11d1`.
 Verified marked Source ranges support native all/video/audio placement by drag
 or collapsed keyboard controls, existing/new tracks, safe overlap policy and
 one Undo. EOF Replay returns to absolute zero. Project-view CAS acknowledgements
 survive playback and delayed local snapshots. The ordinary moving A/V workflow
 imports, edits, saves/reopens, plays naturally and exports Full HD/AAC.
 See `evidence/f2-source-placement-workflow.json`. All prior editors, projects and
-live Undo remain preserved. Next complete the audio-only Source waveform surface
-and remaining F2 behavior. Ledger47done/43partial/2excluded and full F1-F7/M7 stay active.
+live Undo remain preserved. The audio-only Source waveform surface is delivered
+in f1fd010. Continue remaining F2 behavior. Ledger47done/43partial/2excluded and full F1-F7/M7 stay active.
 
 Preserved Program-lookahead delivery: halo1/8820, source `672b495`, with one speculative adjacent
 Program window and shared-job-safe local cancellation. The 113-case affected

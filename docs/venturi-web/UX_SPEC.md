@@ -1,5 +1,26 @@
 # UX/UI specification — professional NLE with AI review
 
+## Native proxy controls — 2026-10-23
+
+`a95b4a6` on halo1/8830 keeps proxy controls inside Playback > Proxies: Use
+proxies, Low/Medium/High, Pause/Resume, Generate missing and explicit Refresh.
+Actual native status/progress and the job list are folded in this menu. Small
+thumbnail badges identify ready, paused, pending or failed jobs; folder/layout
+rebuilds retain the status. No extra Viewer row is reserved. Source and Program
+share enable/quality. Disabling uses original Source dimensions; exports always
+retain original media and audio. Changing enable/quality invalidates obsolete
+preview attachment while preserving the selected Source and its clock/range.
+Pause alone preserves playback. Hidden or modal menus detach their observer
+without canceling jobs; failed or unconfirmed writes are not replayed. Active
+polling is bounded and status-only changes do not reopen the Source.
+
+The actual Windows workflow parks generation at1/264 frames, resumes the same
+job to Ready, uses that proxy in Program and reaches EOF456. The Full HD export
+is identical to the earlier original-media export and plays to file EOF.
+Settings persist and a client reload retains the live ready variant. The current
+cache is ephemeral per server process; persistence/recovery remains production
+work. See `evidence/f2-native-proxies-workflow.json` and Paused/Ready screenshots.
+
 ## Owner reference update — 2026-10-22
 
 The five original-editor screenshots supplied by the owner take precedence over

@@ -2,29 +2,39 @@
 
 ## Current halo1 working instance
 
-Use **http://127.0.0.1:8829/** in the existing Windows browser. Source `e204001`,
-binary `vv-web-c8a3bc799e10`, runs as unprivileged `halo` in
-`venturi-web-halo1-media-presentation.service`, projects in
-`/home/halo/VenturiWeb-media-presentation-20261023`. Saved
-`Venturi_Project_Media.vvproj` retains the457-frame1920×1080/24fps video/still/
-two-stream audio montage on V1/A1/A2 at Program frame0, with fresh empty history.
-All prior servers and their live Undo remain available, including8827 and8828.
+Use **http://127.0.0.1:8830/** in the existing Windows browser. Source `a95b4a6`,
+binary `vv-web-f8fe8912da80`, runs as unprivileged `halo` in
+`venturi-web-halo1-proxy-workflow.service`, projects in
+`/home/halo/VenturiWeb-proxy-workflow-20261023`. Saved `Venturi_Project_Media.vvproj`
+contains the457-frame1920x1080/24fps video/still/two-stream-audio montage on
+V1/A1/A2 at Program frame0 with empty history. Earlier editors retain their own
+live Undo. Export1792730540149100678 is the verified Full HD H.264/AAC result,
+3018680 bytes, SHA256 `f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543`.
 
-The three small Media buttons switch Grid, List and Details. Details is the
-native default; expand folder arrows to see children. Grid opens folders with a
-double-click or Enter and provides ancestor breadcrumbs. Search in Grid covers
-the project; tree search includes matching ancestors. List omits thumbnails and
-uses23px rows. Details shows native dimensions, fps and audio metadata. Drag the
-Name/Duration divider or use Left/Right (Shift for1px); Home/double-click resets.
-The layout preference survives client reload. Import, clipboard and Library
-reveal imported items in their parents. Local navigation changes no project,
-Saved bytes or Undo. See `evidence/f2-media-presentation-workflow.json`.
+Playback > Proxies offers Use proxies, Low/Medium/High, Pause/Resume and Generate
+missing proxies. Current preferences are enabled/medium/unpaused; media6 has a
+ready264-frame proxy. Badges and folded jobs report native status. Source and
+Program share quality; export retains original media/audio. Disabling uses
+original Source dimensions. Preferences persist in the private project root;
+ready variants are reused within the live server. **The native proxy cache does
+not yet survive server restart.** Do not restart this or earlier editors to
+verify cache persistence. See `evidence/f2-native-proxies-workflow.json`.
 
-The hidden same-port tunnel forwards8829 to halo1. Existing NAS roots and ds4
-are unchanged. Eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking GPU
-lock remain. No automatic restart/boot enablement/deadline applies. Fourteen
-prior Sessions and ds4 are preserved; halo2 is untouched. Full F1-F7/M7 remains
-active, with native proxy management and remaining interaction/release work open.
+Native Details/List/Grid and folder controls from8829 are retained. The hidden
+same-port tunnel forwards8830 to halo1. NAS roots remain
+`/mnt/madrock-share/madrock-library` and `presets/`; ds4 stays on8787.
+Eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking GPU lock remain.
+No automatic restart/boot enablement/deadline applies. Fifteen prior Sessions,
+their Saved files/live Undo and ds4 are preserved. Halo2 is untouched. Full
+F1-F7/M7 remains active: ledger48done/42partial/2excluded.
+
+## Preserved Media presentation instance
+
+The8829 instance remains at `venturi-web-halo1-media-presentation.service`, root
+`/home/halo/VenturiWeb-media-presentation-20261023`, source `e204001`, binary
+`vv-web-c8a3bc799e10`. It retains native Details/List/Grid and its Saved montage.
+See `evidence/f2-media-presentation-workflow.json` for navigation, sizing, reveal
+and reload evidence.
 
 ## Preserved project import/recovery instance
 

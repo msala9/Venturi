@@ -14,25 +14,38 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8829/**, source `e204001`,
-binary `c8a3bc799e10`, in `venturi-web-halo1-media-presentation.service`.
-Project Media now provides native Details (default), dense List and thumbnail
-Grid in the existing compact counter row. Tree folders, Grid breadcrumbs,
-ancestor-aware search, real dimensions/audio metadata, visible-order selection,
-resizable Name/Duration columns and reveal after import/clipboard/Library use
-the same project pool. Only the layout preference persists; folder navigation
-and column width remain transient. The1296-case serial client gate,9 affected
-native cases, formatting, all-target Clippy and embedded build pass. Windows
-verifies all three layouts, nested navigation/search, Shift selection, collapse
-pruning, pointer/keyboard column sizing, path-reuse import reveal and layout
-persistence after client reload. Saved bytes, native project/history and Program
-frame0 remain unchanged. See `evidence/f2-media-presentation-workflow.json` and
-Details/Grid screenshots. Fourteen earlier halo1 Sessions/live histories and ds4
-remain intact; halo2 and NAS are untouched. Ledger48done/42partial/2excluded and
-full F1-F7/M7 remain active. Next implement native proxy enable/quality, real
-queue pause/resume and Program decode proxy selection; exports retain originals.
-Pool marquee/context-menu/folder drag, physical and representative acceptance
-remain explicit open work.
+The current halo1 delivery is **http://127.0.0.1:8830/**, source `a95b4a6`,
+binary `f8fe8912da80`, in `venturi-web-halo1-proxy-workflow.service`.
+Playback > Proxies now provides persisted enable/quality settings, real native
+queue progress and Pause/Resume. Source uses the same quality and original
+resolution when disabled. Program frames and composed previews select ready
+video proxies, keep native geometry and audio, and fall back to original media.
+Exports, scopes and auto-balance retain originals. The compact menu and Media
+badges add no Viewer toolbar row. Generation is serial and yields to foreground
+work; cache admission counts retained leases and explicit resource limits.
+
+The90 affected native cases,7 new client cases and final23 affected client
+cases pass;1296 prior aggregate client cases are reused. Formatting, all-target
+Clippy and the exact embedded build pass. Windows verifies a real pause at
+1/264 frames, resume to264/264, original1920x1080 and medium960x540 Source,
+Program proxy selection and EOF456, proxy disable/enable, and client reload.
+The457-frame1920x1080 H.264/AAC export reaches file EOF and is byte-identical
+to the earlier original-media export. Saved bytes, full native Session/history
+and final Program frame0 are unchanged. See `evidence/f2-native-proxies-workflow.json`
+and its Paused/Ready screenshots. Fifteen earlier Sessions/live histories and
+ds4 remain intact; halo2 and NAS are untouched.
+
+Ledger48done/42partial/2excluded and full F1-F7/M7 remain active. Native proxy
+preferences persist, but the cache is currently ephemeral per process. Next
+complete durable, versioned, bounded cache recovery/native cross-process
+semantics before accepting `proxy_quality_settings`. Also retain the original
+frame-source FD pinning gap in M7, pool marquee/context-menu/folder drag, and
+physical/representative acceptance as explicit work.
+
+Preserved Media presentation delivery: halo1/8829, source `e204001`, binary
+`c8a3bc799e10`. Native Details/List/Grid, folder navigation/search, real metadata,
+resizable columns and visible-order selection remain available and unchanged.
+See `evidence/f2-media-presentation-workflow.json`.
 
 The preserved import/recovery delivery is **http://127.0.0.1:8828/**, source `e41e9cc`,
 binary `3f777879477e`, in `venturi-web-halo1-project-media-r2.service`.
@@ -346,14 +359,16 @@ EOF Replay and the project-view CAS fix are delivered in9ecf29d/8822; see
 is delivered in f1fd010; see `evidence/f2-source-waveform-workflow.json`.
 Speculative Source preparation is delivered in4f94773; see
 `evidence/f2-source-lookahead-workflow.json` for the189-case focused gate and
-actual67s automatic boundary/EOF. Continue remaining import/proxy/derivative
-fidelity, representative-media and full F2 acceptance.
-Project pool batch placement and native sorting are delivered in5d8d15d;
-see `evidence/f2-project-pool-workflow.json`. Next implement approved nested
-source/tree import and isolated prepared project Relink; pool Grid/List
-presentation and representative-media acceptance also remain open.
-All 43 partial ledger rows and broader physical/M7 gates
-remain active; do not promote them from this scoped result.
+actual67s automatic boundary/EOF. Project pool placement/sort, nested import,
+prepared Relink and native Details/List/Grid are delivered in5d8d15d/e41e9cc/
+e204001; reuse their evidence above. Native proxy controls, real generation
+pause/resume and Program ready-proxy decoding are delivered in a95b4a6; see
+`evidence/f2-native-proxies-workflow.json`. Next complete durable/versioned proxy
+cache recovery and native cross-process semantics; the current cache is private
+and ephemeral. Preserve bounded admission and leases across quality changes.
+Then continue pool marquee/context menus/folder drag and representative-media
+acceptance. All42 partial ledger rows and physical/M7 gates remain active;
+do not promote them from this scoped result.
 
 ### F3 — advanced timeline and effects
 
@@ -581,6 +596,15 @@ two-hour editing soak on halo1. Reuse the final working candidate and realistic
 project; no workstation soak, resource pressure/filling tests or foreign-process
 crash experiments. Preserve all dirty sessions. Deliver an accessible verified
 version, source commit, running instructions, saved project and output artifact.
+
+Original frame-source confinement remains a concrete M7 production task.
+Program/scopes/auto-balance must pin only actually requested source files through
+the approved root with NONBLOCK/NOFOLLOW/regular-file checks, retain descriptors
+and parent/ctime witnesses through native decode, and revalidate touched sources
+after render and on cache hits. Include stills, nested compounds and crossings;
+unused offline media must remain harmless. Keep native project metadata/audio
+unchanged and use additive native resolver APIs. The proxy selection lookup is
+already nonblocking; it does not close this pre-existing original decoder gap.
 
 ## Execution and verification policy
 

@@ -10,6 +10,33 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 native proxies (`a95b4a6`, halo1/8830):90 distinct affected native cases pass
+(72 web,18 cross-native), plus7 new proxy client cases and the final23 affected
+proxy/catalog cases. The prior1296-case aggregate client result is reused;
+there is no claim of a fresh full1303-case run after the fixture correction.
+Formatting, all-target Clippy and the final embedded binary pass. An earlier
+cold feature combination hit its180-second build deadline; matching package
+feature unification completed the cross-native gate. Final style-only fixes
+reuse the native behavior results. Build peak2663776256 bytes stays below4 GiB.
+
+The integrated Windows pass uses the Saved457-frame Full HD video/still/two-stream
+audio montage. Native generation parks at1/264 frames across two observations,
+then resumes the same job to264. Source receives original1920x1080 while disabled
+and medium960x540 when enabled. Static Program reports one selected proxy;
+composed preview reports proxy mode and reaches EOF456. Disabling reports zero
+proxy selections. Reenable/client reload retains enabled/medium/unpaused and the
+same ready job. The457-frame Full HD H.264/AAC export is byte-identical to the
+preceding original-media export and plays to19.05-second file EOF without error.
+The final native Session, project Saved bytes and empty Undo equal the baseline;
+15 old Sessions/PIDs and ds4 remain unchanged. See
+`evidence/f2-native-proxies-workflow.json` and Paused/Ready screenshots.
+
+Do not accept durable proxy cache recovery from these checks: artifacts are
+currently per-process temporary files. Implement versioned, bounded recovery
+and native cross-process semantics before its focused recovery qualification.
+Track approved on-demand original-media frame FD pinning separately in M7;
+nonblocking ready-proxy lookup does not close that existing decoder gap.
+
 F2 media presentation (`e204001`, halo1/8829):1296 serial client cases and9
 native cases pass (snapshot5, project placement1, prepared project media HTTP1,
 health/assets1 and module MIME1), plus formatting/all-target Clippy/build.

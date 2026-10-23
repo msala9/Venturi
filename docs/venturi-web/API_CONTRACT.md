@@ -1,5 +1,49 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Native proxy preferences and generation
+
+`GET /api/v1/media/proxies?project_epoch=E` validates the open project and returns
+`{project_epoch,settings:{enabled,quality,paused},jobs,suspended,capacity}`.
+`quality` is `low|medium|high` (640/960/1920 maximum video width). Each current
+quality job reports `{id,media_id,state,progress,total,error,quality,source_version}`;
+states are `queued|generating|ready|failed|canceled`, and progress is source frames.
+`suspended` represents foreground work, separately from the user's `paused` flag.
+Capacity reports32 jobs,512 MiB per artifact and2 GiB total, with active encode
+reservation and retained artifact leases charged. This read requires no writer.
+
+`PUT /api/v1/media/proxies` accepts the strict complete body
+`{project_epoch,client_id,enabled,quality,paused}` and requires the current writer.
+It atomically persists v1 settings in `.venturi-proxy-settings.json` below the
+pinned private projects root, under a nonblocking lock and identity/CAS checks.
+Invalid existing settings are preserved and reported. These are host media
+preferences; no native Project, generation or Undo entry changes.
+
+`POST /api/v1/media/proxies/prepare` accepts strict
+`{project_epoch,client_id,media_ids:[...]}` with1–32 distinct IDs. The actor captures
+approved original descriptors, native metadata and exact original paths before
+enqueueing. The response is the catalog plus per-media `errors`. Images, audio-only
+files, compounds and replaced sources are refused. One worker uses the native
+full-video generator with two software threads. Pause parks the real native
+progress callback without discarding partial encoding; foreground Source/Program
+work uses a bounded suspension barrier. Automatic attempts are bounded and failed
+work is retried only by explicit user intent. There is no DELETE/replay on hiding
+the menu or detaching its observer.
+
+Ready original/artifact descriptors and strong versions are retained through
+rendering. Program frame PNGs report `x-venturi-proxy-count`; composed-preview
+descriptors include `video_sources:{mode,proxy_count,version}`. Frame and Program
+cache reuse requires this captured selection version as well as original input
+lineage. Native source dimensions, timing, crop and audio remain authoritative.
+Exports, scopes and auto-balance use originals. Source conversion also accepts
+`quality=original` for bounded original dimensions (maximum8192 width); this is
+not a proxy-preferences quality. Existing native Low/Medium/High APIs are unchanged.
+
+Settings persist across manager reopen. The current proxy artifacts live in a
+private per-process temporary cache: durable/versioned cache recovery and native
+cross-process cache semantics remain open. Live client reload and quality reuse
+must not be described as server-restart cache persistence. See
+`evidence/f2-native-proxies-workflow.json`.
+
 ## Project media presentation metadata
 
 `GET /api/v1/session` media entries include numeric `width`, `height`,

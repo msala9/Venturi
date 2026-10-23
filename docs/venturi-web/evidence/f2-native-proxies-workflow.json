@@ -1,0 +1,597 @@
+{
+  "date": "2026-10-23",
+  "scope": "F2 native proxy preferences, bounded generation, ready-video selection and original export; full F1-F7/M7 remains active",
+  "source_commit": "a95b4a6",
+  "url": "http://127.0.0.1:8830/",
+  "host": "halo1",
+  "deployment": {
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-f8fe8912da80",
+    "sha256": "f8fe8912da80ee8f554b629d000852f6194792e630524e08817e6f4fddfc2d54",
+    "root": "/home/halo/VenturiWeb-proxy-workflow-20261023",
+    "unit": "venturi-web-halo1-proxy-workflow.service",
+    "project_sha256": "d0c244d49553feb8de919d3c2911f019142ab97e113a928473f0c8050f265521"
+  },
+  "source_files_sha256": {
+    "crates/vv-media/src/browser_proxy.rs": "c63540606b1c7a306f31e7fd012b6dacc0b9158d4a77b4003a5abfba748f32d1",
+    "crates/vv-media/src/proxy.rs": "010d052f32411e3288f955f1bb0203012ba1cec3b36aa33d77e6e9e0ba8d8331",
+    "crates/vv-media/src/tests/proxy.rs": "92734e12a2d85e52e7f27dfc90df95605c7e35b19c7910ca5573e5a37db37b0e",
+    "crates/vv-session/src/export.rs": "76f5cf8dddc796bd0ba73874738585997dc26b35243ae044519717b21719cfda",
+    "crates/vv-session/src/tests/export.rs": "28d1ac20bd45cdb6d145cf5344fdd30d99898110c9b2a8c2f2cab5c51b6a7127",
+    "crates/vv-web/src/api.rs": "a0481274417a6e57b0e94e279511d5733707b0f7e25adcdd6674b6b027002ae5",
+    "crates/vv-web/src/audition.rs": "b558a0afb3b28eec93a090902c697570b3fc9dfd1db7cb4bd7c1d3b0185e950b",
+    "crates/vv-web/src/host.rs": "71543acf3184fe0d607a07b91461af12524eb1acec7beb3896d4899c9aed8871",
+    "crates/vv-web/src/main.rs": "6f41931c1a5c1efe2a76b2f05f8a2af2a04e76d8ddd4a3fc76a75ba1480162da",
+    "crates/vv-web/src/preview.rs": "d7bb499f4b07879a7e479a39ff72e4e8825333d3ce8b3a7d852e07537e2ea204",
+    "crates/vv-web/src/program.rs": "93c06d679ffd6dfaa9f37a8877061a4c8c55b130acf02f48fa97f237a51e27c6",
+    "crates/vv-web/src/source.rs": "30ff9279849fa101e569472fc1489d4a2a87dad88bd16f9eb5315954a5882d3e",
+    "crates/vv-web/src/tests/api.rs": "d7f8e31fce406a6230b4893c57f92e6a06e337f5bfc60f19b04a0845757bb83b",
+    "crates/vv-web/src/tests/audition.rs": "15a15b6ae1f964fe1dd321317090cd45b8bec8ec3a03002c1550e7ee7565c4d6",
+    "crates/vv-web/src/tests/preview.rs": "ffb922a2881e531001d14290c7b611ee2b51d10609e45fee5aea5d4b750b7328",
+    "crates/vv-web/src/tests/program.rs": "cb0c69e99f06d1d04bd47a492d1b1d3a9094a094eb07e1ff9403088e9f0a7d1a",
+    "crates/vv-web/src/tests/source.rs": "c95087694061718228bf95e9309f3e3d40b1746e52e2bc638e74a0939478422f",
+    "web/index.html": "d5d6306d9b1b7096df6955a39d1a0d04ec640062b1aa2a64174ffe085e985760",
+    "web/js/catalog.js": "d6177367e0d8eb89b372d949a5fa9eb5da17019471ad2f170173a5405adc1321",
+    "web/js/main.js": "86490d1892675f165f205409a437f375e2ed93788983a00976bccf11188bb230",
+    "web/style/native-browser.css": "153503bbf5443f7a2a50d00f58adcbeba20156b05cf6c3cc6ca152b19475bff8",
+    "crates/vv-web/src/proxy.rs": "44836452b6ed70fc3c0d0f16a3a45ceba43c728f543516fa3f37087262474605",
+    "crates/vv-web/src/proxy_video.rs": "950222ad61f69fb5f5a758f2fba4ac4d29fcbf66e928c1e6f1414dcb2adeb383",
+    "crates/vv-web/src/tests/proxy.rs": "c3513b828350ac49913c059f65560108a590be0378d7d62f123e673f953a307b",
+    "crates/vv-web/src/tests/proxy_video.rs": "fc0cd2322ddc53bbe1339ab7b2b29e0871276f7504e1671ebbf74ff56de74e15",
+    "web/js/proxies.js": "8d18ff5bcd14b1c06bc86714d0ae2af9a16b2d3708a22d224cd2359b8011e3d5",
+    "web/test/proxies.test.js": "8127c99f6e9a69cb16a475b1721a2a3c6a69601091f98e2ed1444e31a4d52d4c"
+  },
+  "limits": {
+    "cpu": 8,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks": 128,
+    "gpu_lock": "/tmp/HALO_BENCHMARK.lock",
+    "available_memory_floor_bytes": 8589934592,
+    "disk_floor_bytes": 17179869184,
+    "windows": "Existing browser only; no local compilation/render/test fleet",
+    "halo2": "Untouched; foreign H3 work preserved"
+  },
+  "qualification": {
+    "native_distinct_cases": 90,
+    "native_results": {
+      "proxy-workflow-r6": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 561 filtered out; finished in 0.04s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 566 filtered out; finished in 0.00s",
+        "test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 534 filtered out; finished in 0.68s",
+        "test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.11s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 556 filtered out; finished in 0.02s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 566 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 566 filtered out; finished in 0.00s"
+      ],
+      "proxy-workflow-r7": [
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 130 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 107 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 567 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 130 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 108 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 567 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.11s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 109 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 567 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 129 filtered out; finished in 0.02s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 109 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 567 filtered out; finished in 0.00s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.34s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 109 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 567 filtered out; finished in 0.00s"
+      ]
+    },
+    "javascript": {
+      "previous_1296_cases": "Pass from prior aggregate run; unchanged behavior reused",
+      "new_proxy_cases": 7,
+      "final_affected_catalog_and_proxy_cases": 23,
+      "fresh_full_1303_run": false
+    },
+    "format": "pass",
+    "all_target_clippy": "pass",
+    "embedded_build": "pass",
+    "final_binary_matches_manifest": true,
+    "build_peak_bytes": 2663776256,
+    "notes": [
+      "An earlier cross-crate cold-feature build hit its 180-second deadline after the72 web cases passed. The18 distinct cross-native cases subsequently passed with matching package feature unification.",
+      "Final changes after native behavior checks were two Clippy style fixes; fmt, all-target Clippy and build pass for the exact final manifest."
+    ]
+  },
+  "real_pause_resume": {
+    "first_at_unix": 1792730175.6357656,
+    "second_at_unix": 1792730200.9232554,
+    "stable_seconds": 25.287489891052246,
+    "first": {
+      "error": null,
+      "id": "proxy-1792730165436159439-8",
+      "media_id": "6",
+      "progress": 1,
+      "quality": "medium",
+      "source_version": "64512:4211008:2854042:1792730002:773089756:1792730002:773089756",
+      "state": "generating",
+      "total": 264
+    },
+    "second": {
+      "error": null,
+      "id": "proxy-1792730165436159439-8",
+      "media_id": "6",
+      "progress": 1,
+      "quality": "medium",
+      "source_version": "64512:4211008:2854042:1792730002:773089756:1792730002:773089756",
+      "state": "generating",
+      "total": 264
+    },
+    "resumed": {
+      "error": null,
+      "id": "proxy-1792730165436159439-8",
+      "media_id": "6",
+      "progress": 264,
+      "quality": "medium",
+      "source_version": "64512:4211008:2854042:1792730002:773089756:1792730002:773089756",
+      "state": "ready",
+      "total": 264
+    },
+    "settings_while_paused": {
+      "enabled": true,
+      "paused": true,
+      "quality": "medium"
+    },
+    "partial_encoding_retained": true
+  },
+  "program": {
+    "frame": {
+      "proxy_count": "1",
+      "bytes": 696311,
+      "sha256": "cf71977ff82eae55f219ac617a7591d3208dbd292640c38188d86827ffdff136",
+      "dimensions": [
+        960,
+        540
+      ]
+    },
+    "program": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 0,
+      "id": "1792730491877140126",
+      "previous_state": null,
+      "program": {
+        "audio_origin_frame": 0,
+        "audio_present": true,
+        "end_frame": 457,
+        "export_settings": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 540,
+        "project_epoch": "1792730003269010509:1",
+        "revision": "123c4babc02ef8b8",
+        "start_frame": 0,
+        "telemetry": {
+          "bin_count": 224,
+          "bin_frames": 4096,
+          "end_sample": 914000,
+          "first_bin_sample": 0,
+          "inserts": [],
+          "inserts_available": true,
+          "inserts_error": null,
+          "reason": null,
+          "sample_rate": 48000,
+          "spectrum_frames": 4096,
+          "spectrum_hz": [
+            20.547016143798828,
+            21.68634033203125,
+            22.888835906982422,
+            24.158016204833984,
+            25.497568130493164,
+            26.911396026611328,
+            28.403623580932617,
+            29.978591918945312,
+            31.640893936157227,
+            33.39537048339844,
+            35.247127532958984,
+            37.201568603515625,
+            39.264381408691406,
+            41.44157409667969,
+            43.73949432373047,
+            46.164833068847656,
+            48.72465133666992,
+            51.426414489746094,
+            54.27798843383789,
+            57.287681579589844,
+            60.464256286621094,
+            63.81698226928711,
+            67.35560607910156,
+            71.09044647216797,
+            75.03237915039062,
+            79.19290161132812,
+            83.58412170410156,
+            88.21882629394531,
+            93.11051940917969,
+            98.2734603881836,
+            103.72268676757812,
+            109.47406768798828,
+            115.54435729980469,
+            121.95124816894531,
+            128.71339416503906,
+            135.8505096435547,
+            143.38336181640625,
+            151.3339080810547,
+            159.72531127929688,
+            168.58201599121094,
+            177.92982482910156,
+            187.79595947265625,
+            198.20916748046875,
+            209.19979858398438,
+            220.79983520507812,
+            233.0430908203125,
+            245.9652557373047,
+            259.6039123535156,
+            273.99884033203125,
+            289.1919860839844,
+            305.2275695800781,
+            322.15228271484375,
+            340.0155334472656,
+            358.8692626953125,
+            378.76837158203125,
+            399.7709655761719,
+            421.9381103515625,
+            445.33441162109375,
+            470.02801513671875,
+            496.09088134765625,
+            523.5989379882812,
+            552.63232421875,
+            583.2755126953125,
+            615.617919921875,
+            649.753662109375,
+            685.7822265625,
+            723.80859375,
+            763.9434814453125,
+            806.3038330078125,
+            851.0131225585938,
+            898.201416015625,
+            948.00634765625,
+            1000.5728759765625,
+            1056.0543212890625,
+            1114.612060546875,
+            1176.4168701171875,
+            1241.648681640625,
+            1310.49755859375,
+            1383.1641845703125,
+            1459.860107421875,
+            1540.8087158203125,
+            1626.24609375,
+            1716.4207763671875,
+            1811.5955810546875,
+            1912.0477294921875,
+            2018.070068359375,
+            2129.97119140625,
+            2248.077392578125,
+            2372.732421875,
+            2504.29931640625,
+            2643.161865234375,
+            2789.72412109375,
+            2944.4130859375,
+            3107.6796875,
+            3279.99951171875,
+            3461.873779296875,
+            3653.833251953125,
+            3856.43701171875,
+            4070.27490234375,
+            4295.97021484375,
+            4534.18017578125,
+            4785.5986328125,
+            5050.9580078125,
+            5331.03125,
+            5626.63525390625,
+            5938.6298828125,
+            6267.92431640625,
+            6615.478515625,
+            6982.30419921875,
+            7369.4697265625,
+            7778.1044921875,
+            8209.396484375,
+            8664.6044921875,
+            9145.052734375,
+            9652.142578125,
+            10187.3505859375,
+            10752.2353515625,
+            11348.4423828125,
+            11977.708984375,
+            12641.8671875,
+            13342.853515625,
+            14082.7099609375,
+            14863.591796875,
+            15687.771484375,
+            16557.65234375,
+            17475.765625,
+            18444.791015625,
+            19467.546875
+          ],
+          "spectrum_kind": "native_fft_band_maximum",
+          "start_sample": 0,
+          "state": "available"
+        },
+        "video_sources": {
+          "mode": "proxy",
+          "proxy_count": 1,
+          "version": "proxy:9d23198f5a584b15bbe04885e90350fa57c7d0b3ebfd45d47f67f185936adcdc"
+        },
+        "width": 960
+      },
+      "progress": {
+        "compose_fps": 1064.9559214744102,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 457,
+        "decode_fps": 992.2299277693522,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 1049.113041,
+        "encode_fps": 492.58261074670975,
+        "encoder": "X264",
+        "fps": 435.60606163506833,
+        "startup_ms": 86.680931,
+        "total_frames": 457
+      },
+      "project_epoch": null,
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    }
+  },
+  "original_frame": {
+    "proxy_count": "0",
+    "bytes": 763583,
+    "sha256": "185ea7292b3a68154252fcd7ea57370a5e5e7a0fbc18970538e851a9f7803675",
+    "catalog": {
+      "capacity": {
+        "charged_bytes": 13771359,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_jobs": 2
+      },
+      "jobs": [
+        {
+          "error": null,
+          "id": "proxy-1792730165436159439-8",
+          "media_id": "6",
+          "progress": 264,
+          "quality": "medium",
+          "source_version": "64512:4211008:2854042:1792730002:773089756:1792730002:773089756",
+          "state": "ready",
+          "total": 264
+        }
+      ],
+      "project_epoch": "1792730003269010509:1",
+      "settings": {
+        "enabled": false,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    }
+  },
+  "browser": {
+    "original_source": {
+      "error": null,
+      "height": 1080,
+      "url": "/api/v1/media/6/jobs/1792730052241004318/source.mp4?project_epoch=1792730003269010509%3A1",
+      "width": 1920
+    },
+    "paused_ui": "Use proxies\nProxy quality\nLow \u00b7 640 px\nMedium \u00b7 960 px\nHigh \u00b7 1920 px\nResume proxy generation\nGenerate missing proxies\nRefresh proxy status\n\nProxies enabled \u00b7 generation paused \u00b7 0 ready \u00b7 0 failed\n\nProxy jobs \u00b7 1\nRiver_AV_11s.mp4 \u00b7 Paused \u00b7 1/264 frames\nAbout proxies",
+    "medium_source": {
+      "error": null,
+      "height": 540,
+      "status": "River_AV_11s.mp4 \u00b7 SOURCE WINDOW \u00b7 0\u2013264 / 264 frames \u00b7 medium \u00b7 all audio streams",
+      "url": "/api/v1/media/6/jobs/1792730237120377960/source.mp4?project_epoch=1792730003269010509%3A1",
+      "width": 960
+    },
+    "program_eof": {
+      "duration": null,
+      "ended": false,
+      "error": null,
+      "height": 0,
+      "paused": true,
+      "position": "456",
+      "status": "End of timeline",
+      "time": 0,
+      "url": null,
+      "width": 0
+    },
+    "export_eof": {
+      "duration": 19.05,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "paused": true,
+      "time": 19.05,
+      "url": "/api/v1/exports/1792730540149100678/export.mp4?project_epoch=1792730003269010509%3A1",
+      "width": 1920
+    },
+    "after_reload": [
+      "Proxies enabled \u00b7 1 ready \u00b7 0 failed",
+      "Fit \u00b7 960 \u00d7 540 received preview pixels \u00b7 100% = one preview pixel per display pixel",
+      "00:00:00:00",
+      "Program In 0 \u00b7 Out 457 (exclusive) \u00b7 457 frames selected for export",
+      "Connected \u00b7 writer"
+    ]
+  },
+  "export": {
+    "job": "1792730540149100678",
+    "bytes": 3018680,
+    "sha256": "f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543",
+    "matches_prior_original_export": true,
+    "descriptor": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "b9dd6d433690a59bafc7ce093e6879e39435e064d8547af3fd15491e46c11625",
+      "frames": 0,
+      "id": "1792730540149100678",
+      "previous_state": null,
+      "program": {
+        "audio_present": true,
+        "end_frame": 457,
+        "export_settings": {
+          "audio": true,
+          "audio_bitrate_kbps": 128,
+          "audio_codec": "aac",
+          "audio_fast_coder": false,
+          "preset": "veryfast",
+          "quality": 18,
+          "scale_percent": 100
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 1080,
+        "project_epoch": "1792730003269010509:1",
+        "revision": "123c4babc02ef8b8",
+        "start_frame": 0,
+        "width": 1920
+      },
+      "progress": {
+        "compose_fps": 457.88055192092133,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 457,
+        "decode_fps": 412.3021346831151,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 2070.982651,
+        "encode_fps": 244.93764207873903,
+        "encoder": "X264",
+        "fps": 220.668193323267,
+        "startup_ms": 107.778096,
+        "total_frames": 457
+      },
+      "project_epoch": "1792730003269010509:1",
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "browser_eof": {
+      "duration": 19.05,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "paused": true,
+      "time": 19.05,
+      "url": "/api/v1/exports/1792730540149100678/export.mp4?project_epoch=1792730003269010509%3A1",
+      "width": 1920
+    }
+  },
+  "final": {
+    "settings": {
+      "enabled": true,
+      "paused": false,
+      "quality": "medium"
+    },
+    "proxy_catalog": {
+      "capacity": {
+        "charged_bytes": 13771359,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_jobs": 2
+      },
+      "jobs": [
+        {
+          "error": null,
+          "id": "proxy-1792730165436159439-8",
+          "media_id": "6",
+          "progress": 264,
+          "quality": "medium",
+          "source_version": "64512:4211008:2854042:1792730002:773089756:1792730002:773089756",
+          "state": "ready",
+          "total": 264
+        }
+      ],
+      "project_epoch": "1792730003269010509:1",
+      "settings": {
+        "enabled": true,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    },
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "generation": "0",
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "native_session_equal_to_baseline": true,
+    "saved_bytes_equal_to_baseline": true,
+    "project_hashes": {
+      "Venturi_Project_Media.vvproj": "d0c244d49553feb8de919d3c2911f019142ab97e113a928473f0c8050f265521"
+    },
+    "unit": "ActiveState=active\nMainPID=150790\nResult=success\nMemoryCurrent=436715520\nMemoryPeak=712773632\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n"
+  },
+  "preservation": {
+    "preserved_sessions": 15,
+    "preserved_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "venturi-web-halo1-source-lookahead.service": "129350",
+      "venturi-web-halo1-project-pool.service": "131552",
+      "venturi-web-halo1-project-media.service": "136307",
+      "venturi-web-halo1-project-media-r2.service": "139773",
+      "venturi-web-halo1-media-presentation.service": "141959",
+      "ds4-console.service": "58396"
+    },
+    "all_sessions_equal": true,
+    "old_saved_sha256": {
+      "media-presentation": "e516cf9959de69f991a4f15861676500b77caec5b22db9b33401092a0a7cdc06",
+      "project-media-r2": "fc4754ffd4a3b70f47d941d07f864ad3eaf13c66c3a7c77113b4c52c55703549",
+      "project-media": "9a34f342757381b9f962f222f81afbcc9a6bbd491114fa2dfcecc996ba68ecda"
+    }
+  },
+  "screenshots": [
+    "f2-native-proxies-paused-halo1.png",
+    "f2-native-proxies-ready-halo1.png",
+    "f2-native-proxies-workspace-halo1.png"
+  ],
+  "remaining": [
+    "Native proxy cache is ephemeral per process. Preferences persist and live ready variants are reused; durable/versioned bounded cache recovery and cross-process native cache semantics remain production work. No server restart cache claim.",
+    "Active original-media frame decoding still needs approved on-demand FD pinning and post-render/cache-hit witness validation for Program/scopes/auto-balance. The new proxy-selection lookup itself is nonblocking and ready-only.",
+    "Pool marquee/context menus/folder drag, representative long4K/dense/DPI/physical audio and the other F1-F7/M7 acceptance gates remain open."
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "aa84c4cbb774a600d63cf0cf65c6c003a5db9759",
+  "url": "http://127.0.0.1:8855/",
+  "service": "venturi-web-halo1-color-audio-compact.service",
+  "pid": 246732,
+  "binary_sha256": "720ca170ac2814eaa14eca98023ac6188d957eb369f3b78d17cef4195ca723c6",
+  "project": "Venturi_Color_Audio_Controls_V1.vvproj",
+  "project_sha256": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+  "gate": {
+    "r1": "Detached compressor button regression failed (parent/subcase), corrected before affected rerun.",
+    "r2": {
+      "client_passed": 30,
+      "clippy_seconds": 8.53,
+      "build_seconds": 42.73,
+      "peak_bytes": 1702817792
+    },
+    "r3": {
+      "client_passed": 83,
+      "build_seconds": 41.64,
+      "peak_bytes": 1645780992
+    },
+    "r4": {
+      "css_only_build_seconds": 41.46,
+      "peak_bytes": 1530990592,
+      "checks_reused": true
+    },
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "f0337ec711cf7c121f461ff785d1d82f056d71b31b0c243f525fa23c728b9f5d",
+      "crates/vv-web/src/tests/api.rs": "d04d1457d9d09626237bde81184b3b417a3331eedd0fc4f407ce1bec1d37935e",
+      "web/js/compressor-controls.js": "1ff19ff51bd20065a23a342fe24d2cc31b740a80b9a956f69cee584523b42aed",
+      "web/js/inspector.js": "d6f30f0cb16d77f85f442d37968971d36cd972fd4c9b59bf6038a9d2c2a2fb7a",
+      "web/js/mixer.js": "22a5bacfbde1decf5a611ece93e6a3905730a02d6908fd56ba070184fd718459",
+      "web/js/visual.js": "957048dd293c726d0886a20dd10d1be02415f016ac0cb423005e7f396837e63b",
+      "web/style/app.css": "1d0249727518bd0847bf5bca8b4ceaae32d2c65fb0b136b7ae5011fc9c803619",
+      "web/style/native-inspector.css": "c14f6c94a39d3845615927d7dbb77939fb83c29286cbf16595ffd0c552a1e797",
+      "web/test/compressor-controls.test.js": "56e4274c70f4caf61e8e8fce74b14c40324c1c7cf825eb0b809c2ce3a5c9a82c",
+      "web/test/visual.test.js": "72d72d9fee30164cc89dc89ac0890086c459b83b084ed24ddc78cf48225bba27",
+      "web/js/main.js": "8b408c266df14d131ab49dc0d9ada2a02b9456a521f857bf22cb17975b8d3673",
+      "web/test/inspector.test.js": "bda4c73207a9485ea2d4cb3e39439cc35fff0226f866db984f89f210fc07d86e"
+    },
+    "counting": "Affected runs overlap; no summed unique count."
+  },
+  "windows": {
+    "color": {
+      "clip_id": "20",
+      "two_scalar_commands": true,
+      "crossed_low_range_one_undo_redo": true,
+      "crossed_low": 0.9363816976547241,
+      "unchanged_high": 0.6666666865348816,
+      "final_grade": {
+        "ShadowsX": 0.06981818377971649,
+        "ShadowsY": 0.040727272629737854,
+        "ShadowsLuma": 0.10000000149011612,
+        "ShadowsSat": 1.2000000476837158,
+        "MidtonesX": 0.0,
+        "MidtonesY": 0.0,
+        "MidtonesLuma": 0.0,
+        "MidtonesSat": 1.0,
+        "HighlightsX": 0.0,
+        "HighlightsY": 0.0,
+        "HighlightsLuma": 0.0,
+        "HighlightsSat": 1.0,
+        "OffsetX": 0.0,
+        "OffsetY": 0.0,
+        "OffsetLuma": 0.0,
+        "Saturation": 1.0,
+        "LowRange": 0.3333333432674408,
+        "HighRange": 0.6666666865348816
+      }
+    },
+    "compressor": {
+      "target": "Master insert2",
+      "field_only": [
+        "Low threshold",
+        "Low ratio",
+        "Mid attack",
+        "High makeup",
+        "High release"
+      ],
+      "mid_band_reset_and_exact_undo": true,
+      "peers_crossovers_other_inserts_preserved": true,
+      "final_parameters": {
+        "bands": [
+          {
+            "attack_ms": 10.0,
+            "makeup_db": 0.0,
+            "ratio": 4.047847747802734,
+            "release_ms": 150.0,
+            "threshold_db": -36.45282745361328
+          },
+          {
+            "attack_ms": 10.0,
+            "makeup_db": 0.0,
+            "ratio": 3.0,
+            "release_ms": 150.0,
+            "threshold_db": -24.0
+          },
+          {
+            "attack_ms": 10.0,
+            "makeup_db": 0.10000000149011612,
+            "ratio": 3.0,
+            "release_ms": 152.0,
+            "threshold_db": -24.0
+          }
+        ],
+        "crossovers_hz": [
+          200.0,
+          2000.0
+        ]
+      }
+    },
+    "viewport": {
+      "first_two_edits_one_undo_each": true,
+      "same_focus_scroll_y": true,
+      "measurements": {
+        "before": {
+          "scroll": 914.4000244140624,
+          "focus": "Master insert 2 Low makeup",
+          "value": 0,
+          "y": 495.6000061035156
+        },
+        "afterFirst": {
+          "scroll": 914.4000244140624,
+          "focus": "Master insert 2 Low makeup",
+          "value": 0.10000000149011612,
+          "y": 495.6000061035156
+        },
+        "afterSecond": {
+          "focus": "Master insert 2 Low makeup",
+          "rect": {
+            "h": 30.86250114440918,
+            "w": 30.86250114440918,
+            "x": 506.6625061035156,
+            "y": 495.6000061035156
+          },
+          "scroll": 914.4000244140624,
+          "value": "0.20000000298023224"
+        }
+      },
+      "low_makeup_reset0": true,
+      "shadows_wheel_pointer_edit": true
+    },
+    "save_reopen": {
+      "exact_models_raw_media_and_saved_hashes": true,
+      "only_compound_hash_revisions_normalized": true,
+      "saved_empty_undo": true
+    },
+    "program": "R2, before the viewport/CSS upgrade and final Shadows XY edit: observed position199 and stopped after Play; ended and physical audio output not sampled."
+  },
+  "native_api": {
+    "adapter": "R9700/Vulkan",
+    "oracle_sha256": "1f33737d6f5f770a9bd40eba42716eb183f6403cbb1e7160ecfbc122563f3fa4",
+    "frames": [
+      {
+        "frame": 12,
+        "width": 320,
+        "height": 180,
+        "rgba_sha256": "e6eeda7ab459e6ddcb027899e7465bc54e4d76da88a30b78de863f71a1523f84",
+        "byte_exact": true
+      },
+      {
+        "frame": 30,
+        "width": 320,
+        "height": 180,
+        "rgba_sha256": "9bc65745721eabb6028754ffaeac01ded3131a1d957c6d3d0093b773e34aebdc",
+        "byte_exact": true
+      }
+    ],
+    "audio": {
+      "frame": 38,
+      "start_sample": 76000,
+      "count": 3840,
+      "native_f32_sha256": "c16a81fff4327fde872a0fbffe6b299f731c141940f99a02534cd4df16b5d4c2",
+      "pcm16_sha256": "2ad39bd786284bda67a4f8f61dc603bf373bada087f2e377abec0e46ec918f25",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.1085955798625946,
+        "rms": 0.02757017525835335
+      }
+    }
+  },
+  "preservation": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 2,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "screenshots": {
+    "f4-color-direct-controls.png": "190864acbe0859d8970bb360106f999c1588be1e83cff32359cf4d3b212cf115",
+    "f4-compressor-direct-controls.png": "9b771ca2da6afedda4681ea2be2e9b1d5704498d45c54e35297eef7542013d57"
+  },
+  "remaining": [
+    "Two320x180 frames12/30 and one80ms PCM16 fragment38 only; native f32 uses established PCM16 quantization.",
+    "No new export, continuousDSP, sampled ended, physical audibility, recording/device, broad physical/DPI or fullM7 claim.",
+    "Color/mixer/compressor capabilities remain partial."
+  ],
+  "ledger": {
+    "done": 52,
+    "partial": 38,
+    "excluded": 2
+  }
+}

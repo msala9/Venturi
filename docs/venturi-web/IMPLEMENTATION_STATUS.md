@@ -1,6 +1,17 @@
 # Implementation status
 
-## Inspector/audio cancellation and transition gestures — 2026-10-23
+## Native Color/compressor direct controls — 2026-10-23
+
+Delivered `aa84c4c` on halo1/8855: compact Color scalar/range and compressor
+dynamics controls, with stable Inspector focus/scroll. Actual Windows one-Undo
+edits, crossed ranges, band reset/Undo, wheel movement and exact Saved reopen
+pass. Two R9700 native/API frames and one80ms PCM fragment match exactly.
+Affected R2/R3 client runs and CSS-only R4 build pass; counts overlap. No new
+export, physical audibility or fullM7 claim. See COMPLETION_PLAN.md and
+`evidence/f4-color-audio-controls-workflow.json`. Ledger52/38/2; rows partial.
+
+
+## Preserved Inspector/audio cancellation and transition gestures — 2026-10-23
 
 Delivered `124fbb4` on halo1/8854. Selected Inspector draft cancellation keeps
 mounted controls usable; final disposal removes bindings. Queued color applies
@@ -13,8 +24,8 @@ Four native/100 unique client cases, formatting, Clippy and build pass, preservi
 38 prior Sessions/39 PIDs and shared files. See COMPLETION_PLAN.md and
 `evidence/f4-inspector-audio-workflow.json` for the retained first failure, focused
 rerun, hashes, screenshots and explicit physical/Alt/DPI limits. Ledger52/38/2;
-full F1-F7/M7 remains active. Next production block: native Color scalar scrubs
-and LowRange/HighRange sliders, followed by compressor dynamics controls.
+full F1-F7/M7 remains active. Color scalar/range and compressor controls planned
+at that delivery are subsequently qualified above.
 
 ## V1 audio tradeoff — owner decision, 2026-10-23
 

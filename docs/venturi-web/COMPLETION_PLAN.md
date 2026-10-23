@@ -32,7 +32,31 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current Inspector/audio correction: **http://127.0.0.1:8854/**,
+Current Color/compressor controls: **http://127.0.0.1:8855/**,
+source `aa84c4c`, binary `720ca170ac28`, service
+`venturi-web-halo1-color-audio-compact.service`, PID246732.
+Native Luma/Sat scrubs and independent Low/High sliders join compact compressor
+dynamics controls and parameter/band resets. Confirmed edits retain numeric focus
+and Inspector scroll; scalar/reset rows stay compact and aligned.
+
+Actual Windows proves Luma0.1/Sat1.2, crossed Low/High with one Undo/Redo,
+field-only compressor edits, band reset/Undo preserving peers/crossovers, two
+successive makeup edits with stable focus/scroll and one Undo each, Low makeup
+reset0 and a Shadows XY wheel edit. Save/reopen preserves exact models/media/
+Saved bytes with empty Undo. Final ShadowsXY is0.06981818/0.04072727; Low/High
+return to native defaults. See `evidence/f4-color-audio-controls-workflow.json`.
+
+R1 exposed one detached-button regression; R2 passes30 affected client cases,
+Clippy8.53s/build42.73s. R3 passes83 cases/build41.64s; CSS-only R4 build41.46s
+reuses checks. Runs overlap; no summed unique count. R9700/Vulkan native/API
+matches moving frames12/30 at320x180 and one audible80ms PCM16 fragment38 after
+native f32 quantization. Before the viewport/CSS upgrade and final wheel edit,
+Program reached position199 and stopped after Play; ended and physical audio
+output were not sampled. No new export/device/
+full physical/M7 claim. Prior Sessions/files/NAS/proxy are unchanged. Ledger
+**52 done /38 partial /2 excluded**; affected rows partial, full F1-F7/M7 active.
+
+Preserved Inspector/audio correction: **http://127.0.0.1:8854/**,
 source `124fbb4`, binary `bee956b2c6c2`, service
 `venturi-web-halo1-inspector-audio.service`, PID235628. The owned8854 candidate
 was Saved and explicitly reopened with empty Undo before its guarded upgrade;
@@ -69,9 +93,8 @@ Actual transition palette replacement/duration-handle acceptance at125% is now
 closed. Physical Alt-copy and100%/150% mapping remain explicit. OS window switching
 is deterministic lifecycle regression coverage, not physical acceptance. Reuse
 the prior moving-video/native FullHD export proofs for unchanged engine behavior;
-no new export of this UI project is claimed. Next implement native Color luma/Sat
-scrubbing and LowRange/HighRange sliders, preserving independent crossing bounds;
-then compressor dynamics controls and the connected V1 audio qualification.
+no new export of that UI project was claimed. Color scalar/range and compressor
+dynamics controls were next at that delivery and are subsequently qualified above.
 The ledger remains **52 done /38 partial /2 excluded**; full F1-F7/M7 stays active.
 
 Current native transition-controls delivery: **http://127.0.0.1:8853/**,

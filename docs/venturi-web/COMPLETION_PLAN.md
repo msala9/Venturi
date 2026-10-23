@@ -14,7 +14,26 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8824/**, source `f1fd010`,
+The current halo1 delivery is **http://127.0.0.1:8825/**, source `4f94773`,
+binary `318f29163b8b`, in `venturi-web-halo1-source-lookahead.service`.
+Normal Source playback prepares one adjacent native window without replacing
+the current movie, absolute clock, waveform or placement identity. A separate
+local observer checks original file version, range and audio selection and pins
+the ready job. EOF rechecks it, waits for the old audio tail and verifies the
+absolute seek before continuing. Failed speculation leaves current playback
+running; boundary failure requires manual Play. Pause/seek/Stop/hidden/modal
+policy detach local observation without deleting shared jobs. Fast audio keeps
+its existing foreground rollover. The189-case focused client gate/build pass.
+The uninterrupted Windows67s/two-stream1x run prepares1800–2011 while0–1800 plays,
+adopts that exact job and reaches originalEOF2010 without another Play. Saved
+bytes, edit history and Program view remain unchanged. See
+`evidence/f2-source-lookahead-workflow.json`. All ten prior halo1 editors and
+ds4 remain preserved; halo2 is untouched. Ledger47done/43partial/2excluded and
+the full goal remain active. Next complete remaining F2 import/proxy/derivative
+fidelity and representative-media acceptance, then the other full-plan blocks.
+Physical acoustic continuity and long4K/many-stream pressure remain open.
+
+The preserved waveform delivery is **http://127.0.0.1:8824/**, source `f1fd010`,
 binary `ae29b4545c2a`, in `venturi-web-halo1-source-waveform-r4.service`.
 Audio-only Source now shows the full original waveform, one lane per stream,
 with native marks, absolute playhead, click/keyboard seek and marked-range drag.
@@ -27,8 +46,8 @@ seeks beyond60seconds, replays from EOF, inserts two linked72-frame clips,
 performs one Undo/Redo, saves, survives a client reload and plays its native
 Full HD/AAC export to EOF with decoded non-silent audio. See
 `evidence/f2-source-waveform-workflow.json` and screenshot.
-The ledger remains47done/43partial/2excluded. Next complete speculative Source
-continuation and remaining F2 behavior; physical audio, long4K, dense/DPI and
+The ledger remains47done/43partial/2excluded. Speculative Source
+continuation is delivered in4f94773; remaining F2 behavior, physical audio, long4K, dense/DPI and
 full F1-F7/M7 acceptance remain open. All earlier editors are preserved.
 
 The preserved Source-placement delivery is **http://127.0.0.1:8822/**, source `9ecf29d`,
@@ -269,7 +288,10 @@ adoption, failure, cancellation and fast-audio/recording holds. Source placement
 EOF Replay and the project-view CAS fix are delivered in9ecf29d/8822; see
 `evidence/f2-source-placement-workflow.json`. Audio-only Source waveform display
 is delivered in f1fd010; see `evidence/f2-source-waveform-workflow.json`.
-Continue speculative Source preparation, remaining Source/navigation and full F2 acceptance.
+Speculative Source preparation is delivered in4f94773; see
+`evidence/f2-source-lookahead-workflow.json` for the189-case focused gate and
+actual67s automatic boundary/EOF. Continue remaining import/proxy/derivative
+fidelity, representative-media and full F2 acceptance.
 All 43 partial ledger rows and broader physical/M7 gates
 remain active; do not promote them from this scoped result.
 

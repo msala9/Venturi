@@ -2,6 +2,34 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8825/** in the existing Windows browser. Source `4f94773`,
+binary `vv-web-318f29163b8b`, runs as unprivileged `halo` in
+`venturi-web-halo1-source-lookahead.service`, with projects in
+`/home/halo/VenturiWeb-source-lookahead-20261023`. Open Saved
+`Venturi_Audio_Source_Workflow.vvproj`, then double-click the two-stream audio
+file and Play. Normal playback prepares one next section while the current
+movie stays attached; the Source status tooltip reports its readiness.
+At EOF the ready job is reverified and adopted automatically. If pending,
+the existing paused preparation state remains honest. An unsuccessful next
+section leaves the current one playing; failure at its boundary requires Play.
+Pause, seek, Stop and hidden/modal policy detach local future observation
+without canceling shared jobs. Fast audio keeps its existing foreground path.
+
+The Saved project is an independent copy of the prior linked72-frame montage,
+with empty live Undo on this new server. Prior live histories and the verified
+Full HD/AAC export remain accessible on8824 below. Source playback qualification
+leaves this copy's native project bytes, edit history and Program view unchanged.
+Canonical NAS/ds4 roots, eight-CPU/4-GiB/no-swap/low-priority caps and the
+nonblocking shared GPU lock remain. The same-port hidden tunnel forwards8825
+to halo1. There is no automatic restart, boot enablement or qualification
+deadline for this live editor. Save before deliberately stopping it; live Undo
+requires the running server. Ten prior halo1 editors remain intact and halo2
+is untouched. See `evidence/f2-source-lookahead-workflow.json` and screenshot.
+Full F1-F7/M7, including physical audio and representative-media acceptance,
+remains active.
+
+### Preserved waveform instance
+
 Use **http://127.0.0.1:8824/** in the existing Windows browser. Source `f1fd010`,
 binary `vv-web-ae29b4545c2a`, runs as unprivileged `halo` in
 `venturi-web-halo1-source-waveform-r4.service`, with projects in
@@ -31,7 +59,8 @@ running server. Its Saved project retains generation4 and one InsertClips Undo.
 All nine earlier halo1 Sessions and their project bytes/history remain intact;
 halo2 is untouched. See `evidence/f2-source-waveform-workflow.json` and
 `evidence/f2-source-waveform-halo1.png`. Full F1–F7/M7 remains active, including
-speculative Source continuation and physical audio/large-media acceptance.
+remaining physical audio/large-media acceptance. Source speculation is delivered
+in4f94773 on8825.
 
 ### Preserved Source-placement instance
 

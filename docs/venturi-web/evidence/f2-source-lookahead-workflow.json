@@ -1,0 +1,455 @@
+{
+  "date": "2026-10-23",
+  "status": "qualified_Source_adjacent_window_preparation_and_automatic_boundary_full_F2_remains_partial",
+  "source_commit": "4f94773716ea9c212a4984b4fb586a1f144013df",
+  "url": "http://127.0.0.1:8825/",
+  "runtime_unit": "venturi-web-halo1-source-lookahead.service",
+  "binary_sha256": "318f29163b8b91a6d1b9005d8d21a631e9c082d1fe1a7be7e4d9167e52a409f3",
+  "runtime_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "Restart=no",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "WorkingDirectory=/home/halo/VenturiWeb-source-lookahead-20261023",
+    "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-source-lookahead-20261023/.xdg",
+    "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+    "Environment=WGPU_BACKEND=vulkan",
+    "Environment=TOKIO_WORKER_THREADS=4",
+    "StandardOutput=append:/home/halo/VenturiWeb-source-lookahead-20261023/.server.log",
+    "StandardError=append:/home/halo/VenturiWeb-source-lookahead-20261023/.server.log"
+  ],
+  "build_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128",
+    "RuntimeMaxSec=240",
+    "TimeoutStopSec=20",
+    "KillMode=control-group",
+    "Restart=no",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/source-lookahead.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/source-lookahead.log"
+  ],
+  "source_hashes": {
+    "web/js/main.js": "fa00bd50e4ced8a14cdce207f2c1839d47c886c218bd8353b260a6ec14bb7873",
+    "web/js/source.js": "43781bcbfebd3e8c8e4aeeea064548f9eee08b6dfb01f76ededd18d442a77de4",
+    "web/test/source.test.js": "12ba343b197cb2fe210959fb5c258633420a2c489e4fb057bde2a005203f5fea"
+  },
+  "checks": {
+    "javascript": [
+      "# tests 189",
+      "# pass 189",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 643.546487"
+    ],
+    "embedded_build": "pass,35.63s",
+    "native_scope": "No native code changes. Existing formatting, all-target Clippy and native gates reused.",
+    "client_scope": [
+      "Source current/legacy heartbeat",
+      "bounded Source windows",
+      "selected/all audio streams",
+      "full-source waveforms",
+      "shared serial Source assets",
+      "fast transport",
+      "seven new lookahead ownership/failure/boundary cases"
+    ]
+  },
+  "source_fixture": {
+    "name": "River_Two_Streams_67s.mkv",
+    "bytes": 2197638,
+    "sha256": "988415c5b2abeb92860292aae563fb42c41ca64c3b3d21e4c46355f9c44e4fcb",
+    "relocated_fingerprint": "3494962383327349859"
+  },
+  "policy": {
+    "maximum_future_windows": 1,
+    "native_window_max_seconds": 60,
+    "pending_poll_ms": 1000,
+    "ready_heartbeat_ms": 10000,
+    "admission": "Existing native shared worker/cache/admission; no new decoder, media element or cache.",
+    "identity": "Original strong FD version, project epoch, source ID/FPS/total, quality and audio mode/index. Verify every speculative ACK/poll, stable descriptor and final ready GET before attachment.",
+    "current_binding": "Current clock, waveform, marks, placement identity and movie remain active while the future prepares.",
+    "promotion": "Await pending observer or consume ready job, revalidate, drain old fast-audio tail, attach and verify exact absolute boundary before autoplay.",
+    "failure": "Speculative failure leaves the current movie playing. No automatic retry. Failure at boundary requires manual Play.",
+    "cancellation": "Pause/hold/seek/reset/dispose/hidden or modal policy detach local future observation. Windowed Cancel never DELETEs a potentially shared native job.",
+    "fast_audio": "Speculative admission is held while fast audio is active; existing foreground rollover and tail drain remain available."
+  },
+  "browser": {
+    "environment": "Existing Windows browser, one reused tab. No Linux browser or workstation build/render.",
+    "playing_first_window_and_ready_future": {
+      "at": 1792718328412,
+      "next": {
+        "error": null,
+        "jobId": "1792718303109148015",
+        "range": {
+          "audio_mode": "all",
+          "audio_stream_index": null,
+          "end_frame": 2011,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "source_version": "64512:4210294:2197638:1792718258:509402236:1792718258:509402236",
+          "start_frame": 1800,
+          "total_frames": 2011
+        },
+        "state": "ready"
+      },
+      "source": "River_Two_Streams_67s.mkv · SOURCE WINDOW · 0–1800 / 2011 frames · medium · all audio streams",
+      "video": {
+        "currentTime": 26.273557,
+        "ended": false,
+        "muted": false,
+        "paused": false,
+        "src": "/api/v1/media/2/jobs/1792718289870139117/source.mp4?project_epoch=1792718258945465166%3A1"
+      },
+      "waveform": "Source audio waveform · 2 streams · frame 785 of 2011"
+    },
+    "last_observation_before_boundary": {
+      "at": 1792718360578,
+      "frame": "Source frame 1746 / 2010",
+      "next": {
+        "error": null,
+        "jobId": "1792718303109148015",
+        "range": {
+          "audio_mode": "all",
+          "audio_stream_index": null,
+          "end_frame": 2011,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "source_version": "64512:4210294:2197638:1792718258:509402236:1792718258:509402236",
+          "start_frame": 1800,
+          "total_frames": 2011
+        },
+        "state": "ready"
+      },
+      "source": "River_Two_Streams_67s.mkv · SOURCE WINDOW · 0–1800 / 2011 frames · medium · all audio streams",
+      "video": {
+        "currentTime": 58.439374,
+        "ended": false,
+        "muted": false,
+        "paused": false,
+        "src": "/api/v1/media/2/jobs/1792718289870139117/source.mp4?project_epoch=1792718258945465166%3A1"
+      },
+      "waveform": "Source audio waveform · 2 streams · frame 1750 of 2011"
+    },
+    "promoted_future_and_natural_eof": {
+      "at": 1792718374447,
+      "frame": "Source frame 2010 / 2010",
+      "next": {
+        "error": null,
+        "jobId": null,
+        "range": null,
+        "state": "idle"
+      },
+      "source": "River_Two_Streams_67s.mkv · End of Source",
+      "video": {
+        "currentTime": 7.04,
+        "ended": true,
+        "error": null,
+        "muted": false,
+        "paused": true,
+        "src": "/api/v1/media/2/jobs/1792718303109148015/source.mp4?project_epoch=1792718258945465166%3A1"
+      },
+      "waveform": "Source audio waveform · 2 streams · frame 2010 of 2011"
+    },
+    "interpretation": "An uninterrupted1x67-second two-stream Source run prepared1800-2011 while0-1800 played. The exact future job became the source attachment and reached original frame2010 without another user Play. Tail playback was not sampled before EOF; acoustic gap duration/physical output are not claimed.",
+    "screenshot": "f2-source-lookahead-halo1.png"
+  },
+  "project": {
+    "name": "Venturi_Audio_Source_Workflow.vvproj",
+    "root": "/home/halo/VenturiWeb-source-lookahead-20261023",
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "unsaved": false,
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 71
+      }
+    },
+    "project_hashes": {
+      "Venturi_Audio_Source_Workflow.vvproj": "42140829fdfe1685d8c7cf82c5b7a5839c062146b6d47c2d18af56871d44888a"
+    },
+    "comparison": "Playback leaves imported native timeline/media, saved bytes, edit history and Program view unchanged. This independent Saved clone starts with empty live Undo; prior live editors retain their own histories.",
+    "reused_workflow": "The two-stream linked72-frame1920x1080/24fps montage and Full HD/AAC export were qualified in f2-source-waveform-workflow.json. The prior export and live history remain on8824; no unchanged export/render matrix was repeated."
+  },
+  "runtime_observation": "ActiveState=active\nMainPID=129350\nResult=success\nMemoryCurrent=52969472\nMemoryPeak=98381824\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "preservation": {
+    "prior_sessions": {
+      "8813": {
+        "project_name": "Venturi_Halo1.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      },
+      "8816": {
+        "project_name": "Venturi_Color_Audio.vvproj",
+        "generation": "7",
+        "history": {
+          "labels": [
+            "MixerGain",
+            "SoloTrack",
+            "MuteTrack"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 123
+          }
+        },
+        "view_revision": "01edb170d97c41ee4939951a3f87204a53c942159996aa914d53cb81f8305ad3"
+      },
+      "8817": {
+        "project_name": "Venturi_Library_Edit.vvproj",
+        "generation": "3",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 391
+          }
+        },
+        "view_revision": "f8320c7305ce4f4ba16eb04d2d5ceafb15bfd64ae7f73d7870050f151eb492da"
+      },
+      "8818": {
+        "project_name": "Venturi_Native_Curves.vvproj",
+        "generation": "8",
+        "history": {
+          "labels": [
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetInterpolation"
+          ],
+          "position": 6
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8819": {
+        "project_name": "Venturi_Curve_Window.vvproj",
+        "generation": "5",
+        "history": {
+          "labels": [
+            "SetKeyframe"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8820": {
+        "project_name": "Venturi_Long_Playback.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips"
+          ],
+          "position": 2
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 7199
+          }
+        },
+        "view_revision": "42f33edf76e5d4d1431ab12a7ad0018a168d42b9a09ffedf3ea79e717c598115"
+      },
+      "8821": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "9",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips"
+          ],
+          "position": 5
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8822": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 0
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8823": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      },
+      "8824": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "4",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 71
+          }
+        },
+        "view_revision": "b6c90c1fb97a7500cdd5a7f48c8f2c1fdbcbb4cdeca2f206185b6b8d16cf244d"
+      }
+    },
+    "prior_project_hashes": {
+      "8813": {
+        "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+      },
+      "8816": {
+        "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+      },
+      "8817": {
+        "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+      },
+      "8818": {
+        "/home/halo/VenturiWeb-native-curves-20261023/Venturi_Native_Curves.vvproj": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab"
+      },
+      "8819": {
+        "/home/halo/VenturiWeb-curve-window-20261023/Venturi_Curve_Window.vvproj": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+      },
+      "8820": {
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Long_Playback.vvproj": "5cb04e90bb346ea7c8a23791b3b7b43959a6f21b290b1ce03d1524916ef39a6f",
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Program_Lookahead.vvproj": "96b2b0060d567444971b0bebf66a87606a9b2ced9c663134af1b5b524620383b"
+      },
+      "8821": {
+        "/home/halo/VenturiWeb-source-placement-20261023/Venturi_Source_Workflow.vvproj": "2fceb30a5f83ec6d5345f8f329ab86f0d0fa427fa4694fd67759af2ff7e0d3c2"
+      },
+      "8822": {
+        "/home/halo/VenturiWeb-source-placement-r5-20261023/Venturi_Source_Workflow.vvproj": "50d0545fc3fafff1d4560f79ba87f0bfcf59398d670f3d183c5990665b47c06f"
+      },
+      "8823": {
+        "/home/halo/VenturiWeb-source-waveform-20261023/Venturi_Audio_Source_Workflow.vvproj": "f4a7755d8e716d8ec2131e669f24acc503c018eacdc3373645c4e6d6ae0ae960"
+      },
+      "8824": {
+        "/home/halo/VenturiWeb-source-waveform-r4-20261023/Venturi_Audio_Source_Workflow.vvproj": "365af1e0f357374ea616c196461f8c6463c19fd9815165db9031933512a7df1f"
+      }
+    },
+    "prior_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "ds4-console.service": "58396"
+    },
+    "comparison": "Ten prior halo1 Sessions, ten project sets and eleven protected PIDs match predeployment baselines.",
+    "halo2": "Untouched; reserved for the H3 agent.",
+    "nas": "Existing asset/preset roots retained. No NAS file or mount changes."
+  },
+  "remaining": [
+    "Physical output/acoustic continuity, representative long4K and many-stream pressure acceptance.",
+    "Remaining F2 import/proxy/derivative fidelity and full F1-F7/M7 requirements."
+  ],
+  "ledger": {
+    "done": 47,
+    "partial": 43,
+    "excluded": 2,
+    "excluded_csv_status": "not-started",
+    "full_goal": "active"
+  }
+}

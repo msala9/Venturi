@@ -68,6 +68,16 @@ scroll through readable lanes; only visible lanes demand analysis through the
 existing serial queue/cache. Preparing/analysis states remain explicit; loaded
 lanes can keep painting during playback, while new analysis waits for idle.
 
+Normal Source playback prepares at most one adjacent native window while the
+current attachment and absolute clock remain active. A short status tooltip
+reports this background preparation. At EOF, recheck its original
+file identity, range and audio selection, drain the previous fast-audio tail,
+then attach and verify the exact absolute boundary before continuing. If it is
+still pending, show the existing paused preparation state. Speculative errors
+leave the current movie playing; failure at the boundary requires manual Play.
+User pause, seek, Stop or hidden/modal policy detach the local future observer
+without canceling a shared native job. Fast audio retains foreground rollover.
+
 ## 5. Timeline spec
 
 Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high

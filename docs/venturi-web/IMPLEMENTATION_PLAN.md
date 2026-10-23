@@ -18,7 +18,20 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-Current delivery: halo1/8824, source `f1fd010`, binary `ae29b4545c2a`.
+Current delivery: halo1/8825, source `4f94773`, binary `318f29163b8b`.
+Normal Source playback prepares one next native window with separate local
+ownership, version/audio/range verification and ready heartbeat. The current
+movie and placement identity stay active. EOF adopts the existing job only
+after final verification, audio-tail drain and exact absolute seek. Speculative
+failure leaves playback running; boundary failure requires manual Play.
+Pause/seek/Stop and hidden/modal policy detach observation without shared-job
+deletion. The189-case focused client gate/build and actual Windows67s/two-stream
+automatic boundary/EOF pass with unchanged Saved bytes/history/Program view.
+See `evidence/f2-source-lookahead-workflow.json`. Continue remaining F2
+import/proxy/derivative fidelity and representative-media acceptance, then the
+other full-plan blocks. Full F1-F7/M7 remains active.
+
+Preserved waveform delivery: halo1/8824, source `f1fd010`, binary `ae29b4545c2a`.
 Audio-only Source displays native full-source peaks per stream, marks and an
 absolute playhead. Click/keyboard seek and marked All drag share verified Source
 identity; all128 stream ordinals remain reachable through visible-lane demand.
@@ -26,8 +39,8 @@ The existing single derivative queue/cache stays bounded and resumes interrupted
 visible reads without automatically retrying real failures. Actual Windows
 two-stream loading, late seek, Replay, linked insertion, Undo/Redo, Save/client
 reload, Program EOF and non-silent Full HD/AAC exported-file EOF pass. See
-`evidence/f2-source-waveform-workflow.json`. Next complete speculative Source
-continuation and remaining F2 behavior. The full goal remains active.
+`evidence/f2-source-waveform-workflow.json`. Speculative Source continuation is
+delivered in4f94773; remaining F2 behavior and the full goal remain active.
 
 Preserved Source-placement delivery: halo1/8822, source `9ecf29d`, binary `2f3f3cdc11d1`.
 Verified marked Source ranges support native all/video/audio placement by drag

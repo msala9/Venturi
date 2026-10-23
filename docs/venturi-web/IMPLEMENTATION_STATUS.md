@@ -4,7 +4,32 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8824/**, source `f1fd010`,
+The current halo1 delivery is **http://127.0.0.1:8825/**, source `4f94773`,
+binary `318f29163b8b`, in `venturi-web-halo1-source-lookahead.service`.
+Source prepares at most one adjacent native window during normal playback.
+Its separate observer never changes the current movie, clock, waveform or
+placement job. Version/range/audio checks bind every ACK/poll and final ready
+read;10s heartbeat retains the future. EOF waits for the old audio tail and
+verifies the exact absolute boundary before autoplay. Speculative failure does
+not interrupt the current movie or retry itself; boundary failure requires
+manual Play. Pause/seek/Stop/hidden/modal policy detach local observation.
+Windowed cancellation never DELETEs a shared native job. Fast audio retains
+existing foreground rollover rather than competing with speculative work.
+
+The189-case affected client gate and embedded build pass; native code/gates are
+unchanged. The actual Windows two-stream67s1x run shows the next1800–2011 job
+ready while0–1800 plays and then reaches originalEOF2010 on that exact prepared
+attachment without another Play. No decoded-player error occurs. Saved project
+bytes, media/timelines, generation/history and Program view remain unchanged.
+Tail playback was not sampled before EOF; acoustic gap duration and physical
+output are not claimed. All ten prior halo1 editors and ds4 remain unchanged;
+halo2/NAS are untouched. See `evidence/f2-source-lookahead-workflow.json`.
+Ledger47done/43partial/2excluded and full F1-F7/M7 remain active. Next complete
+remaining F2 import/proxy/derivative fidelity and representative-media acceptance.
+
+### Preserved waveform delivery
+
+The preserved halo1 delivery is **http://127.0.0.1:8824/**, source `f1fd010`,
 binary `ae29b4545c2a`, in `venturi-web-halo1-source-waveform-r4.service`.
 Audio-only Source displays the full native waveform for every audio stream,
 marked-range shading and a fluid absolute playhead, without video zoom. Click
@@ -28,7 +53,8 @@ decoded3.008-second export has mean -29.5dBFS and peak -20.5dBFS; this proves
 file signal, not physical output. See `evidence/f2-source-waveform-workflow.json`.
 All earlier nine halo1 Sessions/Undo, their project bytes, ds4 and NAS remain
 preserved; halo2 is untouched. Ledger47done/43partial/2excluded and full F1-F7/M7
-remain active. Next complete speculative Source continuation and remaining F2.
+remain active. Speculative Source continuation is delivered in4f94773; continue
+the remaining F2 and full-plan requirements.
 
 ### Preserved Source-placement delivery
 

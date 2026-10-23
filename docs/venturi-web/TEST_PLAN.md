@@ -10,6 +10,18 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 Source lookahead (`4f94773`, halo1/8825):189 focused Source/window/audio/waveform/assets
+and fast-transport client cases pass, including ready adoption, pending EOF
+wait, selected/all audio identity, exact version/range/TTL revalidation,
+speculative failure without retries, cancellation and fast-tail ownership.
+The embedded build passes. Native code is unchanged; reuse its existing
+formatting/Clippy/native gates. A ready next job is not proof of gapless or
+physical audio. The uninterrupted Windows67s/two-stream1x run adopts the exact
+prepared1800–2011 job after0–1800 and reaches originalEOF2010 without another
+Play. Saved project bytes, native media/timelines, history and Program view
+stay unchanged. Tail playback was not sampled before EOF; acoustic gap duration
+and physical output remain open. See `evidence/f2-source-lookahead-workflow.json`.
+
 F2 audio Source waveform (`f1fd010`, halo1/8824):96 affected client cases,
 two native embedded-module/Host cases, formatting, all-target Clippy and build
 pass. Final67 assets cases/build cover version identity through the real loader,

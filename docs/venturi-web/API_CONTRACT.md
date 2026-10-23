@@ -956,7 +956,15 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - Main Source opens explicit windows, with whole-file slider/numeric navigation,
   absolute In/Out, timecode, stepping, audition and native fast-audio sample
   bounds. Seeks must verify the requested frame before publishing a clock.
-  Natural EOF prepares only the following window; paused/manual seeks do not
+  Normal playback speculatively prepares at most one adjacent window using the
+  same native worker/cache. Separate local observation polls pending jobs at1s
+  and ready jobs at10s, without replacing the current attachment or clock.
+  Natural EOF adopts that job after a final ready/version/range/audio check;
+  pending work waits honestly and absent speculation uses foreground preparation.
+  Failed speculation leaves the current movie playing without automatic retry;
+  failure at its boundary requires manual Play. Pause/seek/Stop/hidden/modal
+  policy detach the local future observer without DELETE of shared jobs.
+  Fast audio uses foreground rollover. Paused/manual seeks do not
   autoplay. Cached attachment, metadata, file version, audio-tail and event
   ownership guards refuse obsolete or changed media. AAC padding at natural EOF
   retains the final valid native frame. This does not establish gapless playback

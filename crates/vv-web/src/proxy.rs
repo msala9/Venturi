@@ -1,5 +1,6 @@
 use crate::{
     error::{ApiError, Result},
+    proxy_cache::{Acquisition, Store, Stored},
     source::SourceSpec,
 };
 use rustix::fs::{AtFlags, FlockOperation, Mode, OFlags, RenameFlags, openat, unlinkat};
@@ -9,13 +10,10 @@ use std::{
     collections::{HashSet, VecDeque},
     fs::File,
     io::{Read, Write},
-    os::{
-        fd::AsRawFd,
-        unix::fs::{DirBuilderExt, MetadataExt},
-    },
+    os::{fd::AsRawFd, unix::fs::MetadataExt},
     path::{Path, PathBuf},
     sync::{
-        Arc, Condvar, Mutex, Weak,
+        Arc, Condvar, Mutex,
         atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
@@ -259,47 +257,16 @@ fn remove_owned(directory: &File, name: &str, owned: (u64, u64)) {
         let _ = unlinkat(directory, name, AtFlags::empty());
     }
 }
-struct Cache {
-    path: PathBuf,
-    directory: File,
-}
-impl Cache {
-    fn check(&self) -> Result<()> {
-        let live = File::from(
-            rustix::fs::open(
-                &self.path,
-                OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-                Mode::empty(),
-            )
-            .map_err(|_| changed())?,
-        );
-        crate::asset_store::same_directory(&self.directory, &live).map_err(|_| changed())
-    }
-}
-impl Drop for Cache {
-    fn drop(&mut self) {
-        if self.check().is_ok() {
-            let _ = std::fs::remove_dir(&self.path);
-        }
-    }
-}
 struct Artifact {
-    cache: Arc<Cache>,
-    name: String,
-    file: File,
+    stored: Stored,
     original: File,
     original_path: PathBuf,
     source_version: String,
-    artifact_version: String,
-    bytes: u64,
 }
 impl Artifact {
     fn validate(&self, root: &Root) -> Result<()> {
-        self.cache.check()?;
-        if identity(&self.original)? != self.source_version
-            || identity(&self.file)? != self.artifact_version
-            || identity(&open_regular(&self.cache.directory, &self.name)?)? != self.artifact_version
-        {
+        self.stored.validate().map_err(|_| changed())?;
+        if identity(&self.original)? != self.source_version {
             return Err(changed());
         }
         let current =
@@ -311,22 +278,13 @@ impl Artifact {
         Ok(())
     }
 }
-impl Drop for Artifact {
-    fn drop(&mut self) {
-        if self.cache.check().is_ok()
-            && let Ok(owned) = inode(&self.file)
-        {
-            remove_owned(&self.cache.directory, &self.name, owned);
-        }
-    }
-}
 pub struct Lease {
     artifact: Arc<Artifact>,
     root: Arc<Root>,
 }
 impl Lease {
     pub fn path(&self) -> PathBuf {
-        fd_path(&self.artifact.file)
+        fd_path(&self.artifact.stored.file)
     }
     pub fn source_version(&self) -> &str {
         &self.artifact.source_version
@@ -348,7 +306,6 @@ struct Job {
     error: Option<&'static str>,
     spec: Option<Input>,
     cancel: Arc<AtomicBool>,
-    artifact: Option<Arc<Artifact>>,
 }
 impl Job {
     fn value(&self) -> Value {
@@ -359,7 +316,6 @@ struct State {
     settings: Settings,
     settings_identity: Option<String>,
     jobs: VecDeque<Job>,
-    artifacts: Vec<Weak<Artifact>>,
     suspended: usize,
     active: Option<String>,
     parked: bool,
@@ -371,7 +327,7 @@ struct Shared {
 }
 struct Owner {
     root: Arc<Root>,
-    cache: Arc<Cache>,
+    cache: Arc<Store>,
     shared: Arc<Shared>,
 }
 impl Drop for Owner {
@@ -401,6 +357,16 @@ impl Drop for Suspension {
 
 impl Manager {
     pub fn start(root: &Path) -> Result<Self> {
+        #[cfg(not(test))]
+        let cache_path = vv_media::proxy::proxies_dir().join("web-v1");
+        #[cfg(test)]
+        let cache_path = root
+            .canonicalize()
+            .map_err(|_| ApiError::io())?
+            .join(".proxy-test-cache");
+        Self::start_with_cache(root, &cache_path)
+    }
+    fn start_with_cache(root: &Path, cache_path: &Path) -> Result<Self> {
         let path = root.canonicalize().map_err(|_| ApiError::io())?;
         let directory = File::from(
             rustix::fs::open(
@@ -413,25 +379,12 @@ impl Manager {
         let root = Arc::new(Root { path, directory });
         let _guard = root.lock(false)?;
         let (settings, settings_identity) = root.read()?;
-        let path = std::env::temp_dir().join(format!(
-            "venturi-web-proxies-{}-{}",
-            std::process::id(),
-            crate::asset_jobs::nonce()
-        ));
-        std::fs::DirBuilder::new()
-            .mode(0o700)
-            .create(&path)
-            .map_err(|_| ApiError::io())?;
-        let cache = Arc::new(Cache {
-            directory: File::open(&path).map_err(|_| ApiError::io())?,
-            path,
-        });
+        let cache = Store::open(cache_path)?;
         let shared = Arc::new(Shared {
             state: Mutex::new(State {
                 settings,
                 settings_identity,
                 jobs: VecDeque::new(),
-                artifacts: Vec::new(),
                 suspended: 0,
                 active: None,
                 parked: false,
@@ -500,14 +453,17 @@ impl Manager {
         }
         let quality = state.settings.quality()?;
         let key = key(&spec, &version, quality)?;
+        let stored = self.0.cache.lookup(&key)?;
+        let ready = stored.is_some();
         if let Some(job) = state.jobs.iter().find(|job| {
             job.epoch == spec.epoch
                 && job.media_id == spec.media_id
                 && job.key == key
-                && matches!(job.state, "queued" | "generating" | "ready")
+                && (matches!(job.state, "queued" | "generating") || job.state == "ready" && ready)
         }) {
             return Ok(job.value());
         }
+        drop(stored);
         if state.jobs.len() >= MAX_JOBS {
             let index = state
                 .jobs
@@ -522,22 +478,6 @@ impl Manager {
                 ));
             }
         }
-        let artifact = state
-            .artifacts
-            .iter()
-            .filter_map(Weak::upgrade)
-            .find(|artifact| {
-                artifact.source_version == version
-                    && state.jobs.iter().any(|job| {
-                        job.key == key
-                            && job
-                                .artifact
-                                .as_ref()
-                                .is_some_and(|other| Arc::ptr_eq(artifact, other))
-                    })
-            });
-        let artifact = artifact.filter(|artifact| artifact.validate(&self.0.root).is_ok());
-        let ready = artifact.is_some();
         let job = Job {
             id: format!("proxy-{}", crate::asset_jobs::nonce()),
             epoch: spec.epoch.clone(),
@@ -558,7 +498,6 @@ impl Manager {
                 original_path,
             }),
             cancel: Arc::new(AtomicBool::new(false)),
-            artifact,
         };
         let value = job.value();
         state.jobs.push_back(job);
@@ -566,7 +505,22 @@ impl Manager {
         Ok(value)
     }
     pub fn status(&self, epoch: &str) -> Result<Value> {
-        let state = self.0.shared.state.lock().map_err(|_| ApiError::io())?;
+        let mut state = self.0.shared.state.lock().map_err(|_| ApiError::io())?;
+        let ((charged_bytes, used_entries), evicted) = read_cache(|| {
+            let usage = self.0.cache.usage()?;
+            let mut evicted = Vec::new();
+            for (index, job) in state.jobs.iter().enumerate() {
+                if job.epoch == epoch && job.state == "ready" && !self.0.cache.is_ready(&job.key)? {
+                    evicted.push(index);
+                }
+            }
+            Ok((usage, evicted))
+        })?;
+        for index in evicted {
+            let job = &mut state.jobs[index];
+            job.state = "canceled";
+            job.error = Some("PROXY_CACHE_EVICTED");
+        }
         let mut seen = HashSet::new();
         let jobs = state
             .jobs
@@ -580,7 +534,7 @@ impl Manager {
             .map(Job::value)
             .collect::<Vec<_>>();
         Ok(
-            json!({"project_epoch":epoch,"settings":state.settings.value(),"suspended":state.suspended>0,"jobs":jobs,"capacity":{"max_jobs":MAX_JOBS,"max_bytes":MAX_CACHE,"max_job_bytes":MAX_FILE,"charged_bytes":charge(&state),"used_jobs":state.jobs.len()}}),
+            json!({"project_epoch":epoch,"settings":state.settings.value(),"suspended":state.suspended>0,"jobs":jobs,"capacity":{"max_jobs":MAX_JOBS,"max_bytes":MAX_CACHE,"max_job_bytes":MAX_FILE,"charged_bytes":charged_bytes,"used_jobs":state.jobs.len(),"used_entries":used_entries}}),
         )
     }
     pub fn resolve(&self, spec: &SourceSpec, original_path: &Path) -> Result<Option<Lease>> {
@@ -592,13 +546,14 @@ impl Manager {
             return Ok(None);
         }
         let key = key(spec, &version, state.settings.quality()?)?;
-        let artifact = state
-            .jobs
-            .iter()
-            .find(|job| job.key == key && job.state == "ready")
-            .and_then(|job| job.artifact.clone());
         drop(state);
-        if let Some(artifact) = artifact {
+        if let Some(stored) = self.0.cache.lookup(&key)? {
+            let artifact = Arc::new(Artifact {
+                stored,
+                original: spec.file.try_clone().map_err(|_| ApiError::io())?,
+                original_path: original_path.to_owned(),
+                source_version: version,
+            });
             artifact.validate(&self.0.root)?;
             Ok(Some(Lease {
                 artifact,
@@ -629,6 +584,17 @@ impl Manager {
         }
         drop(state);
         Ok(Suspension { shared })
+    }
+}
+fn read_cache<T>(mut read: impl FnMut() -> Result<T>) -> Result<T> {
+    let deadline = Instant::now() + Duration::from_millis(100);
+    loop {
+        match read() {
+            Err(error) if error.1 == "PROXY_CACHE_BUSY" && Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            result => return result,
+        }
     }
 }
 fn update_settings(state: &mut State, settings: Settings, tag: Option<String>) {
@@ -698,56 +664,6 @@ fn check_original(
     }
     Ok(original_path.to_owned())
 }
-fn charge(state: &State) -> u64 {
-    let mut seen = HashSet::new();
-    let bytes = state
-        .artifacts
-        .iter()
-        .filter_map(Weak::upgrade)
-        .filter(|artifact| seen.insert(Arc::as_ptr(artifact) as usize))
-        .fold(0u64, |sum, artifact| sum.saturating_add(artifact.bytes));
-    bytes.saturating_add(if state.active.is_some() { MAX_FILE } else { 0 })
-}
-fn make_space(state: &mut State) -> Result<()> {
-    state
-        .artifacts
-        .retain(|artifact| artifact.strong_count() > 0);
-    while charge(state).saturating_add(MAX_FILE) > MAX_CACHE {
-        let candidate = state
-            .artifacts
-            .iter()
-            .filter_map(Weak::upgrade)
-            .find(|artifact| {
-                let records = state
-                    .jobs
-                    .iter()
-                    .filter(|job| {
-                        job.artifact
-                            .as_ref()
-                            .is_some_and(|other| Arc::ptr_eq(other, artifact))
-                    })
-                    .count();
-                Arc::strong_count(artifact) == records + 1
-            })
-            .ok_or_else(cache_full)?;
-        for job in &mut state.jobs {
-            if job
-                .artifact
-                .as_ref()
-                .is_some_and(|other| Arc::ptr_eq(other, &candidate))
-            {
-                job.artifact = None;
-                job.state = "canceled";
-                job.error = Some("PROXY_CACHE_EVICTED");
-            }
-        }
-        drop(candidate);
-        state
-            .artifacts
-            .retain(|artifact| artifact.strong_count() > 0);
-    }
-    Ok(())
-}
 struct Work {
     id: String,
     spec: Input,
@@ -774,7 +690,7 @@ fn wait_callback(shared: &Shared, cancel: &AtomicBool) -> Result<()> {
     }
     Ok(())
 }
-fn worker_loop(root: &Arc<Root>, cache: &Arc<Cache>, shared: &Arc<Shared>) {
+fn worker_loop(root: &Arc<Root>, cache: &Arc<Store>, shared: &Arc<Shared>) {
     loop {
         let next = (|| -> Result<Option<Work>> {
             let mut state = shared.state.lock().map_err(|_| ApiError::io())?;
@@ -790,12 +706,6 @@ fn worker_loop(root: &Arc<Root>, cache: &Arc<Cache>, shared: &Arc<Shared>) {
                 }
                 let index = state.jobs.iter().position(|job| job.state == "queued");
                 if let Some(index) = index {
-                    if let Err(error) = make_space(&mut state) {
-                        state.jobs[index].state = "failed";
-                        state.jobs[index].error = Some(error.1);
-                        state.jobs[index].spec = None;
-                        continue;
-                    }
                     let job = &mut state.jobs[index];
                     job.state = "generating";
                     let next = Work {
@@ -822,15 +732,11 @@ fn worker_loop(root: &Arc<Root>, cache: &Arc<Cache>, shared: &Arc<Shared>) {
         if let Ok(mut state) = shared.state.lock() {
             state.active = None;
             state.parked = false;
-            if let Ok(artifact) = &result {
-                state.artifacts.push(Arc::downgrade(artifact));
-            }
             if let Some(job) = state.jobs.iter_mut().find(|job| job.id == id) {
                 match result {
-                    Ok(artifact) if !cancel.load(Ordering::Acquire) => {
+                    Ok(_) if !cancel.load(Ordering::Acquire) => {
                         job.state = "ready";
                         job.progress = job.total;
-                        job.artifact = Some(artifact);
                     }
                     Ok(_) => {
                         job.state = "canceled";
@@ -852,7 +758,7 @@ fn worker_loop(root: &Arc<Root>, cache: &Arc<Cache>, shared: &Arc<Shared>) {
         }
     }
 }
-fn resources(cache: &Cache, meta: &vv_core::MediaMeta, quality: ProxyQuality) -> Result<()> {
+fn resources(cache: &Store, meta: &vv_core::MediaMeta, quality: ProxyQuality) -> Result<()> {
     cache.check()?;
     let stat = rustix::fs::fstatvfs(&cache.directory).map_err(|_| ApiError::io())?;
     if stat.f_bavail.saturating_mul(stat.f_frsize) < DISK_RESERVE.saturating_add(MAX_FILE) {
@@ -895,21 +801,50 @@ fn resources(cache: &Cache, meta: &vv_core::MediaMeta, quality: ProxyQuality) ->
 }
 fn generate(
     root: &Arc<Root>,
-    cache: &Arc<Cache>,
+    cache: &Arc<Store>,
     shared: &Arc<Shared>,
     work: &Work,
 ) -> Result<Arc<Artifact>> {
     let Work {
-        id,
         spec,
         version,
         quality,
         cancel,
+        ..
     } = work;
     let input = spec;
     let spec = &input.spec;
     let quality = *quality;
     let original_path = check_original(root, spec, version, &input.original_path)?;
+    let logical_key = key(spec, version, quality)?;
+    let waiting = Instant::now();
+    let reservation = loop {
+        wait_callback(shared, cancel)?;
+        match cache.acquire(&logical_key) {
+            Ok(Acquisition::Ready(stored)) => {
+                let artifact = Arc::new(Artifact {
+                    stored,
+                    original: spec.file.try_clone().map_err(|_| ApiError::io())?,
+                    original_path,
+                    source_version: version.clone(),
+                });
+                artifact.validate(root)?;
+                return Ok(artifact);
+            }
+            Ok(Acquisition::Write(reservation)) => break reservation,
+            Err(error) if error.1 == "PROXY_CACHE_BUSY" && waiting.elapsed() < ACTIVE_BUDGET => {
+                let mut state = shared.state.lock().map_err(|_| ApiError::io())?;
+                state.parked = true;
+                shared.wake.notify_all();
+                let (mut state, _) = shared
+                    .wake
+                    .wait_timeout(state, Duration::from_millis(20))
+                    .map_err(|_| ApiError::io())?;
+                state.parked = false;
+            }
+            Err(error) => return Err(error),
+        }
+    };
     resources(cache, &spec.meta, quality)?;
     let actual =
         crate::asset_probe::probe_root_media(&spec.file, false, cancel, Duration::from_secs(20))?;
@@ -923,8 +858,7 @@ fn generate(
         return Err(changed());
     }
     check_original(root, spec, version, &input.original_path)?;
-    let name = format!("{id}.mp4");
-    let output = fd_path(&cache.directory).join(&name);
+    let output = reservation.output();
     let temporary = output.with_extension(format!("tmp-{}.mp4", std::process::id()));
     let mut owned_temporary = None;
     let mut callback_error = None;
@@ -954,9 +888,9 @@ fn generate(
                         "Native proxy preparation was canceled",
                     ));
                 }
-                cache.check()?;
+                reservation.validate()?;
                 let temp = open_regular(
-                    &cache.directory,
+                    reservation.directory(),
                     temporary
                         .file_name()
                         .and_then(|name| name.to_str())
@@ -999,71 +933,60 @@ fn generate(
             }
         },
     );
-    let result = (|| {
-        if let Some(error) = callback_error {
-            return Err(error);
-        }
-        result.map_err(|_| {
-            ApiError::conflict("PROXY_FAILED", "Native software proxy generation failed")
-        })?;
-        check_original(root, spec, version, &input.original_path)?;
-        cache.check()?;
-        if cancel.load(Ordering::Acquire) {
-            return Err(ApiError::conflict(
-                "PROXY_CANCELED",
-                "Native proxy preparation was canceled",
-            ));
-        }
-        let file = open_regular(&cache.directory, &name)?;
-        let bytes = file.metadata().map_err(|_| ApiError::io())?.len();
-        if bytes == 0 || bytes > MAX_FILE {
-            return Err(cache_full());
-        }
-        if owned_temporary != Some(inode(&file)?) {
-            return Err(changed());
-        }
-        let artifact_version = identity(&file)?;
-        let encoded =
-            crate::asset_probe::probe_root_media(&file, false, cancel, Duration::from_secs(20))?;
-        if !encoded.has_video
-            || encoded.has_audio
-            || encoded.fps != spec.meta.fps
-            || encoded.duration_frames != spec.meta.duration_frames
-            || encoded.width == 0
-            || encoded.width > quality.max_width()
-            || encoded.height == 0
-            || encoded.height > 8192
-            || identity(&file)? != artifact_version
-        {
-            return Err(ApiError::conflict(
-                "PROXY_FRAME_MAPPING",
-                "Native proxy output does not preserve the original full-range frame clock",
-            ));
-        }
-        check_original(root, spec, version, &input.original_path)?;
-        let artifact = Arc::new(Artifact {
-            cache: cache.clone(),
-            name: name.clone(),
-            file,
-            original: spec.file.try_clone().map_err(|_| ApiError::io())?,
-            original_path,
-            source_version: version.clone(),
-            artifact_version,
-            bytes,
-        });
-        artifact.validate(root)?;
-        Ok(artifact)
-    })();
-    if result.is_err()
-        && let Some(owned) = owned_temporary
-        && cache.check().is_ok()
-    {
-        remove_owned(&cache.directory, &name, owned);
-        if let Some(name) = temporary.file_name().and_then(|name| name.to_str()) {
-            remove_owned(&cache.directory, name, owned);
-        }
+    if let Some(error) = callback_error {
+        return Err(error);
     }
-    result
+    result.map_err(|_| {
+        ApiError::conflict("PROXY_FAILED", "Native software proxy generation failed")
+    })?;
+    check_original(root, spec, version, &input.original_path)?;
+    cache.check()?;
+    if cancel.load(Ordering::Acquire) {
+        return Err(ApiError::conflict(
+            "PROXY_CANCELED",
+            "Native proxy preparation was canceled",
+        ));
+    }
+    reservation.validate()?;
+    let file = open_regular(reservation.directory(), "proxy.mp4")?;
+    let bytes = file.metadata().map_err(|_| ApiError::io())?.len();
+    if bytes == 0 || bytes > MAX_FILE {
+        return Err(cache_full());
+    }
+    if owned_temporary != Some(inode(&file)?) {
+        return Err(changed());
+    }
+    let artifact_version = identity(&file)?;
+    let encoded =
+        crate::asset_probe::probe_root_media(&file, false, cancel, Duration::from_secs(20))?;
+    if !encoded.has_video
+        || encoded.has_audio
+        || encoded.fps != spec.meta.fps
+        || encoded.duration_frames != spec.meta.duration_frames
+        || encoded.width == 0
+        || encoded.width > quality.max_width()
+        || encoded.height == 0
+        || encoded.height > 8192
+        || identity(&file)? != artifact_version
+    {
+        return Err(ApiError::conflict(
+            "PROXY_FRAME_MAPPING",
+            "Native proxy output does not preserve the original full-range frame clock",
+        ));
+    }
+    check_original(root, spec, version, &input.original_path)?;
+    let stored = reservation.publish()?;
+    if stored.version != artifact_version {
+        return Err(changed());
+    }
+    let artifact = Arc::new(Artifact {
+        stored,
+        original: spec.file.try_clone().map_err(|_| ApiError::io())?,
+        original_path,
+        source_version: version.clone(),
+    });
+    artifact.validate(root)?;
+    Ok(artifact)
 }
 
 #[cfg(test)]

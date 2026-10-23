@@ -36,6 +36,7 @@ mod project_media;
 mod project_media_placement;
 mod project_view;
 mod proxy;
+mod proxy_cache;
 mod proxy_video;
 mod receipts;
 mod recording;

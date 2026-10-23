@@ -68,21 +68,23 @@ impl Fixture {
         source.meta = vv_media::probe_media(&path).unwrap();
         source
     }
-    fn artifact(&self, charge: u64) -> Arc<Artifact> {
+    fn artifact(&self) -> Arc<Artifact> {
         let source = self.source();
-        let name = format!("fixture-{}.mp4", crate::asset_jobs::nonce());
-        let path = self.manager.0.cache.path.join(&name);
-        std::fs::write(&path, b"identity-only artifact fixture").unwrap();
-        let file = open_regular(&self.manager.0.cache.directory, &name).unwrap();
+        let logical_key = format!("fixture-{}", crate::asset_jobs::nonce());
+        let Acquisition::Write(reservation) = self.manager.0.cache.acquire(&logical_key).unwrap()
+        else {
+            panic!("Expected a new cache reservation");
+        };
+        let output = reservation.output();
+        let temporary = output.with_extension(format!("tmp-{}.mp4", std::process::id()));
+        std::fs::write(&temporary, b"identity-only artifact fixture").unwrap();
+        std::fs::rename(temporary, &output).unwrap();
+        let stored = reservation.publish().unwrap();
         Arc::new(Artifact {
-            cache: self.manager.0.cache.clone(),
-            name,
-            file: file.try_clone().unwrap(),
+            stored,
             original: source.file.try_clone().unwrap(),
             original_path: self.root.join("source.mp4"),
             source_version: identity(&source.file).unwrap(),
-            artifact_version: identity(&file).unwrap(),
-            bytes: charge,
         })
     }
 }
@@ -216,7 +218,6 @@ fn native_proxy_callback_really_parks_and_foreground_guards_preserve_the_user_pa
             settings,
             settings_identity: tag,
             jobs: VecDeque::new(),
-            artifacts: vec![],
             suspended: 0,
             active: Some("callback".into()),
             parked: false,
@@ -263,18 +264,17 @@ fn native_proxy_callback_really_parks_and_foreground_guards_preserve_the_user_pa
 }
 
 #[test]
-fn native_proxy_leases_bind_original_and_artifact_ctime_and_prevent_cache_undercharging() {
+fn native_proxy_leases_bind_original_and_artifact_ctime_and_keep_durable_usage_charged() {
     let f = Fixture::new();
-    let artifact = f.artifact(MAX_FILE);
+    let artifact = f.artifact();
     let lease = Lease {
         artifact: artifact.clone(),
         root: f.manager.0.root.clone(),
     };
     lease.validate().unwrap();
-    let mut state = f.manager.0.shared.state.lock().unwrap();
-    state.artifacts.push(Arc::downgrade(&artifact));
-    assert_eq!(charge(&state), MAX_FILE);
-    drop(state);
+    let charged = f.manager.0.cache.usage().unwrap();
+    assert!(charged.0 >= artifact.stored.bytes);
+    assert_eq!(charged.1, 1);
     let original = f.root.join("source.mp4");
     let modified = std::fs::metadata(&original).unwrap().modified().unwrap();
     let mut bytes = std::fs::read(&original).unwrap();
@@ -289,18 +289,13 @@ fn native_proxy_leases_bind_original_and_artifact_ctime_and_prevent_cache_underc
     assert_eq!(lease.validate().unwrap_err().1, "SOURCE_CHANGED");
     drop(lease);
     drop(artifact);
-    let mut state = f.manager.0.shared.state.lock().unwrap();
-    assert_eq!(charge(&state), 0);
-    state.active = Some("reserved".into());
-    assert_eq!(charge(&state), MAX_FILE);
-    state.active = None;
-    drop(state);
-    let artifact = f.artifact(1);
+    assert_eq!(f.manager.0.cache.usage().unwrap(), charged);
+    let artifact = f.artifact();
     let lease = Lease {
         artifact: artifact.clone(),
         root: f.manager.0.root.clone(),
     };
-    let path = artifact.cache.path.join(&artifact.name);
+    let path = fd_path(&artifact.stored.file);
     let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
     std::fs::write(&path, b"identity-only ARTIFACT fixture").unwrap();
     File::options()
@@ -391,4 +386,146 @@ fn native_proxy_refuses_images_audio_links_replaced_originals_and_invalid_metada
             .unwrap()
             .is_empty()
     );
+}
+
+#[test]
+fn native_proxy_reopen_recovers_without_encoding_and_binds_the_current_original() {
+    let f = Fixture::new();
+    let source = f.native_source();
+    let meta = source.meta.clone();
+    f.manager.configure(true, "low", false).unwrap();
+    let job = f.manager.enqueue(f.input(source)).unwrap();
+    let ready = finish(&f.manager, job["id"].as_str().unwrap());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let before = f
+        .manager
+        .resolve(
+            &SourceSpec {
+                meta: meta.clone(),
+                ..f.source()
+            },
+            &f.root.join("source.mp4"),
+        )
+        .unwrap()
+        .unwrap();
+    let stored_identity = before.artifact.stored.version.clone();
+    let cache_path = f.manager.0.cache.path.clone();
+    drop(before);
+    let reopened = Manager::start_with_cache(&f.root, &cache_path).unwrap();
+    assert_eq!(reopened.settings().unwrap()["quality"], "low");
+    reopened.configure(true, "low", true).unwrap();
+    let mut current = SourceSpec {
+        meta: meta.clone(),
+        ..f.source()
+    };
+    current.epoch = "new-server:2".into();
+    current.media_id = "7".into();
+    let recovered = reopened.enqueue(f.input(current)).unwrap();
+    assert_eq!(recovered["state"], "ready");
+    assert_eq!(recovered["progress"], 12);
+    assert_eq!(reopened.0.shared.state.lock().unwrap().active, None);
+    let current = SourceSpec {
+        epoch: "new-server:2".into(),
+        media_id: "7".into(),
+        meta: meta.clone(),
+        ..f.source()
+    };
+    let recovered = reopened
+        .resolve(&current, &f.root.join("source.mp4"))
+        .unwrap()
+        .unwrap();
+    assert_eq!(recovered.artifact.stored.version, stored_identity);
+    let modified = current.file.metadata().unwrap().modified().unwrap();
+    let mut bytes = std::fs::read(f.root.join("source.mp4")).unwrap();
+    bytes[0] ^= 1;
+    std::fs::write(f.root.join("source.mp4"), bytes).unwrap();
+    File::options()
+        .write(true)
+        .open(f.root.join("source.mp4"))
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    assert_eq!(recovered.validate().unwrap_err().1, "SOURCE_CHANGED");
+    drop(recovered);
+    let current = SourceSpec { meta, ..f.source() };
+    assert!(
+        reopened
+            .resolve(&current, &f.root.join("source.mp4"))
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[test]
+fn shared_proxy_cache_reuses_hardlinked_media_but_approves_each_current_project_path() {
+    let f = Fixture::new();
+    let source = f.native_source();
+    let nested = f.root.join("nested");
+    std::fs::create_dir(&nested).unwrap();
+    let nested_source = nested.join("source.mp4");
+    std::fs::hard_link(f.root.join("source.mp4"), &nested_source).unwrap();
+    let meta = source.meta.clone();
+    f.manager.configure(true, "medium", false).unwrap();
+    let job = f.manager.enqueue(f.input(source)).unwrap();
+    assert_eq!(
+        finish(&f.manager, job["id"].as_str().unwrap())["state"],
+        "ready"
+    );
+    let cache_path = f.manager.0.cache.path.clone();
+    let current = Manager::start_with_cache(&nested, &cache_path).unwrap();
+    current.configure(true, "medium", true).unwrap();
+    let spec = || SourceSpec {
+        file: File::open(&nested_source).unwrap(),
+        epoch: "nested:1".into(),
+        media_id: "9".into(),
+        meta: meta.clone(),
+    };
+    let cached = current
+        .enqueue(Input {
+            spec: spec(),
+            original_path: nested_source.clone(),
+        })
+        .unwrap();
+    assert_eq!(cached["state"], "ready");
+    let lease = current.resolve(&spec(), &nested_source).unwrap().unwrap();
+    assert_eq!(lease.artifact.original_path, nested_source);
+    lease.validate().unwrap();
+    let moved = nested.join("moved.mp4");
+    std::fs::rename(&nested_source, &moved).unwrap();
+    std::os::unix::fs::symlink(&moved, &nested_source).unwrap();
+    assert_eq!(lease.validate().unwrap_err().1, "SOURCE_CHANGED");
+    assert!(current.resolve(&spec(), &nested_source).is_err());
+}
+
+#[test]
+fn native_proxy_cache_contention_yields_to_foreground_then_recovers_without_a_failed_job() {
+    let f = Fixture::new();
+    let source = f.native_source();
+    f.manager.configure(true, "low", true).unwrap();
+    f.manager.0.cache.usage().unwrap();
+    let catalog = File::options()
+        .read(true)
+        .write(true)
+        .open(f.manager.0.cache.path.join(".catalog.lock"))
+        .unwrap();
+    rustix::fs::flock(&catalog, FlockOperation::NonBlockingLockExclusive).unwrap();
+    let job = f.manager.enqueue(f.input(source)).unwrap();
+    f.manager.configure(true, "low", false).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        if f.manager.0.shared.state.lock().unwrap().active.is_some() {
+            break;
+        }
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    let foreground = f.manager.suspend().unwrap();
+    drop(catalog);
+    let status = f.manager.status("p:1").unwrap();
+    assert_eq!(status["jobs"][0]["state"], "generating");
+    assert_eq!(status["jobs"][0]["progress"], 0);
+    assert_eq!(status["settings"]["paused"], false);
+    drop(foreground);
+    let done = finish(&f.manager, job["id"].as_str().unwrap());
+    assert_eq!(done["state"], "ready", "{done}");
 }

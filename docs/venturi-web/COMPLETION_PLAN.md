@@ -32,7 +32,36 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current compact-Selection delivery: **http://127.0.0.1:8846/**, source `89a7552`,
+Current Library pool/Source delivery: **http://127.0.0.1:8847/**, source
+`024a7ee`, binary `a23a77c45e87`, service
+`venturi-web-halo1-library-pool.service`. Ordered native Library selections now
+import into the project pool with one native Undo and no timeline placement.
+All-cached reimport adds neither duplicates nor history. Double-click or collapsed
+Preview opens the first ordinary managed raw file in Source before import;
+strong identity keeps that Source job usable across import/Undo/Redo, while a
+project switch rejects the old epoch. Compound composition stays outside Source.
+
+The bounded gate passes **10 native / 277 client cases**, syntax, formatting,
+all-target Clippy and embedded build (peak 2,005,843,968 bytes). Two initial
+test-only constructor/name fixtures were corrected before the passing gate.
+Actual Windows previews a Saved asset before import, imports two existing assets
+as roots 11/12 and child timeline 3, plays the same Source to EOF at 5.184 seconds,
+reimports without a new Undo, and exercises native batch Undo/Redo. Original
+timelines, ten root clips, markers, mixes and effect values remain unchanged.
+Save As/reopen leaves `Venturi_Library_V1.vvproj` Saved/frame 0/empty Undo, SHA
+`f843c2ae3c8d6f6788b6920baa037cb72c49dd0835366f2a3bb751703e40a4fd`.
+
+The 657,278-byte project copy matches its managed source SHA. Both native asset
+manifests and their shared media retain exact bytes, identity and timestamps;
+no NAS writes were made. All 31 prior Sessions, 32 PIDs, 29 prior Saved files,
+24 fixed local originals, the archived NAS original and shared proxy remain
+unchanged. Actual 1280x720 layout is checked and the ordinary viewport restored.
+Runtime peak is 231,530,496 bytes. See `evidence/f5-library-pool-workflow.json`
+and Source/pool screenshots. Reuse prior renderer/export evidence; no new export,
+continuous playback during import, physical DPI or full release claim is made.
+Ledger remains **49 done / 41 partial / 2 excluded**; the full goal stays active.
+
+Preserved compact-Selection delivery: **http://127.0.0.1:8846/**, source `89a7552`,
 binary `6958f227e039`, service `venturi-web-halo1-command-ownership.service`.
 Delete/Backspace now follows Media, Library, timeline or key-editor ownership;
 File/Edit retain the last panel. Project-media removal preserves source files and
@@ -52,8 +81,9 @@ The 1280x720 desktop check is complete and the ordinary viewport is restored.
 All 30 prior Sessions, 31 PIDs, 27 prior Saved files, 21 fixed local originals,
 the NAS original and shared proxy remain unchanged. Runtime peak is 214,544,384
 bytes. See `evidence/f1-command-ownership-workflow.json` and Selection images.
-No new export/physical DPI/full release qualification is claimed. Library native
-shared-file removal, batch pool import and pre-import Source preview stay open.
+No new export/physical DPI/full release qualification was claimed at that checkpoint.
+Library pool import and pre-import Source preview are subsequently delivered above;
+native shared-file removal remains open.
 Ledger remains **49 done / 41 partial / 2 excluded**.
 
 Preserved context-menu delivery: **http://127.0.0.1:8845/**, source `b23e87d`
@@ -607,21 +637,31 @@ uses its own project root and the existing tunnel on 8812. The full ledger
 was 45 done / 45 partial at that delivery; this interface acceptance does not close unrelated
 functional or release criteria.
 
-## Next implementation block — native Library pool import and Source preview
+## Next implementation block — native Library removal lifecycle
 
-Command ownership and compact Selection Inspector are delivered above. Complete
-native Library browse/select/import for multiple assets into the project pool in
-one native Undo, without adding timeline placement. Reuse the existing prepared
-batch and strong source confinement, with explicit stale/cancel/unknown guards.
-Add Source preview for ordinary asset files before import through the existing
-confined Source path. Native asset preview reads its first ordinary media payload;
-it does not compose compound timelines. Do not add a new render engine here.
+Batch pool import and pre-import raw Source preview are delivered above. Next
+implement confirmed multi-asset permanent removal, reusing the existing native
+Library preparation, journal, revision checks, shared locks and receipts. Native
+Delete captures the selection and asks for confirmation; opening or canceling
+must not mutate metadata, media or project history. Stop an affected Source when
+removal succeeds. Keep Archive separate and preserve project copies.
 
-Keep Library shared-file Delete separate from project-media removal: the native
-confirmation/removal lifecycle is still missing, and the current Library owner
-truthfully consumes Delete without falling through into timeline edits. Continue
-remaining full-plan production/release criteria after these concrete gaps, reusing
-unchanged renderer/audio evidence and preserving all delivered editors/history.
+Clean up managed media only after committed metadata removal and only when no
+retained active, archived or backup asset references it. Uncertain parsing,
+unknown files or confinement failures must preserve data. Qualify destructive
+behavior with owned disposable assets; never delete the existing shared assets
+or other agents' work to demonstrate this feature. No project Undo is involved.
+
+Read-only native audit of original upstream b3b03bf confirms that Add to Project
+copies managed Library files into project/library/<originalname>, remapping
+paths outside Undo; unsaved projects copy on Save. Current Web project copies
+already preserve that portability intent. Filename/layout/timing differ; retain
+strong content checks rather than native size-only collision reuse. Persistent
+native NAS references would be a new policy, not a missing native behavior, and
+the ds4-specific reference grant must not be applied to native AssetFile records.
+
+Continue remaining F1-F7/M7 production criteria after this lifecycle block;
+reuse unchanged renderer/audio evidence and preserve all delivered editor history.
 
 ## Delivery blocks
 

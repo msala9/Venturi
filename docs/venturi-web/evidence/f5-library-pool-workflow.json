@@ -1,0 +1,308 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "024a7ee",
+  "delivery": {
+    "url": "http://127.0.0.1:8847/",
+    "host": "halo1",
+    "service": "venturi-web-halo1-library-pool.service",
+    "pid": 199008,
+    "project_root": "/home/halo/VenturiWeb-library-pool-20261023",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-a23a77c45e87",
+    "binary_sha256": "a23a77c45e8721355cb688c5d999ff364eca0ca9383bd4d220bc77cf0aef1bf2",
+    "saved_project": "Venturi_Library_V1.vvproj",
+    "saved_sha256": "f843c2ae3c8d6f6788b6920baa037cb72c49dd0835366f2a3bb751703e40a4fd",
+    "saved_empty_undo": true,
+    "active_timeline": "1",
+    "playhead": 0,
+    "runtime_memory_peak_bytes": 231530496,
+    "preview_device": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "production": {
+    "pool_import": "Ordered 1..32 native assets use the existing prepared batch and native merge. Unique roots are reported; independent compound children and file copies use one ImportMedia Undo without timeline placement.",
+    "cached_import": "An all-reused import preserves generation, history, Redo, allocator and entities; request receipt recording remains separate.",
+    "source_preview": "Double-click or collapsed Preview resolves the first ordinary managed raw file before import. The native Library namespace reuses bounded Source windows, audio selection, stills, seeks and audition.",
+    "source_guard": "Initial resolve binds current generation. Later reads bind epoch, asset revision, confined managed regular file and strong source version. Captured generation identifies the existing Source job across ordinary project edits.",
+    "source_limits": "Synthetic Source identity is not a pool item or timeline-placement target. Compound composition and generators without ordinary raw files are refused.",
+    "native_copy_semantics": "Original upstream b3b03bf also copies managed Library media into project/library and remaps paths. Web project copies preserve that portability intent with stronger content verification; flat naming/layout and copy timing differ."
+  },
+  "actual_windows_workflow": {
+    "existing_native_assets": [
+      {
+        "id": "0823179a-6985-4e4d-af73-a7ffdf9c3523",
+        "name": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+        "revision": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7",
+        "missing_count": 0
+      },
+      {
+        "id": "50870a9b-d79c-45a6-85dd-0c5f03ada5d6",
+        "name": "Timeline 1",
+        "revision": "956d4e578b3fd9305e67c5b17475722ae89e8608332833b7a84737add4204f8d",
+        "missing_count": 0
+      }
+    ],
+    "pre_import_source_preserves_saved_entities_history_generation_and_bytes": true,
+    "source_duration_seconds": 5.184,
+    "source_total_frames": 124,
+    "source_ready_identity_retained_after_import": true,
+    "actual_eof_after_import": {
+      "duration": 5.184,
+      "ended": true,
+      "paused": true,
+      "source": "/api/v1/native-assets/items/0823179a-6985-4e4d-af73-a7ffdf9c3523/source/jobs/1792758029036825182/source.mp4?project_epoch=1792757897369785503%3A1&if_generation=0&revision=54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7&source_version=56%3A89915473%3A657278%3A1792701139%3A857223800%3A1792701139%3A857223800",
+      "status": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4 · End of Source",
+      "time": 5.184
+    },
+    "continuous_playback_during_import_claimed": false,
+    "pool_root_ids_added": [
+      "11",
+      "12"
+    ],
+    "compound_child_timeline_id": "3",
+    "original_timeline_clip_counts": {
+      "1": 10,
+      "2": 5
+    },
+    "original_tracks_clips_markers_mixes_and_effect_inspectors_unchanged": true,
+    "one_native_undo_and_redo": true,
+    "all_reused_no_duplicates_or_new_undo": true,
+    "all_reused_status": "Native assets already in Media pool · timeline unchanged",
+    "selected_assets_retained": [
+      "Native asset ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+      "Native asset Timeline 1"
+    ],
+    "strong_version_reads_after_undo_redo": {
+      "current_generation": "4",
+      "captured_generation": "0",
+      "source_state": "ready",
+      "source_version": "56:89915473:657278:1792701139:857223800:1792701139:857223800",
+      "source_window": {
+        "audio_mode": "all",
+        "audio_stream_index": null,
+        "end_frame": 124,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "source_version": "56:89915473:657278:1792701139:857223800:1792701139:857223800",
+        "start_frame": 0,
+        "total_frames": 124
+      },
+      "session_unchanged": true,
+      "native_assets_and_media_unchanged": 3
+    },
+    "project_copy": {
+      "name": "asset-53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b-ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+      "bytes": 657278,
+      "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+    },
+    "old_epoch_after_reopen": {
+      "status": 409,
+      "code": "REVISION_CONFLICT"
+    },
+    "saved_reopened": {
+      "name": "Venturi_Library_V1.vvproj",
+      "sha256": "f843c2ae3c8d6f6788b6920baa037cb72c49dd0835366f2a3bb751703e40a4fd",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 0
+        }
+      }
+    },
+    "layout": {
+      "desktop": {
+        "activeTimeline": "1",
+        "importedCompoundRow": "▤Timeline 1 2Timeline · 1920×1080 · Audio · 24 fps0:05",
+        "importedMediaRow": "asset-53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b-ds4-f3923115fe638051-53f3bea1ec1589a0.mp4Video · 864×480 · Audio · 24 fps0:05",
+        "project": "Venturi_Library_V1.vvproj",
+        "save": "Saved",
+        "viewport": [
+          1280,
+          720
+        ]
+      },
+      "restored": {
+        "inspectorExpanded": "false",
+        "save": "Saved",
+        "viewport": [
+          726,
+          964
+        ]
+      }
+    }
+  },
+  "preservation": {
+    "prior_sessions": 31,
+    "prior_pids": 32,
+    "prior_saved_files": 29,
+    "candidate_saved_files": 2,
+    "local_original_files_unchanged": 24,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_candidate_saved_empty_history": true,
+    "candidate_session_unchanged": true,
+    "prior_color_editor_saved_eight_undo_entries_preserved": true,
+    "prior_effects_editor_saved_seven_undo_entries_preserved": true,
+    "prior_context_editor_unchanged": true,
+    "prior_focus_editor_saved_empty_undo_unchanged": true,
+    "fixed_native_library_files_unchanged": {
+      "files": {
+        "/mnt/madrock-share/madrock-library/assets/0823179a-6985-4e4d-af73-a7ffdf9c3523.json": {
+          "bytes": 860,
+          "dev": 56,
+          "inode": 89915475,
+          "mtime_ns": 1792701140117141000,
+          "ctime_ns": 1792701140121232100,
+          "sha256": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7"
+        },
+        "/mnt/madrock-share/madrock-library/media/53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b/ds4-f3923115fe638051-53f3bea1ec1589a0.mp4": {
+          "bytes": 657278,
+          "dev": 56,
+          "inode": 89915473,
+          "mtime_ns": 1792701139857223800,
+          "ctime_ns": 1792701139857223800,
+          "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+        },
+        "/mnt/madrock-share/madrock-library/assets/50870a9b-d79c-45a6-85dd-0c5f03ada5d6.json": {
+          "bytes": 2991,
+          "dev": 56,
+          "inode": 89915476,
+          "mtime_ns": 1792706965576150200,
+          "ctime_ns": 1792706965580150300,
+          "sha256": "956d4e578b3fd9305e67c5b17475722ae89e8608332833b7a84737add4204f8d"
+        }
+      },
+      "count": 3
+    },
+    "native_library_files_identity_bytes_and_timestamps_unchanged_after_final_save": 3,
+    "new_nas_writes": 0,
+    "proxy_capacity_unchanged": {
+      "charged_bytes": 2206594,
+      "max_bytes": 2147483648,
+      "max_job_bytes": 536870912,
+      "max_jobs": 32,
+      "used_entries": 1,
+      "used_jobs": 0
+    }
+  },
+  "qualification": {
+    "native_cases": 10,
+    "native_results": [
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 625 filtered out; finished in 0.07s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 623 filtered out; finished in 0.01s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 625 filtered out; finished in 0.01s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 626 filtered out; finished in 0.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 626 filtered out; finished in 0.00s"
+    ],
+    "client_cases": 277,
+    "client_results": [
+      "ℹ tests 277",
+      "ℹ suites 0",
+      "ℹ pass 277",
+      "ℹ fail 0",
+      "ℹ cancelled 0",
+      "ℹ skipped 0",
+      "ℹ todo 0",
+      "ℹ duration_ms 210.290862"
+    ],
+    "main_js_syntax": "passed",
+    "cargo_fmt": "passed",
+    "all_target_clippy_D_warnings": "passed",
+    "embedded_build": "passed",
+    "gate_service": "venturi-halo1-library-pool-r3-20261023.service",
+    "gate_terminal_pid": 0,
+    "worker_memory_peak_bytes": 2005843968,
+    "prior_fixture_repairs": [
+      "r1: new test resolves native compound MediaId for RenameTimeline constructor",
+      "r2: new test uses valid Pool_destination project name"
+    ],
+    "limits": {
+      "cpu": 8,
+      "memory_bytes": 4294967296,
+      "swap_bytes": 0,
+      "one_heavy_workload": true,
+      "low_priority": true
+    },
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "a8586945de8774ea24aa2f2791e9a7196dec7193bbddfe899ad093898e564934",
+      "crates/vv-web/src/asset_jobs.rs": "809c696290a23d2efcf3d77eedab3e065a082f0b30df2089c1a58a9b102e8678",
+      "crates/vv-web/src/commands.rs": "8b3ad621eab43497c2f08551883b9a4ecdc115400b8ca64db4d65fbc422c8663",
+      "crates/vv-web/src/host.rs": "9ccdee9aff30940dd1ab1e55ba5ab38659777fd1cc5ac9ae3bb7769bbf83a692",
+      "crates/vv-web/src/source.rs": "e9507591f03c86b53f613bbb5c210302f29fc70bf35f08d453ed0e815a8787eb",
+      "crates/vv-web/src/tests/api.rs": "3df4d2f8a9346b3a4ce259a0990bf58a92e019abe692fd957d22f76016588e3c",
+      "crates/vv-web/src/tests/host.rs": "1e442ee634a698d9b9190c4364b3c9508f7ed91fd50594f12929e3567b2f54c9",
+      "crates/vv-web/src/tests/source.rs": "abd26c9aa413684f2839f1744d5d625c0adfa47d26a5e9d508d4f4bac9537882",
+      "web/js/main.js": "5b59a4e42e954973fada5648fc5db50fd4cefa5a2df41044a1746cb39061bf65",
+      "web/js/native-assets.js": "9ee59d83276cb0d33d5283aebc693c8166e07b84555295c8385f5bc1e629a972",
+      "web/js/source.js": "ad829e002a2677c7ea1496bf1f307d45cf7edfd4a6e53d21f4efb0e832e9265d",
+      "web/test/native-assets-panel.test.js": "d5335dbebe084acf71b9eb522ed7849393369b895f4f7ea1eec9df0db7949733",
+      "web/test/native-assets.test.js": "6a124bf1cacb4ab4d360be43eff9ca53d2793926a3095199dc8b3e29c60b8d33",
+      "web/test/source.test.js": "448cc99750cc64aed880b68f4f1c2d5e8fd1ebf4df0b616e78b74fd67afae92d"
+    },
+    "reused_export": "f3-palette-fonts-workflow.json: native 701-frame Full HD H264/AAC export and actual 29.226-second EOF; original timeline unchanged here",
+    "fresh_export_claimed": false
+  },
+  "screenshots": [
+    {
+      "file": "f5-library-source-workspace.png",
+      "sha256": "2612d07ce4eb93010ee843ca87430426059b86ceddcd639fc716ca65c9f79115"
+    },
+    {
+      "file": "f5-library-pool-workspace.png",
+      "sha256": "3e9a23dc87cadf2fcf51e72929de50c3877f93c966d95c25e91b79e394f6cefb"
+    }
+  ],
+  "remaining": [
+    "Confirmed native Library permanent removal and conservative shared-media cleanup",
+    "Native Library portable-copy layout/name parity",
+    "Physical Canvas/DPI and full F1-F7/M7 acceptance remain tracked separately"
+  ],
+  "ledger": {
+    "done": 49,
+    "partial": 41,
+    "excluded": 2,
+    "goal_complete": false
+  },
+  "private_capture_sha256": {
+    "halo1-library-pool-opened.json": "b88ccf6fa0b5ee52f3f1bd9b3bf2fb15c33c680867ee7a88c61c3eefacbbea48",
+    "halo1-library-pool-preview-opened.json": "3147220edf68882236443058df94f4a94ce1bab56ac8159d44e5f3f773f3ed11",
+    "halo1-library-pool-imported.json": "d6fc82131f29a70f6406a653e1ef180caf812120d2bb09674ed5dea0c44954fe",
+    "halo1-library-pool-cached-import.json": "4e848036c814c3fc8862566b4335719c7a21a0453eb3fe442cc03e9b70bd9d32",
+    "halo1-library-pool-undo.json": "79b35de28b47cae2035cc6af0b5729bd6cf418528815a4c2480009e218d8833c",
+    "halo1-library-pool-redo.json": "d117bec1e428b6db6bd56a12ff660a4fb135cb74b525d0d4e39da86f90b30f27",
+    "halo1-library-pool-final.json": "4a88e8b741d21a44ccb2e3de12c9cd2c17c06462d57e5cedfdc76a050dc03fa2",
+    "halo1-library-pool-source-after-import.json": "7bf59b583ca4bebad9a20a042c6badd4648a82732bebac77159a653ab3267dfb",
+    "halo1-library-pool-source-eof.json": "406a5d62c3bc275fcd7239ab05f30b2942465e730e5284f05ba824236cab453c",
+    "halo1-library-pool-nas-and-source-after.json": "dd35704520d9a5cf42fd43db5a5dd09e6f5fb88c01b5d77176c10ee5a748f144",
+    "halo1-library-pool-native-final-check.json": "7f436d3325b25d03963a352112deaa9b572ee8c5338dc7bac275c709b6e1611e",
+    "halo1-library-pool-protected.json": "c876da4aecfd57ddfc314cfd285093a5ce6ca22a66125a27de67f655ba6b915b",
+    "halo1-library-pool-r3-observed.json": "16596b8ca699fc299a70e179b944a617b4f51209786ab00807ab717af31fea57",
+    "halo1-library-pool-gate-counts.json": "a69a977d0a2b0bdf9036ae6d90355d4ce91d21ce272a63424574ac936a828b7c",
+    "halo1-library-pool-browser-layout.json": "1f19622414d7a196c3b507b9feea6c01d9b8d1988ea53c26783f02ff15b5aa3c",
+    "halo1-library-pool-native-files-before.json": "ea794bfd5425216446e15335ea3447872216cfc7fee364cb7a6919b7c720fefd",
+    "halo1-library-pool-native-before.json": "f003edc0cfa047ec0aede5d05e27ca69e104c80b36eac4d48e3f089bd52adc52"
+  }
+}

@@ -22,6 +22,20 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F5 native Library pool/Source (`024a7ee`, halo1/8847): see
+`evidence/f5-library-pool-workflow.json`. Ten native /277client cases, main JS
+syntax, formatting, all-target Clippy and embedded build pass. Initial failures
+were corrected test-only native constructor and valid project-name fixtures.
+Actual Windows pre-import Source preserves Saved/generation/pool/Undo; ordered
+two-asset import adds roots and an independent child in one Undo without placement.
+Strong Source identity stays ready across import and reaches actual EOF afterward;
+all-cached import adds no history, native batch Undo/Redo and Saved reopen pass.
+Old generation remains a stable job namespace; old epoch is refused after reopen.
+Original timelines/effects, three fixed native NAS files, prior editor state,
+Saved bytes and proxy are unchanged. Desktop layout is checked, default restored.
+Reuse the prior native renderer/701-frame export evidence. No new export, actual
+continuous playback during import, physical DPI or release closure is inferred.
+
 F1 command ownership/Selection (`89a7552`, halo1/8846): see
 `evidence/f1-command-ownership-workflow.json`. Three native checks /158client
 cases, formatting, all-target Clippy and embedded build pass. The initial test-only

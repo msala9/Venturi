@@ -1,5 +1,18 @@
 # Implementation status
 
+## Actual linked Slip pointer workflow - 2026-10-24
+
+Current26b6/d49ed8c passes video-body and audio-body Canvas Slip on linked
+50% AV segments,64..112 to61..109 then63..111, preserving position32/duration96/
+pitch/links. Two individual commands, two Undo/Redo and edited Save/reopen retain
+the other three timelines and previous Mixer/effects.14 other Saved and NAS
+remain exact; original clean project restored. See
+evidence/f1-chrome-linked-slip-input-workflow.json. Lifetime runtime peak231440384B
+includes prior Mixer work; all memory events zero. Wording-only9fbc205 is queued
+for final embedded rebuild; live GUI proof remains d49/26b6. Prolonged uncached/
+held/cancel/required OS scaling stay FINAL_CHECKS; ledger62/28/2 unchanged.
+
+
 ## Mixer graph viewport and detached knob correction - 2026-10-24
 
 Source d49ed8c repairs demonstrated169.6px scroll loss after native EQ edits and

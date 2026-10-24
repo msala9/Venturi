@@ -1,5 +1,20 @@
 # Active completion plan — full Venturi Web scope
 
+## Actual linked Slip from video and audio - 2026-10-24
+
+Current26b6/source d49ed8c passes ordinary Canvas Slip from both linked video
+and audio bodies in the existing Assembly sequence. Native source64..112 becomes
+61..109 then63..111 at50%; both AV clips retain start32,length96, pitch and links.
+Two individual SlipClips commands, two Undo/Redo and edited Save/reopen pass.
+Other three timelines, prior Mixer/effects,14 other Saved and NAS remain exact;
+the original clean project is restored. Runtime lifetime peak231440384B includes
+prior Mixer work, with zero memory events. See
+evidence/f1-chrome-linked-slip-input-workflow.json. No new build/render/export/
+soak or footage. A wording-only follow-up9fbc205 neutralizes misleading drag
+direction guidance; its embedded rebuild is deferred to final delivery, while
+this actual GUI proof remains bound to d49ed8c/26b6. Prolonged uncached/held,
+cancel, required OS scaling and M7 remain FINAL_CHECKS; ledger62/28/2 unchanged.
+
 ## Mixer graph navigation and detached controls corrected - 2026-10-24
 
 Source d49ed8c fixes two actual Chrome defects: native EQ edits lost169.6px of

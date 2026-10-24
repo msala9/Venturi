@@ -13,6 +13,10 @@ evidence/f4-chrome-mixer-graph-scroll-workflow.json. Earlier R6 remains immutabl
 the additive current package is reserved for final delivery. Records below are
 historical; do not start a duplicate on occupied8855.
 
+Wording-only source9fbc205 follows the deployed d49ed8c; its neutral Slip drag
+guidance will be embedded in the final additive build/package. The current live
+binary and actual GUI evidence retain their exact d49ed8c/26b6 binding.
+
 ## Current owned Inspector-scroll runtime - 2026-10-24
 
 The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.

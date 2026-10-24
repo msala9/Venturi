@@ -649,7 +649,9 @@ $("program-mark-in").addEventListener('click',()=>setProgramMark(false));
 $("program-mark-out").addEventListener('click',()=>setProgramMark(true));
 function togglePlayback() {
   audioScrub?.stop();
-  if(programSeek?.cancel())return;
+  const cancelSeekPlayback=programSeek?.resuming();
+  programSeek?.cancel();
+  if(cancelSeekPlayback)return;
   if(fastTransport?.cancelPreparation())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   derivativesTransportPending=true;sourceAssets?.refresh();timelineWaveforms?.refresh();

@@ -28,5 +28,5 @@ export function createProgramSeek({getContext,getFrame,isPlaying,pause,onSeek,on
       return false;
     } finally {if(pending===owner)pending=null;}
   }
-  return {begin,finish,cancel};
+  return {begin,finish,cancel,resuming:()=>Boolean(draft?.resume || pending?.resume)};
 }

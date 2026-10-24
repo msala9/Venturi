@@ -24,6 +24,16 @@ test('a paused Program seek remains paused',async()=>{
   assert.deepEqual(f.calls,[{frame:24,resume:false}]);
 });
 
+test('Play cancels a paused still seek without treating it as a running playback cancellation',async()=>{
+  for(const playing of [false,true]){
+    const f=fixture();f.state.playing=playing;let finish;f.handle(()=>new Promise(resolve=>finish=resolve));
+    f.control.begin();const pending=f.control.finish();
+    assert.equal(f.control.resuming(),playing);
+    f.control.cancel();assert.equal(f.control.resuming(),false);
+    finish();assert.equal(await pending,false);
+  }
+});
+
 test('cancel and context changes cannot resume an obsolete ruler gesture',async()=>{
   for(const reason of ['cancel','project','timeline','revision','rate','source']){
     const f=fixture();f.control.begin();

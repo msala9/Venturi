@@ -216,7 +216,12 @@ fn reset_title_fields(title: &mut core::TitleParams, fields: &[TitleField]) -> R
             TitleField::Anchor => title.anchor = defaults.anchor,
             TitleField::Position => title.position = defaults.position,
             TitleField::Color => title.color = defaults.color,
-            TitleField::Background => title.background = defaults.background.clone(),
+            TitleField::Background => {
+                title.background = core::TitleBackground {
+                    enabled: title.background.enabled,
+                    ..defaults.background.clone()
+                };
+            }
             TitleField::BackgroundEnabled => title.background.enabled = defaults.background.enabled,
             TitleField::BackgroundColor => title.background.color = defaults.background.color,
             TitleField::BackgroundOutlineColor => {

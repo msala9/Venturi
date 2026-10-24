@@ -2873,6 +2873,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/context-menu.js", 200),
         ("/js/curve-viewport.js", 200),
         ("/js/curve-window.js", 200),
+        ("/js/tool-panels.js", 200),
         ("/js/source-placement.js", 200),
         ("/js/project-pool-placement.js", 200),
         ("/js/source-waveform.js", 200),

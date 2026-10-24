@@ -61,6 +61,26 @@ test('mix numeric drafts survive same-context EOF and readonly rebuilds, then Ap
   }finally{globalThis.document=previous;}
 });
 
+test('floating Mixer close cancels its fader, retains numeric drafts, refuses hidden submission and remains editable on reopen',async()=>{
+  class Element extends EventTarget{
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes={};this.dataset={};this.value='';this.isConnected=true;this.captures=new Set();}
+    append(...nodes){this.children.push(...nodes);}setAttribute(key,value){this.attributes[key]=value;}reportValidity(){return true;}
+    focus(){}getBoundingClientRect(){return {left:0,top:0,width:40,height:160};}
+    setPointerCapture(id){this.captures.add(id);}hasPointerCapture(id){return this.captures.has(id);}releasePointerCapture(id){this.captures.delete(id);}
+  }
+  const previous=globalThis.document;globalThis.document={createElement:tag=>new Element(tag)};
+  const timeline={id:'1',tracks:[{id:'2',kind:'audio',label:'A1',locked:false,mix:{gain_db:0,pan:0,effects:[]}}],master:{gain_db:0,pan:0,effects:[]}},before=structuredClone(timeline),writes=[],notices=[];let visible=true,section;
+  const all=node=>[node,...node.children.flatMap(all)],send=(node,type,properties={})=>{const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries(properties))Object.defineProperty(event,key,{value});node.dispatchEvent(event);};
+  try{
+    section=renderMixer(new Element('div'),timeline,{writable:true,open:true,canInteract:()=>visible,commit:async operation=>{writes.push(operation);},notice:message=>notices.push(message)});
+    const nodes=all(section),input=nodes.find(node=>node.tag==='label' && node.textContent==='A1 Gain dB').children[0],fader=nodes.find(node=>node.attributes['aria-label']==='A1 gain fader'),form=nodes.find(node=>node.tag==='form');
+    input.value='-3.25';send(fader,'pointerdown',{button:0,pointerId:1,clientX:0,clientY:0});send(fader,'pointermove',{pointerId:1,buttons:1,clientX:0,clientY:30});
+    assert.notEqual(String(input.value),'-3.25');section.cancelGestures();visible=false;send(fader,'pointerup',{pointerId:1,button:0});assert.equal(input.value,'-3.25');assert.equal(fader.captures.size,0);
+    send(form,'submit');await new Promise(resolve=>setImmediate(resolve));assert.equal(writes.length,0);assert.match(notices[0],/hidden/);
+    visible=true;section.syncVisibility();assert.equal(input.value,'-3.25');send(form,'submit');await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(writes,[{kind:'set_mixer',channel:'2',gain_db:-3.25,pan:0}]);assert.deepEqual(timeline,before);
+  }finally{section?.disposeMeters();globalThis.document=previous;}
+});
+
 test('restored numeric drafts never bypass newly locked or detached mixer controls',()=>{
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes={};this.dataset={};this.value='';this.isConnected=true;}

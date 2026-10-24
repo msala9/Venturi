@@ -59,7 +59,8 @@ function selectedWheelHarness(t,{shadowColor=null,editDetail=()=>{}}={}){
   class Element extends EventTarget{
     constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.isConnected=true;this.value='';this.disabled=false;this.ownerDocument=globalThis.document;this.captured=new Set();}
     get value(){return this.textValue ?? '';}set value(value){this.textValue=String(value);}
-    append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
+    append(...nodes){for(const node of nodes){if(node.parent)node.parent.children=node.parent.children.filter(child=>child!==node);node.parent=this;this.children.push(node);}}
+    closest(selector){for(let node=this;node;node=node.parent)if(selector==='details:not([open])' && node.tagName==='details' && !node.open)return node;return null;}
     setAttribute(name,value){this[name]=String(value);}
     reportValidity(){return true;}
     getContext(){return null;}
@@ -139,6 +140,14 @@ test('native Color scalar scrubs use .005 travel, Shift precision and supplied p
     h.send(input,'pointerup',{clientX:travel,shiftKey});await settle();assert.equal(h.commands.length,count+1);assert.equal(h.commands.at(-1).edit.patch.grade[0].value,value);
   }
   assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20 && command.edit.filter==='ColorCorrection' && command.edit.patch.grade.length===1));
+});
+
+test('Color scalars follow their actual floating card ancestry and still cancel when their owner becomes hidden',async t=>{
+  const h=selectedWheelHarness(t),input=h.field('ShadowsLuma'),filters=h.all().find(node=>node.dataset.visualPath==='selected-filters'),card=h.all().find(node=>node.dataset.visualPath==='selected-filter:ColorCorrection');
+  const floating=document.createElement('div');floating.append(card);filters.open=false;
+  h.send(input,'pointerdown');h.send(input,'pointermove',{clientX:20});h.send(input,'pointerup',{clientX:20});await settle();
+  assert.deepEqual(h.commands[0].edit.patch.grade,[{param:'ShadowsLuma',value:.1}]);
+  h.send(input,'pointerdown');h.send(input,'pointermove',{clientX:30});h.setAllowed(false);h.send(input,'pointerup',{clientX:30});await settle();assert.equal(h.commands.length,1);
 });
 
 test('native boundary sliders preserve independent Low and High values and use one owned release',async t=>{

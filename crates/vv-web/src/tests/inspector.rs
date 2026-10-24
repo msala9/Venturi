@@ -329,6 +329,253 @@ fn title_background(session: &Session, id: TimelineId, track: usize) -> core::Ti
 }
 
 #[test]
+fn title_background_group_reset_matches_native_field_diff_with_mixed_enabled_and_exact_undo_redo() {
+    for enabled in [false, true] {
+        let (mut session, id, ids) = selected_titles();
+        for (track, own_enabled) in [(0, enabled), (2, !enabled)] {
+            let title = session.project.timelines[id].tracks[track].clips[0]
+                .effects
+                .title
+                .as_mut()
+                .unwrap();
+            title
+                .content
+                .upsert(20, "Animated".into(), core::Interpolation::Hold);
+            title.background = core::TitleBackground {
+                enabled: own_enabled,
+                color: core::Rgba::WHITE,
+                outline_color: core::Rgba::BLACK,
+                outline_width: if track == 0 { 0.0 } else { 11.0 },
+                width: 0.4,
+                height: 0.3,
+                corner_radius: 0.2,
+                center: [12.0, -8.0],
+                opacity: 78.0,
+            };
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let mut oracle = session.project.clone();
+        let mut commands: Vec<Box<dyn core::Command>> = Vec::new();
+        for track in [0, 2] {
+            let clip = &oracle.timelines[id].tracks[track].clips[0];
+            let mut title = clip.effects.title.clone().unwrap();
+            title.background = core::TitleBackground {
+                enabled: title.background.enabled,
+                outline_width: title.background.outline_width,
+                ..Default::default()
+            };
+            commands.push(Box::new(core::set_clip_title(id, track, clip.id, title)));
+        }
+        let mut command = core::CompositeCommand::new(core::CommandLabel::Title, commands);
+        core::Command::apply(&mut command, &mut oracle);
+        let media = oracle
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(id))
+            .unwrap()
+            .0;
+        oracle.sync_compound_meta(media);
+        selected_edit(
+            &mut session,
+            id,
+            &ids,
+            108,
+            InspectorEdit::ResetTitle {
+                fields: vec![TitleField::Background],
+            },
+        )
+        .unwrap();
+        let after = serde_json::to_value(&session.project).unwrap();
+        for track in [0, 2] {
+            assert_eq!(
+                session.project.timelines[id].tracks[track].clips[0]
+                    .effects
+                    .title,
+                oracle.timelines[id].tracks[track].clips[0].effects.title
+            );
+        }
+        assert!(
+            after == serde_json::to_value(&oracle).unwrap(),
+            "Native reset project mismatch"
+        );
+        assert_eq!(title_background(&session, id, 0).enabled, enabled);
+        assert_eq!(title_background(&session, id, 2).enabled, !enabled);
+        assert_eq!(session.history.position(), position + 1);
+        session.history.undo(&mut session.project);
+        core::Command::undo(&command, &mut oracle);
+        let undone = serde_json::to_value(&session.project).unwrap();
+        assert!(
+            undone == serde_json::to_value(&oracle).unwrap(),
+            "Native reset Undo mismatch"
+        );
+        assert!(
+            undone["timelines"] == before["timelines"],
+            "Reset Undo changed timeline content"
+        );
+        session.history.redo(&mut session.project);
+        core::Command::apply(&mut command, &mut oracle);
+        assert!(
+            serde_json::to_value(&session.project).unwrap() == after,
+            "Reset Redo mismatch"
+        );
+        assert!(
+            after == serde_json::to_value(&oracle).unwrap(),
+            "Native reset Redo mismatch"
+        );
+    }
+}
+
+#[test]
+fn title_background_enabled_reset_and_explicit_patch_still_change_enabled_only_when_requested() {
+    for reset in [false, true] {
+        let (mut session, id, ids) = selected_titles();
+        for track in [0, 2] {
+            session.project.timelines[id].tracks[track].clips[0]
+                .effects
+                .title
+                .as_mut()
+                .unwrap()
+                .background
+                .enabled = true;
+        }
+        let mut oracle = session.project.clone();
+        let mut commands: Vec<Box<dyn core::Command>> = Vec::new();
+        for track in [0, 2] {
+            let clip = &oracle.timelines[id].tracks[track].clips[0];
+            let mut title = clip.effects.title.clone().unwrap();
+            title.background.enabled = false;
+            commands.push(Box::new(core::set_clip_title(id, track, clip.id, title)));
+        }
+        let mut command = core::CompositeCommand::new(core::CommandLabel::Title, commands);
+        core::Command::apply(&mut command, &mut oracle);
+        let media = oracle
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(id))
+            .unwrap()
+            .0;
+        oracle.sync_compound_meta(media);
+        let mut background = title_background(&session, id, 0);
+        background.enabled = false;
+        let edit = if reset {
+            InspectorEdit::ResetTitle {
+                fields: vec![TitleField::BackgroundEnabled],
+            }
+        } else {
+            InspectorEdit::Title {
+                patch: Box::new(TitleEdit {
+                    background: Some(background),
+                    ..Default::default()
+                }),
+            }
+        };
+        selected_edit(&mut session, id, &ids, 108, edit).unwrap();
+        for track in [0, 2] {
+            assert_eq!(
+                title_background(&session, id, track),
+                oracle.timelines[id].tracks[track].clips[0]
+                    .effects
+                    .title
+                    .as_ref()
+                    .unwrap()
+                    .background
+            );
+        }
+        assert!(
+            serde_json::to_value(&session.project).unwrap()
+                == serde_json::to_value(&oracle).unwrap(),
+            "Native explicit background enabled mismatch"
+        );
+    }
+}
+
+#[test]
+fn title_background_group_reset_noop_preserves_redo_and_invalid_selection_is_atomic() {
+    let (mut session, id, ids) = selected_titles();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .title
+        .as_mut()
+        .unwrap()
+        .background = core::TitleBackground {
+        enabled: true,
+        ..Default::default()
+    };
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Title {
+            patch: Box::new(TitleEdit {
+                background: Some(core::TitleBackground {
+                    enabled: true,
+                    width: 0.9,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    let changed = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    session.mark_saved();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let position = session.history.position();
+    let revision = session.timeline_revision(id);
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetTitle {
+            fields: vec![TitleField::Background],
+        },
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.history.position(), position);
+    assert_eq!(session.timeline_revision(id), revision);
+    assert!(!session.has_unsaved_changes());
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), changed);
+
+    for case in 0..4 {
+        let (mut session, id, mut ids) = selected_titles();
+        let fields = match case {
+            0 => vec![],
+            1 => vec![TitleField::Background, TitleField::Background],
+            2 => {
+                session.project.timelines[id].tracks[2].locked = true;
+                vec![TitleField::Background]
+            }
+            _ => {
+                ids.push(u64::MAX.to_string());
+                vec![TitleField::Background]
+            }
+        };
+        let before = serde_json::to_value(&session.project).unwrap();
+        let generation = session.history.generation();
+        assert!(
+            selected_edit(
+                &mut session,
+                id,
+                &ids,
+                108,
+                InspectorEdit::ResetTitle { fields }
+            )
+            .is_err()
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
+#[test]
 fn selected_title_diamonds_toggle_each_peers_own_presence_while_solid_diamonds_follow_primary_and_preserve_own_colors()
  {
     let (mut session, id, ids) = selected_titles();

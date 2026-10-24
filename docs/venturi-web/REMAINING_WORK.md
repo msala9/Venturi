@@ -1,5 +1,25 @@
 # Remaining implementation and acceptance work
 
+## Current immutable R11 development delivery - 2026-10-24
+
+The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8f549e225421-r11-5f578ea9bb6a.tar`.
+Size: 92088320 bytes. SHA256:
+`5f578ea9bb6a02702662752f7b3f4fbeab595a0651ba349a28587ff6d369d0fe`.
+It binds binary source `c2b49b0` separately from documentation `e738612`.
+All62 recorded members and52 frozen Git inputs match; launcher help,
+three original notice companions,189 loader dependencies and199 host
+notice texts pass. Assembly used one CPU/512MiB/no swap: peak242294784B,
+zero memory events. Full live Session,17 Saved, Recovery and immutable R10
+remain exact. See `evidence/f7-current-prebuilt-r11-workflow.json`.
+The current archive includes the qualified Mixer/tool-window corrections
+and native Library audio Source waveform/marked-range workflow.
+This remains an internal development prebuilt with release_ready=false;
+physical/device/held/OS/fullscreen/long-playback/M7 and response-target
+acceptance remain open in FINAL_CHECKS.md. No runback/reboot is inferred.
+This publication postdates the frozen archive; its earlier package-pending
+wording remains historical. Ledger stays62 done/28 partial/2 excluded.
+
+
 ## Library Source waveform and marked insertion delivered - 2026-10-24
 
 Current source `c2b49b0` / runtime `8f549e225421` is active on halo1/8855.

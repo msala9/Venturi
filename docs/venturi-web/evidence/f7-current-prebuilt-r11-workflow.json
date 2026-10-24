@@ -1,0 +1,213 @@
+{
+  "schema": "venturi-current-prebuilt-r11-workflow-v1",
+  "date": "2026-10-24",
+  "archive": {
+    "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8f549e225421-r11-5f578ea9bb6a.tar",
+    "bytes": 92088320,
+    "sha256": "5f578ea9bb6a02702662752f7b3f4fbeab595a0651ba349a28587ff6d369d0fe",
+    "kind": "internal-development-prebuilt",
+    "release_ready": false
+  },
+  "source": {
+    "binary_commit": "c2b49b0dd0850c2e24bacf4c3d5d9bd1fb36b5ec",
+    "documentation_commit": "e7386125d5c5341880ce4096dba775ec82cb7eaa",
+    "binary": {
+      "path": ".runtime/vv-web",
+      "sha256": "8f549e225421b2d1f8f8b93338fe5214a704bc17cbbc32a1cbd4b6fe4ecc66b3",
+      "bytes": 80523776
+    },
+    "qualification_receipts": [
+      {
+        "receipt": {
+          "path": "halo1-mixer-reuse-r2-observed.json",
+          "bytes": 26526,
+          "sha256": "359ac5bc808f4b36fb5f514f71cdc6bca9d92515810127fcbb778267f965de44"
+        },
+        "source_commit": "6ee22d4354877925ed948c323aa0dbab6ea58ed6",
+        "binary_sha256": "d60555e5508108307572818a68f6dead09d661c4a5d9c98ec211cc4500f8d03b"
+      },
+      {
+        "receipt": {
+          "path": "halo1-tool-window-inset-r1-observed.json",
+          "bytes": 25545,
+          "sha256": "dc2ef81df3770d28386da250592567664f627b42a0be0f49d4f1d1e7c3860b8b"
+        },
+        "source_commit": "3605c174b328d22b6f7cb43d106546b90d341de5",
+        "binary_sha256": "513eaaaf4067a6b876e0013fb23045b0a89fbdf8f8906f7f4aa169060c457a6b"
+      },
+      {
+        "receipt": {
+          "path": "halo1-library-source-r2-observed.json",
+          "bytes": 24207,
+          "sha256": "8aa7c7a9014af1388f6c667f05eeba8fd66915f4db5ef0320d748d787c7ebf3a"
+        },
+        "source_commit": "c2b49b0dd0850c2e24bacf4c3d5d9bd1fb36b5ec",
+        "binary_sha256": "8f549e225421b2d1f8f8b93338fe5214a704bc17cbbc32a1cbd4b6fe4ecc66b3"
+      }
+    ],
+    "current_qualification": {
+      "client_cases_passed": 262,
+      "native_cases_passed": 21,
+      "fresh_clippy_passed": true
+    },
+    "prior_chain": {
+      "evidence": "f7-current-prebuilt-r10-workflow.json",
+      "sha256": "fa6faaf32285db06598074baea92cb5d27d4aabe6d6b4d3524f5e122f4a2c66c"
+    }
+  },
+  "packaged_files": {
+    "count": 62,
+    "git_frozen_count": 52,
+    "all_recorded_member_hashes_verified": true,
+    "all52_git_inputs_independently_matched_to_frozen_docs": true,
+    "recorded_hash_map_sha256": "74be8a4371de2dd9cb0ac9b8b2d253fb62ae83ff73d3f8026f147b5df788e36a"
+  },
+  "prerequisites": {
+    "loader_dependencies": 189,
+    "host_notice_texts": 199,
+    "host_loader_current_binding_exact": true,
+    "original_host_loader_identity_exact": false,
+    "zlib_before_after_exact": true,
+    "notice_companions": {
+      "rust-notices": {
+        "path": "third-party/rust-notices.tar",
+        "bytes": 4014080,
+        "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+        "original_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+        "original_binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+        "original_archive_and_index_unchanged": true
+      },
+      "notice-supplement": {
+        "path": "third-party/notice-supplement.tar",
+        "bytes": 194560,
+        "sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true
+      },
+      "host-notices": {
+        "path": "third-party/host-notices.tar",
+        "bytes": 3747840,
+        "sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true
+      }
+    },
+    "host_notice_bindings": {
+      "count": 199,
+      "bindings_sha256": "c3773211474a810597e57a0471cb2f2de30022798d2f5f7689fda907799f5054"
+    }
+  },
+  "launcher": {
+    "help_exit_code": 0,
+    "help_stdout": "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY] [--assets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview.\n"
+  },
+  "assembly": {
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=100%",
+      "MemoryMax=512M",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=180",
+      "TimeoutStopSec=10",
+      "KillMode=control-group",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/current-prebuilt-r11/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/current-prebuilt-r11/worker.log"
+    ],
+    "memory_peak_bytes": 242294784,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "scope": "One CPU/512MiB/no-swap immutable assembly with launcher help and streamed member verification; no new build, render, server, playback, export, runback or reboot."
+  },
+  "preservation": {
+    "runtime_before_after_exact": true,
+    "unit": "venturi-web-halo1-library-source.service",
+    "pid": "557906",
+    "binary_sha256": "8f549e225421b2d1f8f8b93338fe5214a704bc17cbbc32a1cbd4b6fe4ecc66b3",
+    "full_session_sha256": "50d60f7ad7ad813996918c2428cd3ea559c87dd6256af4e6944638e2a815b2ab",
+    "all17_saved_exact": true,
+    "saved_hash_map_sha256": "1c1fa3386ae846bdeb2a3d035677e7201227badd50eced17650f5157b47693c4",
+    "recovery": {
+      "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/.venturi-autosave.json",
+      "bytes": 195294,
+      "sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+      "status": {
+        "base_changed": true,
+        "created_unix_ms": 1792847309756,
+        "pending": true,
+        "project_token": "Venturi_Chrome_Input_V1.vvproj",
+        "resolved_to": "Venturi_Chrome_Input_V1.vvproj",
+        "revision": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+        "state": "pending"
+      }
+    },
+    "prior_immutable_r10": {
+      "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8e190ba8189f-r10-f1858d8a6e20.tar",
+      "bytes": 91781120,
+      "sha256": "f1858d8a6e20095fcd5818dcbf7acf01b95bc4a29096544888a8a728c3522211"
+    }
+  },
+  "private_receipts": {
+    "halo1-current-prebuilt-r11-start.json": {
+      "path": "halo1-current-prebuilt-r11-start.json",
+      "bytes": 446004,
+      "sha256": "67653a8dcfd5c1a5d2c9283352b62c78dc5fe5ae7616ba4fe5a4c419a6ce228f"
+    },
+    "halo1-current-prebuilt-r11-observed.json": {
+      "path": "halo1-current-prebuilt-r11-observed.json",
+      "bytes": 233797,
+      "sha256": "3a37cfb0fbaca433ca9addf5cec5aeea15a46da6cb51ac14695639cb1a3337a4"
+    },
+    "halo1-final-gui-library_source_after.json": {
+      "path": "halo1-final-gui-library_source_after.json",
+      "bytes": 89244,
+      "sha256": "5243d5a87b7f6cb4db2ff1843c7fb3ccbaf7989c9692a43e7e8603388f425260"
+    }
+  },
+  "retained_failed_attempts": [
+    {
+      "path": "halo1-mixer-reuse-r1-observed.json",
+      "bytes": 21123,
+      "sha256": "685225614a1011a2b193109e2cfd9c45bb00e5de4b2754e28f4f311e1ae9ee7a"
+    },
+    {
+      "path": "halo1-library-source-r1-observed.json",
+      "bytes": 14602,
+      "sha256": "7c2be9b0985366050557783d65f95ff1c8e17afcb5f95b3f25f82b717a60853b"
+    }
+  ],
+  "limitations": [
+    "Internal current development prebuilt; release_ready remains false and full F1-F7/M7 acceptance remains active.",
+    "Prior failed authored fixtures retain no passing credit; their compact immutable receipt references are preserved.",
+    "Publication postdates frozen documentation e738612; historical package-pending wording inside the immutable archive is retained.",
+    "No new runback/reboot, physical/device/OS-scale/held/HTML-drag/fullscreen/long-playback/soak or response-target acceptance is inferred.",
+    "The ledger remains62 done/28 partial/2 documented exclusions; FINAL_CHECKS criteria are preserved.",
+    "Notice collection and exact configured-loader bindings do not constitute legal clearance or a self-contained distribution."
+  ]
+}

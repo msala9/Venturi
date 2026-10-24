@@ -1,5 +1,27 @@
 # Checks reserved for final acceptance
 
+[Pending checks](#pending-checks)
+
+## Current immutable R11 development delivery - 2026-10-24
+
+The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8f549e225421-r11-5f578ea9bb6a.tar`.
+Size: 92088320 bytes. SHA256:
+`5f578ea9bb6a02702662752f7b3f4fbeab595a0651ba349a28587ff6d369d0fe`.
+It binds binary source `c2b49b0` separately from documentation `e738612`.
+All62 recorded members and52 frozen Git inputs match; launcher help,
+three original notice companions,189 loader dependencies and199 host
+notice texts pass. Assembly used one CPU/512MiB/no swap: peak242294784B,
+zero memory events. Full live Session,17 Saved, Recovery and immutable R10
+remain exact. See `evidence/f7-current-prebuilt-r11-workflow.json`.
+The current archive includes the qualified Mixer/tool-window corrections
+and native Library audio Source waveform/marked-range workflow.
+This remains an internal development prebuilt with release_ready=false;
+physical/device/held/OS/fullscreen/long-playback/M7 and response-target
+acceptance remain open in FINAL_CHECKS.md. No runback/reboot is inferred.
+This publication postdates the frozen archive; its earlier package-pending
+wording remains historical. Ledger stays62 done/28 partial/2 excluded.
+
+
 ## Library Source waveform and marked insertion delivered - 2026-10-24
 
 Current source `c2b49b0` / runtime `8f549e225421` is active on halo1/8855.
@@ -203,6 +225,8 @@ a deferred-check queue, not an exclusion list or evidence of completion.
 Keep the existing two exclusions and all row-specific acceptance criteria.
 REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 
+## Pending checks
+
 | Check | Current evidence and remaining work | How to close | Execution constraint |
 |---|---|---|---|
 | OS display scaling | Actual Chrome pointer workflow at observed DPR1.25 passes; native OS100%/150% remains unproved. | Run the existing gesture scenarios at the required OS scales; retain screenshots and native state comparisons. | Do not silently substitute browser viewport/zoom/DPR emulation for OS scaling. |
@@ -223,7 +247,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. Cold derived-cache ready/reuse for its repeated source also passes in evidence/f1-chrome-dense500-cold-assets-workflow.json; this is not an HTTP count or pressure/eviction/FPS proof. The older5002-key/4clip fixture is separate. | Qualify broader cold/multiasset pressure,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Performance instrumentation and response target | Source229aabd exposes bounded Canvas CPU, RPC JSON and software input timing; actual10-clip Control+A gives one217.10ms input sample, which does not qualify the one-frame target. See evidence/f1-workspace-rpc-input-workflow.json. | Profile safely before claiming response/FPS acceptance; add authoritative queue/cache-hit measurements if available and retain explicit VRAM unavailable. | No Windows benchmark/soak, pressure tests, inferred hardware latency or fabricated counters. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Current8e190ba8189f/source229aabd is packaged in verified internal-development R10 with docsc46252b separately bound; see evidence/f7-current-prebuilt-r10-workflow.json. All58 members/48 frozen Git inputs, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R9 remain exact. | Current package assembly is complete; release_ready remains false pending functional/physical/response/soak gates. Historical runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
+| Final delivery and regression receipt | Current8f549e225421/sourcec2b49b0 is packaged in verified internal-development R11 with docse738612 separately bound; see evidence/f7-current-prebuilt-r11-workflow.json. All62 members/52 frozen Git inputs, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/17 Saved/Recovery and R10 remain exact. | Current package assembly is complete; release_ready remains false pending functional/physical/response/soak gates. Historical runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

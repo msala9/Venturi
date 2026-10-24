@@ -13,6 +13,14 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
 
 ## Concrete production work
 
+- **Inspector viewport after native edits corrected:** source39b3ae3 retains the
+  scroll/control anchor through the temporary empty-selection refresh; genuine
+  context switches and user input still cancel restoration. Actual curved Path,
+  vertex, three boolean modes and Feather scrubs, seven Undo/Redo and Saved
+  reopen pass in evidence/f3-chrome-masks-inspector-scroll-workflow.json. The
+  demonstrated jump to top is repaired and checked in currentadc69 Chrome.
+  This adds no OS scaling, held modifier, moving-render or M7 qualification.
+
 - **Native NAS Restore and import reporting delivered:** source455662c preserves
   native asset/preset two-way Restore on the shared filesystem, first-drag Mixer
   focus/scroll behavior and truthful cached single-asset import no-op receipts.
@@ -123,8 +131,8 @@ feature passes every requirement or cannot contain defects.
 | transform_crop_softness | Actual Viewer move/left crop and numeric softness/PositionX scrub pass; qualify remaining scale/rotation/anchor handles, continuous edge scrub, cancellation and required DPI; retain native/API frame equivalence. |
 | title_font_style_bg | Qualification: physical popup/font/color/relative-scrub interactions and scaling; retain existing render/history/export workflow. |
 | solid_color | Qualification: physical generator drag/color/key interactions and DPI; retain native color/render/history/export proof. |
-| masks_rect_ellipse_bezier | Qualification: physical Viewer pen/handles/choice/scrub and DPI; retain native moving-frame/export proof. |
-| mask_boolean_feather | Qualification: physical mode/feather/handle interactions and DPI; retain native composition proof. |
+| masks_rect_ellipse_bezier | Actual curved Path pen/cancel/vertex and three-shape editing, seven Undo/Redo and exact Saved reopen pass; repaired Inspector viewport stays fixed after Feather scrub. Qualify remaining handles/cancel and required DPI; retain native moving-frame/export proof. |
+| mask_boolean_feather | Actual Add/Subtract/Intersect custom choices and Feather pointer scrub pass, including one native Undo per edit and exact Saved reopen. Qualify remaining handle/cancel and required DPI; retain native composition proof. |
 | push_cross_dissolve | Qualification: physical Alt-copy/replace, wheel/blur/cancellation and100%/150% mapping. |
 | smooth_cut_optical_flow | Qualification: physical transition-copy/replace/duration interactions and100%/150% mapping; retain existing moving native render/export evidence. |
 | clip_fades | Qualification: fade-handle mapping at100%/150%; existing125% physical handles and native video/PCM/AAC/MP4 proof remain accepted. |

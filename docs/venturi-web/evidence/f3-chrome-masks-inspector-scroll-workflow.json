@@ -1,0 +1,262 @@
+{
+  "date": "2026-10-24",
+  "scope": "Actual Chrome mask pen/vertex/boolean/feather, seven Undo/Redo, Saved reopen and repaired Inspector scroll; no whole-row promotion",
+  "source": {
+    "gestures": "455662c18e0d9ab886ad6fab24471edfd559749c",
+    "viewport_fix": "39b3ae375c68b323875768a63023a29aa694abf2"
+  },
+  "runtime": {
+    "before_pid": "485839",
+    "after_pid": "497792",
+    "unit": "venturi-web-halo1-inspector-scroll.service",
+    "binary_sha256": "adc69ead45577897e6d2e71cb8086664d5bb96d29ea4e601b77b86df287450b9"
+  },
+  "fixture": {
+    "project": "Venturi_Chrome_Effects_V1.vvproj",
+    "timeline": "1",
+    "title_clip": "12",
+    "original_owned_saved_sha256": "40b247907529d0693196a3bafd17806cf3389c572099733451588995005c0523",
+    "seven_masks_saved_sha256": "33718a9f49ef391d35e51943ca3ba03cf4aeadbf3226e49e7cf68217c333dfa6",
+    "final_owned_saved_sha256": "4b1cc3c6385211d876870ed7f07ece20e780c361c0c5af518bde7f71bd8302fe"
+  },
+  "browser": {
+    "family": "Chrome",
+    "existing_extension": true,
+    "work_tabs": 1,
+    "observed_device_pixel_ratio": 1.25,
+    "os_dpi_matrix_claimed": false
+  },
+  "native": {
+    "pen_cancel_exact": true,
+    "path_points": 4,
+    "curved_tangent": {
+      "in_handle": [
+        -51.35578918457031,
+        -51.35577392578125
+      ],
+      "out_handle": [
+        51.35578918457031,
+        51.35577392578125
+      ],
+      "point": [
+        152.07388305664062,
+        146.62075805664062
+      ]
+    },
+    "vertex0_before": [
+      -361.48388671875,
+      146.62075805664062
+    ],
+    "vertex0_after": [
+      -400.000732421875,
+      172.29864501953125
+    ],
+    "shapes_modes": [
+      [
+        "Path",
+        "Add"
+      ],
+      [
+        "Rectangle",
+        "Subtract"
+      ],
+      [
+        "Ellipse",
+        "Intersect"
+      ]
+    ],
+    "feather_before": 0,
+    "feather_after": 10,
+    "undo_count": 7,
+    "redo_count": 7,
+    "exact_full_title_dto_except": [
+      "generation",
+      "project_epoch"
+    ],
+    "original_transform_filter_title_keys_retained": true
+  },
+  "premature_capture": {
+    "stage": "masks_three_created",
+    "generation": "3",
+    "actual_mask_count": 2,
+    "qualification_stage": "masks_three_ready",
+    "qualified_generation": "4",
+    "qualified_mask_count": 3
+  },
+  "pre_fix_scroll": {
+    "field": "Mask 3 Feather",
+    "source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+    "runtime_sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+    "drag_css": [
+      [
+        1400,
+        431
+      ],
+      [
+        1420,
+        431
+      ]
+    ],
+    "value": [
+      0,
+      10
+    ],
+    "scroll_top": [
+      1697.5999755859375,
+      0
+    ],
+    "control_top": [
+      419.7000122070313,
+      2117.300048828125
+    ],
+    "status": "Observed defect; not a passing preservation check"
+  },
+  "post_fix_scroll": {
+    "field": "Mask 3 Feather",
+    "device_pixel_ratio": 1.25,
+    "css_viewport": [
+      1536,
+      858
+    ],
+    "gesture": {
+      "from_css": [
+        1400,
+        386
+      ],
+      "to_css": [
+        1420,
+        386
+      ]
+    },
+    "before": {
+      "scroll_top": 1742.4000244140625,
+      "control_top": 374.8999938964844,
+      "value": "10"
+    },
+    "after": {
+      "scroll_top": 1742.4000244140625,
+      "control_top": 374.8999938964844,
+      "value": "20"
+    },
+    "observation": "Read-only DOM observed after native generation1 and full Title detail settled; same control coordinates and viewport retained."
+  },
+  "gate": {
+    "source_commit": "39b3ae375c68b323875768a63023a29aa694abf2",
+    "client_counts": {
+      "tests": 146,
+      "pass": 146,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "all_steps_passed": true,
+    "steps": [
+      {
+        "label": "syntax-0",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251
+      },
+      {
+        "label": "syntax-1",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252
+      },
+      {
+        "label": "focused-client",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502
+      },
+      {
+        "label": "web-build",
+        "exit_code": 0,
+        "elapsed_seconds": 70.85
+      },
+      {
+        "label": "strip",
+        "exit_code": 0,
+        "elapsed_seconds": 0.501
+      }
+    ],
+    "memory_peak_bytes": 1468129280,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "source_inputs": {
+      "web/js/inspector.js": {
+        "previous_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+        "input_sha256": "2804f1eb525048c06794a1ab979f7e933a5bdcc0e83f250c13c25efa9fc65975",
+        "bytes": 76773
+      },
+      "web/test/inspector.test.js": {
+        "previous_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+        "input_sha256": "45e1c8c365773b6ebe9c52e0ec2decf2f3c5c7d17b3d960e296c9c9016c16d98",
+        "bytes": 31087
+      }
+    },
+    "native_clippy": "Unchanged native/Clippy qualification reused from bound R3"
+  },
+  "persistence": {
+    "seven_masks_actual_save_reopen": true,
+    "post_fix_actual_save_reopen": true,
+    "original_clean_project_restored": true,
+    "all_fifteen_saved_present": true,
+    "fourteen_other_saved_hashes_exact": true,
+    "owned_library_versions_exact": true
+  },
+  "preservation": {
+    "catalog_items_exact_excluding_placement": true,
+    "catalog_items_sha256": "4b31a976718081115c1c602ecfe693cc3aaa89646bbe3e00706ae899db83cc0a",
+    "foreign_pids_exact": 40,
+    "foreign_sessions_exact": 39,
+    "recovery_exact": true,
+    "recovery_bytes": 195294,
+    "recovery_sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a"
+  },
+  "compact_native_sha256": {
+    "initial_title": "37dfffb04909eb2db0e6636d0c22c2aa3d986b13648ba9bf5c216d43b4c78c6c",
+    "seven_masks_title": "655bd6ca6220d7073bc93cba960ce13b9115b87cac902c0f95ffb351f9d19efc",
+    "seven_undo_title": "37dfffb04909eb2db0e6636d0c22c2aa3d986b13648ba9bf5c216d43b4c78c6c",
+    "seven_redo_title": "655bd6ca6220d7073bc93cba960ce13b9115b87cac902c0f95ffb351f9d19efc",
+    "final_title": "836b2b7a6761f205591e3e2e7bb8f0ebee3dc664b11c28775525586f5a2d8266"
+  },
+  "private_inputs_sha256": {
+    "halo1-final-gui-masks_input_before.json": "0769d462dcb9fe0fd15316e370e9eb83e481cf24f1e9cc1e66bd76f5da2472e3",
+    "halo1-final-gui-masks_pen_cancelled.json": "3fddea6939951a0dc737b3c77a2672a9558b90b12e0f62b325a864bf76662f0e",
+    "halo1-final-gui-masks_path_created.json": "2ad073dc77ce3fc81e37b321a1f62602d53b4f8850adee179193fb8701361c76",
+    "halo1-final-gui-masks_vertex_moved.json": "601e37e8bc71c41c3f3d3eebae167596b2f7f7a9d751b4cfde33a52103ec1849",
+    "halo1-final-gui-masks_three_created.json": "0965a5cb7f2a09044f83dcbb62608c419f3eb7b342f6d51d79cf06951de15671",
+    "halo1-final-gui-masks_three_ready.json": "d0b5fed4f1579f1d41519d50db005fc740e87a824d52ce18fd5751d1fe81a746",
+    "halo1-final-gui-masks_modes_combined.json": "0caf822a337d0b990ad21446ab0237a8e739c5ac8f8ed33be8e31dc72634d1f0",
+    "halo1-final-gui-masks_feather_scrubbed.json": "82926efbc1e5e4a2701ca72667ed9effd5ae979105835a2f11e9e61247455c97",
+    "halo1-final-gui-masks_all_undone.json": "92f99e05f21f472bda0c7ef93e8b19e47b35fadd6e272cf71ae189ee6157e44c",
+    "halo1-final-gui-masks_all_redone.json": "7d87922093f3566b254640a83ad165e472009d0aa728203b8e5f2ceb4a8bc574",
+    "halo1-final-gui-masks_saved.json": "c018ca550666ad0aa0464cb45a7b0e8691ebe88c3292a38c75d31f13a44080d9",
+    "halo1-final-gui-masks_reopened.json": "f2b556dd8f45096dc9bb6dd002173263e11e5ab977d280633bb81ffa7c88cd4f",
+    "halo1-final-gui-masks_scroll_fixed_before.json": "372119d2b2431e5f3189a6f213d2a1fbc6b7bd9468b5c0d9a7f3ed7a9646386f",
+    "halo1-final-gui-masks_scroll_fixed_after.json": "9793399d6fa70a031164aad38a864f86bd2f76828e78aca5150c8517e9831b52",
+    "halo1-final-gui-masks_scroll_fixed_saved.json": "c4303b1c40b6647acd81c5fee9f75a604eed3a9ce723017a732f2263a9d6ba6d",
+    "halo1-final-gui-masks_scroll_fixed_reopened.json": "49ae02a7579de9c4e8ead755616fd726359af1a8e97295eec065088c46f1b80c",
+    "halo1-final-gui-masks_scroll_fixed_final.json": "207405cf4ed62e3a8bd40ef045ef9b63a9b700350265cdcc35795026eb79c0f2",
+    "halo1-final-gui-masks_scroll_fixed_observation.json": "b2ccadcc2aca783b7643802457b4d6d25dcd870c9ddc224f06e92ba5b580f496",
+    "halo1-final-gui-masks_scroll_before_fix.json": "02e7b207cde40b40052540a853e9fe612c5ce97240c8d45b5fc3fbe9af933aac",
+    "halo1-inspector-scroll-r1-observed.json": "23e6791429b90488c8848ddcbf0b9e86da4a07e4b1310748b1fe7321c2a1a376",
+    "halo1-inspector-scroll-deployed.json": "70b78343d6aa91c482b9ba8c088f394c81862f0f08ea42c7d01dc2a04c55ce5e"
+  },
+  "limits": [
+    "No new moving render/export or native acoustic proof.",
+    "OS100/150, held modifiers/cancellation, dense/long/device/soak and other FINAL_CHECKS criteria remain open.",
+    "Shared-library placement descriptors are excluded from catalog comparisons."
+  ],
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2,
+    "promotion": null
+  }
+}

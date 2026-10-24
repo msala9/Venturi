@@ -1,5 +1,26 @@
 # Implementation status
 
+## Chrome masks and Inspector viewport correction - 2026-10-24
+
+Actual paused Chrome passes cancelled/committed four-point curved Path drawing,
+vertex move, Path/Rectangle/Ellipse Add/Subtract/Intersect and Feather scrub.
+Seven Undo/Redo restore exact full native title effects, keys and timeline DTOs.
+Save/reopen retains all masks and prior transform/curve/filter/title work.
+A demonstrated Inspector defect reset scroll1697.6 to0 after each command.
+Source39b3ae3 preserves the prior viewport across the synchronous temporary
+empty-selection refresh; real context changes and user input still cancel it.
+The affected146-client gate and incremental embedded build pass on bounded halo1
+with peak1468129280B and zero memory events; unchanged Rust/Clippy proof is reused.
+Live8855 now uses adc69ead4557/PID497792. The actual Feather10-to20 scrub retains
+scroll1742.4 and control Y374.9 exactly, then Saves/reopens the owned effects copy.
+All14 other Saved, shared NAS catalogs/versions and retained recovery stay exact;
+the original clean project is restored and all foreign sessions/PIDs are unchanged.
+See evidence/f3-chrome-masks-inspector-scroll-workflow.json. R5 remains immutable
+and version-bound; the new binary requires its own additive package.
+Remaining handles, held modifiers/cancel, required OS scaling/dense/device/long
+and M7 checks remain FINAL_CHECKS. Ledger62done/28partial/2excluded is unchanged.
+
+
 ## Chrome transform and curve editing checkpoint — 2026-10-24
 
 On unchanged455662c/runtime8b975, actual paused Chrome passes Viewer move/left

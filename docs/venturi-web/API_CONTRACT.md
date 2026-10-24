@@ -1,5 +1,23 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Explicit destination-key replacement
+
+Existing `edit_key_selection.edit` and `edit_curve_keys.edit` accept optional
+`replace_destination_keys:boolean`, default false and omitted when serializing
+false. Move/Drag and scalar Group delta may replace occupied destinations only
+when true. All selected origins are removed before insertion; selected chains
+remain valid. Native commands retain original values/outgoing interpolation and
+overwritten destinations for one exact Undo/Redo. Drag changes vertical value
+only for the grabbed scalar and an existing linked Zoom twin.
+
+This option does not bypass key existence, distinct picks, finite values,
+checked integer/range, target, track lock or request epoch/revision/lease checks.
+Delete/interpolation and single-key setters retain their existing behavior. No
+Project schema or endpoint changes. The compact Curves toolbar choice is scoped
+to its retained key editor; a change cancels drafts and queued confirmations.
+Only final destinations are edited, with no pointer-move HTTP writes. Visible
+collision hints are advisory; native validation also covers off-page keys.
+
 ## Native Timeline waveform presentation
 
 `POST /api/v1/timelines/{id}/waveform-presentation` accepts
@@ -1168,14 +1186,16 @@ Single-key edits couple value, time and interpolation. Group time-only edits
 preserve each axis's values and outgoing interpolation; group value edits copy
 the active axis's resulting values to existing twins while retaining each
 axis's outgoing interpolation. Group deletion removes selected existing twins.
-Any collision or invalid member rejects the complete edit. Zero group movement
+By default any collision or invalid member rejects the complete edit. Explicit
+destination replacement applies only to the selected/group move paths below.
+Zero group movement
 and value delta adds no history step. Other parameters retain their usual behavior.
 
 The inspector's shared Zoom link checkbox also couples default property values
 through SetProperties and paired playhead keys through SetKeyframes. Toggling
 the checkbox itself changes only browser view state.
 
-`edit_key_selection {clip_id,edit:{picks,link_zoom,action}}` groups keys from
+`edit_key_selection {clip_id,edit:{picks,link_zoom,replace_destination_keys?,action}}` groups keys from
 different parameter rows of one clip. Each pick is
 `{target,source_frame}` using the existing scalar or RGBA/text/direction target
 DTO. Requests contain 1â€“2048 distinct picks. With `link_zoom:true`, existing
@@ -1184,8 +1204,9 @@ not created. Values remain under native engine control.
 
 Actions are `{kind:"move",delta_source_frames:integer}`, `{kind:"delete"}` or
 `{kind:"interpolation",interpolation:<native interpolation>}`. Moves validate
-all selected keys and twins, checked integer addition, the visible source range
-and collisions with unselected keys before applying native MoveKeyframes.
+all selected keys and twins, checked integer addition and the visible source
+range before applying native MoveKeyframes. Unselected destination collisions
+refuse the entire edit unless `replace_destination_keys:true` is explicit.
 Delete uses a native RemoveKeyframe composite; interpolation uses native
 SetKeyframeInterpolation, including bounded Bezier controls. Every successful
 nonzero move, deletion or interpolation operation is one history step. A zero
@@ -1855,7 +1876,8 @@ control with text, modal and composition guards.
   track. Moves preserve each key's outgoing interpolation/Bezier controls and
   use one shared frame/value delta. Every destination/value is validated before
   native commands apply. Selected origins may become selected destinations;
-  unselected keys are never overwritten. Removes precede inserts in one native
+  unselected keys are refused unless `replace_destination_keys:true` is explicit.
+  Removes precede inserts in one native
   CompositeCommand, so Undo restores the whole group. Invalid/overflowing/stale
   selections and locked tracks are refused without partial edits. Zero movement
   has no history effect. The browser supports box/additive selection, accessible

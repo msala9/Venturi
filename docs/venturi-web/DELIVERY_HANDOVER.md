@@ -4,22 +4,22 @@
 
 Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
 existing SSH tunnel (captured PID 23536). Tested source is
-`ad1dfc6c092ed7228326c04852e192e354909ef3`; the transient system-manager unit is
-`venturi-web-halo1-arrow-hold.service`, captured PID 403074, running
+`158a6d797adff3a5fa7f14d867c9b213f8839639`; the transient system-manager unit is
+`venturi-web-halo1-key-replacement.service`, captured PID 405992, running
 unprivileged as `halo:halo`. Use plain `systemctl` to inspect this unit, not
 `systemctl --user`.
 
-Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-cdfdfb51226f`
-has SHA256 `cdfdfb51226f5e773f85dfc18ab248b38cd31f5ca209c5b2e901ecf6ebf8d5dc`.
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-01d3f2301ef9`
+has SHA256 `01d3f2301ef9d5a4979b3ca42ad0184e0bec816c5be26004148d33ce1b9dc406`.
 The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
-`Venturi_Library_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
+`Venturi_Keyframe_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
 checkpoint. Re-read live state before any operation: this may since have changed.
 
 [RUNNING.md](RUNNING.md#current-working-instance--2026-10-24) contains the actual
 CLI, environment, bounds, identity checks and runback procedure. Refuse restart
 or runback when Unsaved, when Undo/Redo is nonempty, or while client drafts,
 unresolved commands, capture/playback or jobs remain active. Save alone does not
-clear history. Preserve the 39 prior Sessions/40 PIDs, 11 Saved files, NAS
+clear history. Preserve the 39 prior Sessions/40 PIDs, 11 prior Saved files and the new qualification project, NAS
 assets/presets and shared proxy; no background enablement or driver/browser
 changes are authorized by this handover.
 

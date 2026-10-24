@@ -1,0 +1,480 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "158a6d797adff3a5fa7f14d867c9b213f8839639",
+  "result": "Implemented and deployed; eight client suites and native affected gates pass. Actual Windows typed replacement, safe refusal, Undo/Redo, Save and saved reopen pass; physical graph/lane pointer/DPI acceptance remains open.",
+  "requirement": {
+    "plan": "COMPLETION_PLAN.md F1 native selected-key interactions; keyframe_editing/curve_easing_bezier; TEST_PLAN.md TS015/TS028",
+    "native": "vv-core/src/command.rs MoveKeyframes removes origins first, records overwritten values/interpolation and restores both on Undo; native graph/all-lane moves use that command.",
+    "before": "Every occupied unselected destination was refused, forcing a separate Delete and Move.",
+    "after": "Explicit default-off Replace destination keys permits native final-destination replacement for graph Move/Drag, animated lanes, cross-parameter typed Move and scalar Group delta including value offsets. One native history step; false preserves legacy refusal."
+  },
+  "contract": {
+    "operations": [
+      "edit_key_selection",
+      "edit_curve_keys"
+    ],
+    "optional_edit_field": "replace_destination_keys:boolean",
+    "default": false,
+    "false_omitted": true,
+    "guards": "Existing missing/distinct picks, target, checked integer/visible source range, finite value, locked track and generic epoch/generation/revision/writer/idempotency rules remain. Native Zoom twins join atomically; absent twins stay absent.",
+    "unchanged": "No endpoint/Project schema, evaluator, DSP, renderer or export engine changes. Single-key setters, Delete and interpolation retain existing behavior.",
+    "gestures": "Only final pointerup confirms once; no pointermove HTTP. Choice changes cancel live gestures/queued commits; captured owner and unknown-outcome fencing remain."
+  },
+  "gate": {
+    "unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "steps": [
+      {
+        "label": "format-api",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+          "--edition",
+          "2024",
+          "--config",
+          "skip_children=true",
+          "crates/vv-web/src/keyselection.rs",
+          "crates/vv-web/src/tests/keyselection.rs",
+          "crates/vv-web/src/curves.rs",
+          "crates/vv-web/src/tests/curves.rs"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/format-api.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/curves.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/keyframe-lanes.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/keyselection.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-3",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/curves.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-3.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-4",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/keyframe-lanes.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-4.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-5",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/keyselection.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/syntax-5.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/curves.test.js",
+          "test/keyframe-lanes.test.js",
+          "test/keyselection.test.js",
+          "test/curve-window.test.js",
+          "test/curve-viewport.test.js",
+          "test/keyframe-navigation.test.js",
+          "test/visual.test.js",
+          "test/eventkeys.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 0.753,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/focused-client.log",
+        "log_bytes": 14235,
+        "failure": null
+      },
+      {
+        "label": "native-keyselection",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "keyselection::tests::",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 105.9,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/native-keyselection.log",
+        "log_bytes": 1643,
+        "failure": null
+      },
+      {
+        "label": "native-curves",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "curves::tests::",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/native-curves.log",
+        "log_bytes": 2163,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "clippy",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--all-targets",
+          "--no-deps",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 13.019,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/web-clippy.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.1,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.key-replacement-r1-537aaf345eae4317bfee45a5dc8d7078"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "summaries": {
+      "focused-client": {
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/focused-client.log",
+        "summary": [
+          "\u2139 tests 99",
+          "\u2139 pass 99",
+          "\u2139 fail 0",
+          "\u2139 skipped 0"
+        ]
+      },
+      "native-keyselection": {
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/native-keyselection.log",
+        "summary": [
+          "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 689 filtered out; finished in 0.01s"
+        ]
+      },
+      "native-curves": {
+        "log": "/home/halo/.cache/venturi-build/key-replacement-r1/native-curves.log",
+        "summary": [
+          "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 682 filtered out; finished in 0.02s"
+        ]
+      }
+    },
+    "client_cases": 99,
+    "native_cases": 29,
+    "new_native_tests": 7,
+    "new_client_regressions": 6,
+    "source_hashes": {
+      "crates/vv-web/src/keyselection.rs": "7d66dc8a57f8f5b15ea6df6d9599c664ca10684c5b4d7889f37c059a036b0c12",
+      "crates/vv-web/src/tests/keyselection.rs": "72f07627c6db7655485e4246694e9a8fb0397b09470932e9809fa8ca62800072",
+      "crates/vv-web/src/curves.rs": "f53ccee6ab9f0b3810e82e5ca27adad53616bcf8206348444245b59cc2eb68d9",
+      "crates/vv-web/src/tests/curves.rs": "fdd1d9755062e71f8ff5f0d69b72e096912804682498f15c8c4f1cb03065aa4c",
+      "web/js/curves.js": "fe251f8c9647bae4efa50608dcf554bd8dc711855f78adfb380bad705863eea7",
+      "web/js/keyframe-lanes.js": "cf11bb732e1d072b23b00ff47368c681a0c058d833b82146ed23f5355aa227b4",
+      "web/js/keyselection.js": "74344284713e5c8e45ccc65112bd4770f664f514e41bb65b85334f2212a960e0",
+      "web/test/curves.test.js": "380adc9de0ebd3532e16f8a5eca609818e815609bd683dd1ebd4cdb0446d44a1",
+      "web/test/keyframe-lanes.test.js": "2beafb7108c2ad26d7bea461c840aaf5fb14be4e4bdcbcbf7111d07ee27982f4",
+      "web/test/keyselection.test.js": "7af6c37da474fb5085d6528a33be5c527d66f15a6034490b495fdaff6d9e6653"
+    },
+    "memory_peak_bytes": 2020876288,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "limits": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=750",
+      "TimeoutStopSec=10",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/key-replacement-r1/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/key-replacement-r1/worker.log"
+    ],
+    "source_identity": {
+      "checked": 615,
+      "bytes_read": 12689028,
+      "mismatches": []
+    },
+    "reused": "Full integrated software checkpoint, unchanged Host CAS/lease/receipt gates and native renderer/export proofs; no full workspace or renderer rerun."
+  },
+  "native_coverage": [
+    "Explicit false/omitted refusal without model/history change; strict bool and false-omitted roundtrip",
+    "Different overwritten values/Bezier controls; mixed scalar/RGBA/text/direction and linked Zoom native oracle comparison",
+    "Selected same-row10,12 ->12,14 with unselected14 replacement, exact one Undo/Redo",
+    "Drag changes grabbed scalar/existing twin value with origin interpolation",
+    "Scalar group time+value replacement and Zoom twin composite Undo/Redo",
+    "Locks/missing/duplicate/invalid/overflow/range remain atomic; no-op retains Redo"
+  ],
+  "deployment": {
+    "unit": "venturi-web-halo1-key-replacement.service",
+    "pid": "405992",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-01d3f2301ef9",
+    "sha256": "01d3f2301ef9d5a4979b3ca42ad0184e0bec816c5be26004148d33ce1b9dc406",
+    "previous_unit": "venturi-web-halo1-arrow-hold.service",
+    "previous_pid": "403074",
+    "port": 8855,
+    "guard": "Existing browser idle/Saved/no open modal or input draft, empty history/no active exports/proxy jobs; exact PID/session, files and foreign editors revalidated before replacing only the owned instance. Existing Windows tab/tunnel retained."
+  },
+  "browser": {
+    "environment": "Existing Windows IAB tab55 on8855, keyboard and native accessible controls only",
+    "workflow": [
+      "Save As Venturi_Keyframe_Replacement_V1 without overwriting originals",
+      "Select Timeline1/River_AV_11s.mp4 and open Curves",
+      "Exposure source0(+0.75) ->144, occupied by-0.25: default mode refuses with KEYFRAME_COLLISION, no model/history change",
+      "Enable Replace destination keys; repeat delta144: one MoveKeyframes history entry, only key144(+0.75) remains",
+      "Undo restores all tracks/masters and both original Exposure keys; Redo restores the exact replaced model",
+      "Save then reopen the dedicated Saved project: identical tracks/masters/file SHA and explicitly empty history"
+    ],
+    "result": {
+      "refusal_unchanged": true,
+      "one_native_move": true,
+      "undo_restores_all_tracks_and_masters": true,
+      "redo_and_save_reopen_exact": true,
+      "all_11_prior_saved_files_unchanged": true,
+      "saved_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "saved_sha256": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72",
+      "before_keys": [
+        {
+          "source_frame": 0,
+          "value": 0.75,
+          "interpolation": "Linear"
+        },
+        {
+          "source_frame": 144,
+          "value": -0.25,
+          "interpolation": "Linear"
+        }
+      ],
+      "after_keys": [
+        {
+          "source_frame": 144,
+          "value": 0.75,
+          "interpolation": "Linear"
+        }
+      ],
+      "final_history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "console_errors_and_warnings": [],
+    "limits": "Actual typed path is qualified. Pointer graph/lane drag logic is covered by affected client/native cases; physical pointer/DPI and dense qualification remain open. Prior screenshot capture failures remain unresolved; no screenshot/physical claim."
+  },
+  "saved_artifact": {
+    "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Keyframe_Replacement_V1.vvproj",
+    "sha256": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72"
+  },
+  "preservation": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 12,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "runtime_unit": "ActiveState=active\nMainPID=405992\nResult=success\nMemoryCurrent=94175232\nMemoryPeak=187265024\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "remaining_implementation": [
+    {
+      "area": "F4 Voiceover format preference",
+      "source": [
+        "web/js/voiceover.js:147",
+        "crates/vv-app/src/settings_dialog.rs:316-331",
+        "crates/vv-app/src/voiceover.rs:169"
+      ],
+      "gap": "Reopening an empty Voiceover dialog unconditionally selects WAV instead of retaining an explicitly chosen supported format. Preserve format preference against the fresh native catalog without changing a retained take/upload identity."
+    },
+    {
+      "area": "F7/F2 durable audio/source boundary",
+      "source": [
+        "crates/vv-web/src/preview.rs:654",
+        "crates/vv-web/src/source.rs:857",
+        "crates/vv-session/src/export.rs:636"
+      ],
+      "gap": "Composed movie/export audio creates LevelCache without the existing audio resolver; durable export also clears original-source authority. Extend existing native resolver APIs and shared FrameSources for new generation, preserving native defaults, DSP/clocks, Project paths and immutable completed downloads."
+    }
+  ],
+  "remaining_acceptance": [
+    "Physical graph/lane pointer, modifiers/DPI and dense editing",
+    "Representative real long footage, physical output/microphone and sustained full-resolution A/B",
+    "Nine unchanged native app audio-clock cases need suitable output; not qualified by virtual ALSA/Pulse",
+    "Two-hour typical editing soak and remaining scoped M7 release/license obligations"
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "promoted": 0
+  },
+  "private_records": [
+    {
+      "name": "halo1-key-replacement-before-edit.json",
+      "sha256": "4ea41ed59e826aa003608e4458b6174d5061df4413f6931092768201efc98cfe"
+    },
+    {
+      "name": "halo1-key-replacement-refused.json",
+      "sha256": "d919ef60541f0ff0c0f9782187aa54419768a7b35c4245a3e3e5c3556eddc348"
+    },
+    {
+      "name": "halo1-key-replacement-replaced.json",
+      "sha256": "6ec30b080588d3b6bdb440b426ebbfb0eb98cfb6b0fa981d95d4098d0ad2d746"
+    },
+    {
+      "name": "halo1-key-replacement-undone.json",
+      "sha256": "9a78633cfb5fc2589ac8e5a292451cb51cb63c9b61137ad74f1632670cd7c256"
+    },
+    {
+      "name": "halo1-key-replacement-redone.json",
+      "sha256": "a17e1b38599a4faf87a9220518e52d3a72f02977bd50d5e755c0a2cd860527ce"
+    },
+    {
+      "name": "halo1-key-replacement-saved.json",
+      "sha256": "3fcfce329619d1a1b400aaf4c642a4171abc9c048b7e6e22216d38917b263383"
+    },
+    {
+      "name": "halo1-key-replacement-final.json",
+      "sha256": "3f3e369feeaf8a399d48fee8d67fd948271e1b62fb323313c80c48c53b069561"
+    },
+    {
+      "name": "halo1-key-replacement-protected.json",
+      "sha256": "a38548e7fb4ad726a96ed11e97b6dd22c91f3d73ee2f29d9f1d5593eb3ebbb57"
+    }
+  ]
+}

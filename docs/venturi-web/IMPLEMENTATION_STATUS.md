@@ -1,5 +1,42 @@
 # Implementation status
 
+## Native selected-key destination replacement — 2026-10-24
+
+Source `158a6d7` / runtime `01d3f2301ef9` is active on8855, system unit
+`venturi-web-halo1-key-replacement.service`, captured PID405992. The compact Curves toolbar now
+offers default-off Replace destination keys. It applies to scalar graph and
+animated-lane Move/Drag, cross-parameter typed Move and scalar Group delta,
+including value offsets. Existing native commands retain one Undo and restore
+overwritten values/outgoing interpolation. Default collision refusal, single-key
+setters and all other safety guards remain unchanged. No pointermove HTTP.
+
+Eight affected client suites pass99 cases; native keyselection11/curves18 pass,
+including7 new native tests. Format, all-target vv-web Clippy and embedded build
+pass on one8CPU/4GiB/noSwap halo1 unit, peak2,020,876,288B with zero memory-limit,
+OOM or kill events. Existing renderer/export and common Host gates are reused.
+See `evidence/f1-native-key-replacement-workflow.json` for commands and hashes.
+
+The existing Windows tab verifies default collision refusal, explicit replacement
+of Exposure source0 onto occupied144, one MoveKeyframes, exact model Undo/Redo,
+Save As/Save and exact saved reopen with empty history. The dedicated Saved file
+is `Venturi_Keyframe_Replacement_V1.vvproj`; all11 prior Saved hashes,39 foreign
+Sessions/40 PIDs,5 local media,4 NAS files and the shared proxy remain unchanged.
+Physical graph/lane drag, DPI/dense and full M7 acceptance remain open. Ledger
+stays61 done/29 partial/2 excluded; no complete-row promotion from this increment.
+
+### Confirmed implementation work next
+
+F4: retain an explicitly chosen supported Voiceover format across empty reopen
+and subsequent takes; current voiceover.js resets WAV at every empty open.
+F7/F2: use existing audio/source resolver authority for new composed movie and
+durable export generation; fresh export LevelCache lacks the audio resolver and
+durable export clears original authority. Preserve native defaults/DSP/clocks,
+Project paths and already completed immutable downloads. These are concrete
+remaining source changes, separate from physical/long-media/soak acceptance.
+The focused F5 audit found no new missing production lifecycle behavior; reuse
+existing catalog/preset/refresh/reopen/offline/thumbnail proofs. Full90-capability
+scope and the two existing exclusions remain unchanged.
+
 ## Native Program arrow hold — 2026-10-24
 
 Source `ad1dfc6` and runtime `cdfdfb51226f` are active on the existing8855 URL,

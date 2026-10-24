@@ -1971,21 +1971,32 @@ pub(crate) fn prepare_native_source_placement(
     operation: &Operation,
 ) -> Result<NativeAssetPlacement> {
     let Operation::PlaceNativeSource {
-        source_in, source_out, start_frame, target, streams, overwrite, ..
-    } = operation else {
+        source_in,
+        source_out,
+        start_frame,
+        target,
+        streams,
+        overwrite,
+        ..
+    } = operation
+    else {
         return Err(ApiError::invalid("Choose a Library Source placement"));
     };
-    prepare_source_placement(project, id, &Operation::PlaceSource {
-        media_id: media.raw().to_string(),
-        job_id: String::new(),
-        source_version: String::new(),
-        source_in: *source_in,
-        source_out: *source_out,
-        start_frame: *start_frame,
-        target: target.clone(),
-        streams: *streams,
-        overwrite: *overwrite,
-    })
+    prepare_source_placement(
+        project,
+        id,
+        &Operation::PlaceSource {
+            media_id: media.raw().to_string(),
+            job_id: String::new(),
+            source_version: String::new(),
+            source_in: *source_in,
+            source_out: *source_out,
+            start_frame: *start_frame,
+            target: target.clone(),
+            streams: *streams,
+            overwrite: *overwrite,
+        },
+    )
 }
 pub(crate) fn prepare_source_placement(
     project: &core::Project,

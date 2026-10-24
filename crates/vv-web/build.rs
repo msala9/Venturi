@@ -34,7 +34,10 @@ fn compress(web: &Path, relative: &Path, output: &Path) -> io::Result<()> {
     if !checked_type(&source)?.is_file() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!("Embedded asset must be a regular file: {}", source.display()),
+            format!(
+                "Embedded asset must be a regular file: {}",
+                source.display()
+            ),
         ));
     }
     watch(&source);
@@ -57,7 +60,10 @@ fn walk(web: &Path, relative: &Path, output: &Path) -> io::Result<()> {
     if !checked_type(&directory)?.is_dir() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!("Embedded asset directory is missing: {}", directory.display()),
+            format!(
+                "Embedded asset directory is missing: {}",
+                directory.display()
+            ),
         ));
     }
     watch(&directory);
@@ -69,7 +75,9 @@ fn walk(web: &Path, relative: &Path, output: &Path) -> io::Result<()> {
             !name.is_empty()
                 && name != "."
                 && name != ".."
-                && !name.chars().any(|c| c.is_control() || matches!(c, '/' | '\\'))
+                && !name
+                    .chars()
+                    .any(|c| c.is_control() || matches!(c, '/' | '\\'))
         });
         if !safe_name {
             return Err(io::Error::new(

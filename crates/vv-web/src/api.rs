@@ -1882,7 +1882,10 @@ async fn prepare_native_source_assets(
         .await?
         .spec;
     if payload.include_waveform {
-        state.source.prepare_library_waveform(spec, payload.audio_stream_index).map(Json)
+        state
+            .source
+            .prepare_library_waveform(spec, payload.audio_stream_index)
+            .map(Json)
     } else {
         state.source.prepare_library_thumbnail(spec).map(Json)
     }
@@ -2893,7 +2896,9 @@ async fn assets(request: Request) -> Response {
         "/js/keyframe-lanes.js" => asset!("/web/js/keyframe-lanes.js", "text/javascript"),
         "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
         "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
-        "/js/workspace-performance.js" => asset!("/web/js/workspace-performance.js", "text/javascript"),
+        "/js/workspace-performance.js" => {
+            asset!("/web/js/workspace-performance.js", "text/javascript")
+        }
         "/js/audio-presets.js" => asset!("/web/js/audio-presets.js", "text/javascript"),
         "/js/viewer-transform.js" => asset!("/web/js/viewer-transform.js", "text/javascript"),
         "/js/viewer-transform-overlay.js" => {

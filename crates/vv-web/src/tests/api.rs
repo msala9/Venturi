@@ -7,91 +7,204 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn native_library_source_waveform_http_is_read_only_full_source_and_strongly_bound() {
-    let root = std::env::temp_dir().join(format!("vv-library-waveform-http-{}", crate::asset_jobs::nonce()));
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-waveform-http-{}",
+        crate::asset_jobs::nonce()
+    ));
     let store = crate::asset_store::Store::new(&root.join(".assets")).unwrap();
     let directory = root.join(".assets/media/0123456789abcdef");
     std::fs::create_dir(&directory).unwrap();
     let path = directory.join("audio.wav");
     let samples: Vec<f32> = (0..4_800).map(|i| (i as f32 * 0.2).sin() * 0.5).collect();
-    vv_media::audio_file::write_audio_file(&path, vv_media::audio_file::AudioFileFormat::Wav, &samples, 48_000, 1).unwrap();
+    vv_media::audio_file::write_audio_file(
+        &path,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &samples,
+        48_000,
+        1,
+    )
+    .unwrap();
     let original = std::fs::read(&path).unwrap();
     let mut session = vv_session::Session::default();
     let media = session.add_media(path.clone(), vv_media::probe_media(&path).unwrap());
-    let asset = crate::asset_payload::capture(&session, media, "Before import audio", vv_core::clipboard::ClipboardOrigin { instance: 1, epoch: session.epoch() }).unwrap();
+    let asset = crate::asset_payload::capture(
+        &session,
+        media,
+        "Before import audio",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: session.epoch(),
+        },
+    )
+    .unwrap();
     store.create("waveform", &asset).unwrap();
-    let revision = store.item("waveform", false).unwrap()["revision"].as_str().unwrap().to_owned();
+    let revision = store.item("waveform", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
     let host = Host::start(&root).unwrap();
-    host.call(Action::Lease("another-editor".into())).await.unwrap();
+    host.call(Action::Lease("another-editor".into()))
+        .await
+        .unwrap();
     let before = host.call(Action::Session).await.unwrap();
     let app = router(AppState {
-        host: host.clone(), port: 8787, preview: Preview::disabled(),
-        codecs: crate::codecs::Codecs::new(Preview::disabled()), source: MediaJobs::start().unwrap(),
-        silence: crate::silence::Jobs::start(), library: crate::library::Library::default(),
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
         recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
     });
     let make = |method: &str, path: &str, body: Value| {
-        Request::builder().method(method).uri(path)
-            .header("host", "127.0.0.1:8787").header("origin", "http://127.0.0.1:8787")
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("origin", "http://127.0.0.1:8787")
             .header("content-type", "application/json")
-            .body(if body.is_null() { Body::empty() } else { Body::from(body.to_string()) }).unwrap()
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
     };
     let base = "/api/v1/native-assets/items/waveform/source";
     let context = json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"revision":revision});
-    let response = app.clone().oneshot(make("POST", base, context.clone())).await.unwrap();
+    let response = app
+        .clone()
+        .oneshot(make("POST", base, context.clone()))
+        .await
+        .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let resolved: Value = serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let resolved: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
     let mut body = context;
     body["source_version"] = resolved["item"]["native_asset"]["source_version"].clone();
     body["include_waveform"] = json!(true);
     body["audio_stream_index"] = json!(0);
     let route = format!("{base}/assets/prepare");
     for (field, value, code) in [
-        ("audio_stream_index", json!(1), StatusCode::UNPROCESSABLE_ENTITY),
+        (
+            "audio_stream_index",
+            json!(1),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
         ("source_version", json!("old"), StatusCode::CONFLICT),
         ("project_epoch", json!("old"), StatusCode::CONFLICT),
-        ("path", json!("/tmp/unsafe"), StatusCode::UNPROCESSABLE_ENTITY),
+        (
+            "path",
+            json!("/tmp/unsafe"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
     ] {
-        let mut invalid = body.clone(); invalid[field] = value;
-        assert_eq!(app.clone().oneshot(make("POST", &route, invalid)).await.unwrap().status(), code);
+        let mut invalid = body.clone();
+        invalid[field] = value;
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", &route, invalid))
+                .await
+                .unwrap()
+                .status(),
+            code
+        );
     }
-    let response = app.clone().oneshot(make("POST", &route, body.clone())).await.unwrap();
+    let response = app
+        .clone()
+        .oneshot(make("POST", &route, body.clone()))
+        .await
+        .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let pending: Value = serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let pending: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
     let id = pending["id"].as_str().unwrap();
-    let query = format!("project_epoch={}&if_generation={}&revision={revision}&source_version={}", body["project_epoch"].as_str().unwrap(), body["if_generation"].as_str().unwrap(), body["source_version"].as_str().unwrap());
+    let query = format!(
+        "project_epoch={}&if_generation={}&revision={revision}&source_version={}",
+        body["project_epoch"].as_str().unwrap(),
+        body["if_generation"].as_str().unwrap(),
+        body["source_version"].as_str().unwrap()
+    );
     let started = std::time::Instant::now();
     loop {
-        let response = app.clone().oneshot(make("GET", &format!("{base}/jobs/{id}?{query}"), Value::Null)).await.unwrap();
+        let response = app
+            .clone()
+            .oneshot(make(
+                "GET",
+                &format!("{base}/jobs/{id}?{query}"),
+                Value::Null,
+            ))
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
-        let ready: Value = serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+        let ready: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
         if ready["state"] == "ready" {
             assert_eq!(ready["source_assets"]["include_waveform"], true);
             assert_eq!(ready["source_assets"]["thumbnail_width"], 96);
             break;
         }
-        assert!(matches!(ready["state"].as_str(), Some("queued" | "running")), "{ready}");
+        assert!(
+            matches!(ready["state"].as_str(), Some("queued" | "running")),
+            "{ready}"
+        );
         assert!(started.elapsed() < std::time::Duration::from_secs(10));
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
     }
     let waveform_url = format!("{base}/jobs/{id}/waveform.json?{query}");
-    let response = app.clone().oneshot(make("GET", &waveform_url, Value::Null)).await.unwrap();
+    let response = app
+        .clone()
+        .oneshot(make("GET", &waveform_url, Value::Null))
+        .await
+        .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
-    let waveform: Value = serde_json::from_slice(&to_bytes(response.into_body(), 4 * 1024 * 1024).await.unwrap()).unwrap();
+    let waveform: Value = serde_json::from_slice(
+        &to_bytes(response.into_body(), 4 * 1024 * 1024)
+            .await
+            .unwrap(),
+    )
+    .unwrap();
     assert_eq!(waveform["scope"], "full_source");
     assert!((waveform["duration_seconds"].as_f64().unwrap() - 0.1).abs() < 0.001);
     assert!(!waveform["peaks"].as_array().unwrap().is_empty());
     for name in ["source.mp4", "thumb.png"] {
-        assert_ne!(app.clone().oneshot(make("GET", &format!("{base}/jobs/{id}/{name}?{query}"), Value::Null)).await.unwrap().status(), StatusCode::OK);
+        assert_ne!(
+            app.clone()
+                .oneshot(make(
+                    "GET",
+                    &format!("{base}/jobs/{id}/{name}?{query}"),
+                    Value::Null
+                ))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::OK
+        );
     }
-    let response = app.clone().oneshot(make("POST", &route, body)).await.unwrap();
-    let reused: Value = serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let response = app
+        .clone()
+        .oneshot(make("POST", &route, body))
+        .await
+        .unwrap();
+    let reused: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
     assert_eq!(reused["id"], pending["id"]);
     assert_eq!(host.call(Action::Session).await.unwrap(), before);
     assert_eq!(std::fs::read(&path).unwrap(), original);
-    assert_eq!(store.export("waveform").unwrap(), serde_json::to_vec_pretty(&asset).unwrap());
+    assert_eq!(
+        store.export("waveform").unwrap(),
+        serde_json::to_vec_pretty(&asset).unwrap()
+    );
     std::fs::write(&path, b"changed audio").unwrap();
-    assert_eq!(app.oneshot(make("GET", &waveform_url, Value::Null)).await.unwrap().status(), StatusCode::CONFLICT);
+    assert_eq!(
+        app.oneshot(make("GET", &waveform_url, Value::Null))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::CONFLICT
+    );
     assert_eq!(host.call(Action::Session).await.unwrap(), before);
 }
 
@@ -2974,7 +3087,11 @@ fn precompressed_static_encoding_uses_all_fields_and_strict_quality_precedence()
         (vec!["br, identity;q=0"], None),
     ] {
         let request = static_delivery_request("GET", "/js/main.js", &encodings);
-        assert_eq!(static_encoding(request.headers()), expected, "{encodings:?}");
+        assert_eq!(
+            static_encoding(request.headers()),
+            expected,
+            "{encodings:?}"
+        );
     }
     for invalid in [
         "gzip;q=.5",
@@ -3098,7 +3215,8 @@ async fn precompressed_static_identity_and_head_preserve_selected_representation
 }
 
 #[tokio::test]
-async fn precompressed_static_http_negotiates_multiple_fields_and_refuses_only_unacceptable_assets() {
+async fn precompressed_static_http_negotiates_multiple_fields_and_refuses_only_unacceptable_assets()
+{
     let (root, host, app) = static_delivery_app();
     for (encodings, expected) in [
         (vec!["br;q=1", "GZiP;Q=0.250"], Some(true)),

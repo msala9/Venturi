@@ -117,7 +117,10 @@ fn preview_observability_reports_actual_waiting_cache_and_nonblocking_busy_snaps
     assert_eq!(cache["lookup_hits"], 1);
     assert_eq!(cache["lookup_misses"], 1);
     assert_eq!(cache["source_validation_rejections"], 0);
-    assert_eq!(cache["scope"], "process_lifetime_program_draft_scopes_balance");
+    assert_eq!(
+        cache["scope"],
+        "process_lifetime_program_draft_scopes_balance"
+    );
     let text = measured.to_string();
     for private in ["private-diagnostic", &key, "Private diagnostic fixture"] {
         assert!(!text.contains(private));

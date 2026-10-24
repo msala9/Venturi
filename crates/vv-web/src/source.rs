@@ -493,9 +493,9 @@ impl MediaJobs {
                         Work::Assets(spec, index, waveform) => {
                             generate_assets(&spec, &directory, &cancel, index, waveform)
                         }
-                        Work::LibraryAssets(spec, index, waveform) => {
-                            generate_assets_profile(&spec, &directory, &cancel, index, waveform, true)
-                        }
+                        Work::LibraryAssets(spec, index, waveform) => generate_assets_profile(
+                            &spec, &directory, &cancel, index, waveform, true,
+                        ),
                         Work::Program(task) => {
                             task.generate(
                                 &directory,
@@ -780,7 +780,9 @@ impl MediaJobs {
         audio_stream_index: u32,
     ) -> Result<Value> {
         if !spec.meta.has_audio {
-            return Err(ApiError::invalid("Library waveforms require an audio stream"));
+            return Err(ApiError::invalid(
+                "Library waveforms require an audio stream",
+            ));
         }
         self.prepare_assets_profile(spec, audio_stream_index, true, true)
     }

@@ -923,7 +923,9 @@ impl Editor {
                     Ok(())
                 }
                 Operation::PlaceNativeAssets { .. } => self.place_native_assets(id, request),
-                Operation::PlaceNativeSource { .. } => self.place_native_source(id, request, sources),
+                Operation::PlaceNativeSource { .. } => {
+                    self.place_native_source(id, request, sources)
+                }
                 _ => commands::apply(&mut self.session, id, &request.operation),
             };
         }
@@ -2263,15 +2265,27 @@ impl Editor {
     ) -> Result<()> {
         use vv_core::{Command, CommandLabel, Id, pool::AddEntities};
         let Operation::PlaceNativeSource {
-            job_id, asset_id, revision, source_generation, source_job_id, source_version, ..
-        } = &request.operation else {
+            job_id,
+            asset_id,
+            revision,
+            source_generation,
+            source_job_id,
+            source_version,
+            ..
+        } = &request.operation
+        else {
             return Err(ApiError::invalid("Choose a Library Source placement"));
         };
-        let sources = sources.ok_or_else(|| ApiError::conflict(
-            "SOURCE_PREPARATION_REQUIRED", "Verify the current Library Source before placing it",
-        ))?;
+        let sources = sources.ok_or_else(|| {
+            ApiError::conflict(
+                "SOURCE_PREPARATION_REQUIRED",
+                "Verify the current Library Source before placing it",
+            )
+        })?;
         if self.session.path().is_none() {
-            return Err(ApiError::invalid("Create or open a project before placing Library Source"));
+            return Err(ApiError::invalid(
+                "Create or open a project before placing Library Source",
+            ));
         }
         let query = crate::source::NativeSourceQuery {
             project_epoch: request.project_epoch.clone(),
@@ -2283,16 +2297,30 @@ impl Editor {
         let source_id = snapshot.spec.media_id.clone();
         let verified = sources.verify_placement(source_job_id, source_version, snapshot.spec)?;
         let payload = self.asset_jobs.import_payload(
-            job_id, asset_id, revision, &request.project_epoch, &request.if_generation,
+            job_id,
+            asset_id,
+            revision,
+            &request.project_epoch,
+            &request.if_generation,
         )?;
         let first = payload.media_items().next().ok_or_else(ApiError::missing)?;
         let expected_hash = first.content_hash;
         let expected_meta = serde_json::to_value(&first.meta).map_err(|_| ApiError::io())?;
         let key = (self.session.epoch(), asset_id.clone(), revision.clone());
-        let cached = self.asset_imports.get(&key).filter(|cached| {
-            cached.media.iter().all(|id| self.session.project.media_pool.contains_key(*id))
-                && cached.timelines.iter().all(|id| self.session.project.timelines.contains_key(*id))
-        }).map(|cached| cached.selected.clone());
+        let cached = self
+            .asset_imports
+            .get(&key)
+            .filter(|cached| {
+                cached
+                    .media
+                    .iter()
+                    .all(|id| self.session.project.media_pool.contains_key(*id))
+                    && cached
+                        .timelines
+                        .iter()
+                        .all(|id| self.session.project.timelines.contains_key(*id))
+            })
+            .map(|cached| cached.selected.clone());
         let mut trial = self.session.project.clone();
         let roots = if let Some(roots) = &cached {
             roots.clone()
@@ -2303,30 +2331,57 @@ impl Editor {
             roots
         };
         let first_id = *roots.first().ok_or_else(ApiError::missing)?;
-        let item = trial.media_pool.get(first_id).ok_or_else(ApiError::missing)?;
-        if item.compound.is_some() || item.content_hash != expected_hash
+        let item = trial
+            .media_pool
+            .get(first_id)
+            .ok_or_else(ApiError::missing)?;
+        if item.compound.is_some()
+            || item.content_hash != expected_hash
             || serde_json::to_value(&item.meta).map_err(|_| ApiError::io())? != expected_meta
         {
-            return Err(ApiError::conflict("SOURCE_CHANGED", "The imported Library Source metadata changed"));
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "The imported Library Source metadata changed",
+            ));
         }
         crate::files::validate_project(&trial)?;
-        let plan = commands::prepare_native_source_placement(&trial, timeline, first_id, &request.operation)?;
+        let plan = commands::prepare_native_source_placement(
+            &trial,
+            timeline,
+            first_id,
+            &request.operation,
+        )?;
         let current = crate::source::native_asset_snapshot(&self.assets, asset_id, &query, true)?;
         verified.check(&current.spec.file, &request.project_epoch, &source_id)?;
-        self.asset_jobs.accept_import(job_id, asset_id, revision, &request.project_epoch, &request.if_generation)?;
-        let new_count = roots.iter().filter(|id| !self.session.project.media_pool.contains_key(**id)).count();
+        self.asset_jobs.accept_import(
+            job_id,
+            asset_id,
+            revision,
+            &request.project_epoch,
+            &request.if_generation,
+        )?;
+        let new_count = roots
+            .iter()
+            .filter(|id| !self.session.project.media_pool.contains_key(**id))
+            .count();
         let mark = self.session.history.begin_group();
         let actual = if let Some(roots) = cached {
             roots
         } else {
             let mut add = AddEntities::new(CommandLabel::ImportMedia);
-            let roots = payload.merge_into(&mut self.session.project, &mut add).media;
-            if !add.is_empty() { self.session.apply(Box::new(add)); }
+            let roots = payload
+                .merge_into(&mut self.session.project, &mut add)
+                .media;
+            if !add.is_empty() {
+                self.session.apply(Box::new(add));
+            }
             roots
         };
         debug_assert_eq!(actual, roots);
         let clips = plan.apply(&mut self.session);
-        self.session.history.end_group_as(mark, CommandLabel::InsertClips);
+        self.session
+            .history
+            .end_group_as(mark, CommandLabel::InsertClips);
         self.session.sync_timeline_media(timeline);
         self.remember_native_asset(asset_id, revision, actual.clone());
         self.timeline_edit_selection = Some(clips.iter().map(|id| id.0.to_string()).collect());
@@ -3336,7 +3391,10 @@ impl Editor {
             Action::Lease(client) => self.lease(&client),
             Action::Mutation(timeline, request) => self.mutation(timeline, request),
             Action::SourcePlacementMutation(timeline, request, sources) => {
-                if !matches!(request.operation, Operation::PlaceSource { .. } | Operation::PlaceNativeSource { .. }) {
+                if !matches!(
+                    request.operation,
+                    Operation::PlaceSource { .. } | Operation::PlaceNativeSource { .. }
+                ) {
                     return Err(ApiError::invalid("Choose a Source placement command"));
                 }
                 self.mutation_prepared(Some(timeline), request, None, Some(&sources))

@@ -516,6 +516,12 @@ Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo tes
 
 ## Observability and performance proof
 
+RPC JSON and software input-to-Canvas-callback timing now have bounded source
+implementation and actual Chrome evidence in `evidence/f1-workspace-rpc-input-workflow.json`
+(source229aabd). The one217.10ms selection sample does not meet or qualify the
+one-frame target. Queue occupancy/cache-hit/VRAM measurements remain explicitly
+unavailable; direct-fetch/media timing, physical latency and M7 stay unqualified.
+
 Canvas draw CPU/accounted media-cache diagnostics are implemented and checked in
 `evidence/f1-workspace-performance-workflow.json` (source f91792d). This is not
 FPS, hardware presentation/input latency, process memory or VRAM acceptance.

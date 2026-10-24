@@ -1,5 +1,27 @@
 # Implementation status
 
+## RPC and software input diagnostics delivered - 2026-10-24
+
+Source `229aabd` / runtime `8e190ba8189f` is active on halo1/8855 (PID550938).
+The existing Diagnostics panel adds bounded RPC JSON p50/p95/outcome counts
+and software input dispatch-to-Canvas-callback timing. All three sample
+rings cap at128 and reset by current project/timeline/revision; no new RPC,
+timer, RAF, persistence or top-level controls. Existing visible-only1Hz
+panel behavior is retained. Observer failures preserve request results,
+timeouts and command receipt recovery; stale input and descendant focus
+blur have meaningful regressions. All110 focused client cases, three syntax
+checks and incremental build pass: peak1475694592B, zero memory events.
+Actual Chrome10-clip Control+A yields22 successful JSON observations and
+one217.10ms software input sample. This does NOT qualify one-frame response.
+The original empty browser selection is restored; native Session/view/history,
+16 Saved, Recovery, NAS items and40foreign PIDs/39 Sessions remain exact.
+See `evidence/f1-workspace-rpc-input-workflow.json`. Authoritative frame-queue,
+cache-hit and VRAM measurements remain unavailable; physical/device/held/OS,
+fullscreen, sustained playback and M7 checks remain in FINAL_CHECKS.md.
+Ledger remains62 done/28 partial/2 excluded. R9 stays immutable/source-bound;
+the final R10 archive follows this documentation snapshot.
+
+
 ## Bounded workspace diagnostics delivered - 2026-10-24
 
 Source `f91792d` / runtime `c76c6b6cf349` is active on halo1/8855 (PID549742).

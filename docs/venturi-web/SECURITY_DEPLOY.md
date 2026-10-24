@@ -79,13 +79,13 @@ should still be closed while saving the same project from the web.
 The full editing soak and release review remain open. The failed/interrupted
 earlier backend soaks are retained as failure evidence, not release acceptance.
 The owner's current development checkpoint uses the unprivileged, resource-limited
-`venturi-web-halo1-audio-export.service` on halo1, bound to loopback
+`venturi-web-halo1-relative-scrub.service` on halo1, bound to loopback
 port 8855 and reached through the existing Windows SSH tunnel (captured PID 23536).
 It is a transient system-manager unit running its process as `halo:halo`, not a
 newly enabled boot service. Tested source is
-`78cb76f1a0b38c6d89f1eced048d5ff22fda296e`, executable
-`/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d`, captured
-PID 411732. RUNNING.md binds its full SHA256/configuration and the retained
+`5959f90df52678cdbcb47ab7dcb353c666979f37`, executable
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114`, captured
+PID 413887. RUNNING.md binds its full SHA256/configuration and the retained
 `2c587b7` / `vv-web-9a619eebab31` runback binary. The captured project was Saved
 with empty history; this must be checked again before any operational change.
 Earlier protected halo1/halo2 editor services remain live. No public listener

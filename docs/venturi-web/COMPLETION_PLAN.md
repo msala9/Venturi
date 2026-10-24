@@ -1,5 +1,34 @@
 # Active completion plan — full Venturi Web scope
 
+## Native continuous Inspector numeric drag — 2026-10-24
+
+Source `5959f90` / runtime `59b6a3cc0114` is active on port8855,
+unit `venturi-web-halo1-relative-scrub.service`, captured PID 413887.
+Shared numeric fields now request optional pointer lock after the existing3px
+drag threshold. Owned relative motion continues at screen edges with current
+Shift precision, incremental native bounds and one final command/Undo. Click/type
+and denied/unsupported finite dragging remain available. Escape, focus/context/
+visibility loss and disposal cancel; stale grants release only their own element.
+Canonical relative mouse listeners exist only while the owned lock is active.
+No pointer-move HTTP or native engine/Project/API/render/export change.
+
+Seven affected client suites pass203 cases, including4 new lifecycle cases.
+R1 retained a cleanup-test count assumption failure; R2 corrects that fixture,
+retains exact zero listeners/no late writes after disposal, and passes the
+embedded binary build. One serial halo1 job within8 CPUs/4 GiB/no swap peaks
+1,459,101,696B, with zero memory-limit/OOM/kill events.
+Accepted native audio/export/Host/Clippy and high-resolution gates are reused.
+See `evidence/f1-native-relative-scrub-workflow.json`.
+
+The existing Windows tab reloads Saved/CURRENT, empty history, no warnings/errors;
+the served Inspector module exactly matches the tested source. All12 Saved
+hashes/native timelines,39 foreign Sessions/40 PIDs,5 local media,4 fixed NAS
+files and proxy remain unchanged. Physical pointer lock, screen-edge travel,
+dense/DPI/device/long-media and editing-soak acceptance remain open. The focused
+F1/F2 audit found no new missing production command; this concrete Inspector
+gap is closed at implementation scope. Ledger remains61 done/29 partial/2 excluded.
+
+
 ## Native original audio and retained Voiceover format — 2026-10-24
 
 Source `78cb76f` / runtime `67ef4854a13d` is active on port 8855,

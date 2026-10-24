@@ -11,11 +11,11 @@ and COMPLETION_PLAN.md.
 
 | Binding | Verified value |
 |---|---|
-| Source | `78cb76f1a0b38c6d89f1eced048d5ff22fda296e` |
-| Unit | `venturi-web-halo1-audio-export.service` |
-| Captured process | PID 411732; re-read before operating, never use a remembered PID as ownership proof |
-| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d` |
-| Executable SHA256 | `67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a` |
+| Source | `5959f90df52678cdbcb47ab7dcb353c666979f37` |
+| Unit | `venturi-web-halo1-relative-scrub.service` |
+| Captured process | PID 413887; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114` |
+| Executable SHA256 | `59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e` |
 | Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
 | Captured saved project | `Venturi_Keyframe_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
 
@@ -64,11 +64,11 @@ explicit root arguments rather than relying on launcher defaults.
 Read-only identity checks on halo1:
 
 ```bash
-systemctl show venturi-web-halo1-audio-export.service \
+systemctl show venturi-web-halo1-relative-scrub.service \
   -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
   -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
   -p MemorySwapMax -p Restart
-sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114
 curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 ```
 
@@ -91,7 +91,7 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    Confirm its MainPID is 0 and port 8855 has no listener before starting a
    replacement. Never kill a process discovered on that port or retry blindly.
    The stop command, only after this gate, is
-   `sudo systemctl stop venturi-web-halo1-audio-export.service`.
+   `sudo systemctl stop venturi-web-halo1-relative-scrub.service`.
 4. Select a verified immutable executable and use the recorded arguments,
    environment and limits above. No boot enablement, lingering, automatic
    restart loop or generic default-service replacement is part of this change.
@@ -151,6 +151,8 @@ the current version's immutable hash before using the same template for a
 forward restoration, with a new unused unit name and the current executable.
 
 Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
+
+Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow.json`.
 
 ## Historical deliveries and workflow notes
 
@@ -535,7 +537,11 @@ only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
 
-## Ubuntu / WSL
+## Historical Ubuntu / WSL source setup
+
+This source-build example predates the current prebuilt delivery. Use the
+current instance and candidate instructions above for the qualified halo1 host;
+the launcher does not build or install dependencies.
 
 Use current stable Rust and the upstream native dependencies. This checkout
 was checked with Rust 1.99.1 and Ubuntu 26.04 FFmpeg 8.0.1. The complete FFmpeg
@@ -550,8 +556,9 @@ cd /path/to/venturi-source
 bash scripts/venturi-web.sh
 ```
 
-The script uses `$HOME/VenturiWeb` for projects/media and
-`$HOME/.cache/venturi-target` for build artifacts. Override explicitly:
+The prebuilt-only launcher uses `$HOME/VenturiWeb` for projects/media and selects
+`.runtime/vv-web`, or the explicit `VENTURI_WEB_BINARY` executable. A missing
+binary fails without invoking Cargo. Override the runtime arguments explicitly:
 
 ```bash
 bash scripts/venturi-web.sh --projects-root /srv/venturi/projects --listen 127.0.0.1:8787

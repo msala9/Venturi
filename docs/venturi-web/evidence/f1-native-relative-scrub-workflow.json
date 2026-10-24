@@ -1,0 +1,429 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "5959f90df52678cdbcb47ab7dcb353c666979f37",
+  "result": "Implemented and deployed shared native continuous numeric scrub; focused client/build gates pass, physical input/DPI acceptance remains open.",
+  "native": {
+    "source": "crates/vv-app/src/properties_panel.rs drag_field",
+    "behavior": "CursorGrab Locked on drag_started, relative motion.x, current Shift speed/10, incremental clamp and unlock on drag_stopped."
+  },
+  "browser_specifications": [
+    "https://w3c.github.io/pointerlock/",
+    "https://www.w3.org/TR/pointerevents4/#implicit-release-of-pointer-capture"
+  ],
+  "implementation": {
+    "source": "web/js/inspector.js bindInspectorNumber",
+    "behavior": "Optional default-adjusted pointer lock after existing3px threshold. Owned canonical mousemove/mouseup handle relative motion while absolute coordinates freeze; duplicate pointer events ignored, implicit capture release accepted. No pointermove HTTP; final release confirms once.",
+    "ownership": "Escape/blur/hidden/context/dispose/lock loss cancel the original local text. Pending stale grants exit only own input; foreign locks preserved. Relative document mouse listeners are installed only during active owned lock and removed afterwards.",
+    "fallback": "Unavailable, rejected or throwing request retains existing finite absolute scrub; no retry during that gesture. Click/type unchanged."
+  },
+  "gate": {
+    "state": {
+      "phase": "passed",
+      "unit": "venturi-halo1-relative-scrub-r2-20261024.service",
+      "started_unix": 1792811945.2926872,
+      "updated_unix": 1792812018.124853,
+      "steps": [
+        {
+          "label": "syntax-0",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/inspector.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/syntax-0.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-1",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/inspector.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/syntax-1.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-2",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/retime-inspector.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/syntax-2.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "focused-client",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--test",
+            "--test-concurrency=1",
+            "test/inspector.test.js",
+            "test/visual.test.js",
+            "test/masks.test.js",
+            "test/transition-controls.test.js",
+            "test/retime-inspector.test.js",
+            "test/inspector-compositing.test.js",
+            "test/inspector-selection.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source/web",
+          "exit_code": 0,
+          "elapsed_seconds": 0.752,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/focused-client.log",
+          "log_bytes": 43283,
+          "failure": null
+        },
+        {
+          "label": "web-build",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "build",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--bin",
+            "vv-web"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 70.1,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/web-build.log",
+          "log_bytes": 153,
+          "failure": null
+        },
+        {
+          "label": "strip",
+          "args": [
+            "/usr/bin/strip",
+            "--strip-debug",
+            "/home/halo/.local/share/venturi-web/.runtime/.relative-scrub-r2-3a9af71ab56e430eafbc95bc86ddc479"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r2/strip.log",
+          "log_bytes": 0,
+          "failure": null
+        }
+      ],
+      "baseline": "69cdd17e54f6f076c1432512a15f2c98c1b78d29",
+      "inputs": {
+        "web/js/inspector.js": {
+          "previous_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+          "input_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+          "bytes": 76254
+        },
+        "web/test/inspector.test.js": {
+          "previous_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+          "input_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+          "bytes": 29224
+        },
+        "web/test/retime-inspector.test.js": {
+          "previous_sha256": "1669703f982a1868fdc6eb97922c486f0606919de750d5f0e8c47c9e7484327c",
+          "input_sha256": "52f6dd44d3a13b2c08493c23e7fc7b92e53f2be0857b95db887fed9c1ddd3ec6",
+          "bytes": 17174
+        }
+      },
+      "preflight": {
+        "mem_available": 111340978176,
+        "disk_free": 107794829312
+      },
+      "memory_events_before": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114",
+      "sha256": "59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e",
+      "bytes": 80275128,
+      "source_hashes": {
+        "web/js/inspector.js": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+        "web/test/inspector.test.js": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+        "web/test/retime-inspector.test.js": "52f6dd44d3a13b2c08493c23e7fc7b92e53f2be0857b95db887fed9c1ddd3ec6"
+      },
+      "memory_peak_bytes": 1459101696,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "scope": "Seven affected numeric Inspector/retime/mask/filter/transition/compositing client suites and embedded vv-web build. R3 native/audio/Clippy and unchanged static module graph/Host/engine/export gates reused. Two JS files only; no Rust edits, renderer, browser physical-input or device proof. No editor mutation or deployment."
+    },
+    "unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "tails": {
+      "worker.log": [],
+      "web-build.log": [
+        "   Compiling vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 1m 09s"
+      ],
+      "strip.log": []
+    }
+  },
+  "launch": {
+    "unit": "venturi-halo1-relative-scrub-r2-20261024.service",
+    "root": "/home/halo/.cache/venturi-build/relative-scrub-r2",
+    "phase": "launched",
+    "baseline": "69cdd17e54f6f076c1432512a15f2c98c1b78d29",
+    "inputs": {
+      "web/js/inspector.js": {
+        "previous_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+        "input_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+        "bytes": 76254
+      },
+      "web/test/inspector.test.js": {
+        "previous_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+        "input_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+        "bytes": 29224
+      },
+      "web/test/retime-inspector.test.js": {
+        "previous_sha256": "1669703f982a1868fdc6eb97922c486f0606919de750d5f0e8c47c9e7484327c",
+        "input_sha256": "52f6dd44d3a13b2c08493c23e7fc7b92e53f2be0857b95db887fed9c1ddd3ec6",
+        "bytes": 17174
+      }
+    },
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=510",
+      "TimeoutStopSec=10",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/relative-scrub-r2/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/relative-scrub-r2/worker.log"
+    ]
+  },
+  "retained_failed_attempt": {
+    "state": {
+      "phase": "failed",
+      "unit": "venturi-halo1-relative-scrub-r1-20261024.service",
+      "started_unix": 1792811834.2900696,
+      "updated_unix": 1792811835.653564,
+      "steps": [
+        {
+          "label": "syntax-0",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/inspector.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r1/syntax-0.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-1",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/inspector.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r1/syntax-1.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "focused-client",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--test",
+            "--test-concurrency=1",
+            "test/inspector.test.js",
+            "test/visual.test.js",
+            "test/masks.test.js",
+            "test/transition-controls.test.js",
+            "test/retime-inspector.test.js",
+            "test/inspector-compositing.test.js",
+            "test/inspector-selection.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source/web",
+          "exit_code": 1,
+          "elapsed_seconds": 0.752,
+          "log": "/home/halo/.cache/venturi-build/relative-scrub-r1/focused-client.log",
+          "log_bytes": 44204,
+          "failure": null
+        }
+      ],
+      "baseline": "69cdd17e54f6f076c1432512a15f2c98c1b78d29",
+      "inputs": {
+        "web/js/inspector.js": {
+          "previous_sha256": "cc20da6ed0b3c2340b90f4f8def74da7a57ef2d04c0a5ff9657510908cfc8a61",
+          "input_sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+          "bytes": 76254
+        },
+        "web/test/inspector.test.js": {
+          "previous_sha256": "62b1b08647b1b7b3dc37ec091f37c8216cbf2e65ea755bd920bc37e2dce99b45",
+          "input_sha256": "e538336bfa839963aa4041287bcaae83276618ca8b77e16ce3ce962273e43839",
+          "bytes": 29224
+        }
+      },
+      "preflight": {
+        "mem_available": 111325417472,
+        "disk_free": 107795099648
+      },
+      "memory_events_before": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "error": "AssertionError('focused-client failed: None')",
+      "memory_peak_bytes": 103940096,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    },
+    "unit": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "Result": "exit-code",
+      "ExecMainStatus": "1",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "103940096"
+    },
+    "tails": {
+      "worker.log": [
+        "Traceback (most recent call last):",
+        "  File \"/home/halo/.cache/venturi-build/relative-scrub-r1/worker.py\", line 116, in <module>",
+        "    run('focused-client',[node,'--test','--test-concurrency=1',*payload['tests']],100,source/'web')",
+        "    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/home/halo/.cache/venturi-build/relative-scrub-r1/worker.py\", line 111, in run",
+        "    assert result==0 and failure is None, label+' failed: '+str(failure)",
+        "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "AssertionError: focused-client failed: None"
+      ],
+      "syntax-1.log": [],
+      "focused-client.log": [
+        "\u2139 duration_ms 691.563652",
+        "",
+        "\u2716 failing tests:",
+        "",
+        "test at test/retime-inspector.test.js:108:1",
+        "\u2716 advanced speed dispose removes every owned listener and prevents delayed focus or detached submit (0.90413ms)",
+        "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+        "  ",
+        "  2 !== 1",
+        "  ",
+        "      at TestContext.<anonymous> (file:///home/halo/.cache/venturi-build/source/web/test/retime-inspector.test.js:112:62)",
+        "      at Test.runInAsyncScope (node:async_hooks:227:14)",
+        "      at Test.run (node:internal/test_runner/test:1402:25)",
+        "      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)",
+        "      at Test.postRun (node:internal/test_runner/test:1542:19)",
+        "      at Test.run (node:internal/test_runner/test:1467:12)",
+        "      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {",
+        "    generatedMessage: true,",
+        "    code: 'ERR_ASSERTION',",
+        "    actual: 2,",
+        "    expected: 1,",
+        "    operator: 'strictEqual',",
+        "    diff: 'simple'",
+        "  }"
+      ]
+    }
+  },
+  "test_scope": "Seven affected client suites203 pass/0 fail, including4 new relative-motion/implicit-release/late-request/denial/cancel/cleanup cases. Existing Advanced Speed cleanup fixture had assumed exactly one visibility listener; it now checks active listeners exist and retains exact zero after dispose plus no late commands. R1 fails only that assumption; R2 passes. Unchanged Rust/native audio/renderer/Host/export/Clippy gates reused from accepted audio block.",
+  "delivery": {
+    "unit": "venturi-web-halo1-relative-scrub.service",
+    "pid": "413887",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114",
+    "sha256": "59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e",
+    "root": "/home/halo/VenturiWeb-color-audio-controls-20261023",
+    "previous_unit": "venturi-web-halo1-audio-export.service",
+    "previous_pid": "411732"
+  },
+  "served_module": {
+    "route": "/js/inspector.js",
+    "bytes": 76254,
+    "sha256": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+    "content_type": "text/javascript"
+  },
+  "windows": {
+    "tab": "55",
+    "url": "http://127.0.0.1:8855/",
+    "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "saved": true,
+    "history_empty": true,
+    "viewer": "CURRENT",
+    "all_media_paused": true,
+    "dialogs": 0,
+    "pointer_lock": null,
+    "console_warnings_errors": [],
+    "scope": "Existing tab reload and exact served JS bytes only; no physical pointer lock or DPI proof inferred. Existing pointer/screenshot provider failure remains unresolved."
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 12,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "limitations": [
+    "Physical continuous pointer, screen-edge travel, popup/focus and100/125/150percent Windows DPI remain unqualified.",
+    "No native command/Project/DSP/API/renderer/export change. Full F1-F7/M7, representative long footage, devices/latency and typical editing soak remain open."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "goal": "active"
+  }
+}

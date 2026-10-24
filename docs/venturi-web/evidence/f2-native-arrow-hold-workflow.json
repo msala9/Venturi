@@ -1,0 +1,336 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "ad1dfc6c092ed7228326c04852e192e354909ef3",
+  "result": "Implemented, affected gates passed, served on owned8855 and keyboard single-step verified in the existing Windows tab; physical timed hold acceptance remains open.",
+  "requirement": {
+    "plan": "COMPLETION_PLAN.md F1 native interaction/F2 transport; IMPLEMENTATION_PLAN.md M4; TEST_PLAN.md TS015/TS028",
+    "native": [
+      "crates/vv-app/src/main.rs:80-98",
+      "crates/vv-app/src/main.rs:996-1027",
+      "crates/vv-app/src/app_menu.rs:45-52",
+      "crates/vv-app/src/tests/main.rs:3033-3056"
+    ],
+    "before": "Every repeated browser keydown steps a frame, so OS repeat settings determine Program hold speed.",
+    "after": "One frame immediately,300ms delay, then floor((elapsedSeconds-.3)*rationalFPS*.5) extra frames; left clamps at0. Both arrows stop; releasing one restarts from the current frame."
+  },
+  "implementation": {
+    "paths": [
+      "web/js/arrow-hold.js",
+      "web/js/main.js",
+      "web/test/arrow-hold.test.js",
+      "crates/vv-web/src/api.rs",
+      "crates/vv-web/src/tests/api.rs"
+    ],
+    "source_hashes": {
+      "web/js/arrow-hold.js": "f9a3417393788415b57e04c3d670c88e32b89a0d35e409545afdef387fe25c80",
+      "web/js/main.js": "eb7db6b29a51ddb8b3d665898d8f0e953775432da243fbcf6cb27a5765ab1704",
+      "web/test/arrow-hold.test.js": "42aacb5ce4382984b167aadfa09ef1d04ec4896a7f2fce61a53bd07dbb4b0e2a",
+      "crates/vv-web/src/api.rs": "ef65041cc509aacce8889e80fdb864d1814f3dadd7b578b60e08aa407dc8abf4",
+      "crates/vv-web/src/tests/api.rs": "9206e56b95e67db0d83eff00082354d561d3d68e7893d81ddb875df2facdf561"
+    },
+    "clock": "Owned requestAnimationFrame only while held; OS repeats ignored for Program. Existing Source and button-step paths retained.",
+    "requests": "At most one existing frame seek in flight; retain only the latest target, flush final target on keyup. No HTTP on pointermove and no new endpoint/edit/render/DSP engine.",
+    "ownership": "Project epoch/generation, timeline/revision/FPS, viewer mode, input owner, external frame and blocked state. Keyup releases; blur/pagehide/hidden/modal/focus/pointer/other key/context changes cancel queued work. Late completions cannot refresh another owner.",
+    "feedback": "Native-time HUD advances independently of PNG response latency. A slow PNG stays stale until a current frame arrives; Inspector/audio/project-view refresh on current completed seeks, never on animation ticks."
+  },
+  "gate": {
+    "unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "steps": [
+      {
+        "label": "format-api",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+          "--edition",
+          "2024",
+          "--config",
+          "skip_children=true",
+          "crates/vv-web/src/api.rs",
+          "crates/vv-web/src/tests/api.rs"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/format-api.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/arrow-hold.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/main.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/arrow-hold.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/arrow-hold.test.js",
+          "test/viewer.test.js",
+          "test/program.test.js",
+          "test/source.test.js",
+          "test/fast-transport.test.js",
+          "test/project-view.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 0.753,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/focused-client.log",
+        "log_bytes": 18128,
+        "failure": null
+      },
+      {
+        "label": "embedded-module-http",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime",
+          "--",
+          "--exact",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 105.896,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/embedded-module-http.log",
+        "log_bytes": 466,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "clippy",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--all-targets",
+          "--no-deps",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 12.769,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/web-clippy.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.1,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.arrow-hold-r1-b5b5f130eb1d4ea9bfde0c5514e32fcc"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/arrow-hold-r1/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "client_cases": 199,
+    "new_arrow_cases": 23,
+    "failures": 0,
+    "native_http_cases": 1,
+    "rust_format": "two affected API files pass rustfmt",
+    "clippy": "vv-web all targets, warnings denied",
+    "reused": "Full workspace gates and unchanged client/native cases from f7-integrated-regression-workflow.json; renderer/export/native audio are unchanged.",
+    "memory_peak_bytes": 2020233216,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "limits": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=750",
+      "TimeoutStopSec=10",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/arrow-hold-r1/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/arrow-hold-r1/worker.log"
+    ],
+    "source_inventory": {
+      "checked": 615,
+      "bytes_read": 12658033,
+      "mismatches": []
+    }
+  },
+  "deployment": {
+    "unit": "venturi-web-halo1-arrow-hold.service",
+    "pid": "403074",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-cdfdfb51226f",
+    "sha256": "cdfdfb51226f5e773f85dfc18ab248b38cd31f5ca209c5b2e901ecf6ebf8d5dc",
+    "previous_unit": "venturi-web-halo1-inspector-choice-modes.service",
+    "previous_pid": "351463",
+    "port": 8855,
+    "guard": "Existing browser Saved, no dialogs/active input, all media paused; exact owned PID/session/project hashes, empty history, no exports/proxy jobs and all foreign sessions/PIDs checked immediately before stop. Only the eligible owned instance replaced; same tunnel/tab/root/config/limits retained."
+  },
+  "browser": {
+    "environment": "Existing Windows IAB tab55, same8855 URL",
+    "actions": [
+      "Reload after guarded upgrade",
+      "Wait for composed frame",
+      "Next-frame button focused; ArrowLeft changes199 to198",
+      "ArrowRight restores199; await CURRENT"
+    ],
+    "result": {
+      "saved": true,
+      "frame": 199,
+      "timecode": "00:00:08:07",
+      "preview": "CURRENT",
+      "connection": "Connected \u00b7 writer",
+      "console_errors_and_warnings": []
+    },
+    "scope": "Actual press/release and module initialization accepted; a physically held timed key was not sent by this browser API.",
+    "screenshot": "One screenshot attempt after reload failed with Page.captureScreenshot timeout; no repeated attempts or visual/DPI acceptance inferred."
+  },
+  "preservation": {
+    "native_timeline_snapshots_unchanged_except_epoch": true,
+    "all_11_saved_project_hashes_unchanged": true,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "proxy": {
+      "cache": {
+        "available": true,
+        "error": null
+      },
+      "capacity": {
+        "charged_bytes": 2206594,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_entries": 1,
+        "used_jobs": 0
+      },
+      "jobs": [],
+      "project_epoch": "1792807564224154476:1",
+      "settings": {
+        "enabled": false,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    },
+    "protection": {
+      "prior_sessions": 39,
+      "prior_pids": 40,
+      "candidate_saved_files": 11,
+      "candidate_local_files": 5,
+      "fixed_nas_files_unchanged": 4,
+      "prior_library_copy_unchanged": true,
+      "prior_effects_settled_save_and_render_backup_unchanged": true,
+      "shared_proxy_unchanged": true,
+      "candidate_session_unchanged": true
+    }
+  },
+  "representative_media_catalog": {
+    "items": 58,
+    "videos": 22,
+    "full_hd_or_4k_candidates": 0,
+    "probe": "Current authoritative catalog only; no recursive NAS scan, file copy or prompt/provenance output."
+  },
+  "remaining": [
+    "Physical timed hold, modifier/pointer/DPI and dense-editing acceptance",
+    "Nine native app clock cases on suitable output; unchanged by this Web-only block",
+    "Representative long moving FullHD/4K sources, physical output/microphone, sustained A/B and actual two-hour typical editing soak",
+    "Remaining full F1-F7/M7 and scoped release/license requirements"
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "promoted": 0
+  }
+}

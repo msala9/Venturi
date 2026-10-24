@@ -11,11 +11,11 @@ and COMPLETION_PLAN.md.
 
 | Binding | Verified value |
 |---|---|
-| Source | `b8d6133dda5d8194ebb945d47169e7656fa9d088` |
-| Unit | `venturi-web-halo1-inspector-choice-modes.service` |
-| Captured process | PID 351463; re-read before operating, never use a remembered PID as ownership proof |
-| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7` |
-| Executable SHA256 | `2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94` |
+| Source | `ad1dfc6c092ed7228326c04852e192e354909ef3` |
+| Unit | `venturi-web-halo1-arrow-hold.service` |
+| Captured process | PID 403074; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-cdfdfb51226f` |
+| Executable SHA256 | `cdfdfb51226f5e773f85dfc18ab248b38cd31f5ca209c5b2e901ecf6ebf8d5dc` |
 | Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
 | Captured saved project | `Venturi_Library_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
 
@@ -64,11 +64,11 @@ explicit root arguments rather than relying on launcher defaults.
 Read-only identity checks on halo1:
 
 ```bash
-systemctl show venturi-web-halo1-inspector-choice-modes.service \
+systemctl show venturi-web-halo1-arrow-hold.service \
   -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
   -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
   -p MemorySwapMax -p Restart
-sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-cdfdfb51226f
 curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 ```
 
@@ -91,7 +91,7 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    Confirm its MainPID is 0 and port 8855 has no listener before starting a
    replacement. Never kill a process discovered on that port or retry blindly.
    The stop command, only after this gate, is
-   `sudo systemctl stop venturi-web-halo1-inspector-choice-modes.service`.
+   `sudo systemctl stop venturi-web-halo1-arrow-hold.service`.
 4. Select a verified immutable executable and use the recorded arguments,
    environment and limits above. No boot enablement, lingering, automatic
    restart loop or generic default-service replacement is part of this change.

@@ -4,13 +4,13 @@
 
 Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
 existing SSH tunnel (captured PID 23536). Tested source is
-`b8d6133dda5d8194ebb945d47169e7656fa9d088`; the transient system-manager unit is
-`venturi-web-halo1-inspector-choice-modes.service`, captured PID 351463, running
+`ad1dfc6c092ed7228326c04852e192e354909ef3`; the transient system-manager unit is
+`venturi-web-halo1-arrow-hold.service`, captured PID 403074, running
 unprivileged as `halo:halo`. Use plain `systemctl` to inspect this unit, not
 `systemctl --user`.
 
-Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7`
-has SHA256 `2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94`.
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-cdfdfb51226f`
+has SHA256 `cdfdfb51226f5e773f85dfc18ab248b38cd31f5ca209c5b2e901ecf6ebf8d5dc`.
 The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
 `Venturi_Library_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
 checkpoint. Re-read live state before any operation: this may since have changed.

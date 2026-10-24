@@ -1,5 +1,28 @@
 # Active completion plan — full Venturi Web scope
 
+## Native Program arrow hold — 2026-10-24
+
+Source `ad1dfc6` and runtime `cdfdfb51226f` are active on the existing8855 URL,
+unit `venturi-web-halo1-arrow-hold.service`, captured PID403074. Program arrows now match native:
+one frame immediately,300ms delay, then timed0.5x rational-FPS scrolling instead
+of OS repeat. A single existing seek is in flight; only the latest target is
+queued. Keyup flushes the final frame; context/focus/hidden/modal/pagehide and
+other transport actions cancel without late Inspector/audio/view writes.
+Source and button stepping retain their existing behavior.
+
+Six focused client suites pass199 cases, including23 arrow cases; the embedded
+module HTTP regression, affected Rust format, all-target vv-web Clippy and build
+pass. One serial halo1 unit peaks2,020,233,216B under8CPU/4GiB/noSwap with zero
+memory-limit/OOM/kill events. Full unchanged software/render/export gates are
+reused. See `evidence/f2-native-arrow-hold-workflow.json`.
+
+The existing Windows tab verifies199 ->198 ->199, CURRENT, Saved, Connected and
+empty warning/error console. Physical timed hold and DPI are not inferred.
+All native composition snapshots and11 Saved hashes remain identical (only the
+session epoch changes);39 foreign Sessions/40 PIDs,5 local media,4 NAS files and
+the proxy are preserved. No local build/test, browser install, native audio or
+driver change. Ledger remains61 done/29 partial/2 excluded; full goal active.
+
 ## Integrated software regression checkpoint — 2026-10-24
 
 Source `9ab281e` matches all613 tracked code blobs on halo1. Full workspace

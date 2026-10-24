@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorkspacePerformance,createWorkspacePerformancePanel} from '../js/workspace-performance.js';
+import {createWorkspacePerformance,createWorkspacePerformancePanel,createWorkspaceInputTiming} from '../js/workspace-performance.js';
 
 test('paint samples retain a bounded chronological window and nearest-rank percentiles',()=>{
   const performance=createWorkspacePerformance({limit:4});
@@ -38,9 +38,12 @@ test('invalid samples and stale contexts cannot publish old timings or private i
 
 class Target {
   listeners=new Map();
-  addEventListener(type,callback){if(!this.listeners.has(type))this.listeners.set(type,new Set());this.listeners.get(type).add(callback);}
+  captureFlags=[];
+  addEventListener(type,callback,capture){this.captureFlags.push(capture);if(!this.listeners.has(type))this.listeners.set(type,new Set());this.listeners.get(type).add(callback);}
   removeEventListener(type,callback){this.listeners.get(type)?.delete(callback);}
-  dispatch(type){for(const callback of [...(this.listeners.get(type)||[])])callback();}
+  capture(type){const event={type,eventPhase:2,currentTarget:this};for(const callback of [...(this.listeners.get(type)||[])])callback(event);return event;}
+  end(event){event.eventPhase=0;event.currentTarget=null;}
+  dispatch(type){this.end(this.capture(type));}
   count(){return [...this.listeners.values()].reduce((sum,set)=>sum+set.size,0);}
 }
 function panelFixture(visible=false){
@@ -58,6 +61,9 @@ test('closed diagnostics do no reads or writes; visible updates have one timer a
   h.visible(true);h.menu.dispatch('toggle');assert.equal(h.read(),1);assert.equal(h.timers.size,1);
   assert.match(h.text(),/draw CPU.*p50 1.00 ms.*p95 3.00 ms.*max 3.00 ms.*sample window 2/);
   assert.match(h.text(),/Accounted media cache.*1.00 \/ 2.00 MiB.*2 \/ 32 items/);
+  assert.match(h.text(),/RPC JSON roundtrip \(excludes direct fetch\/media\)/);
+  assert.match(h.text(),/Software input dispatch → Canvas callback \(not hardware\/display latency\)/);
+  assert.match(h.text(),/Authoritative frame queue \/ cache hits \/ VRAM: unavailable/);
   h.tick();assert.equal(h.read(),2);assert.equal(h.timers.size,1);
   const stale=[...h.callbacks];h.visible(false);h.menu.dispatch('toggle');
   assert.equal(h.timers.size,0);const reads=h.read(),writes=h.write();
@@ -80,4 +86,86 @@ test('closing during snapshot acquisition cannot write a hidden panel or create 
   const root=new Target();let visible=true,writes=0,timers=0;
   const panel=createWorkspacePerformancePanel({root,output:{set textContent(value){writes++;}},isVisible:()=>visible,getSnapshot:()=>{visible=false;return {};},setTimer:()=>{timers++;},clearTimer:()=>{}});
   assert.equal(writes,0);assert.equal(timers,0);panel.dispose();assert.equal(root.count(),0);
+});
+
+test('RPC outcomes follow only the retained window and all rings reset together without recording identities',()=>{
+  const performance=createWorkspacePerformance({limit:3});
+  const names=['success','http_error','invalid_json','aborted','network_error'];
+  for(const [i,outcome] of names.entries())performance.recordRequest(Object.freeze({duration_ms:i+1,method:'/private/request-identity',outcome,path:'/private/media'}),'epoch/timeline/revision');
+  performance.recordPaint(10,'epoch/timeline/revision');performance.recordInput(20,'epoch/timeline/revision');
+  let snapshot=performance.snapshot('epoch/timeline/revision');
+  assert.deepEqual(snapshot.rpc.samples,[3,4,5]);assert.equal(snapshot.rpc.p50_ms,4);
+  assert.deepEqual(snapshot.rpc.outcomes,{success:0,http_error:0,invalid_json:1,aborted:1,network_error:1});
+  assert.equal(performance.recordRequest({duration_ms:7,outcome:'unknown'},'epoch/timeline/revision'),false);
+  assert.equal(performance.recordRequest({duration_ms:NaN,outcome:'success'},'epoch/timeline/revision'),false);
+  assert.equal(performance.recordInput(-1,'epoch/timeline/revision'),false);
+  assert.ok(!JSON.stringify(snapshot).includes('private'));assert.ok(!JSON.stringify(snapshot).includes('epoch'));
+  snapshot.rpc.samples[0]=999;snapshot.rpc.outcomes.network_error=999;snapshot.input.samples[0]=999;
+  assert.deepEqual(performance.snapshot('epoch/timeline/revision').rpc.samples,[3,4,5]);
+  assert.equal(performance.snapshot('epoch/timeline/revision').rpc.outcomes.network_error,1);
+  for(const duration of [21,22,23])performance.recordInput(duration,'epoch/timeline/revision');
+  assert.deepEqual(performance.snapshot('epoch/timeline/revision').input.samples,[21,22,23]);
+  performance.recordInput(7,'new epoch');snapshot=performance.snapshot('new epoch');
+  assert.deepEqual(snapshot.input.samples,[7]);assert.equal(snapshot.draw.count,0);assert.equal(snapshot.rpc.count,0);
+  for(const context of ['epoch/timeline/revision',null]){
+    snapshot=performance.snapshot(context);for(const kind of ['draw','rpc','input'])assert.equal(snapshot[kind].count,0);
+    assert.deepEqual(snapshot.rpc.outcomes,{success:0,http_error:0,invalid_json:0,aborted:0,network_error:0});
+  }
+  performance.recordPaint(1,'third');assert.equal(performance.snapshot('third').input.count,0);
+});
+
+function inputFixture(onSample){
+  const target=new Target(),documentRef=new Target(),windowRef=new Target(),samples=[];
+  let time=0,context='current';documentRef.hidden=false;
+  const controller=createWorkspaceInputTiming({target,documentRef,windowRef,getContext:()=>{if(context instanceof Error)throw context;return context;},now:()=>{if(time instanceof Error)throw time;return time;},onSample:onSample || ((duration,ctx)=>samples.push([duration,ctx]))});
+  return {target,documentRef,windowRef,controller,samples,time(value){time=value;},context(value){context=value;}};
+}
+
+test('input ownership survives capture-to-handler microtasks but cannot attribute a later unrelated navigation',async()=>{
+  const h=inputFixture();assert.ok(h.target.captureFlags.every(value=>value===true));
+  h.time(4);const event=h.target.capture('wheel');
+  await Promise.resolve();
+  assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  h.time(11);assert.equal(h.controller.painted('current'),true);assert.deepEqual(h.samples,[[7,'current']]);
+  h.time(20);h.target.dispatch('pointerdown');await Promise.resolve();
+  assert.equal(h.controller.navigationChanged(),false);h.time(30);assert.equal(h.controller.painted('current'),false);
+  assert.equal(h.samples.length,1);h.controller.dispose();
+});
+
+test('coalesced navigation measures the first changing input and consumes exactly one Canvas completion',()=>{
+  const h=inputFixture();h.time(10);let event=h.target.capture('pointermove');
+  assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  assert.equal(h.controller.painted('stale'),false);assert.equal(h.controller.painted('current'),false);assert.deepEqual(h.samples,[]);
+  h.time(10);event=h.target.capture('pointermove');assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  h.time(15);event=h.target.capture('keydown');assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  h.time(25);assert.equal(h.controller.painted('current'),true);
+  assert.deepEqual(h.samples,[[15,'current']]);h.time(40);assert.equal(h.controller.painted('current'),false);
+  event=h.target.capture('wheel');h.controller.navigationChanged();h.target.end(event);
+  assert.equal(h.controller.painted(null),false);assert.equal(h.controller.painted('current'),false);assert.equal(h.samples.length,1);
+  h.controller.dispose();
+});
+
+test('input context, hidden state and gesture cancellation invalidate pending samples; disposal removes listeners',()=>{
+  const h=inputFixture();
+  function pending(){const event=h.target.capture('pointerup');assert.equal(h.controller.navigationChanged(),true);h.target.end(event);}
+  pending();h.context('new');h.time(10);assert.equal(h.controller.painted('current'),false);assert.equal(h.controller.painted('new'),false);
+  for(const [target,type] of [[h.target,'pointercancel'],[h.target,'lostpointercapture'],[h.windowRef,'blur'],[h.documentRef,'visibilitychange']]){
+    pending();target.dispatch(type);assert.equal(h.controller.painted('new'),false);
+  }
+  pending();h.documentRef.hidden=true;assert.equal(h.controller.painted('new'),false);
+  h.documentRef.hidden=false;assert.equal(h.controller.painted('new'),false);
+  pending();h.controller.dispose();assert.equal(h.controller.navigationChanged(),false);assert.equal(h.controller.painted('new'),false);
+  for(const target of [h.target,h.documentRef,h.windowRef])assert.equal(target.count(),0);
+  assert.deepEqual(h.samples,[]);
+});
+
+test('diagnostic callback errors and invalid clocks cannot break the input handler or painting',()=>{
+  const h=inputFixture(()=>{throw new Error('diagnostic only');});
+  let event=h.target.capture('drop');assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  h.time(5);assert.doesNotThrow(()=>h.controller.painted('current'));
+  event=h.target.capture('dblclick');h.controller.navigationChanged();h.target.end(event);h.time(1);
+  assert.equal(h.controller.painted('current'),false);h.time(NaN);h.target.dispatch('wheel');assert.equal(h.controller.navigationChanged(),false);
+  h.time(new Error('clock only'));assert.doesNotThrow(()=>h.target.dispatch('pointerdown'));assert.equal(h.controller.navigationChanged(),false);
+  h.context(new Error('context only'));assert.doesNotThrow(()=>h.target.dispatch('wheel'));assert.equal(h.controller.navigationChanged(),false);assert.equal(h.controller.painted('current'),false);
+  h.controller.dispose();
 });

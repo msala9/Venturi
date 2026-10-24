@@ -7,8 +7,8 @@ import {createTimelineContextMenu} from './timeline/context-menu.js';
 import {buildTimelineContext,timelineContextItems,timelineContextOperation} from './timeline/context-actions.js';
 import {createCommandOwnership,deleteCommandOwner} from './command-ownership.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
-import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
-import {createWorkspacePerformance,createWorkspacePerformancePanel} from './workspace-performance.js';
+import { request, sendMutation, ApiFailure, persistentClientId, observeRequests } from "./api.js";
+import {createWorkspacePerformance,createWorkspacePerformancePanel,createWorkspaceInputTiming} from './workspace-performance.js';
 import {createProxyControls} from "./proxies.js";
 import { createViewer } from "./viewer.js";
 import {createArrowHold,programArrowContext} from './arrow-hold.js';
@@ -461,6 +461,7 @@ let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
 const MEDIA_ASSET_MAX_ENTRIES=64,MEDIA_ASSET_MAX_BYTES=64*1024*1024;
 const workspacePerformance=createWorkspacePerformance();
+let workspaceInputTiming=null;
 const workspacePerformanceContext=()=>documentState && timeline?JSON.stringify([documentState.project_epoch,timeline.id,timeline.revision]):null;
 let nativeThumbnailDemand={epoch:null,items:[]};
 function nativeThumbnailCurrent(item,epoch){
@@ -1078,11 +1079,11 @@ const canvasTimeline = createTimeline({
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>{nativePlacementIntent++;compoundNavigation?.cancel();},
-  onNavigationStateChange:()=>{timelineContextMenu?.invalidate();compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();timelineWaveforms?.refresh();sourcePlacement?.refresh();queueMicrotask(syncProgramMarks);},
+  onNavigationStateChange:()=>{workspaceInputTiming?.navigationChanged();timelineContextMenu?.invalidate();compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();timelineWaveforms?.refresh();sourcePlacement?.refresh();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
   getWaveforms: () => timelineWaveforms?.presentations() ?? new Map(),
-  onPaint:(duration,demand)=>{if(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision){workspacePerformance.recordPaint(duration,workspacePerformanceContext());sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);timelineWaveforms?.demand(demand.waveform_clip_ids);}},
+  onPaint:(duration,demand)=>{const current=Boolean(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision);workspaceInputTiming?.painted(current?workspacePerformanceContext():null);if(current){workspacePerformance.recordPaint(duration,workspacePerformanceContext());sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);timelineWaveforms?.demand(demand.waveform_clip_ids);}},
   getCache: () => previewCache?.ranges(),
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.selectionAnchor=null;view.markerId=null;revealInspector();selected();},
@@ -2510,6 +2511,11 @@ document.addEventListener('keydown',event=>{
   menu.open=true;const controls=[...menu.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')].filter(node=>node.getClientRects().length),index=controls.indexOf(document.activeElement);
   controls[(index+(event.key==='ArrowDown'?1:controls.length-1)+controls.length)%controls.length]?.focus();
 },true);
+workspaceInputTiming=createWorkspaceInputTiming({target:$('timeline'),documentRef:document,windowRef:window,getContext:workspacePerformanceContext,onSample:(duration,context)=>workspacePerformance.recordInput(duration,context)});
+observeRequests(()=>{
+  const context=document.hidden?null:workspacePerformanceContext();
+  return measurement=>{if(context && !document.hidden && context===workspacePerformanceContext())workspacePerformance.recordRequest(measurement,context);};
+});
 const diagnosticsRoot=document.querySelector('.diagnostics-menu'),diagnosticsMenu=diagnosticsRoot.closest('.app-menu');
 createWorkspacePerformancePanel({
   root:diagnosticsRoot,output:$('workspace-performance'),eventTargets:[diagnosticsRoot,diagnosticsMenu,document],

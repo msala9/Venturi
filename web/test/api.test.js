@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { request, sendMutation, persistentClientId } from "../js/api.js";
+import { request, sendMutation, persistentClientId, observeRequests, ApiFailure } from "../js/api.js";
 
 test("only native Replace Take requests receive the bounded thirty-second deadline",async()=>{
   const timeout=AbortSignal.timeout,deadlines=[];
@@ -91,4 +91,138 @@ test("a restarted server returns a historical receipt and recovery checkpoint wi
   });
   assert.deepEqual(calls,['POST','GET']);
   assert.deepEqual(result,receipt);
+});
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+test("request observations include JSON decoding and expose no request identity", async () => {
+  const decode = deferred(), reports = [], begins = [];
+  let clock = 10;
+  const unsubscribe = observeRequests((...args) => {
+    begins.push(args);
+    return (...values) => reports.push(values);
+  }, { now: () => clock });
+  try {
+    const pending = request('/private/item-secret', { command_id: 'private-command', value: 'secret-body' }, async () => {
+      clock = 25;
+      return { ok: true, json: () => decode.promise };
+    });
+    await Promise.resolve();
+    assert.deepEqual(begins, [[]]);
+    assert.deepEqual(reports, [], 'Receiving headers does not finish the observation');
+    clock = 47;
+    const data = { private_result: 'secret-result' };
+    decode.resolve(data);
+    assert.equal(await pending, data);
+    assert.deepEqual(reports, [[{ duration_ms: 37, method: 'POST', outcome: 'success' }]]);
+    assert.deepEqual(Object.keys(reports[0][0]).sort(), ['duration_ms', 'method', 'outcome']);
+  } finally { unsubscribe(); }
+});
+
+test("request observations classify errors without changing their existing public errors", async () => {
+  const cases = [
+    { outcome: 'http_error', response: { ok: false, status: 409, json: async () => ({ error: { code: 'STALE', message: 'Changed' } }) }, check: error => error instanceof ApiFailure && error.code === 'STALE' && error.status === 409 && error.message === 'Changed' },
+    { outcome: 'invalid_json', response: { ok: true, status: 200, json: async () => { throw new SyntaxError('Bad JSON'); } }, check: error => error instanceof ApiFailure && error.code === 'INVALID_RESPONSE' && error.status === 200 },
+    { outcome: 'network_error', error: new TypeError('Offline') },
+    ...['AbortError', 'TimeoutError'].flatMap(name => [
+      { outcome: 'aborted', error: Object.assign(new Error(name), { name }) },
+      { outcome: 'aborted', response: { ok: true, status: 200, json: async () => { throw Object.assign(new Error(name), { name }); } }, check: error => error instanceof ApiFailure && error.code === 'INVALID_RESPONSE' && error.status === 200 },
+    ]),
+  ];
+  for (const item of cases) {
+    let clock = 3;
+    const reports = [];
+    const unsubscribe = observeRequests(() => value => reports.push(value), { now: () => clock });
+    try {
+      await assert.rejects(request('/private', undefined, async () => {
+        clock = 14;
+        if (item.error) throw item.error;
+        return item.response;
+      }), item.check || (error => error === item.error));
+      assert.deepEqual(reports, [{ duration_ms: 11, method: 'GET', outcome: item.outcome }]);
+    } finally { unsubscribe(); }
+  }
+});
+
+test("throwing observers and clocks cannot change a successful request or original failure", async () => {
+  for (const stage of ['begin', 'start-clock', 'end-clock', 'finish']) {
+    for (const fails of [false, true]) {
+      let clockCalls = 0, finished = 0;
+      const failure = new TypeError('Original network error');
+      const unsubscribe = observeRequests(() => {
+        if (stage === 'begin') throw new Error('Observer begin');
+        return () => { finished++; if (stage === 'finish') throw new Error('Observer finish'); };
+      }, { now: () => {
+        clockCalls++;
+        if ((stage === 'start-clock' && clockCalls === 1) || (stage === 'end-clock' && clockCalls === 2)) throw new Error('Clock');
+        return clockCalls * 5;
+      } });
+      try {
+        const pending = request('/private', undefined, async () => {
+          if (fails) throw failure;
+          return { ok: true, json: async () => ({ intact: true }) };
+        });
+        if (fails) await assert.rejects(pending, error => error === failure);
+        else assert.deepEqual(await pending, { intact: true });
+        assert.equal(finished, stage === 'finish' ? 1 : 0);
+      } finally { unsubscribe(); }
+    }
+  }
+});
+
+test("unsubscribe and replacement discard in-flight observations without clearing a newer owner", async () => {
+  const first = deferred(), second = deferred(), reports = [];
+  const oldUnsubscribe = observeRequests(() => value => reports.push(['old', value]), { now: () => 1 });
+  const oldRequest = request('/first', undefined, async () => ({ ok: true, json: () => first.promise }));
+  const unsubscribe = observeRequests(() => value => reports.push(['new', value]), { now: () => 2 });
+  oldUnsubscribe();
+  try {
+    first.resolve({ first: true });
+    assert.deepEqual(await oldRequest, { first: true });
+    assert.deepEqual(reports, []);
+    assert.deepEqual(await request('/new', undefined, async () => ({ ok: true, json: async () => ({ new: true }) })), { new: true });
+    assert.deepEqual(reports, [['new', { duration_ms: 0, method: 'GET', outcome: 'success' }]]);
+    const pending = request('/second', undefined, async () => ({ ok: true, json: () => second.promise }));
+    unsubscribe();
+    second.resolve({ second: true });
+    assert.deepEqual(await pending, { second: true });
+    assert.equal(reports.length, 1);
+  } finally { oldUnsubscribe(); unsubscribe(); }
+});
+
+test("observer replacement during its finishing clock cannot deliver to a stale owner", async () => {
+  let calls = 0, reports = 0, replacement;
+  const unsubscribe = observeRequests(() => () => { reports++; }, { now: () => {
+    if (++calls === 2) replacement = observeRequests(() => () => { reports += 10; });
+    return calls;
+  } });
+  try {
+    assert.deepEqual(await request('/session', undefined, async () => ({ ok: true, json: async () => ({}) })), {});
+    assert.equal(reports, 0);
+  } finally { unsubscribe(); replacement?.(); }
+});
+
+test("observing a lost mutation receipt retains POST then GET recovery without replay", async () => {
+  const reports = [], methods = [];
+  let clock = 0;
+  const unsubscribe = observeRequests(() => value => reports.push(value), { now: () => clock });
+  try {
+    const receipt = { command_id: 'same-id', status: 'applied' };
+    const result = await sendMutation('/projects/commands', { command_id: 'same-id' }, async (_path, options) => {
+      methods.push(options.method);
+      clock += 7;
+      if (options.method === 'POST') throw new TypeError('Lost response');
+      return { ok: true, json: async () => { clock += 2; return receipt; } };
+    });
+    assert.equal(result, receipt);
+    assert.deepEqual(methods, ['POST', 'GET']);
+    assert.deepEqual(reports, [
+      { duration_ms: 7, method: 'POST', outcome: 'network_error' },
+      { duration_ms: 9, method: 'GET', outcome: 'success' },
+    ]);
+  } finally { unsubscribe(); }
 });

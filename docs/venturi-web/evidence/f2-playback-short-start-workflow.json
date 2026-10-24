@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "phase": "qualified",
+  "source_commit": "0667653e905dbb414828abfce52a69990c18cb4e",
+  "binary_sha256": "71885075477688824eb7839fcc38d9212a1e9094c68652b446fc7af46e2bba24",
+  "scope": "Actual Chrome short initial Source/Program windows and automatic continuation on existing public media.",
+  "observations_provenance": "Root actual CUA observations; native jobs and protection/resource facts are separately asserted from hashed private receipts.",
+  "source": {
+    "media": "bbb_sunflower_1080p_30fps_normal.mp4",
+    "quality": "original",
+    "audio_mode": "all",
+    "original_dimensions": [
+      1920,
+      1080
+    ],
+    "total_frames": 19038,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "initial": {
+      "observed_at_utc": "2026-10-24T19:21:58.958Z",
+      "range": [
+        0,
+        450
+      ],
+      "duration_seconds": 15.018,
+      "current_time_seconds": 0,
+      "paused": true
+    },
+    "one_play_at_utc": "2026-10-24T19:21:59.252Z",
+    "prefetch_job_id": "1792869719580274589",
+    "handoff": {
+      "observed_at_utc": "2026-10-24T19:22:18.438Z",
+      "range": [
+        450,
+        2250
+      ],
+      "duration_seconds": 60.01,
+      "absolute_frame": 479,
+      "current_time_seconds": 1.038767,
+      "paused": false,
+      "rate": 1,
+      "adopted_without_second_play": true
+    },
+    "pause": {
+      "observed_at_utc": "2026-10-24T19:22:30.817Z",
+      "absolute_frame": 844,
+      "current_time_seconds": 13.164566,
+      "paused": true
+    },
+    "locator_attempt": "One guessed Pause icon locator failed; the actual labelled Pause action then worked. No functional failure claimed."
+  },
+  "program": {
+    "timeline_id": "2",
+    "one_play_at_utc": "2026-10-24T19:22:56.098Z",
+    "initial_job_id": "1792869776644524451",
+    "initial_ready_observed": {
+      "at_utc": "2026-10-24T19:23:07.916Z",
+      "range": [
+        0,
+        450
+      ],
+      "absolute_frame": 295,
+      "current_time_seconds": 9.824897,
+      "duration_seconds": 15.018,
+      "prepared_dimensions": [
+        960,
+        540
+      ]
+    },
+    "handoff": {
+      "observed_at_utc": "2026-10-24T19:23:23.613Z",
+      "status": "PREFETCHED",
+      "range": [
+        450,
+        2250
+      ],
+      "absolute_frame": 758,
+      "current_time_seconds": 10.272379,
+      "duration_seconds": 60.01,
+      "rate": 1,
+      "audio_origin_frame": 0,
+      "job_id": "1792869778596980753"
+    },
+    "pause": {
+      "observed_at_utc": "2026-10-24T19:23:23.927Z",
+      "absolute_frame": 759
+    },
+    "reset": "Timeline2 Home, then Timeline1"
+  },
+  "limitations": [
+    "No precise startup/preparation timing benchmark is inferred from bounded polling/observation timestamps.",
+    "No original-resolution Program, acoustic/gapless continuity, sustained playback, physical/device/OS/held/soak or M7 acceptance claim.",
+    "No source edits, tests, builds, new workloads or commits by this evidence recorder."
+  ],
+  "ab": {
+    "media": [
+      "bbb_sunflower_1080p_30fps_normal.mp4",
+      "bbb_sunflower_2160p_30fps_normal.mp4"
+    ],
+    "quality": "low",
+    "audition_stream": 0,
+    "prepared_dimensions": [
+      [
+        640,
+        360
+      ],
+      [
+        640,
+        360
+      ]
+    ],
+    "initial": {
+      "observed_at_utc": "2026-10-24T19:24:02.503Z",
+      "ranges": [
+        [
+          0,
+          450
+        ],
+        [
+          0,
+          450
+        ]
+      ],
+      "duration_seconds": [
+        15.018,
+        15.018
+      ],
+      "current_time_seconds": [
+        0,
+        0
+      ],
+      "paused": [
+        true,
+        true
+      ]
+    },
+    "one_play_at_utc": "2026-10-24T19:24:12.163Z",
+    "boundary_wait": {
+      "observed_at_utc": "2026-10-24T19:24:41.281Z",
+      "A": {
+        "range": [
+          450,
+          2250
+        ],
+        "current_time_seconds": 0,
+        "paused": true
+      },
+      "B": {
+        "state": "preparing"
+      },
+      "interpretation": "Honest coordinated pause while the next B window prepares; no gapless claim."
+    },
+    "automatic_resume": {
+      "observed_at_utc": "2026-10-24T19:25:07.859Z",
+      "without_second_play": true,
+      "ranges": [
+        [
+          450,
+          2250
+        ],
+        [
+          450,
+          2250
+        ]
+      ],
+      "jobs": [
+        "1792869867848722834",
+        "1792869874159178663"
+      ],
+      "absolute_frames": [
+        907,
+        908
+      ],
+      "current_time_seconds": [
+        15.265179,
+        15.3064
+      ],
+      "duration_seconds": [
+        60.01,
+        60.01
+      ],
+      "paused": [
+        false,
+        false
+      ],
+      "rates": [
+        1,
+        1
+      ],
+      "interpretation": "One-frame difference observed; this does not establish exact frame or acoustic synchronization."
+    },
+    "pause": {
+      "observed_at_utc": "2026-10-24T19:25:18.502Z",
+      "absolute_frames": [
+        1226,
+        1227
+      ],
+      "current_time_seconds": [
+        25.886531,
+        25.9285
+      ]
+    },
+    "closed": {
+      "observed_at_utc": "2026-10-24T19:25:19.344Z",
+      "dialogs": 0,
+      "playing": 0,
+      "timeline": "1",
+      "frame": 0
+    },
+    "root_returned_to_protected_saved_8855_at_utc": "2026-10-24T19:25:45.044Z"
+  },
+  "private_inputs_sha256": {
+    "halo1-public-playback-r2-start.json": "5dfc9c07931277635a1346b415380de472f92c960fc27de3ab98cd48cfa0b61a",
+    "halo1-public-playback-r2-capture-1792869726120534900.json": "6a147ac5160788cf0fbd08f8501aad728b61dc5e176397393540a4e04de8ee48",
+    "halo1-public-playback-r2-capture-1792869781788409100.json": "e019b6b521c73a22947c5a16a35322aa43587fe3fd37f9423485e5861eccc1c8",
+    "halo1-public-playback-r2-capture-1792869798978405500.json": "2bacd6c74cb3257a9d9c50f259dc1f3a1447aa97084a694c95d5b9c79a1c0d1f",
+    "halo1-public-playback-r2-capture-1792869824532103100.json": "10bd951416b78a14fd935e4640b7ade51708d5bc91c44e516b8b52d7b7549996",
+    "halo1-public-playback-r2-capture-1792869857369576600.json": "6a1a3561c940d86a4c56344782578a954833a82fd245ef515822f23f572636d3",
+    "halo1-public-playback-r2-capture-1792869929871342200.json": "6ad528dc0f51a3c553b40f34e5cf11278a938c74497e6d4c9806d439c5c77172",
+    "halo1-public-playback-r2-stopped.json": "ba189443e7251096cd7a2743eaa335a0c6791ab98e65f5587adcf980429da7f7",
+    "halo1-playback-start-r1-observed.json": "969606976945896a09d10c4b40fb31acaa8e6dfeec03b38b8d8c14f3220a7b0a",
+    "halo1-playback-start-r1-deployed.json": "e23b164b4dc17636b402c4f413f214b2449f695ebdb8239a39f225ebc6199698",
+    "halo1-public-playback-r1-stopped.json": "e5f5dcc83608abea7e772d7c127be29a4ec054914f618994aea04ceed9c78578"
+  },
+  "native_ready_source_jobs": [
+    {
+      "media_id": "2",
+      "job_id": "1792869702793321853",
+      "range": [
+        0,
+        450
+      ],
+      "frames_ready": 450,
+      "audio_mode": "all",
+      "stream": null
+    },
+    {
+      "media_id": "2",
+      "job_id": "1792869719580274589",
+      "range": [
+        450,
+        2250
+      ],
+      "frames_ready": 1800,
+      "audio_mode": "all",
+      "stream": null
+    },
+    {
+      "media_id": "2",
+      "job_id": "1792869737916936379",
+      "range": [
+        2250,
+        4050
+      ],
+      "frames_ready": 1800,
+      "audio_mode": "all",
+      "stream": null
+    },
+    {
+      "media_id": "2",
+      "job_id": "1792869817029197853",
+      "range": [
+        0,
+        450
+      ],
+      "frames_ready": 450,
+      "audio_mode": "selected",
+      "stream": 0
+    },
+    {
+      "media_id": "3",
+      "job_id": "1792869818978380004",
+      "range": [
+        0,
+        450
+      ],
+      "frames_ready": 450,
+      "audio_mode": "selected",
+      "stream": 0
+    },
+    {
+      "media_id": "2",
+      "job_id": "1792869867848722834",
+      "range": [
+        450,
+        2250
+      ],
+      "frames_ready": 1800,
+      "audio_mode": "selected",
+      "stream": 0
+    },
+    {
+      "media_id": "3",
+      "job_id": "1792869874159178663",
+      "range": [
+        450,
+        2250
+      ],
+      "frames_ready": 1800,
+      "audio_mode": "selected",
+      "stream": 0
+    }
+  ],
+  "native_program_ready_frames": [
+    450,
+    1800
+  ],
+  "native_program_audio_origin_frames": [
+    0,
+    0
+  ],
+  "gate": {
+    "client_counts": {
+      "tests": 277,
+      "pass": 277,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "memory_peak_bytes": 1531064320,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "native_and_clippy": "Unchanged source-zero R4 13proxy/11browser and Clippy reused by exact source identity; not rerun."
+  },
+  "companion": {
+    "unit": "venturi-web-halo1-public-playback-r2.service",
+    "pid": 544317,
+    "stopped_normally": true,
+    "memory_peak_bytes": 1389252608,
+    "all_recorded_memory_events_zero": true,
+    "cpu_quota": "800%",
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "public_saved_and_recovery_exact_from_R1_stop": true,
+    "public_model_history_exact": true,
+    "protected_main_session_saved_count16_recovery_exact": true
+  },
+  "deployment": {
+    "unit": "venturi-web-halo1-playback-start.service",
+    "pid": "545891",
+    "source_commit": "0667653e905dbb414828abfce52a69990c18cb4e",
+    "binary_sha256": "71885075477688824eb7839fcc38d9212a1e9094c68652b446fc7af46e2bba24",
+    "16_saved_exact": true,
+    "recovery_exact": true,
+    "40_foreign_pids_39_sessions_exact": true,
+    "native_main_view_preserved": true,
+    "public_timeline1_frame0_reset_is_not_main_playhead_claim": true,
+    "root_chrome_saved_writer_no_dialogs_no_playing_observed_at_utc": "2026-10-24T19:26:22.341Z"
+  }
+}

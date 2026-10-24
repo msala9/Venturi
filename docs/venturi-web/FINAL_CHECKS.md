@@ -1,5 +1,28 @@
 # Checks reserved for final acceptance
 
+## Current short-start playback delivered - 2026-10-24
+
+Source0667653 requests15s for opening/manual preparation and60s for adjacent
+continuation. Existing containing windows remain reusable; low FPS keeps one
+valid frame within unchanged native caps. Program retains its original DSP
+audio origin. Runtime718850754776/PID545891 is deployed on halo1/8855.
+All277 affected client cases and the incremental embedded build pass: peak
+1531064320B/events0. Unchanged13proxy/11browser/Clippy proof is source-bound reuse.
+Actual Chrome public Source ORIGINAL1920x1080/all streams and Program960x540
+adopt450..2250 after their initial0..450 windows with one Play. A/B FullHD/4K
+Low640x360 similarly advances after an honest coordinated preparation pause;
+its observed one-frame difference is retained, not claimed as sample-atomic sync.
+See evidence/f2-playback-short-start-workflow.json. The261.842s isolated run
+stops normally at1389252608B peak/events0; all3 public Saved/Recovery/original
+identities,16 main Saved/Recovery and40foreign PIDs/39 Sessions remain exact.
+The earlier782 late5s A/B/five-FRAME Program proof is separately version-bound
+in evidence/f2-real-public-ab-program-tail-workflow.json. R8 remains immutable;
+the new binary's package follows this documentation snapshot. Earlier runtime
+and packaging headers below are historical. Sustained Source/Program/A-B,
+physical/device/held/OS and M7 acceptance stays in FINAL_CHECKS.md; ledger
+remains62done/28partial/2excluded. No row is promoted by parking final checks.
+
+
 ## Current immutable R8 delivery - 2026-10-24
 
 The verified current archive is
@@ -55,7 +78,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Remaining Mixer input | Actual EQ XY/wheel and compressor add/crossover/makeup pass with stable viewport, five Undo/Redo and exact edited Save/reopen in evidence/f4-chrome-mixer-graph-scroll-workflow.json. Source d49ed8c fixes refresh scroll and detached knob hit interception. | Qualify remaining Shift precision, held/cancel, required OS scaling and audible device behavior. | Bounded paused interactions in one existing Windows tab; preserve stopped-edit/explicit-Play V1 and reuse unchanged native DSP/export proof. |
 | Remaining Slip input | Actual linked video-body and audio-body Canvas Slip, two native commands/Undo/Redo and exact edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json. Both clips retain timing/rate/pitch; neutral wording9fbc205 is now embedded in5ce758c. | Qualify prolonged uncached held continuity, remaining cancellation and required OS scaling. | Keep ordinary paused gestures short; do not substitute synthetic prolonged/held input or launch a Windows soak. |
 | Remaining speed input | Actual percentage draft scrub/Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Source5ce758c also repairs live Program cursor/preview after end shrink. | Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. | One existing Windows tab with short paused interaction; no synthetic held-pointer or OS scaling substitution. |
-| Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
+| Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Current718 short-start Source/Program/A-B450-to2250 rollover also passes in evidence/f2-playback-short-start-workflow.json;782 late5s A/B/five-frame Program EOF is separately bound in evidence/f2-real-public-ab-program-tail-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. The older5002-key/4clip fixture is separate. | Qualify cold visible thumbnail/waveform demand,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
 | Final delivery and regression receipt | Current782eb350d0d0/source dea7f17 is packaged in verified R8, with docs9c9c487 separately bound; see evidence/f7-current-prebuilt-r8-workflow.json. All members, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R7 remain exact. | Current package assembly is complete. Retain sustained Source/Program/A-B and remaining functional/physical/soak gates; historical77d7/59b6 runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |

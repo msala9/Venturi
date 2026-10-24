@@ -1,5 +1,28 @@
 # Running the implemented host
 
+## Current short-start playback delivered - 2026-10-24
+
+Source0667653 requests15s for opening/manual preparation and60s for adjacent
+continuation. Existing containing windows remain reusable; low FPS keeps one
+valid frame within unchanged native caps. Program retains its original DSP
+audio origin. Runtime718850754776/PID545891 is deployed on halo1/8855.
+All277 affected client cases and the incremental embedded build pass: peak
+1531064320B/events0. Unchanged13proxy/11browser/Clippy proof is source-bound reuse.
+Actual Chrome public Source ORIGINAL1920x1080/all streams and Program960x540
+adopt450..2250 after their initial0..450 windows with one Play. A/B FullHD/4K
+Low640x360 similarly advances after an honest coordinated preparation pause;
+its observed one-frame difference is retained, not claimed as sample-atomic sync.
+See evidence/f2-playback-short-start-workflow.json. The261.842s isolated run
+stops normally at1389252608B peak/events0; all3 public Saved/Recovery/original
+identities,16 main Saved/Recovery and40foreign PIDs/39 Sessions remain exact.
+The earlier782 late5s A/B/five-FRAME Program proof is separately version-bound
+in evidence/f2-real-public-ab-program-tail-workflow.json. R8 remains immutable;
+the new binary's package follows this documentation snapshot. Earlier runtime
+and packaging headers below are historical. Sustained Source/Program/A-B,
+physical/device/held/OS and M7 acceptance stays in FINAL_CHECKS.md; ledger
+remains62done/28partial/2excluded. No row is promoted by parking final checks.
+
+
 ## Current immutable R8 delivery - 2026-10-24
 
 The verified current archive is

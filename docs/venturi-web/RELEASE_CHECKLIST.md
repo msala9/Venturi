@@ -1,5 +1,23 @@
 # Release checklist
 
+## Current immutable R8 delivery - 2026-10-24
+
+The verified current archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-782eb350d0d0-r8-e7c23c495b4b.tar`,
+91545600 bytes, SHA256
+`e7c23c495b4ba751aa3ab7c53352874a3dc7d699e42dcc3f6cfeb192c19bf58d`.
+Binary source dea7f17 and packaged docs9c9c487 are separately bound. This public
+receipt postdates the immutable archive; its packaging-pending wording stays
+unchanged. See evidence/f7-current-prebuilt-r8-workflow.json.
+All members, launcher help, three original notice companions,189 libraries and
+199 notice texts pass verification. One1CPU/512MiB/noSwap assembly peaks
+239034368 bytes with zero memory events; the full live Session,16 Saved,
+Recovery and prior R7 remain exact. R7 and older deliveries stay immutable.
+R8 assembly is complete; sustained Source/Program/A-B playback and the remaining
+FINAL_CHECKS/M7 gates remain open. No new runback/reboot or row promotion;
+ledger stays62done/28partial/2excluded.
+
+
 ## Current Source/proxy clock correction - 2026-10-24
 
 Source dea7f17 fixes index-zero alignment in windowed and full proxies within

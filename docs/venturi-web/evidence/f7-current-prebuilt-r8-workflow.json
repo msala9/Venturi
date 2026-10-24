@@ -1,0 +1,622 @@
+{
+ "date": "2026-10-24",
+ "status": "passed-bounded-current-development-package",
+ "binary_source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+ "documentation_source_commit": "9c9c4879760faa5d9f6d1531dba2fce146d60b13",
+ "archive": {
+  "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-782eb350d0d0-r8-e7c23c495b4b.tar",
+  "bytes": 91545600,
+  "sha256": "e7c23c495b4ba751aa3ab7c53352874a3dc7d699e42dcc3f6cfeb192c19bf58d",
+  "immutable_additive": true
+ },
+ "manifest": {
+  "format": 3,
+  "kind": "internal-development-prebuilt",
+  "binary": {
+   "path": ".runtime/vv-web",
+   "sha256": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+   "bytes": 80385656
+  },
+  "release_ready": false,
+  "source_repository": "https://github.com/msala9/Venturi",
+  "source_branch": "feat/venturi-web",
+  "external_prerequisites": [
+   "dynamic host libraries",
+   "configured Vulkan userspace",
+   "fonts",
+   "project media",
+   "NAS catalogs",
+   "ds4"
+  ],
+  "qualification_evidence": [
+   "docs/venturi-web/evidence/f7-linux-normal-dependencies.json",
+   "docs/venturi-web/evidence/f7-third-party-notice-texts.json",
+   "docs/venturi-web/evidence/f7-notice-supplement-workflow.json",
+   "docs/venturi-web/evidence/f7-host-notices-workflow.json",
+   "docs/venturi-web/evidence/f3-f4-native-toolwindows-title-reset-workflow.json",
+   "docs/venturi-web/evidence/f7-public-real-media-export-workflow.json",
+   "docs/venturi-web/evidence/f7-host-zlib-notice-delta.json",
+   "docs/venturi-web/evidence/f7-current-prebuilt-r4-workflow.json",
+   "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json",
+   "docs/venturi-web/evidence/f7-current-prebuilt-r5-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-masks-inspector-scroll-workflow.json",
+   "docs/venturi-web/evidence/f1-f3-chrome-transform-curves-save-workflow.json",
+   "docs/venturi-web/evidence/f1-chrome-selection-snapping-safe-move.json",
+   "docs/venturi-web/evidence/f7-current-prebuilt-r6-workflow.json",
+   "docs/venturi-web/evidence/f1-chrome-dense500-editing-workflow.json",
+   "docs/venturi-web/evidence/f1-f3-chrome-mask-handles-lanes-workflow.json",
+   "docs/venturi-web/evidence/f4-chrome-mixer-graph-scroll-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-retime-live-end-workflow.json",
+   "docs/venturi-web/evidence/f1-chrome-linked-slip-input-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-transition-input-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-solid-color-input-workflow.json",
+   "docs/venturi-web/evidence/f7-current-prebuilt-r7-workflow.json",
+   "docs/venturi-web/evidence/f2-real-public-source-clock-workflow.json"
+  ],
+  "actual_gui_evidence": [
+   "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-masks-inspector-scroll-workflow.json",
+   "docs/venturi-web/evidence/f1-f3-chrome-transform-curves-save-workflow.json",
+   "docs/venturi-web/evidence/f1-chrome-selection-snapping-safe-move.json",
+   "docs/venturi-web/evidence/f1-chrome-dense500-editing-workflow.json",
+   "docs/venturi-web/evidence/f1-f3-chrome-mask-handles-lanes-workflow.json",
+   "docs/venturi-web/evidence/f4-chrome-mixer-graph-scroll-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-retime-live-end-workflow.json",
+   "docs/venturi-web/evidence/f1-chrome-linked-slip-input-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-transition-input-workflow.json",
+   "docs/venturi-web/evidence/f3-chrome-solid-color-input-workflow.json",
+   "docs/venturi-web/evidence/f2-real-public-source-clock-workflow.json"
+  ],
+  "sha256": "94852a0e784ed96cf961b57e75b9ab0ac5cd7973942237116a879e168c918980"
+ },
+ "packaged_file_hashes": {
+  ".runtime/vv-web": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+  "LICENSE": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+  "README.txt": "809b7e5651f7793e7f69177035cea71833f6f17351f221e4f592669929d37b18",
+  "crates/vv-vad/model/LICENSE-silero-vad": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b",
+  "docs/venturi-web/API_CONTRACT.md": "5f19dbf42004706540320f62675f156d47c0ec3fa3df941f5288533d0cd668b7",
+  "docs/venturi-web/BINARY_DELIVERY.md": "f3d4e620e004db89891cc8f36bfcfaccf3423522ba75c3f8686e6c3d44d4c77c",
+  "docs/venturi-web/COMPLETION_PLAN.md": "aeffdefb31a06135180df2655891e5d8bce27b049a3aac364bbc59cc8403bc3b",
+  "docs/venturi-web/DELIVERY_HANDOVER.md": "698d84e61c6245cc166857c020dd2160f17f2f82dd872c83fc55f8bcf514fd4a",
+  "docs/venturi-web/FINAL_CHECKS.md": "87a3b9a5c9f3737d20c6b2e1a7a42c7431c738e32a6f66132bb51a8917025dad",
+  "docs/venturi-web/FUNCTIONAL_PARITY.csv": "6e30f69f90d629b2aaee84eeb4405900807a9399396b50495d898dc7e477ac9e",
+  "docs/venturi-web/IMPLEMENTATION_PLAN.md": "65b77a16053b947ffdbf89711cc9a517bac3d4b9a54ab8a639ab62cbafbc79d7",
+  "docs/venturi-web/IMPLEMENTATION_STATUS.md": "6c08712014538356a59c7ab77e55b0e74c6ad49779db91e57daab403ba1e5b14",
+  "docs/venturi-web/NOTICES.md": "f52e11668c1c6e4158b78accbfda4f525b3574368cb2bb1a6f2d4fed500e0f1e",
+  "docs/venturi-web/RELEASE_CHECKLIST.md": "fb0f71aec31bd3b6c040a48a0072088023411d1d9c28f0b787487c60c9b608c4",
+  "docs/venturi-web/REMAINING_WORK.md": "e5a67c2a6d30887140740dbf4d424a51adf118234b0af7d50e4f833d281ff778",
+  "docs/venturi-web/RUNNING.md": "cd56c0a103d50286ecc40e7db84fa18c52b4c9a9c0f4e6f427f8a76926e335b8",
+  "docs/venturi-web/SECURITY_DEPLOY.md": "12a3f0070b023501428b525787943e1a82c0c20a02974a11304e6b5555f75b51",
+  "docs/venturi-web/TEST_PLAN.md": "6501697a7428b434f72d3eb9bfa1b8fbcdfaa78d3052ee2a27fe9e9a4940ff20",
+  "docs/venturi-web/UX_SPEC.md": "b43afd66619bd9e156d3d47aafba560df8921ed23dc0177c6c5bb8c9f83c5f44",
+  "docs/venturi-web/evidence/f1-chrome-dense500-editing-workflow.json": "8eef078a487141617405b6adf22aa8e6cebad7b385f16eb7e6151935f39577ee",
+  "docs/venturi-web/evidence/f1-chrome-linked-slip-input-workflow.json": "fc4b85c4a18aa3d8863b2c699a496bff3a98812eaef02fa7a97b3169a6323235",
+  "docs/venturi-web/evidence/f1-chrome-selection-snapping-safe-move.json": "1c37a84de68f87215ec43de9d610c057fc7b54bf6948e70c8cb425a545efc80e",
+  "docs/venturi-web/evidence/f1-f3-chrome-mask-handles-lanes-workflow.json": "f09afc43a9e68222673b55309b2ff1794d55c9d70a7058755ce508e11ee30e0a",
+  "docs/venturi-web/evidence/f1-f3-chrome-transform-curves-save-workflow.json": "af758f555c8202ba319c028fa2bebd0e168a080976e81372d77584fcf0fed74c",
+  "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json": "de31ba9fb2bf9d80cbfb2d714d039c3196ae4cd3f1d4b1906e8c3b9c9ab9d477",
+  "docs/venturi-web/evidence/f2-real-public-source-clock-workflow.json": "61ab22606b2c60ed1efed306363081d0137181c4076b149c8fcf0efcdd68978d",
+  "docs/venturi-web/evidence/f3-chrome-masks-inspector-scroll-workflow.json": "35431d70ed84418ef64f7c15e6e479e5b6f61410753d199caba1283068ad2d4e",
+  "docs/venturi-web/evidence/f3-chrome-retime-live-end-workflow.json": "d167674d9d93c000d7f9226669493b60dd4b1e09c0e142445a48c6d911b50edf",
+  "docs/venturi-web/evidence/f3-chrome-solid-color-input-workflow.json": "9cb63471f2b40aaa30bd4237ecf1004a4b2db2a3e0a81865ccacbf0599f57a2a",
+  "docs/venturi-web/evidence/f3-chrome-transition-input-workflow.json": "72353d8740c0fc653383ab9c6b91f71a7ae8795acd0fc4bfcfebe4f25935372b",
+  "docs/venturi-web/evidence/f3-f4-native-toolwindows-title-reset-workflow.json": "92d53a3d37365aafac4221821003ab69e075da3c3780390bc9dac482c3ea33ee",
+  "docs/venturi-web/evidence/f4-chrome-mixer-graph-scroll-workflow.json": "9f9a575e8089b5fba57f06678591fbae97a2fb7a5e50ab9ce8f58550b305f7f0",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r4-workflow.json": "3beb652926eaab71cb945bd5454b61857671ca9fdc18c6b76f26f18b58d825b3",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r5-workflow.json": "f9a579384aa824d7a5e21adac3c76bb8644e67cf78301177a4519c564a8891a1",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r6-workflow.json": "5f0f75a234333831914898af97760bdefa5737f2b7190a6f985c0ea0c4622d6d",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r7-workflow.json": "bdd433262ef1a45f79c4b1f0af7779519e5888a1387dd150cb8458131ef9fdc7",
+  "docs/venturi-web/evidence/f7-host-notices-workflow.json": "f51e627a6c0fde1c3851100b65f47fa66af5e8fc5e45992c1f3b21e919edc463",
+  "docs/venturi-web/evidence/f7-host-zlib-notice-delta.json": "054eb43aa6895f478cbf6d5cee535b1797c372bc1c77998b387a7a8ecc0ccc54",
+  "docs/venturi-web/evidence/f7-linux-normal-dependencies.json": "d520fdedc1f8912bd76a48c9d005331b5ff1d856edf6b9a197196bd01761ee91",
+  "docs/venturi-web/evidence/f7-notice-supplement-workflow.json": "b1a6c4de3e573aa991baae27b4f8c8063700cfedcee38259bcb29782a54c4042",
+  "docs/venturi-web/evidence/f7-public-real-media-export-workflow.json": "f5605a229c7df48db0760814c8a0e15e42f79e4a3860776262d9ea18605d7a1d",
+  "docs/venturi-web/evidence/f7-third-party-notice-texts.json": "6e1ba9258d2117c27c0e424ea5fe43e86ca9dce12aa1be068a86ee3b64e16ebe",
+  "manifest.json": "94852a0e784ed96cf961b57e75b9ab0ac5cd7973942237116a879e168c918980",
+  "runtime-libraries.json": "e505edeefe704d761a65796f6a2a8a8603dd36b8ded6decad29d110d139fd657",
+  "scripts/venturi-web.sh": "833f2037d360cca5128e32334923d1e7adc501311a56b8a41ff29d31886b543c",
+  "third-party/companions.json": "4ddddb3db1ed706a16895dfea6b685a850fbe3aaf78fb0d9632f13b6037d1d74",
+  "third-party/host-notice-delta.json": "a6764b0c32c7a5e9d9f8e130837577b816060de236db43dbb8cc5413ee306475",
+  "third-party/host-notices.tar": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+  "third-party/notice-reuse.json": "311866b255082f7f56a634b19b0d13d33613f87132b95e56790d203e8006cf49",
+  "third-party/notice-supplement.tar": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+  "third-party/rust-notices.tar": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57"
+ },
+ "member_verification": {
+  "streamed_checksum_members": 51,
+  "git_show_frozen_documentation_members_verified": 41,
+  "frozen_commit": "9c9c4879760faa5d9f6d1531dba2fce146d60b13",
+  "checksum_file": "SHA256SUMS",
+  "local_generated_JSON_hashes_verified": [
+   "manifest.json",
+   "runtime-libraries.json",
+   "third-party/companions.json",
+   "third-party/notice-reuse.json",
+   "third-party/host-notice-delta.json"
+  ],
+  "scope": "Assembly streamed every recorded archive-member hash. All packaged repository/docs members independently match frozen local Git objects. No Windows archive download/extraction."
+ },
+ "notice_companions": {
+  "rust-notices": {
+   "path": "third-party/rust-notices.tar",
+   "bytes": 4014080,
+   "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+   "provenance": "third-party/notice-reuse.json",
+   "original_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+   "original_binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+   "original_archive_and_index_unchanged": true
+  },
+  "notice-supplement": {
+   "path": "third-party/notice-supplement.tar",
+   "bytes": 194560,
+   "sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+   "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+   "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+   "original_archive_and_index_unchanged": true,
+   "provenance": {
+    "unit": "venturi-halo1-notice-supplement-r1-20261024.service",
+    "state": "/home/halo/.cache/venturi-build/notice-supplement-r1/state.json",
+    "private_observation_sha256": "d0b3c61fce73bc8f5f0eaad5c25a4d5d1d19a6bc8b26a131a8693fa0671048c2",
+    "index_member": "venturi-web-notice-supplement-bf0b322/index.json",
+    "index_sha256": "3213ec6b0a3347e4de43ba5db4da5fa1bbde26caab3d6dfc90a63117e2bc2050"
+   }
+  },
+  "host-notices": {
+   "path": "third-party/host-notices.tar",
+   "bytes": 3747840,
+   "sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+   "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+   "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+   "original_archive_and_index_unchanged": true,
+   "provenance": {
+    "unit": "venturi-halo1-host-notices-r1-20261024.service",
+    "state": "/home/halo/.cache/venturi-build/host-notices-r1/state.json",
+    "private_observation_sha256": "0ae787b9fe9085fe198f866cbbcb1633b53397af1d611f934ff7275a052fd03c",
+    "index_member": "venturi-web-host-notices-bf0b322/index.json",
+    "index_sha256": "259e623de12109562a79a885d1e2a96bfdc5ceb994499e2b80e3f8399c36b1bf"
+   },
+   "loader_comparison": {
+    "count": 189,
+    "exact": false,
+    "current_binding_exact": true,
+    "unchanged_count": 188,
+    "changed_count": 1,
+    "fields": [
+     "loader_name",
+     "path",
+     "resolved",
+     "bytes",
+     "sha256"
+    ],
+    "delta": "third-party/host-notice-delta.json"
+   }
+  }
+ },
+ "notice_reuse": {
+  "original_rust_index": {
+   "source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+   "binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+   "member": "venturi-web-rust-notices-2dbc9697d6e7/index.json",
+   "sha256": "1303bc4d8e62874d007c8cb18098a0152f037224f535f38a946b948c88de23d5"
+  },
+  "unchanged_dependency_input_git_blobs": {
+   ".cargo/config.toml": "7d2980b3fd7a69d79f30200715f776beeae46b3c",
+   "Cargo.lock": "5d8bd7c6ebb165f34b735b899d0d6c61e97d7696",
+   "Cargo.toml": "d530177d06b688a72d2437a4b394de5948c0f445",
+   "LICENSE": "94a9ed024d3859793618152ea559a168bbcbb5e2",
+   "crates/vv-app/Cargo.toml": "11beca25995b2d5b0a7131b78d69e41f73f4e0a0",
+   "crates/vv-app/build.rs": "08bfcc4b83afbb61c4e61cefe4f33b4e802fe65c",
+   "crates/vv-audio/Cargo.toml": "08c648b35f066b6a95fd739d056e6d938c778b01",
+   "crates/vv-core/Cargo.toml": "8813d43b7081cf3d761498b123fdfd9c17e05a71",
+   "crates/vv-mcp/Cargo.toml": "4692dbe7b9267d73044987551a2403c097afd618",
+   "crates/vv-media/Cargo.toml": "9dcdba242b6cf1a7f264719c060e197a35719acf",
+   "crates/vv-render/Cargo.toml": "269b4fd86b01c554d663aa4e9d406cf60fdfbc2b",
+   "crates/vv-session/Cargo.toml": "76d55db4d4e32386ab892a8394dc6fc4906ef8d0",
+   "crates/vv-vad/Cargo.toml": "8c6e77121bf244044171cc3d725384cc5ea56fe4",
+   "crates/vv-web/Cargo.toml": "7c720cf14a962253f71ad826fcbd1b959e73c58e"
+  },
+  "launcher_sha256": "833f2037d360cca5128e32334923d1e7adc501311a56b8a41ff29d31886b543c",
+  "rust_inventory_sha256": "d520fdedc1f8912bd76a48c9d005331b5ff1d856edf6b9a197196bd01761ee91",
+  "scope": "Original Rust b8d6133/2dbc and supplement/host bf0b322/77d7 provenance preserved, not relabeled. Exact input reuse is technical evidence, not legal clearance.",
+  "original_companions_and_indices_exact_R7": true
+ },
+ "host_dependencies": {
+  "libraries": 189,
+  "original_loader_identity_exact": false,
+  "reviewed_current_binding_exact": true,
+  "comparison": {
+   "count": 189,
+   "exact": false,
+   "current_binding_exact": true,
+   "unchanged_count": 188,
+   "changed_count": 1,
+   "fields": [
+    "loader_name",
+    "path",
+    "resolved",
+    "bytes",
+    "sha256"
+   ],
+   "delta": "third-party/host-notice-delta.json"
+  },
+  "runtime_inventory_sha256": "e505edeefe704d761a65796f6a2a8a8603dd36b8ded6decad29d110d139fd657",
+  "library_bindings_sha256": "ee3c0f384d86f3ded79c33d3cdcdc59467e1ae03940aac54c9f50407b60b2f10",
+  "host_notice_bindings_before_after": {
+   "count": 199,
+   "bindings_sha256": "c3773211474a810597e57a0471cb2f2de30022798d2f5f7689fda907799f5054"
+  },
+  "zlib_before_after": {
+   "package": {
+    "binary_package": "zlib1g:amd64",
+    "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+    "source_package": "zlib",
+    "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+    "architecture": "amd64"
+   },
+   "notice_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+   "library_sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+  },
+  "scope": "188 original-identical DSOs and the previously reviewed zlib Ubuntu3.2 delta.199 notice bindings unchanged before/end; DSOs/fonts/Vulkan are external."
+ },
+ "runtime_preservation": {
+  "unit": "venturi-web-halo1-source-zero.service",
+  "pid": "540668",
+  "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-782eb350d0d0",
+  "sha256": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+  "cmdline_sha256": "ceebad39e97773457dc64ea869513226e17b2fcf5fe3572d595b85265a555410",
+  "full_session_sha256": "79fea3f492ee65cc2f157396da55f30fd353191bd10d2a3df0d9ced650aa254d",
+  "before_after_exact": true,
+  "saved_project_count": 16,
+  "saved_project_hashes": {
+   "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+   "Venturi_Chrome_Input_V1.vvproj": "1828c9a11b802f988ec4c5c2213bfb56004307cf45756dc2d8d6207fff2544bb",
+   "Venturi_Chrome_Effects_V1.vvproj": "8ce68d3c6fcb0c271afa4d966a559ad2448d51964beb0369786e097b1bd5e2de",
+   "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+   "Venturi_Seek_Playback_V1.vvproj": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7",
+   "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+   "Venturi_Keyframe_Replacement_V1.vvproj": "bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1",
+   "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+   "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+   "Venturi_Dense500_Chrome_V1.vvproj": "c6632fe53c7379d96df3c996d2664697d8fa11e45ede95121ab077e067cbd3f6",
+   "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+   "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+   "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+   "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+   "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+   "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "all16_saved_equal_deployment_and_fresh_capture": true,
+  "preserved_recovery": {
+   "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/.venturi-autosave.json",
+   "bytes": 195294,
+   "sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+   "status": {
+    "base_changed": true,
+    "created_unix_ms": 1792847309756,
+    "pending": true,
+    "project_token": "Venturi_Chrome_Input_V1.vvproj",
+    "resolved_to": "Venturi_Chrome_Input_V1.vvproj",
+    "revision": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+    "state": "pending"
+   }
+  },
+  "assembly_gui_capture": {
+   "file": "halo1-final-gui-source_zero_delivery_idle.json",
+   "bytes": 87612,
+   "sha256": "50d946793a059344c038b6a953c76a46b795fcdd357b3e2285d603492c42c35d"
+  },
+  "deployment_receipt": {
+   "file": "halo1-source-zero-r4-deployed.json",
+   "bytes": 165096,
+   "sha256": "87dee9384436881839cad0109ea576d54400fb316d912a337615b898c8dcc474"
+  },
+  "scope": "Current main Session, all16 Saved and retained Recovery remain exact across assembly. The fresh capture is the actual launch binding; no former Effects exception was used."
+ },
+ "qualification_chain": {
+  "R6_source": "39b3ae375c68b323875768a63023a29aa694abf2",
+  "previous_native_qualification_entries_retained": 5,
+  "incremental": [
+   {
+    "previous_source_commit": "39b3ae375c68b323875768a63023a29aa694abf2",
+    "source_commit": "d49ed8c70afd9fa0067e18b61147cab69a2a7666",
+    "binary_sha256": "26b6bf6f50594e2401905f35f4efbac4ce7ac04720b28675b2a09f1c6237f62b",
+    "unit": "venturi-halo1-mixer-scroll-r2-20261024.service",
+    "source_manifest_count": 619,
+    "source_manifest_sha256": "3e8e0e1949739202a8deb929fb5b75da492ebec9b3ca9116b086e8e1b8711f5c",
+    "changed_files": [
+     "web/js/main.js",
+     "web/style/app.css",
+     "web/test/inspector.test.js"
+    ],
+    "source_hashes": {
+     "web/js/main.js": "6829da792d99f613c69910b6e993cfdf17b99ddca8e1e70e03473a519f954c2b",
+     "web/style/app.css": "b1eaf84825642a876df95f34dd832a4ba96d2aa5587afdc5d17b98b9fc7ad98b",
+     "web/test/inspector.test.js": "ed447b8fed1b72408308c68f80101b1580fc4b1abb13d80b7d86d9c5382248f5"
+    },
+    "client_counts": {
+     "tests": 128,
+     "pass": 128,
+     "fail": 0,
+     "cancelled": 0,
+     "skipped": 0
+    },
+    "private_observation_sha256": "2d8d03b3735b2d8524245bfab6a57010f94c63128eb38868ae7f6b2795580cfa"
+   },
+   {
+    "previous_source_commit": "d49ed8c70afd9fa0067e18b61147cab69a2a7666",
+    "source_commit": "5ce758c1f237fc2f6bac5546d4c1765f0939dac9",
+    "binary_sha256": "efa2c09f2c87a7794745bc9b941288d17e3aca553478f171d4f32c9d525117f4",
+    "unit": "venturi-halo1-live-playhead-r1-20261024.service",
+    "source_manifest_count": 619,
+    "source_manifest_sha256": "3aefba3855fcf2eb532cc19e06375bec851fdbcb888b251200ecbc16b9818fa9",
+    "changed_files": [
+     "web/js/main.js",
+     "web/js/project-view.js",
+     "web/test/project-view.test.js"
+    ],
+    "source_hashes": {
+     "web/js/main.js": "9f5d8c96a5f43a6fa4ee127261596bc43981ea93f373344b3a8bfb00e62792ac",
+     "web/js/project-view.js": "e36f79da0f840746c2f1248fee4dce84e61e8254d630fffe79cc013841bf41b2",
+     "web/test/project-view.test.js": "d9cca56c432c4eb2f4e27f4aa5f43321592763b15d61440c5dd1727e6e4d5e09"
+    },
+    "client_counts": {
+     "tests": 58,
+     "pass": 58,
+     "fail": 0,
+     "cancelled": 0,
+     "skipped": 0
+    },
+    "private_observation_sha256": "f4d3629343689d15967492924e316d8f6b0c4d987c7d41057cdaf0a39d8bab89"
+   },
+   {
+    "previous_source_commit": "5ce758c1f237fc2f6bac5546d4c1765f0939dac9",
+    "source_commit": "67882ef198f82148f922ef74f8595037adb3eb7c",
+    "binary_sha256": "cf00a18d78dc0f01062b7d1b7e014dca0a2319cbee0fcb1abd9d48a21c947e70",
+    "unit": "venturi-halo1-mask-selection-r1-20261024.service",
+    "source_manifest_count": 619,
+    "source_manifest_sha256": "11d1bed152c0d836b5720029ddc9bec59ba63c0d55ad10e2cb3e7284d0fb44ac",
+    "changed_files": [
+     "web/js/main.js",
+     "web/js/timeline/geometry.js",
+     "web/test/timeline-selection.test.js"
+    ],
+    "source_hashes": {
+     "web/js/main.js": "599089b25132300bab5646befce30d73889b9cd6f3867d8af7e1fd2642f571b6",
+     "web/js/timeline/geometry.js": "7702c225694168ac317b1238aad1f4c96c961966fff0a8d115265298fb108ad3",
+     "web/test/timeline-selection.test.js": "55859983583885c524a267833f3a2fe7a9ef0136877eeab348f8c79ddb74619a"
+    },
+    "client_counts": {
+     "tests": 212,
+     "pass": 212,
+     "fail": 0,
+     "cancelled": 0,
+     "skipped": 0
+    },
+    "private_observation_sha256": "bee85024ae1efbe7cacebbedb312879ab61cea160af304ef21651ae192f75c00"
+   }
+  ],
+  "scope": "Prior R7 chain retained. Final Source R4 independently reran13proxy+11browser-proxy tests, formatting, media/web Clippy and build; unchanged frontend212 reused by exact hashes. Assembly itself repeated no tests/build/render.",
+  "prior_R7_source": "67882ef198f82148f922ef74f8595037adb3eb7c",
+  "final_Source_correction": {
+   "previous_source_commit": "67882ef198f82148f922ef74f8595037adb3eb7c",
+   "source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+   "sha256": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+   "unit": "venturi-halo1-source-zero-r4-20261024.service",
+   "source_manifest_count": 619,
+   "source_manifest_sha256": "0e1c8351a1c8799d4b3a402d6a6cd2df0e1e607827c7a8aec7392f1733a7b2dd",
+   "changed_files": [
+    "crates/vv-media/src/proxy.rs",
+    "crates/vv-media/src/tests/proxy.rs"
+   ],
+   "source_hashes": {
+    "crates/vv-media/src/proxy.rs": "936b0b24f6fe5b9dd1cc6c36575bf7ba7cff1b57f371262ad3669b98ab5ed1c4",
+    "crates/vv-media/src/tests/proxy.rs": "b1a9afe9122b9b012925014b63644fe043a040de1888ba254615a4b0bd331038"
+   },
+   "native_counts": {
+    "proxy::tests": {
+     "passed": 13,
+     "failed": 0,
+     "ignored": 0
+    },
+    "browser_proxy::tests": {
+     "passed": 11,
+     "failed": 0,
+     "ignored": 0
+    }
+   },
+   "private_observation_sha256": "1a1e1c923f811b82af341c3f1fd7e1f726a49ca099dbec6c36aeb24f54fd69cb"
+  },
+  "historical_ranged_only_intermediate": {
+   "unit": "venturi-halo1-source-zero-r2-20261024.service",
+   "state": "/home/halo/.cache/venturi-build/source-zero-r2/state.json",
+   "phase": "passed",
+   "source_commit": "915bd36b096c6df237f387d2213bbb1575878316",
+   "sha256": "185a70e3438a5ae914ee8bcda0a8b6efbdbf3b7643fb0edb685249e9d0063fea",
+   "source_hashes": {
+    "crates/vv-media/src/tests/proxy.rs": "289d6efb3922d881d3e7f85ebe8dd928b81e154afd9499a91268ccaefaaf8aa2"
+   },
+   "native_counts": {
+    "proxy::tests": {
+     "passed": 12,
+     "failed": 0,
+     "ignored": 0
+    },
+    "browser_proxy::tests": {
+     "passed": 11,
+     "failed": 0,
+     "ignored": 0
+    }
+   },
+   "private_observation_sha256": "76f909ceea6be87708db62e17761ee889d40f0f020b82b0ae3e287eaff15b106",
+   "scope": "Historical ranged-Source strict-first-index intermediate only; not final full-proxy producer qualification. Final R4 reruns both native groups, Clippy and build."
+  }
+ },
+ "retained_failures": {
+  "mixer_R1_parser": {
+   "phase": "failed",
+   "error": "AssertionError('Missing client count: tests')",
+   "client_counts": {
+    "tests": 128,
+    "pass": 128,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+   },
+   "completed_steps": [
+    "syntax-0",
+    "syntax-1",
+    "focused-client"
+   ],
+   "state_sha256": "5cf516c91572bd2963f66750fd75dafa7d0f820020326cd7d90c72750558c71e",
+   "scope": "Two syntax checks/128clients passed before parser failure; no R1 build. Not relabeled passed."
+  },
+  "earlier_loader_refusal": {
+   "unit": "venturi-halo1-current-prebuilt-r3-20261024.service",
+   "state": "/home/halo/.cache/venturi-build/current-prebuilt-r3/state.json",
+   "scope": "Historical stale identity refusal retained; reviewed zlib binding separately qualified."
+  },
+  "public_media_attempts": "Earlier failures retain their stated scope in included f7-public-real-media-export-workflow.json.",
+  "local_evidence_oracle_corrections": "Preliminary evidence-only comparisons used current publication docs instead of git1487519 and an earlier original-restored capture instead of the actual r7_idle assembly input. Corrected to exact frozen Git blobs and r7_idle; no package/source failure or file mutation.",
+  "Source_R1_format_only": {
+   "observation": "halo1-source-zero-r1-observed.json",
+   "phase": "failed",
+   "steps": [
+    {
+     "label": "format-check",
+     "args": [
+      "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "--config",
+      "skip_children=true",
+      "crates/vv-media/src/proxy.rs",
+      "crates/vv-media/src/tests/proxy.rs"
+     ],
+     "cwd": "/home/halo/.cache/venturi-build/source",
+     "exit_code": 1,
+     "elapsed_seconds": 0.251,
+     "log": "/home/halo/.cache/venturi-build/source-zero-r1/format-check.log",
+     "log_bytes": 476,
+     "failure": null
+    }
+   ],
+   "scope": "Formatting only; no native tests/build executed"
+  },
+  "Source_R3_functional_no_credit": {
+   "unit": "venturi-halo1-source-zero-r3-20261024.service",
+   "state": "/home/halo/.cache/venturi-build/source-zero-r3/state.json",
+   "phase": "failed",
+   "steps": [
+    {
+     "label": "format-check",
+     "args": [
+      "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "--config",
+      "skip_children=true",
+      "crates/vv-media/src/proxy.rs",
+      "crates/vv-media/src/tests/proxy.rs"
+     ],
+     "cwd": "/home/halo/.cache/venturi-build/source",
+     "exit_code": 0,
+     "elapsed_seconds": 0.251,
+     "log": "/home/halo/.cache/venturi-build/source-zero-r3/format-check.log",
+     "log_bytes": 0,
+     "failure": null
+    },
+    {
+     "label": "native-proxy",
+     "args": [
+      "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "vv-media",
+      "--lib",
+      "proxy::tests",
+      "--",
+      "--skip",
+      "browser_proxy::tests",
+      "--test-threads=1"
+     ],
+     "cwd": "/home/halo/.cache/venturi-build/source",
+     "exit_code": 101,
+     "elapsed_seconds": 7.26,
+     "log": "/home/halo/.cache/venturi-build/source-zero-r3/native-proxy.log",
+     "log_bytes": 2152,
+     "failure": null
+    }
+   ],
+   "private_observation_sha256": "71391c15adcce43f59089c955b7f46f1780a6a482c2bf1d2b9cc1bfd470116da",
+   "scope": "Native full-proxy regression failed: 12 passed and 1 failed; no qualification credit."
+  },
+  "scope": "Source R2/915 is historical ranged-only, not final complete-proxy qualification. Failed R1/R3 retain actual scope; final R4 alone is current qualification. Earlier browser deadline/initial-window failures are preserved in the included Source evidence.",
+  "R8_local_evidence_oracle_correction": "A preliminary local evidence assertion compared the raw loader delta rather than its generated provenance envelope. Corrected to the exact worker serialization and archive-member hash; no package/source failure or repack."
+ },
+ "launcher_help": {
+  "command": "bash scripts/venturi-web.sh --help",
+  "exit_code": 0,
+  "stdout": "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY] [--assets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview.\n",
+  "scope": "Prebuilt-only launcher selected embedded executable; no listener, fresh project/GPU execution, reboot or runback qualification."
+ },
+ "resources": {
+  "cpus": 1,
+  "memory_max_bytes": 536870912,
+  "swap_max_bytes": 0,
+  "nice": 19,
+  "io_weight": 10,
+  "oom_score_adjust": 1000,
+  "tasks_max": 128,
+  "runtime_max_seconds": 180,
+  "peak_bytes": 239034368,
+  "memory_events": {
+   "low": 0,
+   "high": 0,
+   "max": 0,
+   "oom": 0,
+   "oom_kill": 0,
+   "oom_group_kill": 0,
+   "sock_throttled": 0
+  },
+  "lock": "HALO_BENCHMARK exclusive nonblocking; no removal/retry.",
+  "headroom": "At least8GiB RAM/16GiB disk before/end."
+ },
+ "unit": {
+  "LoadState": "not-found",
+  "ActiveState": "inactive",
+  "SubState": "dead",
+  "MainPID": "0",
+  "Result": "success",
+  "ExecMainStatus": "0",
+  "MemoryCurrent": "[not set]",
+  "MemoryPeak": "[not set]"
+ },
+ "assembly_window_unix": {
+  "started": 1792867898.6255069,
+  "finished": 1792867899.5316966
+ },
+ "private_observation_sha256": "9703e73acd214ed646802e66413c1125d4a1c6c4f11229f1e019f61d070f0734",
+ "private_launch_receipt_sha256": "50ac73d9158263ba8db630455492bb260e4e92f9871b63c0a23ee6b5af4c9e03",
+ "publication_note": "Archive contains frozen9c9c487 documentation and binary source dea7f17. This post-assembly proof and subsequent publication wording are not retroactively included. Pending-package wording in that frozen snapshot is historical; archive bytes and hashes remain immutable.",
+ "limits": [
+  "Internal configured-halo1 development package; collecting dependency/license texts is not full legal clearance or self-contained distribution. DSOs, fonts, Vulkan, media/NAS and optional components remain external.",
+  "No new runback/reboot, installation, physical/audio, whole-film browser playback, full-resolution4K Windows playback, complete BBB proxy, required OS-scaling/DPI or full M7 acceptance.",
+  "Bounded real Source behavior is qualified only within the included Source evidence. Earlier immutable R7 is preserved. No ledger capability was promoted by assembly."
+ ],
+ "ledger": {
+  "done": 62,
+  "partial": 28,
+  "exclusions": 2,
+  "changed": false,
+  "full_goal_and_M7_remain_active": true
+ },
+ "prior_R7_archive_unchanged": {
+  "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-cf00a18d78dc-r7-4bcfc52ca353.tar",
+  "bytes": 91463680,
+  "sha256": "4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d"
+ }
+}

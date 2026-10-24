@@ -1,5 +1,23 @@
 # Checks reserved for final acceptance
 
+## Current immutable R8 delivery - 2026-10-24
+
+The verified current archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-782eb350d0d0-r8-e7c23c495b4b.tar`,
+91545600 bytes, SHA256
+`e7c23c495b4ba751aa3ab7c53352874a3dc7d699e42dcc3f6cfeb192c19bf58d`.
+Binary source dea7f17 and packaged docs9c9c487 are separately bound. This public
+receipt postdates the immutable archive; its packaging-pending wording stays
+unchanged. See evidence/f7-current-prebuilt-r8-workflow.json.
+All members, launcher help, three original notice companions,189 libraries and
+199 notice texts pass verification. One1CPU/512MiB/noSwap assembly peaks
+239034368 bytes with zero memory events; the full live Session,16 Saved,
+Recovery and prior R7 remain exact. R7 and older deliveries stay immutable.
+R8 assembly is complete; sustained Source/Program/A-B playback and the remaining
+FINAL_CHECKS/M7 gates remain open. No new runback/reboot or row promotion;
+ledger stays62done/28partial/2excluded.
+
+
 ## Current Source/proxy clock correction - 2026-10-24
 
 Source dea7f17 fixes index-zero alignment in windowed and full proxies within
@@ -40,7 +58,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. The older5002-key/4clip fixture is separate. | Qualify cold visible thumbnail/waveform demand,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Live782eb350d0d0/source dea7f17 passes24 native proxy cases, Clippy/build and bounded real Source proof. R7/cf00 remains the verified immutable prior package. | Assemble additive R8 for the current runtime. Remaining functional/physical/soak gates and historical77d7/59b6 runback remain version-bound. | Preserve old archives/manifests/notices; no repeated unchanged render matrix or new runback/reboot/M7 claim. |
+| Final delivery and regression receipt | Current782eb350d0d0/source dea7f17 is packaged in verified R8, with docs9c9c487 separately bound; see evidence/f7-current-prebuilt-r8-workflow.json. All members, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R7 remain exact. | Current package assembly is complete. Retain sustained Source/Program/A-B and remaining functional/physical/soak gates; historical77d7/59b6 runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

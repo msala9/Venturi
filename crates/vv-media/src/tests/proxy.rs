@@ -187,17 +187,17 @@ fn delayed_proxy_fixture(name: &str) -> (PathBuf, PathBuf) {
 #[test]
 fn full_proxy_preserves_delayed_first_picture_indices_and_duration() {
     let (directory, source) = delayed_proxy_fixture("full");
+    let original = crate::probe_media(&source).unwrap();
     let output = directory.join("full.mp4");
     generate_proxy_at(&source, &output, ProxyQuality::Low, &[], 1, |_| true).unwrap();
     let mut decoder = Decoder::open_software_bounded(&output, 1).unwrap();
-    for expected in 0..8 {
+    for expected in 0..original.duration_frames {
         let (index, picture) = decoder.next_frame().unwrap().unwrap();
         assert_eq!(index, expected);
         let luma = 40 + (expected.max(2) - 2) as u8 * 20;
         assert!(picture.y[0].abs_diff(luma) <= 6);
     }
     assert!(decoder.next_frame().unwrap().is_none());
-    let original = crate::probe_media(&source).unwrap();
     let proxy = crate::probe_media(&output).unwrap();
     assert_eq!(proxy.duration_frames, original.duration_frames);
     assert_eq!(proxy.fps, original.fps);

@@ -142,6 +142,10 @@ pub fn generate_proxy_at_width(
     software_threads: usize,
     mut on_frame: impl FnMut(u64) -> bool,
 ) -> Result<PathBuf, crate::MediaError> {
+    let duration = u64::try_from(crate::probe_media(source_path)?.duration_frames)
+        .ok()
+        .filter(|duration| *duration > 0)
+        .ok_or_else(|| range_error("Source has no video frame range"))?;
     crate::probe::ensure_init();
 
     // Low: runs alongside the playback, whose decoders come first.
@@ -181,14 +185,20 @@ pub fn generate_proxy_at_width(
                 return Err(crate::MediaError::Cancelled);
             }
             // Preserve the source clock when its first picture starts after zero.
-            while i128::from(frames) <= i128::from(index) {
+            while frames < duration && i128::from(frames) <= i128::from(index) {
                 enc.write_frame(&frame)?;
                 frames += 1;
                 if !on_frame(frames) {
                     return Err(crate::MediaError::Cancelled);
                 }
             }
+            if frames == duration {
+                break;
+            }
             next = decoder.next_frame()?;
+        }
+        if frames != duration {
+            return Err(range_error("Source ended before its full frame range"));
         }
         enc.finish()
     })();

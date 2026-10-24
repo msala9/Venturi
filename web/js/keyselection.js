@@ -1,11 +1,11 @@
 import {curveInterpolation,createKeyEditorGuard} from "./curves.js";
 
 const identity=pick=>JSON.stringify([pick.target,pick.source_frame]);
-export function keySelectionOperation(clip,picks,action,linkZoom=false) {
+export function keySelectionOperation(clip,picks,action,linkZoom=false,replaceDestination=false) {
   if(!picks.length || picks.length>2048 || picks.some(pick=>!Number.isSafeInteger(pick.source_frame)) || new Set(picks.map(identity)).size!==picks.length)throw Error("Choose 1–2048 distinct native keys");
   if(action.kind==="move" && !Number.isSafeInteger(action.delta_source_frames))throw Error("Choose an integer source frame delta");
   if(!["move","delete","interpolation"].includes(action.kind))throw Error("Choose a native key selection action");
-  return {kind:"edit_key_selection",clip_id:clip,edit:{picks,link_zoom:Boolean(linkZoom),action}};
+  return {kind:"edit_key_selection",clip_id:clip,edit:{picks,link_zoom:Boolean(linkZoom),...(action.kind==='move' && replaceDestination?{replace_destination_keys:true}:{}),action}};
 }
 export function retainedCrossKeys(stored,picks) {
   const available=new Set(picks.map(identity));
@@ -24,9 +24,11 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   const total=rows.reduce((sum,row)=>sum+row.key_count,0);
   if(!total)return null;
   const stateKey=`all-keys:${scope}`;
+  let localReplacement=openState?.get(stateKey)?.replace_destination_keys===true;
+  const replacement=()=>keySelection?.replaceDestinationKeys?.() ?? localReplacement;
   function remember(value){
     if(!openState)return;
-    openState.delete(stateKey);openState.set(stateKey,value);
+    openState.delete(stateKey);openState.set(stateKey,{...value,...(replacement()?{replace_destination_keys:true}:{})});
     const keys=[...openState.keys()].filter(key=>key.startsWith("all-keys:"));
     for(const key of keys.slice(0,Math.max(0,keys.length-32)))openState.delete(key);
   }
@@ -37,7 +39,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   const stored=openState?.get(stateKey);let selectedIds=keySelection?keySelection.get().map(identity):stored?.ids || (Array.isArray(stored)?stored:stored?.after || []),shown=[],picks=[];form.append(list);
   const clear=document.createElement("button");clear.type="button";clear.textContent="Clear keys on all pages";form.append(clear);
   const status=document.createElement("p");status.className="muted";status.setAttribute("aria-live","polite");form.append(status);
-  const linkedLabel=document.createElement("label"),linked=document.createElement("input");linked.type="checkbox";linked.checked=Boolean(openState?.get("key-selection-zoom-link"));linked.disabled=disabled;linkedLabel.append(linked," Link Zoom X/Y key times and interpolation");form.append(linkedLabel);
+  const linkedLabel=document.createElement("label"),linked=document.createElement("input");linked.type="checkbox";linked.setAttribute('aria-label','Link Zoom X/Y key times and interpolation');linked.checked=Boolean(openState?.get("key-selection-zoom-link"));linked.disabled=disabled;linkedLabel.append(linked," Link Zoom X/Y key times and interpolation");form.append(linkedLabel);
   zoomLink?.register(linked);
   const deltaLabel=document.createElement("label"),delta=document.createElement("input");deltaLabel.className="field";deltaLabel.textContent="Cross-parameter frame delta";delta.type="number";delta.step=1;delta.required=true;delta.value="0";delta.disabled=disabled;deltaLabel.append(delta);form.append(deltaLabel);
   const move=document.createElement("button");move.formNoValidate=true;move.textContent="Move keys across parameters";form.append(move);
@@ -58,11 +60,13 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
     listen(button,'keydown',event=>{if([' ','Enter'].includes(event.key)){event.stopPropagation();if(event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)event.preventDefault();}});
     toolbar.append(button);presetButtons.push(button);
   }
+  const replaceLabel=document.createElement('label'),replace=document.createElement('input');replace.type='checkbox';replace.setAttribute('aria-label','Replace destination keys');replace.checked=replacement();replaceLabel.title='Selected-key time moves and Group delta can replace occupied destination keys. Undo restores replaced keys. Single-key setters are unchanged.';replaceLabel.append(replace,' Replace destination keys');toolbar.append(replaceLabel);
   const toolbarSlot=root.querySelector?.('[data-key-interpolation-toolbar]');
   if(toolbarSlot)toolbarSlot.append(toolbar);else if(root.insertBefore)root.insertBefore(toolbar,section);else root.append(toolbar);
   let waiting=false,disposed=false,outcomeUnknown=false,expectedInterpolationSelection=null;
   const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit:operation=>{
     if(expectedInterpolationSelection!==null && expectedInterpolationSelection!==JSON.stringify(selected()))throw Object.assign(Error('Key editor draft canceled'),{code:'KEY_EDIT_CANCELED'});
+    if(operation.edit.action.kind==='move' && Boolean(operation.edit.replace_destination_keys)!==replacement())throw Object.assign(Error('Key editor draft canceled'),{code:'KEY_EDIT_CANCELED'});
     return commit(operation);
   }});
   if(stored?.focus && !disabled && section.open){
@@ -70,7 +74,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
     queueMicrotask(()=>{if(!disposed && list.isConnected && document.activeElement===document.body)list.focus({preventScroll:true});});
   }
   const selected=()=>selectedIds.map(id=>{const [target,source_frame]=JSON.parse(id);return {target,source_frame};});
-  function update(){const ids=new Set(selectedIds),hidden=selectedIds.length-picks.filter(pick=>ids.has(identity(pick))).length;status.textContent=`${selectedIds.length} selected · ${hidden} selected outside this list · ${shown.length} shown of ${total} native keys${shown.length===2048?" · choose a parameter row to access more keys on this page":""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || disposed || waiting || !selectedIds.length;clear.disabled=disposed || waiting || !selectedIds.length;for(const button of presetButtons)button.disabled=disabled || disposed || outcomeUnknown || waiting || !selectedIds.length;}
+  function update(){const ids=new Set(selectedIds),hidden=selectedIds.length-picks.filter(pick=>ids.has(identity(pick))).length;status.textContent=`${selectedIds.length} selected · ${hidden} selected outside this list · ${shown.length} shown of ${total} native keys${shown.length===2048?" · choose a parameter row to access more keys on this page":""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || disposed || waiting || !selectedIds.length;clear.disabled=disposed || waiting || !selectedIds.length;replace.checked=replacement();replace.disabled=disabled || disposed || outcomeUnknown;for(const button of presetButtons)button.disabled=disabled || disposed || outcomeUnknown || waiting || !selectedIds.length;}
   function show(){
     shown=[];for(const row of filter.value===""?rows:[rows[Number(filter.value)]].filter(Boolean))for(const key of row.keys.slice(0,2048-shown.length))shown.push({target:row.target,source_frame:key.source_frame,name:row.name,timeline:key.timeline_frame});
     picks=shown.map(({target,source_frame})=>({target,source_frame}));const ids=new Set(selectedIds);list.replaceChildren(...shown.map((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=ids.has(identity(picks[index]));return option;}));update();
@@ -88,7 +92,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
     const before=selected();let after=null;
     if(preserveSelection && interpolationUnchanged(before,action.interpolation))return;
     try{
-      const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked);
+      const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked,replacement());
       expectedInterpolationSelection=preserveSelection?JSON.stringify(before):null;
       waiting=true;form.inert=true;update();
       after=action.kind==="delete"?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+(action.kind==="move"?action.delta_source_frames:0)}));
@@ -106,9 +110,11 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   listen(form,"submit",event=>{event.preventDefault();send({kind:"move",delta_source_frames:Number(delta.value)});});
   listen(interpolate,"click",()=>{try{if(mode.value==="Bezier" && !values.every(input=>input.reportValidity()))return;send({kind:"interpolation",interpolation:curveInterpolation(mode.value,values.map(input=>Number(input.value)))});}catch(error){notice(error.message);}});
   const unsubscribe=keySelection?.subscribe(()=>{selectedIds=keySelection.get().map(identity);show();});
+  const stopReplace=keySelection?.subscribeReplace?.(()=>{owner.cancel();update();});
+  listen(replace,'change',()=>{if(!owner.current()){update();return;}owner.cancel();if(keySelection?.setReplaceDestinationKeys)keySelection.setReplaceDestinationKeys(replace.checked);else{localReplacement=replace.checked;remember({ids:selectedIds});}update();});
   listen(remove,"click",()=>send({kind:"delete"}));show();
   return {hasSelectedKeys:()=>selectedIds.length>0,removeSelected:()=>send({kind:'delete'}),cancel(){if(!disposed)owner.cancel();},dispose(){if(disposed)return;
     if(document.activeElement===list)remember({ids:selectedIds,focus:true});
-    unsubscribe?.();owner.dispose();disposed=true;section.inert=true;toolbar.remove?.();for(const remove of listeners)remove();list.disabled=true;update();
+    unsubscribe?.();stopReplace?.();owner.dispose();disposed=true;section.inert=true;toolbar.remove?.();for(const remove of listeners)remove();list.disabled=true;update();
   }};
 }

@@ -122,6 +122,8 @@ pub struct GroupEdit {
     pub delete: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub link_zoom: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub replace_destination_keys: bool,
 }
 
 fn zoom_twin(target: &Target) -> Option<Target> {
@@ -540,7 +542,8 @@ fn group_commands(
                 "Keep every moved keyframe inside the visible source range",
             ));
         }
-        if !selected.contains(&destination)
+        if !edit.replace_destination_keys
+            && !selected.contains(&destination)
             && curve
                 .track
                 .keyframes()

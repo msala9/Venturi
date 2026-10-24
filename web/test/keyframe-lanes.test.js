@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {animatedKeyRows,laneBoxPicks,laneDragDelta,renderKeyframeLanes,KEYFRAME_ROW_HEIGHT} from '../js/keyframe-lanes.js';
+import {animatedKeyRows,laneBoxPicks,laneDragDelta,keyDestinationConflicts,renderKeyframeLanes,KEYFRAME_ROW_HEIGHT} from '../js/keyframe-lanes.js';
 import {createKeyPickSelection,pointerKeyOperation} from '../js/curves.js';
 
 const transform={kind:'transform',param:'PositionX'},text={kind:'text'},color={kind:'color'};
@@ -40,6 +40,13 @@ test('lane time drag clamps every selected native key, uses source frames rather
   assert.equal(laneDragDelta([{target:text,source_frame:3}],{source_start:0,source_end:7},fractional,110,109.5),-1);
 });
 
+test('destination hints count only occupied final targets, excluding moved origins and including existing linked Zoom twins',()=>{
+  const x={kind:'transform',param:'ZoomX'},y={kind:'transform',param:'ZoomY'},rows=[row('X',x,[10,20,30]),row('Y',y,[10,20,30]),row('Text',text,[20])],picks=[{target:x,source_frame:10},{target:x,source_frame:20}];
+  assert.equal(keyDestinationConflicts(rows,picks,10),1);assert.equal(keyDestinationConflicts(rows,picks,10,true),2);
+  assert.equal(keyDestinationConflicts(rows,picks,0,true),0);assert.equal(keyDestinationConflicts(rows,[{target:text,source_frame:20}],10),0);
+  assert.deepEqual(rows[0].keys.map(key=>key.source_frame),[10,20,30]);
+});
+
 class Element {
   constructor(tag,document){this.tagName=tag;this.ownerDocument=document;this.children=[];this.listeners=new Map();this.style={};this.attributes={};this.scrollTop=0;this.isConnected=true;this.captures=new Set();this.rect={left:0,top:0,width:300};this.calls=[];}
   append(...children){for(const child of children){this.children.push(child);child.parentNode=this;}}
@@ -62,10 +69,24 @@ function harness({editable=true,commit,value=detail(),selection=createKeyPickSel
   const window=new Element('window',document);window.devicePixelRatio=1;window.getComputedStyle=()=>({getPropertyValue:()=>''});window.ResizeObserver=class{observe(){}disconnect(){}};document.defaultView=window;
   const root=new Element('section',document),commands=[],notices=[],targets=[],seeks=[];let current=true,canEdit=editable;
   const control=renderKeyframeLanes(root,value,{keySelection:selection,getGeometry:()=>({...axis,plotWidth:178}),getRange:()=>range,canNavigate:()=>current,canEdit:()=>canEdit,
-    commit:payload=>{commands.push(payload);return commit?.(payload);},operation:(picks,delta,linked)=>pointerKeyOperation(value.clip_id,picks,delta,null,linked),activate:target=>targets.push(target),notice:message=>notices.push(message),seek:frame=>seeks.push(frame),windowRef:window});
+    commit:payload=>{commands.push(payload);return commit?.(payload);},operation:(picks,delta,linked,replace)=>pointerKeyOperation(value.clip_id,picks,delta,null,linked,replace),activate:target=>targets.push(target),notice:message=>notices.push(message),seek:frame=>seeks.push(frame),windowRef:window});
   const all=node=>[node,...node.children.flatMap(all)],nodes=all(root),canvas=nodes.find(node=>node.tagName==='canvas'),viewport=nodes.find(node=>node.className==='keyframe-lanes-viewport'),status=nodes.find(node=>node.attributes['aria-live']);
   return {root,document,window,control,commands,notices,targets,seeks,selection,canvas,viewport,status,value,setCurrent:value=>current=value,setEditable:value=>canEdit=value};
 }
+
+test('lane collision drafts retain safe default, send explicit replacement only on release and cancel when the choice changes',async()=>{
+  const h=harness(),original=structuredClone(h.value),pick={target:transform,source_frame:20};try{
+    for(const replace of [false,true]){
+      h.selection.set([pick]);h.selection.setReplaceDestinationKeys(replace);
+      h.canvas.emit('pointerdown',{clientX:110,clientY:11});h.canvas.emit('pointermove',{clientX:199,clientY:11});
+      assert.match(h.status.textContent,replace?/1 visible destination keys will be replaced/:/1 visible destination keys occupied/);
+      assert.equal(h.commands.length,replace?1:0);h.canvas.emit('pointerup',{clientX:199,clientY:11});await settle();
+      assert.equal(h.commands.at(-1).edit.replace_destination_keys,replace?true:undefined);assert.equal(h.commands.at(-1).edit.action.delta_source_frames,10);
+    }
+    h.selection.set([pick]);h.canvas.emit('pointerdown',{clientX:110,clientY:11});h.canvas.emit('pointermove',{clientX:199,clientY:11});h.selection.setReplaceDestinationKeys(false);h.canvas.emit('pointerup',{clientX:199,clientY:11});await settle();
+    assert.equal(h.commands.length,2);assert.deepEqual(h.selection.get(),[pick]);assert.equal(h.canvas.captures.size,0);assert.deepEqual(h.value,original);
+  }finally{h.control.dispose();}
+});
 
 test('actual mixed-row marquee followed by time drag sends one complete native operation on release',async()=>{
   const h=harness(),initial=structuredClone(detail());

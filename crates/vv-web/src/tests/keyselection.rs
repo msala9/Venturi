@@ -267,6 +267,7 @@ fn selection() -> Edit {
             },
         ],
         link_zoom: true,
+        replace_destination_keys: false,
         action: Action::Move {
             delta_source_frames: 2,
         },
@@ -500,6 +501,7 @@ fn every_advertised_scalar_target_and_mixed_values_share_one_native_move() {
         &Edit {
             picks,
             link_zoom: true,
+            replace_destination_keys: false,
             action: Action::Move {
                 delta_source_frames: 2,
             },
@@ -519,4 +521,325 @@ fn every_advertised_scalar_target_and_mixed_values_share_one_native_move() {
     }
     s.history.undo(&mut s.project);
     assert_eq!(serde_json::to_value(&s.project).unwrap(), before);
+}
+
+#[test]
+fn destination_replacement_is_explicit_and_matches_native_value_interpolation_undo_and_redo() {
+    use vv_core::Command;
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    let clip_id = clip.id;
+    clip.effects
+        .transform
+        .track_mut(TransformParam::ZoomX)
+        .upsert(
+            12,
+            1.75,
+            Interpolation::Bezier {
+                c1: [0.3, -0.2],
+                c2: [0.7, 1.2],
+            },
+        );
+    clip.effects
+        .transform
+        .track_mut(TransformParam::Opacity)
+        .upsert(12, 0.3, Interpolation::Hold);
+    let mut request = selection();
+    request.picks.truncate(1);
+    request.link_zoom = false;
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let generation = session.history.generation();
+    assert_eq!(
+        edit(&mut session, id, &raw, &request).unwrap_err().1,
+        "KEYFRAME_COLLISION"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    request.replace_destination_keys = true;
+    let mut expected = session.project.clone();
+    core::MoveKeyframes::new(
+        id,
+        0,
+        clip_id,
+        vec![(KeyframeTarget::TransformParam(TransformParam::ZoomX), 10)],
+        2,
+    )
+    .apply(&mut expected);
+    edit(&mut session, id, &raw, &request).unwrap();
+    let after = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(after, serde_json::to_value(expected).unwrap());
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        inspector::find(&session, id, &raw)
+            .unwrap()
+            .2
+            .effects
+            .transform
+            .track(TransformParam::ZoomX)
+            .keyframes(),
+        &[(12, 1.0, Interpolation::EaseIn)],
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    let clip_id = clip.id;
+    let track = clip.effects.transform.track_mut(TransformParam::ZoomX);
+    track.upsert(12, 1.25, Interpolation::Hold);
+    track.upsert(14, 1.75, Interpolation::EaseOut);
+    let mut request = selection();
+    request.picks.truncate(1);
+    request.picks.push(Pick {
+        target: request.picks[0].target.clone(),
+        source_frame: 12,
+    });
+    request.link_zoom = false;
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    assert_eq!(
+        edit(&mut session, id, &raw, &request).unwrap_err().1,
+        "KEYFRAME_COLLISION"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    request.replace_destination_keys = true;
+    let mut expected = session.project.clone();
+    core::MoveKeyframes::new(
+        id,
+        0,
+        clip_id,
+        vec![
+            (KeyframeTarget::TransformParam(TransformParam::ZoomX), 10),
+            (KeyframeTarget::TransformParam(TransformParam::ZoomX), 12),
+        ],
+        2,
+    )
+    .apply(&mut expected);
+    edit(&mut session, id, &raw, &request).unwrap();
+    let after = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(after, serde_json::to_value(expected).unwrap());
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        inspector::find(&session, id, &raw)
+            .unwrap()
+            .2
+            .effects
+            .transform
+            .track(TransformParam::ZoomX)
+            .keyframes(),
+        &[
+            (12, 1.0, Interpolation::EaseIn),
+            (14, 1.25, Interpolation::Hold)
+        ],
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+}
+
+#[test]
+fn destination_replacement_mixed_move_and_drag_match_native_zoom_twins_as_one_undo() {
+    use vv_core::Command;
+    for drag in [false, true] {
+        let (mut session, id, raw) = fixture();
+        let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+        let clip_id = clip.id;
+        for param in [
+            TransformParam::ZoomX,
+            TransformParam::ZoomY,
+            TransformParam::Opacity,
+        ] {
+            clip.effects
+                .transform
+                .track_mut(param)
+                .upsert(12, 0.5, Interpolation::EaseOut);
+        }
+        clip.effects
+            .transform
+            .track_mut(TransformParam::ZoomY)
+            .upsert(10, 0.75, Interpolation::Hold);
+        clip.effects
+            .color
+            .as_mut()
+            .unwrap()
+            .upsert(14, core::Rgba::WHITE, Interpolation::EaseOut);
+        clip.effects.title.as_mut().unwrap().content.upsert(
+            16,
+            "Destination text".into(),
+            Interpolation::Linear,
+        );
+        clip.effects.filters[0].direction.upsert(
+            18,
+            core::BlurDirection::Horizontal,
+            Interpolation::Linear,
+        );
+        let mut request = selection();
+        request.replace_destination_keys = true;
+        if drag {
+            request.action = Action::Drag {
+                delta_source_frames: 2,
+                grabbed: Grabbed {
+                    target: inspector::Target::Transform {
+                        param: TransformParam::ZoomX,
+                    },
+                    source_frame: 10,
+                    value: 1.5,
+                },
+            };
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let mut expected = session.project.clone();
+        core::MoveKeyframes::new(
+            id,
+            0,
+            clip_id,
+            vec![
+                (KeyframeTarget::TransformParam(TransformParam::ZoomX), 10),
+                (KeyframeTarget::TransformParam(TransformParam::ZoomY), 10),
+                (KeyframeTarget::TransformParam(TransformParam::Opacity), 10),
+                (KeyframeTarget::Color, 12),
+                (KeyframeTarget::Text, 14),
+                (
+                    KeyframeTarget::FilterDirection(core::FilterKind::GaussianBlur),
+                    16,
+                ),
+            ],
+            2,
+        )
+        .apply(&mut expected);
+        if drag {
+            for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+                core::UpsertKeyframe::new(
+                    id,
+                    0,
+                    clip_id,
+                    12,
+                    core::KeyframeValue::TransformParam(param, 1.5),
+                    Interpolation::EaseIn,
+                )
+                .apply(&mut expected);
+            }
+        }
+        edit(&mut session, id, &raw, &request).unwrap();
+        let after = serde_json::to_value(&session.project).unwrap();
+        assert_eq!(
+            after,
+            serde_json::to_value(expected).unwrap(),
+            "drag={drag}"
+        );
+        assert_eq!(session.history.position(), position + 1);
+        session.history.undo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        session.history.redo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+    }
+}
+
+#[test]
+fn destination_replacement_keeps_invalid_selections_atomic_and_zero_delta_keeps_redo() {
+    for case in 0..8 {
+        let (mut session, id, raw) = fixture();
+        let mut request = selection();
+        request.replace_destination_keys = true;
+        match case {
+            0 => session.project.timelines[id].tracks[0].locked = true,
+            1 => request.picks[3].source_frame += 1,
+            2 => request.picks.push(request.picks[0].clone()),
+            3 => {
+                request.action = Action::Move {
+                    delta_source_frames: i64::MAX,
+                }
+            }
+            4 => {
+                request.action = Action::Move {
+                    delta_source_frames: -20,
+                }
+            }
+            5 => {
+                request.picks[0].target = Target::Scalar(inspector::Target::FilterOffset {
+                    filter: core::FilterKind::GaussianBlur,
+                    axis: 2,
+                })
+            }
+            6 | 7 => {
+                request.action = Action::Drag {
+                    delta_source_frames: 2,
+                    grabbed: Grabbed {
+                        target: inspector::Target::Transform {
+                            param: TransformParam::ZoomX,
+                        },
+                        source_frame: if case == 6 { 10 } else { 11 },
+                        value: if case == 6 { f32::NAN } else { 1.5 },
+                    },
+                }
+            }
+            _ => unreachable!(),
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        assert!(
+            edit(&mut session, id, &raw, &request).is_err(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+    let (mut session, id, raw) = fixture();
+    let mut request = selection();
+    request.replace_destination_keys = true;
+    edit(&mut session, id, &raw, &request).unwrap();
+    let moved = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    request.action = Action::Move {
+        delta_source_frames: 0,
+    };
+    edit(&mut session, id, &raw, &request).unwrap();
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), moved);
+}
+
+#[test]
+fn destination_replacement_flag_is_strict_optional_and_preserves_legacy_command_bytes() {
+    let legacy = serde_json::to_value(selection()).unwrap();
+    assert!(legacy.get("replace_destination_keys").is_none());
+    let decoded: Edit = serde_json::from_value(legacy.clone()).unwrap();
+    assert!(!decoded.replace_destination_keys);
+    assert_eq!(serde_json::to_value(decoded).unwrap(), legacy);
+    for flag in [false, true] {
+        let mut value = legacy.clone();
+        value["replace_destination_keys"] = serde_json::json!(flag);
+        let operation = serde_json::json!({"kind":"edit_key_selection","clip_id":"1","edit":value});
+        let decoded: crate::commands::Operation = serde_json::from_value(operation).unwrap();
+        let serialized = serde_json::to_value(decoded).unwrap();
+        if !flag {
+            assert!(serialized["edit"].get("replace_destination_keys").is_none());
+        } else {
+            assert_eq!(serialized["edit"]["replace_destination_keys"], true);
+        }
+    }
+    for flag in [
+        serde_json::json!("true"),
+        serde_json::json!(1),
+        serde_json::Value::Null,
+        serde_json::json!([]),
+    ] {
+        let mut value = legacy.clone();
+        value["replace_destination_keys"] = flag;
+        assert!(serde_json::from_value::<Edit>(value).is_err());
+    }
 }

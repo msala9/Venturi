@@ -90,6 +90,7 @@ fn validate_move(
     picks: &[(KeyframeTarget, i64)],
     selected: &HashSet<(KeyframeTarget, i64)>,
     delta: i64,
+    replace_destination_keys: bool,
 ) -> Result<()> {
     let bounds =
         clip.source_frame_at(clip.timeline_start)..=clip.source_frame_at(clip.timeline_end() - 1);
@@ -99,7 +100,10 @@ fn validate_move(
             .filter(|next| bounds.contains(next))
             .ok_or_else(|| ApiError::invalid("Keep all keys inside the visible source range"))?;
         let frames = &rows.iter().find(|(row, _)| *row == target).unwrap().1;
-        if frames.contains(&next) && !selected.contains(&(target, next)) {
+        if !replace_destination_keys
+            && frames.contains(&next)
+            && !selected.contains(&(target, next))
+        {
             return Err(ApiError::conflict(
                 "KEYFRAME_COLLISION",
                 "An unselected key occupies a destination",
@@ -113,6 +117,8 @@ fn validate_move(
 pub struct Edit {
     pub picks: Vec<Pick>,
     pub link_zoom: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub replace_destination_keys: bool,
     pub action: Action,
 }
 
@@ -164,7 +170,14 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
         Action::Move {
             delta_source_frames,
         } => {
-            validate_move(clip, &rows, &picks, &selected, delta_source_frames)?;
+            validate_move(
+                clip,
+                &rows,
+                &picks,
+                &selected,
+                delta_source_frames,
+                edit.replace_destination_keys,
+            )?;
             if delta_source_frames != 0 {
                 session.apply(Box::new(core::MoveKeyframes::new(
                     id,
@@ -185,7 +198,14 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
             }) {
                 return Err(ApiError::invalid("The grabbed scalar key must be selected"));
             }
-            validate_move(clip, &rows, &picks, &selected, delta_source_frames)?;
+            validate_move(
+                clip,
+                &rows,
+                &picks,
+                &selected,
+                delta_source_frames,
+                edit.replace_destination_keys,
+            )?;
             let (old_value, interpolation) = curves::key_value(
                 session,
                 id,

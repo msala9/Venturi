@@ -81,7 +81,7 @@ test('five native interpolation presets act on shared mixed source picks without
   assert.deepEqual(h.buttons.map(button=>button.attributes['aria-label']),['Hold','Linear','EaseInOut','EaseIn','EaseOut'].map(mode=>`Set selected keys ${mode}`));
   assert.ok(h.buttons.every(button=>button.disabled));h.click(0);await h.flush();assert.deepEqual(h.commands,[]);
   const picks=[{target:h.x,source_frame:10},{target:h.text,source_frame:2400}];h.selection.set(picks);
-  h.all().find(node=>node.tag==='input' && node.type==='checkbox').checked=true;
+  h.all().find(node=>node.attributes['aria-label']==='Link Zoom X/Y key times and interpolation').checked=true;
   h.click(2);h.click(3);await h.flush();
   assert.deepEqual(h.commands,[{kind:'edit_key_selection',clip_id:'clip',edit:{picks,link_zoom:true,action:{kind:'interpolation',interpolation:'EaseInOut'}}}]);
   assert.deepEqual(h.selection.get(),picks);assert.ok(h.all().some(node=>node.attributes['aria-label']==='Cross-parameter interpolation'));assert.ok(h.all().some(node=>node.textContent==='Cross-parameter Bezier controls'));
@@ -90,7 +90,7 @@ test('five native interpolation presets act on shared mixed source picks without
 
 test('preset no-ops include linked Zoom twins without suppressing their native edits',async t=>{
   const h=presetHarness(t);h.selection.set([{target:h.x,source_frame:10}]);h.click(1);await h.flush();assert.deepEqual(h.commands,[]);
-  const linked=h.all().find(node=>node.tag==='input' && node.type==='checkbox');linked.checked=true;
+  const linked=h.all().find(node=>node.attributes['aria-label']==='Link Zoom X/Y key times and interpolation');linked.checked=true;
   h.click(1);await h.flush();assert.equal(h.commands.length,1,'The different native Zoom Y twin must also become Linear');
   h.detail.curves.tracks[1].keys[0].interpolation='Linear';h.click(1);await h.flush();assert.equal(h.commands.length,1);
   h.selection.set([{target:h.text,source_frame:20}]);h.click(0);await h.flush();assert.equal(h.commands.length,1);
@@ -117,4 +117,19 @@ test('preset guards cancel queued stale selections, recover after cancel and fen
 
 test('read-only presets refuse writes even through a synthetic default action',async t=>{
   const h=presetHarness(t,{disabled:true});h.selection.set([{target:h.text,source_frame:20}]);h.click(3);await h.flush();assert.deepEqual(h.commands,[]);assert.ok(h.buttons.every(button=>button.disabled));
+});
+
+test('destination replacement is an explicit shared move option, cancels queued changes and never changes interpolation or Delete payloads',async t=>{
+  const h=presetHarness(t),pick={target:h.text,source_frame:20};h.selection.set([pick]);
+  const option=h.all().find(node=>node.attributes['aria-label']==='Replace destination keys'),delta=h.all().find(node=>node.type==='number' && node.step===1),form=delta.parentElement.parentElement;
+  assert.equal(option.checked,false);delta.value='3';form.dispatchEvent(new Event('submit',{cancelable:true}));await h.flush();
+  assert.equal(h.commands[0].edit.replace_destination_keys,undefined);assert.deepEqual(h.commands[0].edit.action,{kind:'move',delta_source_frames:3});
+  h.selection.set([pick]);option.checked=true;option.dispatchEvent(new Event('change'));assert.equal(h.selection.replaceDestinationKeys(),true);
+  form.dispatchEvent(new Event('submit',{cancelable:true}));h.selection.setReplaceDestinationKeys(false);await h.flush();
+  assert.equal(h.commands.length,1);assert.deepEqual(h.selection.get(),[pick]);
+  option.checked=true;option.dispatchEvent(new Event('change'));form.dispatchEvent(new Event('submit',{cancelable:true}));await h.flush();
+  assert.equal(h.commands.length,2);assert.equal(h.commands[1].edit.replace_destination_keys,true);assert.deepEqual(h.commands[1].edit.picks,[pick]);
+  h.selection.set([pick]);h.click(4);await h.flush();assert.equal(h.commands.at(-1).edit.replace_destination_keys,undefined);
+  await h.control.removeSelected();assert.equal(h.commands.at(-1).edit.replace_destination_keys,undefined);
+  assert.equal(keySelectionOperation('c',[pick],{kind:'interpolation',interpolation:'Linear'},false,true).edit.replace_destination_keys,undefined);
 });

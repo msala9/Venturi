@@ -21,6 +21,15 @@ test('native pointer payload moves complete cross-parameter picks but carries on
   assert.throws(()=>pointerKeyOperation('clip',picks,1,{...grabbed,source_frame:99}));assert.throws(()=>pointerKeyOperation('clip',picks,1.5,grabbed));
 });
 
+test('replacement choice stays within its native editor scope and preserves scalar Group delta semantics',()=>{
+  const state=new Map(),selection=createKeyPickSelection(state,'epoch:tl:clip'),target={kind:'gain'},pick={target,source_frame:10};let canceled=0;
+  selection.set([pick]);selection.onGesture(()=>canceled++);assert.equal(selection.replaceDestinationKeys(),false);selection.setReplaceDestinationKeys(true);
+  assert.equal(canceled,1);assert.deepEqual(selection.get(),[pick]);assert.equal(createKeyPickSelection(state,'epoch:tl:clip').replaceDestinationKeys(),true);assert.equal(createKeyPickSelection(state,'other-epoch:tl:clip').replaceDestinationKeys(),false);
+  assert.deepEqual(curveGroupOperation('c',target,[10],2,.25,false,false,true),{kind:'edit_curve_keys',clip_id:'c',edit:{target,source_frames:[10],delta_source_frames:2,delta_value:.25,delete:false,replace_destination_keys:true}});
+  assert.equal(curveGroupOperation('c',target,[10],0,0,true,false,true).edit.replace_destination_keys,undefined);
+  const drag=pointerKeyOperation('c',[pick],2,{...pick,value:.75},false,true);assert.equal(drag.edit.replace_destination_keys,true);assert.equal(drag.edit.action.grabbed.value,.75);assert.deepEqual(selection.get(),[pick]);
+});
+
 test('native curve drag samples final release with relative time and absolute cursor value, rejecting changed peer selection or viewport',()=>{
   const events={},commands=[],resets=[];let stamp='original',left=0;
   const canvas={isConnected:true,addEventListener:(name,handler)=>events[name]=handler,focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left,top:0,width:100,height:100})};
@@ -207,6 +216,18 @@ function renderedCurveHarness(t,{disabled=false,readCurveViewport,presentation='
   const all=node=>[node,...node.children.flatMap(all)],find=label=>all(root).find(node=>node.attributes['aria-label']===label),graph=find(eventEditor?'Native RGBA text and direction key times':'Native keyframe curve. Select keys below for keyboard editing.');
   return {root,selection,commands,notices,state,control,target,detail,graph,window,document,all:()=>all(root),find,setAvailable:value=>available=value};
 }
+
+test('graph and scalar Group delta capture replacement intent, with no motion edits and no replay after an option change',async t=>{
+  const h=renderedCurveHarness(t),original=structuredClone(h.detail),pick={target:h.target,source_frame:0},g=curveGeometry(h.detail.curves.tracks[0],{source_start:0,source_end:20},400,190,[],110),point={clientX:g.x(0),clientY:g.y(0)},end={clientX:g.x(20),clientY:g.y(0)},flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
+  h.selection.set([pick]);h.selection.setReplaceDestinationKeys(true);h.graph.emit('pointerdown',point);h.graph.emit('pointermove',end);assert.deepEqual(h.commands,[]);
+  assert.ok(h.all().some(node=>node.textContent?.includes('1 visible destination keys will be replaced')));h.graph.emit('pointerup',end);await flush();
+  assert.equal(h.commands.length,1);assert.equal(h.commands[0].edit.replace_destination_keys,true);assert.equal(h.commands[0].edit.action.delta_source_frames,20);assert.deepEqual(h.commands[0].edit.picks,[pick]);
+  h.selection.set([pick]);h.graph.emit('pointerdown',point);h.graph.emit('pointermove',end);h.selection.setReplaceDestinationKeys(false);h.graph.emit('pointerup',end);await flush();assert.equal(h.commands.length,1);assert.deepEqual(h.selection.get(),[pick]);
+  const frame=h.all().find(node=>node.textContent==='Selected keys frame delta').children[0],value=h.all().find(node=>node.textContent==='Selected keys value delta').children[0],form=frame.parentElement.parentElement;
+  h.selection.setReplaceDestinationKeys(true);frame.value='2';value.value='.25';form.emit('submit');h.selection.setReplaceDestinationKeys(false);await flush();assert.equal(h.commands.length,1);assert.deepEqual(h.selection.get(),[pick]);
+  h.selection.setReplaceDestinationKeys(true);frame.value='2';value.value='.25';form.emit('submit');await flush();
+  assert.equal(h.commands.length,2);assert.equal(h.commands[1].kind,'edit_curve_keys');assert.equal(h.commands[1].edit.replace_destination_keys,true);assert.equal(h.commands[1].edit.delta_value,.25);assert.deepEqual(h.detail,original);
+});
 
 test('typed row activation blanks only scalar controls, keeps mixed deletion and restores manual scalar choice',async t=>{
   const h=renderedCurveHarness(t);h.selection.set([{target:h.target,source_frame:0},{target:{kind:'text'},source_frame:10}]);h.selection.activate({kind:'text'});

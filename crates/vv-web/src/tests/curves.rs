@@ -215,6 +215,7 @@ fn group() -> GroupEdit {
         delta_value: 5.0,
         delete: false,
         link_zoom: false,
+        replace_destination_keys: false,
     }
 }
 
@@ -587,6 +588,190 @@ fn group_destinations_can_overlap_selected_origins_but_never_overwrite_unselecte
         edit_group(&mut session, id, &raw, &group()).unwrap_err().1,
         "TRACK_LOCKED"
     );
+}
+
+#[test]
+fn group_destination_replacement_with_value_delta_and_zoom_twins_matches_native_undo_redo() {
+    use vv_core::Command;
+    let (mut session, id, raw) = zoom_fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    let clip_id = clip.id;
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        clip.effects.transform.track_mut(param).upsert(
+            27,
+            4.0,
+            Interpolation::Bezier {
+                c1: [0.2, -0.1],
+                c2: [0.8, 1.2],
+            },
+        );
+        clip.effects
+            .transform
+            .track_mut(param)
+            .upsert(42, 3.5, Interpolation::EaseOut);
+    }
+    let mut request = GroupEdit {
+        target: Target::Transform {
+            param: TransformParam::ZoomX,
+        },
+        delta_value: 0.5,
+        link_zoom: true,
+        ..group()
+    };
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let generation = session.history.generation();
+    assert_eq!(
+        edit_group(&mut session, id, &raw, &request).unwrap_err().1,
+        "KEYFRAME_COLLISION"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    request.replace_destination_keys = true;
+    let mut expected = session.project.clone();
+    core::MoveKeyframes::new(
+        id,
+        0,
+        clip_id,
+        vec![
+            (
+                core::KeyframeTarget::TransformParam(TransformParam::ZoomX),
+                25,
+            ),
+            (
+                core::KeyframeTarget::TransformParam(TransformParam::ZoomX),
+                40,
+            ),
+            (
+                core::KeyframeTarget::TransformParam(TransformParam::ZoomY),
+                25,
+            ),
+            (
+                core::KeyframeTarget::TransformParam(TransformParam::ZoomY),
+                40,
+            ),
+        ],
+        2,
+    )
+    .apply(&mut expected);
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        for (frame, value, interpolation) in [
+            (27, 1.5, Interpolation::EaseIn),
+            (42, 2.5, Interpolation::Hold),
+        ] {
+            core::UpsertKeyframe::new(
+                id,
+                0,
+                clip_id,
+                frame,
+                core::KeyframeValue::TransformParam(param, value),
+                interpolation,
+            )
+            .apply(&mut expected);
+        }
+    }
+    edit_group(&mut session, id, &raw, &request).unwrap();
+    let after = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(after, serde_json::to_value(expected).unwrap());
+    assert_eq!(session.history.position(), position + 1);
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        assert_eq!(
+            session.project.timelines[id].tracks[0].clips[0]
+                .effects
+                .transform
+                .track(param)
+                .keyframes(),
+            &[
+                (27, 1.5, Interpolation::EaseIn),
+                (42, 2.5, Interpolation::Hold)
+            ]
+        );
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+}
+
+#[test]
+fn group_destination_replacement_keeps_locks_missing_keys_and_invalid_values_atomic() {
+    for case in 0..7 {
+        let (mut session, id, raw) = zoom_fixture();
+        let mut request = GroupEdit {
+            target: Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            delta_value: 0.5,
+            link_zoom: true,
+            replace_destination_keys: true,
+            ..group()
+        };
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track_mut(TransformParam::ZoomY)
+            .upsert(27, 4.0, Interpolation::Hold);
+        match case {
+            0 => session.project.timelines[id].tracks[0].locked = true,
+            1 => request.source_frames = vec![25, 41],
+            2 => request.source_frames = vec![25, 25],
+            3 => request.delta_source_frames = i64::MAX,
+            4 => request.delta_source_frames = -100,
+            5 => request.delta_value = f32::NAN,
+            6 => {
+                request.delta_value = 0.0;
+                session.project.timelines[id].tracks[0].clips[0]
+                    .effects
+                    .transform
+                    .track_mut(TransformParam::ZoomY)
+                    .upsert(40, -1.0, Interpolation::Hold);
+            }
+            _ => unreachable!(),
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        assert!(
+            edit_group(&mut session, id, &raw, &request).is_err(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
+#[test]
+fn group_destination_replacement_is_strict_optional_and_keeps_legacy_wire_bytes() {
+    let legacy = serde_json::to_value(group()).unwrap();
+    assert!(legacy.get("replace_destination_keys").is_none());
+    let decoded: GroupEdit = serde_json::from_value(legacy.clone()).unwrap();
+    assert!(!decoded.replace_destination_keys);
+    assert_eq!(serde_json::to_value(decoded).unwrap(), legacy);
+    let mut explicit_false = legacy.clone();
+    explicit_false["replace_destination_keys"] = json!(false);
+    assert_eq!(
+        serde_json::to_value(serde_json::from_value::<GroupEdit>(explicit_false).unwrap()).unwrap(),
+        legacy
+    );
+    let mut replacement = group();
+    replacement.replace_destination_keys = true;
+    let operation = crate::commands::Operation::EditCurveKeys {
+        clip_id: "1".into(),
+        edit: replacement,
+    };
+    let encoded = serde_json::to_value(&operation).unwrap();
+    assert_eq!(encoded["edit"]["replace_destination_keys"], true);
+    assert!(serde_json::from_value::<crate::commands::Operation>(encoded).is_ok());
+    for invalid in [json!("true"), json!(1), Value::Null, json!([])] {
+        let mut value = legacy.clone();
+        value["replace_destination_keys"] = invalid;
+        assert!(serde_json::from_value::<GroupEdit>(value).is_err());
+    }
 }
 
 #[test]

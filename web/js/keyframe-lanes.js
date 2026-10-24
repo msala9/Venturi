@@ -43,6 +43,21 @@ export function laneDragDelta(picks,range,axis,x0,x){
   return low>high?0:Math.max(low,Math.min(high,frame(x)-frame(x0)));
 }
 
+export function keyDestinationConflicts(rows,picks,delta,linked=false){
+  if(!delta)return 0;
+  const frames=new Map(rows.map(row=>[targetId(row.target),new Set(row.keys.map(key=>key.source_frame))])),selected=new Map(picks.map(pick=>[pickId(pick),pick]));
+  if(linked)for(const pick of picks)if(pick.target.kind==='transform' && ['ZoomX','ZoomY'].includes(pick.target.param)){
+    const target={...pick.target,param:pick.target.param==='ZoomX'?'ZoomY':'ZoomX'};
+    if(frames.get(targetId(target))?.has(pick.source_frame)){const twin={target,source_frame:pick.source_frame};selected.set(pickId(twin),twin);}
+  }
+  const collisions=new Set();
+  for(const pick of selected.values()){
+    const next={target:pick.target,source_frame:pick.source_frame+delta};
+    if(frames.get(targetId(pick.target))?.has(next.source_frame) && !selected.has(pickId(next)))collisions.add(pickId(next));
+  }
+  return collisions.size;
+}
+
 export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRange,canNavigate=()=>true,canEdit=()=>false,commit,operation,notice=()=>{},activate=()=>{},linkZoom=()=>false,seek,onViewportWheel,windowRef=root.ownerDocument?.defaultView ?? window}={}){
   const rows=animatedKeyRows(detail);
   if(!rows.length || !keySelection)return null;
@@ -59,7 +74,8 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
   const modal=()=>Boolean(documentRef.querySelector?.('dialog[open]'));
   const available=()=>!disposed && !pending && root.isConnected!==false && canvas.isConnected!==false && !documentRef.hidden && !modal() && canNavigate();
   const selection=()=>keySelection.get();
-  const stamp=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([rect.left,rect.top,rect.width,rect.height,viewport.scrollTop || 0,getRange(),selection()]);};
+  const replacement=()=>keySelection.replaceDestinationKeys?.() ?? false;
+  const stamp=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([rect.left,rect.top,rect.width,rect.height,viewport.scrollTop || 0,getRange(),selection(),replacement()]);};
   const point=event=>{const rect=canvas.getBoundingClientRect();return {x:event.clientX-rect.left,y:event.clientY-rect.top};};
   const release=id=>{try{if(canvas.hasPointerCapture?.(id))canvas.releasePointerCapture(id);}catch{}};
   function cancel(){const old=gesture;gesture=null;if(old)release(old.id);draw();}
@@ -91,7 +107,8 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
     if(gesture?.kind==='box' && gesture.moved){const b=gesture.box;ctx.strokeStyle=color('--primary','#ff673d');ctx.strokeRect(Math.min(b.x0,b.x1),Math.min(b.y0,b.y1),Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0));}
     ctx.restore();
     const page=detail.key_page,shown=rows.reduce((sum,row)=>sum+row.keys.length,0),total=rows.reduce((sum,row)=>sum+row.key_count,0);
-    status.textContent=gesture?.kind==='time' && gesture.moved?`Move ${selection().length} keys · ${gesture.delta} source frames · release to apply`:`${rows.length} animated parameters · ${selection().length} selected keys${shown<total?` · ${shown} of ${total} keys shown${page?`, page ${page.index+1}/${page.total_pages}`:''}; use Key pages for the rest`:''}`;
+    const collisions=gesture?.kind==='time'?keyDestinationConflicts(rows,gesture.picks,gesture.delta,linkZoom()):0;
+    status.textContent=gesture?.kind==='time' && gesture.moved?`Move ${selection().length} keys · ${gesture.delta} source frames${collisions?` · ${collisions} visible destination keys ${replacement()?'will be replaced':'occupied · replacement off'}`:''} · release to apply`:`${rows.length} animated parameters · ${selection().length} selected keys${shown<total?` · ${shown} of ${total} keys shown${page?`, page ${page.index+1}/${page.total_pages}`:''}; use Key pages for the rest`:''}`;
   }
   function hit(position){
     const index=Math.floor((position.y+(viewport.scrollTop || 0))/KEYFRAME_ROW_HEIGHT),row=rows[index];if(!row)return null;
@@ -108,7 +125,7 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
   async function apply(picks,delta,deleting=false){
     if(!available() || !canEdit() || !picks.length || !deleting && !delta)return;
     const before=selection(),after=deleting?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+delta}));
-    let payload;try{payload=operation(picks,delta,linkZoom());if(deleting)payload.edit.action={kind:'delete'};}catch(error){notice(error.message);return;}
+    let payload;try{payload=operation(picks,delta,linkZoom(),!deleting && replacement());if(deleting)payload.edit.action={kind:'delete'};}catch(error){notice(error.message);return;}
     pending=true;keySelection.set(after,{focus:true});
     try{await commit(payload);}catch(error){if(JSON.stringify(selection())===JSON.stringify(after))keySelection.set(before,{focus:true});if(!disposed && root.isConnected!==false)notice(error.message);}finally{pending=false;draw();}
   }

@@ -1,5 +1,26 @@
 # Checks reserved for final acceptance
 
+## Mixer continuity and reachable tool headers delivered - 2026-10-24
+
+Current runtime source `3605c17` on halo1/8855 retains Mixer drafts and
+subscriptions across selection/cursor changes. Own insert receipts and
+failures still refresh/remap once; read-only native response reads remain.
+Actual Chrome retains an unapplied EQ draft through Control+A and real
+close/reopen, with native state/Saved/Recovery/NAS unchanged. See
+`evidence/f4-mixer-reuse-workflow.json` (source6ee22d4,78 client cases).
+Persisted tool headers previously restored under the application menu,
+intercepting Close clicks. Curves/Mixer/Color now clamp below the actual
+workspace toolbar during restore/move/resize; actual pointer Close/reopen
+passes. See `evidence/f4-tool-window-inset-workflow.json` (94 client cases,
+incremental halo1 build). No memory/OOM events or Saved/Recovery changes.
+The uncontrolled single537.30ms software input sample does not qualify
+the response target. No FPS/physical/OS/held/fullscreen/long/M7 acceptance
+is inferred. Those checks remain reserved in FINAL_CHECKS.md while
+independent implementation continues. Ledger stays62 done/28 partial/2
+excluded. R10 is an immutable older development archive bound separately
+to source229aabd/docsc46252b; it does not contain these newer fixes.
+
+
 ## Current immutable R10 development delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8e190ba8189f-r10-f1858d8a6e20.tar`.

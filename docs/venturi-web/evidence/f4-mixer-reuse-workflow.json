@@ -1,0 +1,648 @@
+{
+  "schema": "venturi-mixer-reuse-workflow-v1",
+  "date": "2026-10-24",
+  "source_commit": "6ee22d4354877925ed948c323aa0dbab6ea58ed6",
+  "source_manifest_count": 621,
+  "source_manifest_sha256": "9eb174e54791ab8ecf58f41c9d73bb734bccb3e09b87d7e7eedd3f154b1a0575",
+  "source_hashes": {
+    "web/js/main.js": "709968b3a31c5649a9334d28da8453620c4b9e39a9c2bc275385c7c97f8e0a55",
+    "web/js/mixer.js": "5b2425caaae2ff976559542deb3084bfcdad0223f636393c660fee1546f84d44",
+    "web/js/tool-panels.js": "7f96f8c143b73d2712ca3e310fe6b4b3e8a4d0036ac52f6edb5a898d81aae04b",
+    "web/test/mixer.test.js": "9103f6b56ed965f6de03ca14d716ec17ea9d9774ca6f11bd043ffc8cb6e05d64",
+    "web/test/tool-panels.test.js": "4112e99ca447b1a7a248662df1dd0b07c48babea4a440d40d0b6978f0bd8fc34"
+  },
+  "implementation": {
+    "identity": "Project epoch, generation, timeline ID/revision, writable and audio catalog; missing context/disconnected content rebuilds. Selection, cursor and layout alone retain the mounted Mixer DOM, drafts and subscriptions.",
+    "invalidation": "Own insert receipts, duplicate/no-op receipts and known failures invalidate once so pending owner remaps cannot leak into later edits.",
+    "read_only": "Separate current/visible read guard retains native EQ/compressor response queries in read-only sessions; write guards remain unchanged.",
+    "scheduling": "No new timer, RAF or lazy mounting. This removes redundant synchronous selection-driven remounts."
+  },
+  "qualification": {
+    "client_counts": {
+      "tests": 78,
+      "pass": 78,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "steps": [
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/main.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/tool-panels.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/mixer.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-3",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/mixer.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/syntax-3.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-4",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/tool-panels.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/syntax-4.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "--test-reporter=tap",
+          "web/test/tool-panels.test.js",
+          "web/test/mixer.test.js",
+          "web/test/mixer-controls.test.js",
+          "web/test/mixer-inserts.test.js",
+          "web/test/audio-presets.test.js",
+          "web/test/ui.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/focused-client.log",
+        "log_bytes": 18841,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "-j",
+          "1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.599,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.mixer-reuse-r2-fd49b48f1fde42a1857bde0b381eb973"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.753,
+        "log": "/home/halo/.cache/venturi-build/mixer-reuse-r2/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "memory_peak_bytes": 1482919936,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "failed_r1": "New test fixture syntax failure before build; retained honestly in the private receipt. R2 repairs the two literals and reruns all six affected suites.",
+    "native_input_manifest_count": 399,
+    "native_input_manifest_sha256": "84e6b8732b287ed2840f65a932b3df1bd09aa01273f49e313ca856306b474d1d",
+    "reuse_workspace": {
+      "observation": "halo1-workspace-performance-r1-observed.json",
+      "source_commit": "f91792d7be7afa99fb51e5771e83eb42d7b70daf",
+      "native_counts": {
+        "embedded_assets": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "steps": [
+        {
+          "label": "native-embedded-assets",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--bin",
+            "vv-web",
+            "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime",
+            "--",
+            "--exact",
+            "--test-threads=1"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 107.65,
+          "log": "/home/halo/.cache/venturi-build/workspace-performance-r1/native-embedded-assets.log",
+          "log_bytes": 466,
+          "failure": null
+        },
+        {
+          "label": "web-clippy",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "clippy",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--all-targets",
+            "--no-deps",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 13.27,
+          "log": "/home/halo/.cache/venturi-build/workspace-performance-r1/web-clippy.log",
+          "log_bytes": 153,
+          "failure": null
+        }
+      ],
+      "native_input_manifest_count": 399,
+      "native_input_manifest_sha256": "84e6b8732b287ed2840f65a932b3df1bd09aa01273f49e313ca856306b474d1d",
+      "scope": "R1 embedded-assets1 and fresh all-targets Clippy retained only by complete identical Rust/Cargo/.cargo/native-asset Git blob manifest with SHA256 manifest binding. No native/Clippy rerun; prior92 client cases are not claimed unchanged."
+    },
+    "reuse_observability": {
+      "observation": "halo1-workspace-observability-r2-observed.json",
+      "source_commit": "229aabd5a7e96d1c8a5097405470da9125e1a949",
+      "client_counts": {
+        "tests": 110,
+        "pass": 110,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "protected_source_hashes": {
+        "web/js/api.js": "67e3dd9e70eb1a72114ff8b9523d27c46dfc46252a3eadac9600aff145be959f",
+        "web/js/workspace-performance.js": "0f2da6d936386b349608d7cd9ac1aaf7f7b2601d820e93891ccb52fd6e21c4e0",
+        "web/test/api.test.js": "8e43ea8d037c5c3e305422d64aeed787b65aa5d6d8d7c61567f75546e5b69755",
+        "web/test/workspace-performance.test.js": "23a352ff818ae8125831d969ac1b305bd05c97cf5610a1d5741d915d99fdc192",
+        "web/test/ui.test.js": "74d7dc1ccdb673685dd6b4cf5171ad97c7c4b4ee4a9e67a2a644c57c7de6a205",
+        "web/test/source-assets.test.js": "e33a8cf28538e8b53028c905d17dac5f85e37b1390388dd436b581f4b789c9b8",
+        "web/test/timeline-waveforms.test.js": "6e3c9905e232feeae440d02b5a063f707d67103b41b41649ddf6f315bc31913b"
+      },
+      "steps": [
+        {
+          "label": "syntax-0",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/api.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.252,
+          "log": "/home/halo/.cache/venturi-build/workspace-observability-r2/syntax-0.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-2",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/workspace-performance.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/workspace-observability-r2/syntax-2.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "focused-client",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--test",
+            "--test-concurrency=1",
+            "--test-reporter=tap",
+            "web/test/api.test.js",
+            "web/test/workspace-performance.test.js",
+            "web/test/ui.test.js",
+            "web/test/source-assets.test.js",
+            "web/test/timeline-waveforms.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.502,
+          "log": "/home/halo/.cache/venturi-build/workspace-observability-r2/focused-client.log",
+          "log_bytes": 23492,
+          "failure": null
+        }
+      ],
+      "scope": "Historical110 observability cases retained for exact unchanged API/workspace modules and all five test files; main wiring changes and is tested by this Mixer gate. No claim that the complete R2 five-file delta is unchanged."
+    },
+    "reuse_native": {
+      "observation": "halo1-source-zero-r4-observed.json",
+      "source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+      "native_counts": {
+        "proxy::tests": {
+          "passed": 13,
+          "failed": 0,
+          "ignored": 0
+        },
+        "browser_proxy::tests": {
+          "passed": 11,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "source_hashes": {
+        "crates/vv-media/src/proxy.rs": "936b0b24f6fe5b9dd1cc6c36575bf7ba7cff1b57f371262ad3669b98ab5ed1c4",
+        "crates/vv-media/src/tests/proxy.rs": "b1a9afe9122b9b012925014b63644fe043a040de1888ba254615a4b0bd331038"
+      },
+      "steps": [
+        {
+          "label": "native-proxy",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-media",
+            "--lib",
+            "proxy::tests",
+            "--",
+            "--skip",
+            "browser_proxy::tests",
+            "--test-threads=1"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 7.261,
+          "log": "/home/halo/.cache/venturi-build/source-zero-r4/native-proxy.log",
+          "log_bytes": 1607,
+          "failure": null
+        },
+        {
+          "label": "native-browser-proxy",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-media",
+            "--lib",
+            "browser_proxy::tests",
+            "--",
+            "--test-threads=1"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.502,
+          "log": "/home/halo/.cache/venturi-build/source-zero-r4/native-browser-proxy.log",
+          "log_bytes": 1523,
+          "failure": null
+        }
+      ],
+      "scope": "Native13proxy/11browser retained by exact unchanged module/test hashes; the five-file JS delta is fenced across621 inputs. Native and Clippy are not rerun."
+    },
+    "reuse_playback": {
+      "observation": "halo1-playback-start-r1-observed.json",
+      "source_commit": "0667653e905dbb414828abfce52a69990c18cb4e",
+      "client_counts": {
+        "tests": 277,
+        "pass": 277,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "changed_source_hashes": {
+        "web/js/program-range.js": "7f71d371e5e3a100846c8f818ab3bf700f95c27f00a5849a250905598e519b79",
+        "web/js/review.js": "b8832c128f9dc2fe62d34dcaea5d4f15e8dec3d57e255a2a6683b6506a927a7a",
+        "web/js/source.js": "6230e5ff1a1eb9cf339934d7d2dfa4c0a7637c740f4952c358e8ce0d05abacfb",
+        "web/test/program-range.test.js": "f5db4ce656700aacefec2d6e2f1778a8c6778e979f3b798b81c79b58512c2ff4",
+        "web/test/program.test.js": "2d113fdfc47a1a3fee96082fde804719fd960900159dbd351ce738e94888de91",
+        "web/test/review.test.js": "eb40227669772849a39578a7026b26f0736133e055e10d7d4f11341ebde9c67f",
+        "web/test/source-windows.test.js": "a1409d184124ec4ad2f5a65c35b49229c7c0efa2e5731b446470c8efbb710ced",
+        "web/test/source.test.js": "51eba3e763f613fafe80a10c71491591a7308993e5a3c7c1b05f1feccf736297"
+      },
+      "protected_source_hashes": {
+        "web/js/program-range.js": "7f71d371e5e3a100846c8f818ab3bf700f95c27f00a5849a250905598e519b79",
+        "web/js/review.js": "b8832c128f9dc2fe62d34dcaea5d4f15e8dec3d57e255a2a6683b6506a927a7a",
+        "web/js/source.js": "6230e5ff1a1eb9cf339934d7d2dfa4c0a7637c740f4952c358e8ce0d05abacfb",
+        "web/test/program-range.test.js": "f5db4ce656700aacefec2d6e2f1778a8c6778e979f3b798b81c79b58512c2ff4",
+        "web/test/program-seek.test.js": "ed3ff964d4f92b100beb16990ff13bbdbf55a922ac3634915146a684784e78bc",
+        "web/test/program.test.js": "2d113fdfc47a1a3fee96082fde804719fd960900159dbd351ce738e94888de91",
+        "web/test/review.test.js": "eb40227669772849a39578a7026b26f0736133e055e10d7d4f11341ebde9c67f",
+        "web/test/source-seek.test.js": "a043c7cc6d401840a573a026d7a241a78eecc904376bc26b53f302d5ea766ae1",
+        "web/test/source-windows.test.js": "a1409d184124ec4ad2f5a65c35b49229c7c0efa2e5731b446470c8efbb710ced",
+        "web/test/source.test.js": "51eba3e763f613fafe80a10c71491591a7308993e5a3c7c1b05f1feccf736297"
+      },
+      "steps": [
+        {
+          "label": "syntax-0",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/program-range.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-0.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-1",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/review.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.252,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-1.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-2",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/js/source.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-2.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-3",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/program-range.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-3.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-4",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/program.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-4.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-5",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/review.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-5.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-6",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/source-windows.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-6.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "syntax-7",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--check",
+            "web/test/source.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/syntax-7.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "focused-client",
+          "args": [
+            "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+            "--test",
+            "--test-concurrency=1",
+            "--test-reporter=tap",
+            "web/test/program-range.test.js",
+            "web/test/program.test.js",
+            "web/test/program-seek.test.js",
+            "web/test/source.test.js",
+            "web/test/source-windows.test.js",
+            "web/test/source-seek.test.js",
+            "web/test/review.test.js"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.752,
+          "log": "/home/halo/.cache/venturi-build/playback-start-r1/focused-client.log",
+          "log_bytes": 61659,
+          "failure": null
+        }
+      ],
+      "scope": "Historical277 client results retained only for their exact unchanged modules and all seven test files; not counted as new workspace diagnostics tests."
+    }
+  },
+  "runtime": {
+    "unit": "venturi-web-halo1-mixer-reuse.service",
+    "pid": "553267",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-d60555e55081",
+    "sha256": "d60555e5508108307572818a68f6dead09d661c4a5d9c98ec211cc4500f8d03b",
+    "bytes": 80398064,
+    "port": 8855
+  },
+  "chrome": {
+    "browser": "Existing Windows Chrome tab2032848735",
+    "project": "Venturi_Chrome_Effects_V1.vvproj",
+    "draft": "Unapplied A1 EQ band1 Hz80 to81; Canvas Control+A retains81 and open exact-values section. Real Close Mixer via Enter yields hidden=true; toolbar reopen retains81/open section. Field restored80 without Apply, Mixer closed and original Saved Keyframe project reopened.",
+    "toolbar_caveat": "Toolbar focuses/opens and does not toggle; earlier toolbar clicks are not counted as a close/reopen.",
+    "new_defect": "Persisted Mixer y8 places Close Mixer under HEADER.app-menubar. Pointer hit interception is confirmed; workspace inset correction is a separate subsequent source block.",
+    "input_sample": {
+      "count": 1,
+      "p50_ms": 537.3,
+      "p95_ms": 537.3,
+      "max_ms": 537.3,
+      "draw_count": 12,
+      "draw_p95_ms": 3.2,
+      "rpc_count": 37,
+      "rpc_success": 37
+    },
+    "interpretation": "Single unpaired uncontrolled selection timing is not an improvement comparison or one-frame acceptance.",
+    "screenshot": "Capture timed out; no screenshot artifact claimed."
+  },
+  "preservation": {
+    "all16_saved_exact": true,
+    "saved_hashes": {
+      "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+      "Venturi_Chrome_Input_V1.vvproj": "1828c9a11b802f988ec4c5c2213bfb56004307cf45756dc2d8d6207fff2544bb",
+      "Venturi_Chrome_Effects_V1.vvproj": "8ce68d3c6fcb0c271afa4d966a559ad2448d51964beb0369786e097b1bd5e2de",
+      "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+      "Venturi_Seek_Playback_V1.vvproj": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7",
+      "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+      "Venturi_Keyframe_Replacement_V1.vvproj": "bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1",
+      "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+      "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+      "Venturi_Dense500_Chrome_V1.vvproj": "c6632fe53c7379d96df3c996d2664697d8fa11e45ede95121ab077e067cbd3f6",
+      "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+      "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+      "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+      "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+      "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+      "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+    },
+    "original_native_session_exact_except_restart_epoch": true,
+    "effects_native_session_exact_during_draft": true,
+    "recovery_exact": true,
+    "owned_nas_versions_exact": true,
+    "catalogs_exact_except_restart_epoch": true,
+    "foreign_pids": 40,
+    "foreign_sessions": 39,
+    "foreign_pid_changes": {},
+    "foreign_session_changes": {},
+    "final_view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 621,
+        "2": 199
+      }
+    },
+    "runtime_memory_peak_bytes": 232812544
+  },
+  "private_receipts": {
+    "halo1-mixer-reuse-r1-observed.json": {
+      "bytes": 21123,
+      "sha256": "685225614a1011a2b193109e2cfd9c45bb00e5de4b2754e28f4f311e1ae9ee7a"
+    },
+    "halo1-mixer-reuse-r2-observed.json": {
+      "bytes": 26526,
+      "sha256": "359ac5bc808f4b36fb5f514f71cdc6bca9d92515810127fcbb778267f965de44"
+    },
+    "halo1-mixer-reuse-r2-deployed.json": {
+      "bytes": 179625,
+      "sha256": "ae2c536ae511ee002b28e37e3983d3e77d62fb4d14ccfecf4fee0a43a233a804"
+    },
+    "halo1-final-gui-mixer_reuse_before_r2.json": {
+      "bytes": 87959,
+      "sha256": "c957a7f281d0dddf8204ff03e5ff2affc3ea30cec2069ecc914b9bcb4a349dad"
+    },
+    "halo1-final-gui-mixer_reuse_effects_before.json": {
+      "bytes": 91377,
+      "sha256": "c79b875cafb3dfccecbab9efb3aecad7f45fe2e425c5220a10c9838ddf150be0"
+    },
+    "halo1-final-gui-mixer_reuse_effects_draft.json": {
+      "bytes": 91377,
+      "sha256": "dbfbe7b77afb1c0bed401f1e6f5951cca89958830a0f1b8023ebe058acafe7d3"
+    },
+    "halo1-final-gui-mixer_reuse_after.json": {
+      "bytes": 87444,
+      "sha256": "038398f8c5fffdac9b95cd4eada5e8648fa212f41bc628efa27dc6a302699124"
+    }
+  },
+  "limitations": [
+    "No latency/FPS, physical device, OS scaling, held-input, native fullscreen, long-playback or M7 criterion promoted.",
+    "R10 archive remains immutable and separately bound to older source229aabd; no new package claimed."
+  ]
+}

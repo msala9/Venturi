@@ -61,6 +61,63 @@ test('Inspector scrub reverses immediately from either native bound and returnin
 });
 
 const settleInspector=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
+
+function lockedScrubHarness({unsupported=false,legacy=false}={}){
+  const surface=()=>({events:new Map(),addEventListener(key,handler){const list=this.events.get(key)||[];list.push(handler);this.events.set(key,list);},removeEventListener(key,handler){this.events.set(key,(this.events.get(key)||[]).filter(value=>value!==handler));},emit(key,patch={}){const event={button:0,pointerId:1,buttons:1,clientX:3,movementX:0,preventDefault(){},stopPropagation(){},...patch};for(const handler of [...(this.events.get(key)||[])])handler(event);},count(){return [...this.events.values()].reduce((sum,list)=>sum+list.length,0);}});
+  const document=surface(),window=surface(),input=Object.assign(surface(),{ownerDocument:document,value:'10',min:'-100',max:'100',isConnected:true,disabled:false}),requests=[],commits=[];let captured=false,allowed=true,exits=0;
+  document.defaultView=window;document.pointerLockElement=null;document.exitPointerLock=()=>{exits++;document.pointerLockElement=null;document.emit('pointerlockchange');};
+  input.setPointerCapture=()=>{captured=true;};input.hasPointerCapture=()=>captured;input.releasePointerCapture=()=>{captured=false;input.emit('lostpointercapture');};
+  if(!unsupported)input.requestPointerLock=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});requests.push({resolve,reject});return legacy?undefined:promise;};
+  const control=bindInspectorNumber(input,{canInteract:()=>allowed,apply:()=>commits.push(Number(input.value))});
+  return {input,document,window,requests,commits,control,setAllowed:value=>allowed=value,exits:()=>exits,captured:()=>captured,
+    begin(){input.emit('pointerdown',{clientX:0});input.emit('pointermove',{clientX:3});},
+    grant(index=0){document.pointerLockElement=input;if(captured)input.releasePointerCapture();document.emit('pointerlockchange');requests[index].resolve();}};
+}
+
+test('Inspector locks only after a drag threshold and uses canonical relative mouse events without double deltas or commits',async()=>{
+  const h=lockedScrubHarness();try{
+    h.input.emit('pointerdown',{clientX:0});h.input.emit('pointermove',{clientX:2});h.input.emit('pointerup',{clientX:2});assert.equal(h.requests.length,0);assert.deepEqual(h.commits,[]);
+    h.begin();assert.equal(h.requests.length,1);assert.equal(h.input.value,'13');assert.equal(h.document.events.get('mousemove')?.length ?? 0,0);h.grant();await settleInspector();assert.equal(h.captured(),false,'Successful pointer lock implicitly releases capture');assert.equal(h.input.value,'13');assert.equal(h.document.events.get('mousemove').length,1);assert.equal(h.document.events.get('mouseup').length,1);
+    h.document.emit('mousemove',{movementX:2000});assert.equal(h.input.value,'100');h.document.emit('mousemove',{movementX:-1});assert.equal(h.input.value,'99');h.document.emit('mousemove',{movementX:-10,shiftKey:true});assert.equal(h.input.value,'98');
+    h.input.emit('pointermove',{clientX:500,movementX:2000});h.input.emit('pointerup',{clientX:500});assert.equal(h.input.value,'98');assert.deepEqual(h.commits,[]);
+    h.document.emit('mouseup',{buttons:0});h.document.emit('mouseup',{buttons:0});assert.deepEqual(h.commits,[98]);assert.equal(h.document.pointerLockElement,null);assert.equal(h.exits(),1);assert.equal(h.document.events.get('mousemove').length,0);assert.equal(h.document.events.get('mouseup').length,0);
+  }finally{h.control.dispose();}assert.equal(h.document.count(),0);assert.equal(h.input.count(),0);assert.equal(h.window.count(),0);
+});
+
+test('denied or unavailable pointer lock keeps the existing finite scrub without retrying during the gesture',async()=>{
+  for(const unsupported of [true,false]){
+    const h=lockedScrubHarness({unsupported});try{h.begin();if(!unsupported){h.requests[0].reject(Error('Pointer lock denied'));await settleInspector();h.document.emit('pointerlockerror');}
+      h.input.emit('pointermove',{clientX:10});h.input.emit('pointerup',{clientX:15});assert.deepEqual(h.commits,[25]);assert.equal(h.requests.length,unsupported?0:1);assert.equal(h.exits(),0);
+    }finally{h.control.dispose();}assert.equal(h.document.count(),0);
+  }
+});
+
+test('locked Inspector Escape, blur, hidden, context loss and disposal restore the draft and never unlock a foreign element',async()=>{
+  for(const reason of ['Escape','blur','hidden','context','foreign','loss-before-event','dispose']){
+    const h=lockedScrubHarness();h.begin();h.grant();await settleInspector();h.document.emit('mousemove',{movementX:8});
+    if(reason==='Escape')h.input.emit('keydown',{key:'Escape'});
+    else if(reason==='blur')h.window.emit('blur');
+    else if(reason==='hidden'){h.document.hidden=true;h.document.emit('visibilitychange');}
+    else if(reason==='context'){h.setAllowed(false);h.document.emit('mousemove',{movementX:1});}
+    else if(reason==='foreign'){h.document.pointerLockElement={foreign:true};h.document.emit('pointerlockchange');}
+    else if(reason==='loss-before-event'){h.document.pointerLockElement=null;h.input.emit('pointerup');}
+    else h.control.dispose();
+    h.document.emit('mouseup',{buttons:0});h.input.emit('pointerup',{clientX:20});assert.equal(h.input.value,'10',reason);assert.deepEqual(h.commits,[],reason);assert.equal(h.exits(),['foreign','loss-before-event'].includes(reason)?0:1,reason);h.control.dispose();assert.equal(h.document.count(),0);
+  }
+});
+
+test('late pointer-lock success after release or cancellation exits only the owned lock, including disposed legacy requests',async()=>{
+  for(const reason of ['release','cancel','dispose','legacy-dispose','stale','new-gesture']){
+    const h=lockedScrubHarness({legacy:reason==='legacy-dispose'});h.begin();
+    if(reason==='release')h.input.emit('pointerup',{clientX:3});
+    else if(reason==='stale')h.setAllowed(false);
+    else if(reason.includes('dispose'))h.control.dispose();
+    else{h.control.cancel();if(reason==='new-gesture'){h.input.emit('pointerdown',{clientX:0});h.input.emit('pointermove',{clientX:5});}}
+    h.grant();await settleInspector();h.document.emit('mouseup',{buttons:0});h.input.emit('pointerup',{clientX:50});assert.equal(h.document.pointerLockElement,null,reason);assert.equal(h.exits(),1,reason);assert.deepEqual(h.commits,reason==='release'?[13]:[],reason);
+    h.control.dispose();assert.equal(h.document.count(),0,reason);assert.equal(h.input.count(),0,reason);assert.equal(h.window.count(),0,reason);
+  }
+});
+
 function selectedLifecycleHarness(t,{commit}={}){
   const oldDocument=globalThis.document,commands=[],notices=[];
   class Surface extends EventTarget{

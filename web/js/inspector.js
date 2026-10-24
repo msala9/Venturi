@@ -73,25 +73,58 @@ export function renderInspectorSelection(root,rows){
   table.append(head,body);root.className='inspector-selection-summary';root.replaceChildren(table);
 }
 export function bindInspectorNumber(input,{canInteract,apply,speed=1,decimals=6,windowRef=input.ownerDocument?.defaultView ?? globalThis.window}){
-  let gesture=null,disposed=false;const listeners=[];
+  let gesture=null,disposed=false,lockRequest=null,lockOwner=null;const listeners=[],lockListeners=[],mouseListeners=[],documentRef=input.ownerDocument ?? windowRef?.document;
   const listen=(target,key,handler)=>{target?.addEventListener?.(key,handler);listeners.push(()=>target?.removeEventListener?.(key,handler));};
-  const live=()=>!disposed && input.isConnected!==false && !input.disabled && canInteract();
+  const live=()=>!disposed && input.isConnected!==false && !input.disabled && (!lockOwner || documentRef?.pointerLockElement===input) && canInteract();
   const release=id=>{try{if(input.hasPointerCapture?.(id))input.releasePointerCapture(id);}catch{}};
-  const cancel=()=>{if(!gesture)return;const before=gesture;gesture=null;input.value=before.text;release(before.id);};
-  const draft=event=>{
-    const distance=event.clientX-gesture.x;if(!gesture.moved && Math.abs(distance)<3)return;event.preventDefault?.();gesture.moved=true;
-    const delta=event.clientX-gesture.lastX;gesture.lastX=event.clientX;if(delta===0)return;
+  const locked=()=>lockOwner===gesture && !!gesture && documentRef?.pointerLockElement===input;
+  const cleanLocks=()=>{if(disposed && !lockRequest && !lockOwner)for(const remove of lockListeners.splice(0))remove();};
+  const clearMouse=()=>{for(const remove of mouseListeners.splice(0))remove();};
+  function unlock(owner){if(lockOwner!==owner)return;lockOwner=null;clearMouse();if(documentRef?.pointerLockElement===input)try{documentRef.exitPointerLock();}catch{}cleanLocks();}
+  function cancel(){if(!gesture)return;const before=gesture;gesture=null;input.value=before.text;unlock(before);release(before.id);}
+  function lockChanged(){
+    if(documentRef.pointerLockElement===input){
+      const owner=lockOwner ?? lockRequest?.owner;if(!owner)return;
+      lockRequest=null;
+      if(gesture===owner && live()){lockOwner=owner;bindMouse();release(owner.id);}
+      else{lockOwner=null;clearMouse();try{documentRef.exitPointerLock();}catch{}if(gesture)cancel();}
+    }else if(lockOwner){const owner=lockOwner;lockOwner=null;clearMouse();if(gesture===owner)cancel();}
+    cleanLocks();
+  }
+  function requestLock(owner){
+    if(owner.lockAttempted)return;owner.lockAttempted=true;
+    if(lockRequest || documentRef?.pointerLockElement || !documentRef?.addEventListener || typeof input.requestPointerLock!=='function' || typeof documentRef.exitPointerLock!=='function')return;
+    const ticket={owner,promise:true};lockRequest=ticket;
+    const failed=()=>{if(lockRequest===ticket)lockRequest=null;cleanLocks();};
+    try{const result=input.requestPointerLock();if(result?.then)Promise.resolve(result).then(()=>{if(lockRequest===ticket || lockOwner===owner)lockChanged();},failed);else ticket.promise=false;}catch{failed();}
+  }
+  if(documentRef?.addEventListener)for(const [key,handler] of [['pointerlockchange',lockChanged],['pointerlockerror',()=>{if(!lockRequest?.promise)lockRequest=null;cleanLocks();}]]){documentRef.addEventListener(key,handler);lockListeners.push(()=>documentRef.removeEventListener(key,handler));}
+  const draft=(event,relative=false)=>{
+    const owner=gesture;if(!owner)return;
+    if(!relative && (!Number.isFinite(event.clientX) || !owner.moved && Math.abs(event.clientX-owner.x)<3))return;
+    const delta=relative?event.movementX:event.clientX-owner.lastX;if(!Number.isFinite(delta))return;
+    event.preventDefault?.();owner.moved=true;if(!relative){owner.lastX=event.clientX;requestLock(owner);}if(gesture!==owner || delta===0)return;
     const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);
-    gesture.draftValue=Math.max(min,Math.min(max,gesture.draftValue+delta*(event.shiftKey ? speed/10 : speed)));
-    input.value=String(Number(gesture.draftValue.toFixed(decimals)));
+    owner.draftValue=Math.max(min,Math.min(max,owner.draftValue+delta*(event.shiftKey ? speed/10 : speed)));
+    input.value=String(Number(owner.draftValue.toFixed(decimals)));
   };
+  function finish(event,relative=false){
+    if(!gesture)return;if(!live()){cancel();return;}
+    if(!relative && (gesture.moved || Math.abs(event.clientX-gesture.x)>=3))draft(event);if(!gesture)return;
+    const before=gesture;gesture=null;unlock(before);release(before.id);if(before.moved && Number(input.value)!==before.value)apply();
+  }
+  function bindMouse(){
+    if(mouseListeners.length)return;
+    for(const [key,handler] of [['mousemove',event=>{if(!locked())return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event,true);}],['mouseup',event=>{if(locked() && event.button===0)finish(event,true);}]]){documentRef.addEventListener(key,handler);mouseListeners.push(()=>documentRef.removeEventListener(key,handler));}
+  }
   listen(input,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,lastX:event.clientX,text:input.value,value:Number(input.value),draftValue:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
-  listen(input,'pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
-  listen(input,'pointerup',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live()){cancel();return;}if(gesture.moved || Math.abs(event.clientX-gesture.x)>=3)draft(event);const before=gesture;gesture=null;release(before.id);if(before.moved && Number(input.value)!==before.value)apply();});
-  listen(input,'pointercancel',cancel);listen(input,'lostpointercapture',cancel);listen(input,'blur',cancel);
+  listen(input,'pointermove',event=>{if(!gesture || event.pointerId!==gesture.id || locked())return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
+  listen(input,'pointerup',event=>{if(gesture && event.pointerId===gesture.id && !locked())finish(event);});
+  listen(input,'pointercancel',cancel);listen(input,'lostpointercapture',()=>{if(documentRef?.pointerLockElement!==input)cancel();else lockChanged();});listen(input,'blur',cancel);
   listen(input,'keydown',event=>{if(event.key==='Escape' && gesture){event.preventDefault();event.stopPropagation();cancel();}});
   listen(windowRef,'blur',cancel);
-  return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
+  listen(windowRef,'pagehide',cancel);listen(documentRef,'visibilitychange',()=>{if(documentRef.hidden)cancel();});
+  return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();cleanLocks();}};
 }
 function inspectorHelp(parent,note,label='Editing this selection'){
   const help=document.createElement('details'),summary=document.createElement('summary');help.className='inspector-help';summary.textContent=label;help.append(summary,note);parent.append(help);

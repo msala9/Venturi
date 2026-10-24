@@ -1,5 +1,19 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Continuous Inspector numeric scrub
+
+The shared numeric control requests optional browser pointer lock after the
+existing three-pixel drag threshold. An owned lock uses relative mouse movement,
+current Shift precision and native incremental clamping; release confirms once.
+Denied or unavailable lock keeps the existing finite absolute-position scrub.
+Click/type editing and native commands are unchanged. No pointer-move HTTP.
+
+Escape, focus/visibility/context loss, removal and disposal cancel the local
+draft. Implicit capture release on lock acquisition is accepted; lock loss
+cancels instead of committing. Stale grants release only their owned element,
+and relative mouse listeners exist only while that lock is active. Physical
+browser/Windows DPI and screen-edge acceptance require separate verification.
+
 ## Original audio in composed playback and new exports
 
 New Program movies and exports pass the existing root-bound audio resolver into

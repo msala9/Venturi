@@ -166,6 +166,17 @@ test('import binds the prepared native asset revision and commits once through t
   assert.equal(h.polls.length,0);assert.equal(h.deletes.length,0);
 });
 
+for(const changed of [true,false])test(`single native import reports ${changed?'new project copy and Undo':'existing media without a new Undo'} from its acknowledged result`,async()=>{
+  const receipt={command_id:'single-import',project_epoch:'epoch',media_ids:['9007199254740995'],changed};
+  const h=harness(importing,{projectCommit:async()=>receipt}),before=structuredClone(h.context()),pending=h.run();h.prepare.resolve(h.job());
+  assert.equal(await pending,receipt);
+  assert.deepEqual(h.projectWrites,[{kind:'import_native_asset',job_id:'job-1',asset_id:'asset-a',revision:'native-revision'}]);
+  assert.deepEqual(h.applied,[{receipt,action:importing}]);assert.deepEqual(h.context(),before);
+  assert.equal(h.libraryWrites.length+h.timelineWrites.length+h.deletes.length,0);
+  if(changed)assert.equal(h.statuses.at(-1),'Native asset imported · project copy · Undo available');
+  else{assert.match(h.statuses.at(-1),/already in Media pool.*project unchanged.*no Undo added/);assert.doesNotMatch(h.statuses.at(-1),/Undo available|project copy/);}
+});
+
 test('cancel before the prepare acknowledgment retains ownership until the late job can be deleted',async()=>{
   const h=harness(),pending=h.run();assert.equal(h.transfer.cancel(),true);assert.equal(h.transfer.busy(),true);
   assert.equal(await h.run(),null);assert.equal(h.calls.length,1);assert.equal(h.deletes.length,0);

@@ -334,10 +334,13 @@ function queueHarness({complete=true,isNativeCurrent}={}){
 function nativeItem(meta={}){
   return nativeThumbnailItem({id:'library-shot',name:'Library shot',revision:'a'.repeat(64),missing_count:0,presentation:{kind:'video',duration_frames:24_000,fps:{num:24,den:1},has_video:true,has_audio:true,is_image:false,audio_streams:1,...meta}},{project_epoch:'epoch',generation:'7'});
 }
+function nativeAudioSource(){
+  return {id:`native-asset:library-shot:${'a'.repeat(64)}:7`,name:'Library audio',content_hash:'native-hash',duration_frames:24_000,fps:{num:24,den:1},has_video:false,has_audio:true,is_image:false,audio_stream_count:2,
+    native_asset:{id:'library-shot',revision:'a'.repeat(64),if_generation:'7',source_version:'fd-version'}};
+}
 
 test('verified Library audio prepares each raw stream in its captured namespace without resolving or importing again',async()=>{
-  const item={...nativeItem({kind:'audio',has_video:false,audio_streams:2}),content_hash:'native-hash'};
-  item.native_asset.source_version='fd-version';
+  const item=nativeAudioSource();
   const h=harness({isNativeCurrent:()=>true,api:(_path,body,_fetcher,job)=>({...job(),source_assets:{...job().source_assets,has_video:false,audio_stream_index:body.audio_stream_index,thumbnail_width:96}})});
   h.setState({project_epoch:'epoch',generation:'9',media:[]});
   try{
@@ -358,9 +361,10 @@ test('verified Library audio prepares each raw stream in its captured namespace 
 });
 
 test('Library waveform requires a verified descriptor and refuses changed versions or unavailable stream indices',async()=>{
-  const item=nativeItem({kind:'audio',has_video:false,audio_streams:2}),h=harness({isNativeCurrent:()=>true,
+  const item=nativeAudioSource(),h=harness({isNativeCurrent:()=>true,
     api:(_path,_body,_fetcher,job)=>({...job(),source_assets:{...job().source_assets,has_video:false,source_version:'changed',thumbnail_width:96}})});
   try{
+    delete item.native_asset.source_version;
     assert.equal(await h.loader.load(item,'epoch',{includeWaveform:true}),null);assert.equal(h.calls.length,0);
     item.native_asset.source_version='fd-version';
     assert.equal(await h.loader.load(item,'epoch',{includeWaveform:true,audioStreamIndex:2}),null);assert.equal(h.calls.length,0);
@@ -370,7 +374,7 @@ test('Library waveform requires a verified descriptor and refuses changed versio
 });
 
 test('Library waveform streams share the existing priority queue across unrelated project generations',async()=>{
-  const item=nativeItem({kind:'audio',has_video:false,audio_streams:2});item.native_asset.source_version='original-fd';
+  const item=nativeAudioSource();item.native_asset.source_version='original-fd';
   const h=queueHarness({complete:false,isNativeCurrent:()=>true});
   try{
     h.setState({project_epoch:'epoch',generation:'9',media:h.items});

@@ -41,9 +41,9 @@ class Target {
   captureFlags=[];
   addEventListener(type,callback,capture){this.captureFlags.push(capture);if(!this.listeners.has(type))this.listeners.set(type,new Set());this.listeners.get(type).add(callback);}
   removeEventListener(type,callback){this.listeners.get(type)?.delete(callback);}
-  capture(type){const event={type,eventPhase:2,currentTarget:this};for(const callback of [...(this.listeners.get(type)||[])])callback(event);return event;}
+  capture(type,target=this){const event={type,eventPhase:2,currentTarget:this,target};for(const callback of [...(this.listeners.get(type)||[])])callback(event);return event;}
   end(event){event.eventPhase=0;event.currentTarget=null;}
-  dispatch(type){this.end(this.capture(type));}
+  dispatch(type,target=this){this.end(this.capture(type,target));}
   count(){return [...this.listeners.values()].reduce((sum,set)=>sum+set.size,0);}
 }
 function panelFixture(visible=false){
@@ -157,6 +157,16 @@ test('input context, hidden state and gesture cancellation invalidate pending sa
   pending();h.controller.dispose();assert.equal(h.controller.navigationChanged(),false);assert.equal(h.controller.painted('new'),false);
   for(const target of [h.target,h.documentRef,h.windowRef])assert.equal(target.count(),0);
   assert.deepEqual(h.samples,[]);
+});
+
+test('focus moving from a field to Canvas does not cancel the changing input; actual window blur does',()=>{
+  const h=inputFixture();h.time(3);const event=h.target.capture('pointerdown');
+  h.windowRef.dispatch('blur',{tagName:'INPUT'});
+  assert.equal(h.controller.navigationChanged(),true);h.target.end(event);
+  h.time(12);assert.equal(h.controller.painted('current'),true);assert.deepEqual(h.samples,[[9,'current']]);
+  const next=h.target.capture('wheel');h.controller.navigationChanged();h.target.end(next);
+  h.windowRef.dispatch('blur');assert.equal(h.controller.painted('current'),false);assert.equal(h.samples.length,1);
+  h.controller.dispose();
 });
 
 test('diagnostic callback errors and invalid clocks cannot break the input handler or painting',()=>{

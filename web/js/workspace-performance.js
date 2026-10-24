@@ -91,7 +91,7 @@ export function createWorkspaceInputTiming({target,documentRef,windowRef,getCont
   }
   for(const type of ['pointerdown','pointermove','pointerup','wheel','keydown','dblclick','contextmenu','drop'])listen(target,type,begin);
   for(const type of ['pointercancel','lostpointercapture'])listen(target,type,cancel);
-  listen(documentRef,'visibilitychange',cancel);listen(windowRef,'blur',cancel);
+  listen(documentRef,'visibilitychange',cancel);listen(windowRef,'blur',event=>{if(event.target===windowRef)cancel();});
   function dispose(){if(disposed)return;disposed=true;cancel();for(const [node,type,callback] of listeners)node.removeEventListener(type,callback,true);listeners.length=0;}
   return {navigationChanged,painted,dispose};
 }

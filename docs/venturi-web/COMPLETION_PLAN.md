@@ -1,5 +1,25 @@
 # Active completion plan — full Venturi Web scope
 
+## Actual Chrome ruler seek retains transport - 2026-10-24
+
+On unchanged currentadc69/source39b3ae3, actual Canvas ruler clicks while playing
+resume at1x and2x after the expected transient internal pause. A stopped ruler
+seek remains stopped and retains selected2x; explicit Pause resets to1x. Native
+generation0, empty history, all timeline revisions, media/folders and NAS metadata
+remain exact. All15 Saved hashes are unchanged during the transport checks;
+File/Open then flushes only the owned copy view.playheads[1] from700 to61.
+The previous bytes retained in its native .vvproj.bak differ by exactly that
+single RON field; all non-view bytes and14 other Saved remain exact. The original
+clean project is restored. See evidence/f2-chrome-ruler-playback-input-workflow.json.
+Existing bounded halo1 prepares a short701-frame960x540 Program and2x audio;
+accepted seek/Pause action batches last4.66s and5.71s. Runtime peak424501248B,
+zero memory events; no build/export/soak/extra server/browser. Current observed
+viewport1638x776/DPR1.5625 is not an OS100/150 scaling qualification. Initial
+preparation/transient reads are retained without claiming precise new EOF proof.
+Held/cancel, OS scaling/dense, long Source/Program, device/audio and M7 checks
+stay FINAL_CHECKS. Immutable R6 is retained; ledger62done/28partial/2excluded.
+
+
 ## Complete paused Chrome transform, title and solid-color inputs - 2026-10-24
 
 On currentadc69/source39b3ae3, actual Viewer corner scale, rotation and pivot

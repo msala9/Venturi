@@ -1,0 +1,204 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "39b3ae375c68b323875768a63023a29aa694abf2",
+  "scope": "Actual existing Chrome Canvas ruler seek while playing at1x/2x and while stopped; no long-source, physical audio or whole-row acceptance",
+  "runtime": {
+    "pid": "497792",
+    "unit": "venturi-web-halo1-inspector-scroll.service",
+    "binary_sha256": "adc69ead45577897e6d2e71cb8086664d5bb96d29ea4e601b77b86df287450b9"
+  },
+  "browser": {
+    "existing_windows_extension": true,
+    "work_tabs": 1,
+    "observed_viewport": {
+      "width": 1638,
+      "height": 776,
+      "dpr": 1.5625
+    },
+    "os_scale_matrix_claimed": false,
+    "changed_window_note": "Observed current dimensions/DPR differ from earlier title/mask captures; no OS scaling change was performed or inferred."
+  },
+  "input": {
+    "current_viewport": {
+      "width": 1638,
+      "height": 776,
+      "dpr": 1.5625
+    },
+    "normal": {
+      "before": {
+        "paused": false,
+        "rate": 1,
+        "ready": 4,
+        "time": 0.070334
+      },
+      "intermediate": {
+        "paused": true,
+        "rate": 1,
+        "ready": 4,
+        "time": 0.49857
+      },
+      "after": {
+        "paused": false,
+        "rate": 1,
+        "ready": 4,
+        "time": 0.008825
+      },
+      "mouse_css": [
+        484,
+        502
+      ],
+      "requested_timeline_frame": 48,
+      "observed_running_position": 49,
+      "explicit_pause": {
+        "paused": true,
+        "rate": 1,
+        "time": 0
+      }
+    },
+    "fast": {
+      "before": {
+        "video": {
+          "paused": false,
+          "rate": 2,
+          "ready": 4,
+          "time": 0.185021
+        },
+        "position": "101",
+        "selectedRate": "2"
+      },
+      "intermediate": {
+        "paused": true,
+        "rate": 2,
+        "time": 1.265021
+      },
+      "after": {
+        "video": {
+          "paused": false,
+          "rate": 2,
+          "ready": 4,
+          "time": 0.226333
+        },
+        "position": "31",
+        "selectedRate": "2"
+      },
+      "mouse_css": [
+        425,
+        502
+      ],
+      "requested_timeline_frame": 24,
+      "stopped": {
+        "video": {
+          "paused": true,
+          "rate": 1,
+          "time": 0
+        },
+        "selectedRate": "1"
+      }
+    },
+    "stopped_seek": {
+      "mouse_css": [
+        605,
+        502
+      ],
+      "timeline_frame": 96,
+      "video": {
+        "paused": true,
+        "rate": 1,
+        "time": 0
+      },
+      "selectedRate": "2",
+      "button": "\u25b6 Play"
+    }
+  },
+  "semantics": {
+    "internal_pause_is_transient": true,
+    "explicit_wait_for_resumed_Pause_button_then_actual_media_paused_false": true,
+    "playing_seek_retains_selected_tempo": true,
+    "stopped_seek_remains_stopped_and_retains_selected2x": true,
+    "explicit_pause_resets_selected_and_media_rate_to1x": true,
+    "media_time_note": "HTML video currentTime is relative to the currently prepared native segment; Canvas position is the timeline clock. Running cursor advances after the pointer target."
+  },
+  "preliminary_observations": [
+    "Initial bounded701-frame/29.2s composed-preview preparation reached actual playing media. A later Pause locator was already absent; this is not accepted as an explicit-pause or precise EOF test.",
+    "First forward ruler click targeted120. Immediate DOM read showed the transient paused state; it is retained as preliminary and not used alone as proof of settled transport preservation."
+  ],
+  "preservation": {
+    "native_timelines_revisions_media_folders_exact": true,
+    "native_generation0_empty_history_and_saved": true,
+    "all_fifteen_saved_hashes_exact_before_navigation": true,
+    "fourteen_other_saved_hashes_exact_after_navigation": true,
+    "owned_clean_view_flush": {
+      "before_sha256": "b534f889e12476e9571a826605677f696df9e94f83a452f47747c34cb2c85116",
+      "after_sha256": "2874ba850edb440a8f4c8c16b5fdc3ec1b65152ae8bec649336577918ef8f31d",
+      "exact_only_byte_change": "Native RON root view.playheads[1]:700\u219261",
+      "all_non_view_bytes_exact": true,
+      "prior_bytes_retained_as_backup": true,
+      "reason": "main.js1536 flush persist:true before File/Open; host.rs2681 clean view-only clone/save path."
+    },
+    "nas_catalog_items_and_owned_versions_exact": true,
+    "original_clean_project_restored": true,
+    "foreign_operations": 0
+  },
+  "resources": {
+    "preflight": {
+      "at_unix": 1792855478.3479004,
+      "unit": {
+        "ActiveState": "active",
+        "MainPID": "497792",
+        "CPUQuotaPerSecUSec": "8s",
+        "MemoryMax": "4294967296",
+        "MemorySwapMax": "0",
+        "TasksMax": "128",
+        "OOMScoreAdjust": "1000",
+        "Nice": "19"
+      },
+      "mem_available": 121963548672,
+      "disk_free": 102068785152,
+      "shared_lock_available": true
+    },
+    "runtime_after": {
+      "at_unix": 1792855796.3720195,
+      "unit": {
+        "ActiveState": "active",
+        "MainPID": "497792",
+        "ControlGroup": "/system.slice/venturi-web-halo1-inspector-scroll.service",
+        "MemoryCurrent": "392978432",
+        "MemoryPeak": "424501248"
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      }
+    },
+    "compilation_jobs": 0,
+    "export_jobs": 0,
+    "soak_jobs": 0,
+    "new_servers_or_browsers": 0,
+    "preview": "Existing bounded halo1 editor prepares/serves960x540 short composed Program and native2x playback. Explicit accepted playback/seek/Pause batches took4.66s and5.71s; no sustained long-source test."
+  },
+  "private_inputs_sha256": {
+    "halo1-final-gui-ruler_input_before.json": "01d76e3f7707bf8ea27e99b4ced98298f40c90d44589d7ae83f5305b996749fe",
+    "halo1-final-gui-ruler_after.json": "efbe9b5c6fa3c02a736adaedc7e1d892a42caccc8011e2d1731132c072be78f6",
+    "halo1-final-gui-ruler_final.json": "4197372f69e7ac1c71c1b7ff4678e5982b6ef37650114f38726edce61665e6d1",
+    "halo1-chrome-transport-ruler-preflight.json": "f63893066fcc448d71e374a0d75cf9b793b3ce225f8a609ac14b3eb8a99938b8",
+    "halo1-chrome-transport-ruler-resources.json": "66406002ec8bac9e291f3a884003637eafe09038ca8fff1b022c9f33ffa2bb1f",
+    "halo1-chrome-transport-ruler-dom.json": "5cff326835d05f084b115b405138a5e16e9fa0aaf2ce72aafd69bbd843d52286",
+    "halo1-chrome-transport-ruler-view-flush.json": "0f8384212a4ca52eaa12b3d99aa74ff8e9f4f3b07bc363d024294f0b3af75386",
+    "halo1-chrome-transport-ruler-view-diff.json": "54a765ab3c2bcfbdd3d35e60776fe72195f469d291a865fc0688e8cddabe59b2"
+  },
+  "remaining": [
+    "Held-key/pointer cancellation, required OS scaling/dense operation and row-specific long Source/Program/device/audio/M7 checks remain FINAL_CHECKS.",
+    "No claim of actual speaker/display latency, audible quality, fullresolution long footage or native OS100/150 acceptance."
+  ],
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2,
+    "promotion": null
+  }
+}

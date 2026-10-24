@@ -114,8 +114,8 @@ feature passes every requirement or cannot contain defects.
 | Partial capability | Concrete next work |
 |---|---|
 | source_viewer | Native explicit Pause/final EOF speed reset delivered; qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
-| program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; keyboard1x/2x navigation is qualified; complete physical ruler checks, then representative long-source playback/cold preparation and audio/device requirements. |
-| transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard1x/2x seek/resume and paused navigation are qualified; complete physical ruler/cancellation checks. Keep native paused arrow stepping; retain physical held-key/output checks. |
+| program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; keyboard and actual Chrome ruler seek/resume at1x/2x pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
+| transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard and actual Chrome ruler1x/2x seek/resume pass, including stopped seek retaining selected2x and explicit Pause resetting1x. Keep native paused arrow stepping; qualify remaining held/cancel, required scaling and output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
 | thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
 | waveforms_cached | Qualification: dense/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |

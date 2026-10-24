@@ -1,5 +1,23 @@
 # Implementation status
 
+## Verified prebuilt candidate bundle — 2026-10-24
+
+The existing `2dbc9697d6e7` Linux executable now has a persistent halo1 candidate
+archive:80,629,760B, SHA256 `064e1c99da5a9a6c42fae58d88e70fd73852b09a39c707c846ea69b3d0059e45`.
+It includes the safe launcher, exact source/binary manifest, operational runbook,
+GPL and Silero MIT notices, scoped Rust inventory and189 actual loader-resolved
+system-library identities/hashes. Every archived file matches its recorded hash;
+the packaged default launcher passes real `--help`. No server/build/render or
+NAS/editor mutation is required. Packaging uses one halo1 CPU/512MiB/noSwap,
+peaks339,873,792B and exits successfully; no heavy process remains.
+
+See BINARY_DELIVERY.md and `evidence/f7-prebuilt-bundle-workflow.json` for the
+persistent path, checksum and scope. Host FFmpeg/Vulkan/fonts remain external.
+This is an internal same-host development candidate, not a self-contained
+distribution. Full third-party notices/distribution review, representative
+footage, physical UI/audio, integrated regression, editing soak and guarded
+reboot/runback acceptance remain open. Ledger stays61 done/29 partial/2 excluded.
+
 ## Prebuilt-only startup and current operational handover — 2026-10-24
 
 The launcher now selects `.runtime/vv-web` or explicit `VENTURI_WEB_BINARY`.

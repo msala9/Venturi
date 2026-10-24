@@ -113,8 +113,20 @@ pub(crate) fn open_root_media(root: &Path, dir: &File, path: &Path) -> Result<Fi
 }
 
 impl Files {
+    #[cfg(test)]
     pub(crate) fn set_shared_root(&mut self, path: &Path) -> std::io::Result<()> {
         self.media = self.media.with_shared(path)?;
+        Ok(())
+    }
+    pub(crate) fn configure_shared_root(
+        &mut self,
+        path: &Path,
+        available: bool,
+    ) -> std::io::Result<()> {
+        self.media = self.media.with_unavailable_shared(path)?;
+        if available {
+            self.media.retry_shared()?;
+        }
         Ok(())
     }
     pub(crate) fn media_roots(&self) -> crate::media_roots::MediaRoots {

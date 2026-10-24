@@ -65,6 +65,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/audio/presets", get(audio_presets))
+        .route("/api/v1/audio/presets/refresh", post(refresh_presets))
         .route(
             "/api/v1/audio/presets/commands",
             post(audio_preset_library_command),
@@ -88,6 +89,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/native-assets/prepare", post(prepare_native_asset))
         .route("/api/v1/native-assets/folders", get(native_asset_folders))
+        .route("/api/v1/native-assets/refresh", post(refresh_native_assets))
         .route("/api/v1/native-assets/pages/{page}", get(native_asset_list))
         .route("/api/v1/native-assets/items/{id}", get(native_asset_item))
         .route(
@@ -134,6 +136,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/presets", get(preset_list_first))
         .route("/api/v1/presets/shortcuts", get(preset_shortcuts))
         .route("/api/v1/presets/pages/{page}", get(preset_list))
+        .route("/api/v1/presets/refresh", post(refresh_presets))
         .route("/api/v1/presets/items/{id}", get(preset_item))
         .route("/api/v1/presets/items/{id}/download", get(preset_download))
         .route(
@@ -1029,6 +1032,32 @@ async fn native_asset_folders(
                 .map_err(|_| ApiError::invalid("Invalid native asset folder query"))?
                 .0,
         ))
+        .await
+        .map(native_asset_json)
+}
+async fn refresh_native_assets(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid native library refresh"))?
+        .0;
+    state
+        .host
+        .call(Action::RefreshNativeLibrary(query, true))
+        .await
+        .map(native_asset_json)
+}
+async fn refresh_presets(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid native preset library refresh"))?
+        .0;
+    state
+        .host
+        .call(Action::RefreshNativeLibrary(query, false))
         .await
         .map(native_asset_json)
 }

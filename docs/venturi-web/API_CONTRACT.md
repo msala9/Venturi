@@ -1,5 +1,27 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Explicit native Library recovery
+
+`POST /native-assets/refresh`, `/presets/refresh` and
+`/audio/presets/refresh` accept only `{project_epoch}` and return
+`{project_epoch,available:true}` after opening the existing configured root
+and validating its catalog guards. They are lease-free readers of project
+state; they neither dirty the project nor add an Undo step. A stale epoch
+fails before attachment. Ordinary catalog GETs never initialize an unavailable
+root. Client Refresh buttons validate the acknowledgment before their normal
+GET, and discard canceled or obsolete results and errors.
+
+A configured external root may start unavailable, with local editing, import,
+Save and Saved offline media retained. It is never created or replaced by a
+local fallback. Successful explicit retry attaches descriptors once, shared
+with existing Source/proxy workers; subsequent root replacement remains an
+error. Invalid/link/non-directory configuration is refused. Existing catalog
+locks, revisions, journals and native recovery ownership stay authoritative.
+Session `native_libraries` reports `assets_available`, `presets_available` and
+`audio_presets_available`; descriptor availability does not bypass operation
+locks or imply a catalog read succeeded.
+
+
 ## Continuous Inspector numeric scrub
 
 The shared numeric control requests optional browser pointer lock after the

@@ -1774,7 +1774,7 @@ pub(crate) fn store_location(store: &Store, path: &Path) -> Result<(File, String
     simple_name(name)?;
     let directory = File::from(
         openat(
-            store.media(),
+            store.media()?,
             hash,
             OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
             Mode::empty(),
@@ -2026,7 +2026,7 @@ fn copy_checked(
     let staging = if work.import.is_some() {
         &inner.directory
     } else {
-        inner.store.media()
+        inner.store.media()?
     };
     budget.check(staging)?;
     let partial = Partial {
@@ -2104,7 +2104,7 @@ fn copy_checked(
             .and_then(|name| name.to_str())
             .ok_or_else(ApiError::missing)?;
         (
-            asset_store::directory(inner.store.media(), parent)?,
+            asset_store::directory(inner.store.media()?, parent)?,
             name.to_owned(),
             path.to_owned(),
         )
@@ -2116,7 +2116,7 @@ fn copy_checked(
             inner.root.join("library").join(name),
         )
     } else {
-        let directory = asset_store::directory(inner.store.media(), &hash)?;
+        let directory = asset_store::directory(inner.store.media()?, &hash)?;
         (
             directory,
             source_name.into(),
@@ -2210,7 +2210,7 @@ fn copy_checked(
     let base = if work.import.is_some() {
         &inner.directory
     } else {
-        inner.store.media()
+        inner.store.media()?
     };
     let witness = Witness {
         directory: destination,
@@ -2252,7 +2252,7 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
     budget.check(if work.import.is_some() {
         &inner.directory
     } else {
-        inner.store.media()
+        inner.store.media()?
     })?;
     if let Some((id, revision)) = &work.import {
         inner.store.load(id, revision)?;
@@ -2361,7 +2361,7 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
     budget.check(if work.import.is_some() {
         &inner.directory
     } else {
-        inner.store.media()
+        inner.store.media()?
     })?;
     Ok(Prepared {
         asset,
@@ -2423,7 +2423,7 @@ fn run_relink(
         start: Instant::now(),
         cancel: work.cancel.clone(),
     };
-    budget.check(inner.store.media())?;
+    budget.check(inner.store.media()?)?;
     let mut names = HashMap::new();
     for token in path_tokens {
         crate::files::root_media_token(&inner.root, &inner.root.join(token))?;
@@ -2462,7 +2462,7 @@ fn run_relink(
         else {
             continue;
         };
-        budget.check(inner.store.media())?;
+        budget.check(inner.store.media()?)?;
         let source_path = inner.root.join(token);
         let file = crate::files::open_root_media(&inner.root, &inner.directory, &source_path)?;
         let identity = asset_store::stable_identity(&file)?;
@@ -2553,7 +2553,7 @@ fn run_relink(
             Ok((path, identity))
         })
         .collect::<Result<Vec<_>>>()?;
-    budget.check(inner.store.media())?;
+    budget.check(inner.store.media()?)?;
     drop(lock);
     let edit =
         inner
@@ -2605,7 +2605,7 @@ fn run_import_tree(
     let mut errors = Vec::new();
     let mut total = 0_u64;
     for (index, (path, folder)) in scan.tree.files.iter().enumerate() {
-        budget.check(inner.store.media())?;
+        budget.check(inner.store.media()?)?;
         let token = crate::files::root_media_token(&inner.root, path)?;
         let witness = otio_witness(inner, &token)?;
         let destination_folder = match folder {
@@ -2704,7 +2704,7 @@ fn run_import_tree(
     for file in &files {
         file.validate()?;
     }
-    budget.check(inner.store.media())?;
+    budget.check(inner.store.media()?)?;
     let edit =
         inner
             .store

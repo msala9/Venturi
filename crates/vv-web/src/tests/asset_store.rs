@@ -4,6 +4,31 @@ use vv_core::{
 };
 
 #[test]
+fn unavailable_asset_store_never_creates_its_root_and_retry_cannot_replace_a_pinned_catalog() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-unavailable-asset-store-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let store = Store::configured(&root).unwrap();
+    let clone = store.clone();
+    assert!(!root.exists());
+    assert_eq!(store.folders().unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    drop(Store::new(&root).unwrap());
+    assert_eq!(clone.folders().unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    store.retry().unwrap();
+    assert_eq!(clone.folders().unwrap()["folders"], json!([]));
+    let previous = root.with_extension("previous");
+    std::fs::rename(&root, &previous).unwrap();
+    drop(Store::new(&root).unwrap());
+    assert!(store.retry().is_err());
+    assert_eq!(clone.folders().unwrap_err().1, "ASSET_CHANGED");
+    drop(clone);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(previous).unwrap();
+}
+
+#[test]
 fn native_pool_browse_filters_sparse_catalog_before_paging_and_preserves_legacy_queries() {
     let (root, store, mut asset) = fixture();
     apply_folder(
@@ -401,7 +426,7 @@ fn deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_r
         .0;
     let bytes = b"owned replacement fixture bytes";
     let sha = format!("{:x}", Sha256::digest(bytes));
-    let directory = directory(store.media(), &sha).unwrap();
+    let directory = directory(store.media().unwrap(), &sha).unwrap();
     drop(directory);
     let new_path = root.join("media").join(&sha).join("take.mp4");
     std::fs::write(&new_path, bytes).unwrap();
@@ -488,7 +513,7 @@ fn deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_r
             );
         }
     }
-    let binding = asset_journal::project_binding(&store.0.directory).unwrap();
+    let binding = asset_journal::project_binding(&store.directories().unwrap().directory).unwrap();
     drop(prepared);
     drop(store);
     let reopened = Store::new(&root).unwrap();
@@ -513,7 +538,7 @@ fn deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_r
 }
 
 fn delete_file_asset(store: &Store) -> (PathBuf, AssetFile) {
-    let directory = directory(store.media(), "0123456789abcdef").unwrap();
+    let directory = directory(store.media().unwrap(), "0123456789abcdef").unwrap();
     drop(directory);
     let path = store.root().join("media/0123456789abcdef/owned.mp4");
     std::fs::write(&path, b"owned native media bytes").unwrap();
@@ -794,7 +819,7 @@ fn delete_assets_maximum_ordered_receipt_survives_reopen_with_native_32_id_budge
     store
         .commit_edit(&mut prepared, &AtomicBool::new(false))
         .unwrap();
-    let binding = asset_journal::project_binding(&store.0.directory).unwrap();
+    let binding = asset_journal::project_binding(&store.directories().unwrap().directory).unwrap();
     let expected = store.completion(&command, &binding).unwrap().unwrap();
     assert_eq!(expected.1["deleted_ids"], json!(ids));
     assert_eq!(expected.1["deleted_assets"], 32);
@@ -1120,7 +1145,10 @@ fn receipt(store: &Store, id: &str) -> Completion {
         version: 1,
         command_id: id.into(),
         fingerprint: [3; 32],
-        project_root_binding: asset_journal::project_binding(&store.0.directory).unwrap(),
+        project_root_binding: asset_journal::project_binding(
+            &store.directories().unwrap().directory,
+        )
+        .unwrap(),
         receipt: json!({"command_id":id,"status":"applied","library_durable":true}),
     }
 }
@@ -1369,7 +1397,7 @@ fn native_folder_queries_keep_candidate_paging_and_orphan_metadata_and_revision_
         store
             .completion(
                 "bad",
-                &asset_journal::project_binding(&store.0.directory).unwrap()
+                &asset_journal::project_binding(&store.directories().unwrap().directory).unwrap()
             )
             .unwrap()
             .is_none()

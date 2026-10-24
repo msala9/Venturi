@@ -1,6 +1,80 @@
 use super::*;
 use std::io::{Read, Seek, SeekFrom, Write};
 
+#[test]
+fn unavailable_library_classification_includes_cifs_host_down_but_refuses_unsafe_paths() {
+    assert!(transient(&io::Error::from_raw_os_error(
+        rustix::io::Errno::HOSTDOWN.raw_os_error()
+    )));
+    for errno in [
+        rustix::io::Errno::LOOP,
+        rustix::io::Errno::NOTDIR,
+        rustix::io::Errno::INVAL,
+    ] {
+        assert!(!transient(&io::Error::from_raw_os_error(
+            errno.raw_os_error()
+        )));
+    }
+}
+
+#[test]
+fn unavailable_shared_root_is_explicit_one_shot_and_visible_to_existing_clones() {
+    let f = Fixture::new();
+    let missing = f.base.join("missing-library");
+    let path = missing.join("take.wav");
+    let roots = f.roots.with_unavailable_shared(&missing).unwrap();
+    let cloned = roots.clone();
+    assert_eq!(roots.path("library://take.wav").unwrap(), path);
+    assert_eq!(roots.token(&path).unwrap(), "library://take.wav");
+    assert!(roots.entry(&path).unwrap().0.is_none());
+    assert_eq!(roots.open(&path).unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    assert!(roots.retry_shared().is_err());
+    assert!(!missing.exists());
+    std::fs::create_dir(&missing).unwrap();
+    std::fs::write(&path, b"original").unwrap();
+    assert_eq!(cloned.open(&path).unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    assert!(cloned.entry(&path).unwrap().0.is_none());
+    roots.retry_shared().unwrap();
+    assert_eq!(bytes(cloned.open(&path).unwrap()), b"original");
+    let entry = cloned.entry(&path).unwrap();
+    assert!(entry.0.is_some());
+    assert_ne!(entry.1.as_deref(), Some("library-unavailable"));
+    let previous = f.base.join("previous-library");
+    std::fs::rename(&missing, &previous).unwrap();
+    std::fs::create_dir(&missing).unwrap();
+    std::fs::write(&path, b"foreign replacement").unwrap();
+    assert!(roots.retry_shared().is_err());
+    assert!(cloned.open(&path).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), b"foreign replacement");
+    assert_eq!(
+        std::fs::read(previous.join("take.wav")).unwrap(),
+        b"original"
+    );
+}
+
+#[test]
+fn unavailable_shared_root_refuses_links_non_directories_and_escaping_tokens() {
+    use std::os::unix::fs::symlink;
+    let f = Fixture::new();
+    let path = f.base.join("missing");
+    let roots = f.roots.with_unavailable_shared(&path).unwrap();
+    for token in [
+        "library://../take.wav",
+        "library:///take.wav",
+        "library://nested/../../take.wav",
+    ] {
+        assert!(roots.path(token).is_err());
+    }
+    symlink(&f.shared, &path).unwrap();
+    assert!(roots.retry_shared().is_err());
+    assert!(f.roots.with_unavailable_shared(&path).is_err());
+    std::fs::remove_file(&path).unwrap();
+    std::fs::write(&path, b"not a directory").unwrap();
+    assert!(roots.retry_shared().is_err());
+    assert!(f.roots.with_unavailable_shared(&path).is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), b"not a directory");
+}
+
 struct Fixture {
     base: PathBuf,
     project: PathBuf,

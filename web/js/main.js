@@ -11,7 +11,7 @@ import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js"
 import {createProxyControls} from "./proxies.js";
 import { createViewer } from "./viewer.js";
 import {createArrowHold,programArrowContext} from './arrow-hold.js';
-import {createViewerZoom,isViewerFullscreenShortcut} from './viewer-zoom.js';
+import {createViewerZoom,createViewerFullscreen} from './viewer-zoom.js';
 import { createSourcePlayer, sourceSelection, sourceMediaPath, sourceMediaQuery } from "./source.js";
 import {createSourcePlacement} from './source-placement.js';
 import {createSourceWaveform} from './source-waveform.js';
@@ -336,18 +336,6 @@ $("collapse-inspector").addEventListener("click", () => {
 });
 $("show-inspector").addEventListener("click",()=>{if(innerWidth<=950 && editor.classList.contains("inspector-drawer-open") || innerWidth>950 && !editor.classList.contains("inspector-collapsed"))$("collapse-inspector").click();else{revealInspector();$("collapse-inspector").focus();}});
 window.addEventListener("resize",updateInspectorToggle);updateInspectorToggle();
-$("fullscreen").addEventListener("click", async () => {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await $("viewer").requestFullscreen();
-  } catch (error) {
-    notice(error.message);
-  }
-});
-document.addEventListener('keydown',event=>{
-  if(!isViewerFullscreenShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))}))return;
-  event.preventDefault();event.stopPropagation();$('fullscreen').click();
-});
 for (const name of ["Edit", "Color", "Audio", "Review"]) {
   const button = document.createElement("button");
   button.textContent = `${name} workspace`;
@@ -512,6 +500,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  $('viewer-fullscreen-status').textContent='';
   programSeek?.cancel();
   programArrowHold?.cancel();
   cancelInspectorDraft();
@@ -2001,6 +1990,7 @@ viewer = createViewer({
       : null,
 });
 function currentViewerContext(){
+  if(document.fullscreenElement===$('viewer'))return null;
   if(!documentState || !timeline || viewerMode!=="program" || !$("program-view").hidden || !$("slip-view").hidden)return null;
   const clips=timeline.tracks.filter(track=>track.kind==="video" && !track.muted).flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
   const clip=clips.length===1?clips[0]:null,current=viewer?.current();
@@ -2008,6 +1998,7 @@ function currentViewerContext(){
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
 }
 function currentViewerTransformContext(){
+  if(document.fullscreenElement===$('viewer'))return null;
   if(!documentState || !timeline || viewerMode!=='program' || !$('program-view').hidden || !$('slip-view').hidden || programPlayer?.state()!=='stopped' || document.querySelector('dialog[open]'))return null;
   const selection=videoPropertySelection({project_epoch:documentState.project_epoch,generation:documentState.generation,timeline,selection:view.selection});
   if(!selection)return null;
@@ -2056,6 +2047,10 @@ viewerZoom=createViewerZoom({screen:$('screen'),media:[$('preview'),$('program-v
     return !element.hidden && element.getAttribute('src')?element:null;
   },getContext:()=>JSON.stringify([documentState?.project_epoch,timeline?.id,viewerMode,sourceOpenId]),
   onChange:()=>{transformOverlay?.cancel();maskOverlay?.cancel();transformOverlay?.invalidate();maskOverlay?.invalidate();}});
+createViewerFullscreen({root:$('viewer'),button:$('fullscreen'),controls:$('viewer-playback-controls'),zoom:viewerZoom,onError:message=>{$('viewer-fullscreen-status').textContent=message;notice(message);},
+  onTogglePlayback:()=>{$('play').click();},
+  beforeEnter:()=>{cancelInspectorDraft();programArrowHold?.cancel();canvasTimeline?.cancel();transformOverlay?.cancel();maskOverlay?.cancel();slipView?.reset();timelineContextMenu?.close(false);retimeMenu?.close(false);clipListDismissal.close();},
+  onChange:()=>{transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();}});
 $("viewer-transform").addEventListener('click',()=>{maskSelectionSequence++;if($("viewer-transform").getAttribute('aria-pressed')==='true')maskOverlay.setEnabled(false);});
 $("viewer-mask").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.enabled() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
 $("viewer-mask-pen").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.penActive() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
@@ -2120,7 +2115,7 @@ programPlayer = createProgramPlayer({
   isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("program-video"),event)),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); scopes?.onPlaybackFrame(); } },
-  onState: (state) => { cancelInspectorDraft(); const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();timelineWaveforms?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
+  onState: (state) => { cancelInspectorDraft(); if(viewerMode==='program')$('viewer-fullscreen-status').textContent=state==='failed'?$('program-status').textContent:''; const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();timelineWaveforms?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
   onUserPause:({frame,query,reason,isCurrent,playback})=>{
     const current=()=>isCurrent() && viewerMode==='program' && programPlayer?.state()==='ready' && programPlayer.range()===query && $('program-video').paused && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision;
     if(!Number.isSafeInteger(frame) || frame<query.start_frame || frame>=query.end_frame || !current())return;
@@ -2171,7 +2166,7 @@ sourcePlayer = createSourcePlayer({
   },
   isInternalSeek: () => Boolean(fastTransport?.correcting($("source-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("source-video"),event)),
-  onStateChange:state=>{if(state.state==='error')sourceWaveformBinding=null;refreshSourceWaveform();sourceAssets?.refresh();timelineWaveforms?.refresh();viewerZoom?.refresh();sourcePlacement?.refresh();},
+  onStateChange:state=>{if(viewerMode==='source')$('viewer-fullscreen-status').textContent=state.state==='error'?state.error || 'Source media unavailable':'';if(state.state==='error')sourceWaveformBinding=null;refreshSourceWaveform();sourceAssets?.refresh();timelineWaveforms?.refresh();viewerZoom?.refresh();sourcePlacement?.refresh();},
   onReady: ({ item, epoch, source_window }) => {
     syncSourcePosition();
     if(item.native_asset)return;

@@ -1,4 +1,38 @@
 use super::*;
+
+#[test]
+fn unavailable_preset_store_requires_explicit_retry_and_preserves_the_original_directory() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-unavailable-preset-store-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let store = Store::configured(&root).unwrap();
+    assert!(!root.exists());
+    assert_eq!(
+        store.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    drop(Store::new(&root).unwrap());
+    std::fs::write(root.join("owned.json"), b"{").unwrap();
+    assert_eq!(
+        store.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    store.retry().unwrap();
+    assert_eq!(
+        store.list(0, &Query::default()).unwrap()["items"][0]["id"],
+        "owned"
+    );
+    let previous = root.with_extension("previous");
+    std::fs::rename(&root, &previous).unwrap();
+    drop(Store::new(&root).unwrap());
+    assert!(store.retry().is_err());
+    assert!(store.list(0, &Query::default()).is_err());
+    assert_eq!(std::fs::read(previous.join("owned.json")).unwrap(), b"{");
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(previous).unwrap();
+}
 use vv_core::{
     Clip, ClipId, ClipSource, Rational,
     attributes::{Attribute, KeyframeAnchor},
@@ -249,7 +283,8 @@ fn deletion_completion(store: &Store, command: &str) -> Completion {
         version: 1,
         command_id: command.into(),
         fingerprint: [7; 32],
-        project_root_binding: crate::asset_journal::project_binding(&store.dir).unwrap(),
+        project_root_binding: crate::asset_journal::project_binding(store.directory().unwrap())
+            .unwrap(),
         receipt: json!({"command_id":command,"status":"applied","project_epoch":"epoch:1","generation":"7","command_epoch":"0","library_durable":true,"preset_library_durable":true,"durability":{"state":"volatile","recovery_revision":null}}),
     }
 }
@@ -550,7 +585,8 @@ fn permanent_delete_preflight_is_strict_locked_bounded_and_preserves_foreign_pen
         b"not a preset"
     );
     assert!(!root.join(DELETE_PENDING).exists());
-    let receipt_dir = crate::asset_store::directory(&store.dir, COMPLETIONS).unwrap();
+    let receipt_dir =
+        crate::asset_store::directory(store.directory().unwrap(), COMPLETIONS).unwrap();
     std::fs::write(
         root.join(COMPLETIONS).join("foreign.json"),
         b"foreign receipt",

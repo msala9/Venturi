@@ -12,6 +12,7 @@ use std::{
     io::{Read, Write},
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
+    sync::OnceLock,
 };
 use vv_core::{self as core, AudioEffectKind};
 
@@ -65,7 +66,7 @@ struct Raw {
 
 pub struct Store {
     root: PathBuf,
-    dir: File,
+    dir: OnceLock<File>,
 }
 
 fn changed() -> ApiError {
@@ -196,18 +197,43 @@ impl Drop for Temporary<'_> {
 impl Store {
     pub fn new(root: &Path) -> std::io::Result<Self> {
         std::fs::create_dir_all(root)?;
-        let dir = File::from(rustix::fs::open(
-            root,
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-            Mode::empty(),
-        )?);
+        let path = crate::media_roots::configured_path(root)?;
+        let dir = crate::media_roots::open_configured(&path)?;
         Ok(Self {
-            root: root.canonicalize()?,
-            dir,
+            root: path,
+            dir: OnceLock::from(dir),
         })
     }
-
+    pub(crate) fn configured(root: &Path) -> std::io::Result<Self> {
+        let store = Self {
+            root: crate::media_roots::configured_path(root)?,
+            dir: OnceLock::new(),
+        };
+        match store.retry() {
+            Ok(()) => (),
+            Err(error) if crate::media_roots::transient(&error) => (),
+            Err(error) => return Err(error),
+        }
+        Ok(store)
+    }
+    pub(crate) fn retry(&self) -> std::io::Result<()> {
+        let live = crate::media_roots::open_configured(&self.root)?;
+        if let Some(pinned) = self.dir.get() {
+            crate::asset_store::same_directory(pinned, &live)
+                .map_err(|_| std::io::Error::other("The configured audio preset root changed"))?;
+        } else {
+            let _ = self.dir.set(live);
+        }
+        Ok(())
+    }
+    pub(crate) fn is_available(&self) -> bool {
+        self.dir.get().is_some()
+    }
+    fn directory(&self) -> Result<&File> {
+        self.dir.get().ok_or_else(crate::media_roots::unavailable)
+    }
     fn validate_root(&self) -> Result<()> {
+        self.directory()?;
         let live = File::from(
             rustix::fs::open(
                 self.root.as_path(),
@@ -216,14 +242,14 @@ impl Store {
             )
             .map_err(|_| changed())?,
         );
-        crate::asset_store::same_directory(&self.dir, &live).map_err(|_| changed())
+        crate::asset_store::same_directory(self.directory()?, &live).map_err(|_| changed())
     }
 
     fn lock(&self, exclusive: bool) -> Result<File> {
         self.validate_root()?;
         let file = File::from(
             openat(
-                &self.dir,
+                self.directory()?,
                 LOCK_NAME,
                 OFlags::RDWR
                     | OFlags::CREATE
@@ -257,7 +283,7 @@ impl Store {
                 "Audio preset library is busy; retain the draft and retry",
             )
         })?;
-        if !same_entry(&self.dir, LOCK_NAME, &file) {
+        if !same_entry(self.directory()?, LOCK_NAME, &file) {
             return Err(changed());
         }
         self.no_native_pending()?;
@@ -265,7 +291,7 @@ impl Store {
     }
 
     fn no_native_pending(&self) -> Result<()> {
-        match statat(&self.dir, NATIVE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
+        match statat(self.directory()?, NATIVE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
             Err(rustix::io::Errno::NOENT) => Ok(()),
             _ => Err(ApiError::conflict(
                 "LIBRARY_RECOVERY_REQUIRED",
@@ -276,7 +302,7 @@ impl Store {
 
     fn raw(&self) -> Result<Raw> {
         let file = match openat(
-            &self.dir,
+            self.directory()?,
             FILE_NAME,
             OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::empty(),
@@ -309,7 +335,7 @@ impl Store {
             .map_err(|_| ApiError::io())?;
         if bytes.len() as u64 > MAX_BYTES
             || crate::asset_store::stable_identity(&file)? != identity
-            || !same_entry(&self.dir, FILE_NAME, &file)
+            || !same_entry(self.directory()?, FILE_NAME, &file)
         {
             return Err(changed());
         }
@@ -404,7 +430,7 @@ impl Store {
 
     fn publish(&self, bytes: &[u8], expected: &Raw, lock: &File) -> Result<()> {
         self.no_native_pending()?;
-        let mut temp = Temporary::new(&self.dir)?;
+        let mut temp = Temporary::new(self.directory()?)?;
         temp.file.write_all(bytes).map_err(|_| ApiError::io())?;
         temp.file.sync_all().map_err(|_| ApiError::io())?;
         let temporary_identity = crate::asset_store::stable_identity(&temp.file)?;
@@ -413,17 +439,17 @@ impl Store {
         self.validate_root()?;
         if current.identity != expected.identity
             || current.revision != expected.revision
-            || !same_entry(&self.dir, LOCK_NAME, lock)
-            || !same_entry(&self.dir, &temp.name, &temp.file)
+            || !same_entry(self.directory()?, LOCK_NAME, lock)
+            || !same_entry(self.directory()?, &temp.name, &temp.file)
             || crate::asset_store::stable_identity(&temp.file)? != temporary_identity
         {
             return Err(changed());
         }
         if expected.identity.is_none() {
             renameat_with(
-                &self.dir,
+                self.directory()?,
                 temp.name.as_str(),
-                &self.dir,
+                self.directory()?,
                 FILE_NAME,
                 RenameFlags::NOREPLACE,
             )
@@ -435,11 +461,16 @@ impl Store {
                 }
             })?;
         } else {
-            renameat(&self.dir, temp.name.as_str(), &self.dir, FILE_NAME)
-                .map_err(|_| ApiError::io())?;
+            renameat(
+                self.directory()?,
+                temp.name.as_str(),
+                self.directory()?,
+                FILE_NAME,
+            )
+            .map_err(|_| ApiError::io())?;
         }
         temp.installed = true;
-        self.dir.sync_all().map_err(|_| ApiError::conflict("AUDIO_PRESETS_UNCERTAIN", "Audio presets changed but durability could not be confirmed; refresh before another command"))
+        self.directory()?.sync_all().map_err(|_| ApiError::conflict("AUDIO_PRESETS_UNCERTAIN", "Audio presets changed but durability could not be confirmed; refresh before another command"))
     }
 }
 

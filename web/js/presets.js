@@ -122,10 +122,15 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     dialogControls?.();
     if(deleteButton)deleteButton.disabled=!deleteAvailable();syncDeletion();
   }
-  async function reload(wanted=page,preferred=selected?.id,direction=1,afterWrite=false){
+  async function reload(wanted=page,preferred=selected?.id,direction=1,afterWrite=false,recover=false){
     endDrag();if(!active || busy && !afterWrite)return false;const live=getContext();if(!live){message('Connect to a native session to read saved presets');return false;}const context={...live};
     controller?.abort();controller=new AbortController();const token=++sequence;readEpochAttempt=context.epoch;loading=true;loadedEpoch=null;controls();message('Reading saved presets…');
     try{
+      if(recover){
+        const result=await api('/presets/refresh',{project_epoch:context.epoch},{signal:controller.signal});
+        if(!active || token!==sequence || context.epoch!==getContext()?.epoch)return false;
+        if(result?.project_epoch!==context.epoch || result.available!==true)throw Error('The configured preset library is still unavailable');
+      }
       let result,scan=wanted;
       while(true){
         result=await api(`/presets/pages/${scan}?${new URLSearchParams({project_epoch:context.epoch,search,archived:String(archived),sort:'name'})}`,undefined,{signal:controller.signal});
@@ -137,7 +142,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       const found=result.items.findIndex(item=>item.id===preferred),keepOutside=selected && found<0 && selected.id===preferred && selected.archived===archived,index=keepOutside?-1:Math.max(0,found);list.value=String(index);if(!keepOutside)selected=result.items[index] || null;
       list.onchange=()=>{endDrag();selected=result.items[Number(list.value)] || null;controls();};
       message(`Page ${page+1} of ${result.pages} · ${result.total} ${archived?'archived':'saved'} presets${search?` · ${result.items.length} matches on this page`:''}`);return true;
-    }catch(error){if(active && token===sequence && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(`${error.message} · use Refresh presets to retry`);}return false;}
+    }catch(error){if(active && token===sequence && context.epoch===getContext()?.epoch && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(`${error.message} · use Refresh presets to retry`);}return false;}
     finally{if(token===sequence){loading=false;controls();}}
   }
   async function write(operation,project=true){
@@ -211,7 +216,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       const searchForm=document.createElement('form'),searchLabel=document.createElement('label'),searchInput=document.createElement('input');searchLabel.className='field';searchLabel.textContent='Search saved presets';searchInput.type='search';searchInput.value=search;searchLabel.append(searchInput);const submit=document.createElement('button');submit.textContent='Search presets';searchForm.append(searchLabel,submit);searchForm.addEventListener('submit',event=>{event.preventDefault();if(busy)return;search=searchInput.value;reload(0);});section.append(searchForm);
       const archivedLabel=document.createElement('label'),archivedInput=document.createElement('input');archivedInput.type='checkbox';archivedInput.checked=archived;archivedLabel.append(archivedInput,' Show archived presets');archivedInput.addEventListener('change',()=>{if(busy)return;archived=archivedInput.checked;reload(0);});section.append(archivedLabel);
       list=document.createElement('select');list.size=7;list.setAttribute('aria-label','Saved presets');list.title='Double-click or press Enter to apply to the selected clips';const ownedList=list;list.addEventListener('dblclick',event=>activateList(event,ownedList));list.addEventListener('keydown',event=>activateList(event,ownedList));section.append(list);status=document.createElement('p');status.className='muted';status.setAttribute('role','status');section.append(status);
-      previous=button('Previous presets',()=>reload(page-1,selected?.id,-1));next=button('Next presets',()=>reload(page+1));const refresh=button('Refresh presets',()=>reload());navigation=[searchInput,submit,archivedInput,refresh];section.append(previous,next,refresh);
+      previous=button('Previous presets',()=>reload(page-1,selected?.id,-1));next=button('Next presets',()=>reload(page+1));const refresh=button('Refresh presets',()=>reload(page,selected?.id,1,false,true));navigation=[searchInput,submit,archivedInput,refresh];section.append(previous,next,refresh);
       caption=document.createElement('p');caption.className='muted';section.append(caption);
       apply=button('Apply preset to selected clips',()=>void applySelected(ownedList));
       dragButton=button('Drag selected preset',()=>{});dragButton.setAttribute('data-preset-drag','');dragButton.addEventListener('dragstart',startDrag);dragButton.addEventListener('dragend',event=>{if(dragTicket?.button===event.currentTarget)endDrag();});const dragNote=document.createElement('p');dragNote.className='muted';dragNote.textContent='Drop on a selected clip to apply to the selection; otherwise apply to the target clip. Linked clips follow native preset rules. You can also select clips and use Apply.';section.append(dragButton,dragNote);

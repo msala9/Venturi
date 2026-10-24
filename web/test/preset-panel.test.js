@@ -54,7 +54,7 @@ function panelHarness(shortcut='Ctrl+Alt+Shift+B',options={}){
   const deletionReceipt=edit=>({command_id:'deleted',status:'applied',project_epoch:context.epoch,library_durable:true,preset_library_durable:true,deleted_preset:{id:edit.id,revision:edit.revision,archived:edit.archived}});
   const mutate=async operation=>{writes.push(operation);if(operation.kind==='apply_saved_preset')return options.apply?options.apply(operation):{command_id:'applied'};if(operation.edit?.action==='delete'){const receipt=options.remove?await options.remove(operation):deletionReceipt(operation.edit);if(receipt?.status==='applied' && receipt.deleted_preset?.id===item.id)itemExists=false;return receipt;}const edits=operation.options || operation.edit.options,old=operation.kind==='save_attribute_preset'?null:item.shortcut;item={...item,...edits,id:operation.kind==='save_attribute_preset'?'created':item.id,revision:'r2',shortcut:edits.shortcut?.action==='set'?edits.shortcut.value:edits.shortcut?.action==='clear'?null:old};return {command_id:operation.kind==='save_attribute_preset'?'created':'updated'};};
   const presetDnd={type:'application/x-venturi-preset',start(snapshot,current){drags.push({snapshot,current});return options.start?options.start(snapshot,current):'opaque-native-drag';},end(){dragEnds++;}};
-  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,requestOptions)=>{reads.push({path,body,options:requestOptions});if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options:requestOptions});return pending.promise;}if(path.startsWith('/presets/pages/')){const result={page:0,pages:1,total:itemExists?1:0,items:itemExists?[structuredClone(item)]:[]};return options.pageReader?options.pageReader(result,path):result;}if(path.startsWith('/presets/items/')){if(!itemExists)throw Error('Deleted preset must not be fetched');return structuredClone(item);}throw Error(`Unexpected route ${path}`);}});
+  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,requestOptions)=>{reads.push({path,body,options:requestOptions});if(path==='/presets/refresh')return options.refreshReader?options.refreshReader(body,requestOptions):{project_epoch:body.project_epoch,available:true};if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options:requestOptions});return pending.promise;}if(path.startsWith('/presets/pages/')){const result={page:0,pages:1,total:itemExists?1:0,items:itemExists?[structuredClone(item)]:[]};return options.pageReader?options.pageReader(result,path):result;}if(path.startsWith('/presets/items/')){if(!itemExists)throw Error('Deleted preset must not be fetched');return structuredClone(item);}throw Error(`Unexpected route ${path}`);}});
   const walk=node=>[node,...(node.children || []).filter(child=>child instanceof Element).flatMap(walk)];
   const dialog=()=>walk(body).find(node=>node.tag==='dialog' && node.open);
   const button=(text,parent=root)=>{const found=walk(parent).find(node=>node.tag==='button' && node.textContent===text);assert(found,`Expected button ${text}`);return found;};
@@ -227,7 +227,7 @@ test('a live preset palette refreshes once per project epoch, preserves the sele
 
 test('project epoch refresh replaces an old pending catalog read and ignores its late acknowledgment',async()=>{
   let reads=0;const old=deferred(),fresh=deferred(),h=panelHarness(undefined,{pageReader:result=>++reads===2?old.promise:reads===3?fresh.promise:result});try{
-    await h.open();h.button('Refresh presets').click();const oldRequest=h.reads.at(-1);h.context.epoch='new-project';h.panel.invalidate();h.panel.invalidate();assert.equal(reads,3);assert.equal(oldRequest.options.signal.aborted,true);
+    await h.open();h.button('Refresh presets').click();await settle();const oldRequest=h.reads.at(-1);h.context.epoch='new-project';h.panel.invalidate();h.panel.invalidate();assert.equal(reads,3);assert.equal(oldRequest.options.signal.aborted,true);
     fresh.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),revision:'fresh-revision'}]});await settle();assert.equal(h.button('Apply preset to selected clips').disabled,false);
     old.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),id:'obsolete-preset',revision:'obsolete-revision'}]});await settle();h.panel.invalidate();assert.equal(reads,3);h.activate();await settle();assert.deepEqual(h.writes,[{kind:'apply_saved_preset',clip_ids:['clip'],preset_id:'preset',revision:'fresh-revision'}]);
   }finally{h.destroy();}
@@ -271,5 +271,26 @@ test('preset Delete refuses an unverified or failed ACK without deactivating a s
 test('acknowledged preset Delete remains successful when refresh fails and never repeats the deletion',async()=>{
   let reads=0;const h=panelHarness(undefined,{pageReader:result=>{if(++reads>1)throw Error('NAS refresh failed');return result;}});try{
     await h.open();h.deleteKey();h.submit();await settle();assert.equal(h.writes.length,1);assert.deepEqual(h.deactivated,['preset']);assert.match(h.field('role',h.root).textContent,/Command applied successfully.*refresh failed.*do not submit it again/);assert.equal(h.button('Apply preset to selected clips').disabled,true);assert.equal(h.button('Permanently delete saved preset…').disabled,true);h.panel.invalidate();await settle();assert.equal(reads,2);assert.equal(h.writes.length,1);assert(!h.reads.some(read=>read.path.startsWith('/presets/items/')));
+  }finally{h.destroy();}
+});
+
+
+test('saved preset startup keeps retry explicit and binds recovery to the current project epoch',async()=>{
+  let available=false;const h=panelHarness(undefined,{refreshReader:body=>{available=true;return {project_epoch:body.project_epoch,available:true};},pageReader:result=>{if(!available)throw Error('Configured preset root unavailable');return result;}});try{
+    await h.open();assert.equal(h.reads.filter(read=>read.path==='/presets/refresh').length,0);assert.equal(h.button('Apply preset to selected clips').disabled,true);
+    h.button('Refresh presets').click();await settle();assert.deepEqual(h.reads.find(read=>read.path==='/presets/refresh').body,{project_epoch:'epoch'});assert.equal(h.button('Apply preset to selected clips').disabled,false);assert.deepEqual(h.writes,[]);
+  }finally{h.destroy();}
+});
+
+test('a late explicit preset retry never reads or selects after its panel is hidden',async()=>{
+  const retry=deferred(),h=panelHarness(undefined,{refreshReader:()=>retry.promise});try{
+    await h.open();h.button('Refresh presets').click();const read=h.reads.at(-1),count=h.reads.length;h.panel.hide();assert.equal(read.options.signal.aborted,true);retry.resolve({project_epoch:'epoch',available:true});await settle();assert.equal(h.reads.length,count);assert.deepEqual(h.writes,[]);
+  }finally{h.destroy();}
+});
+
+
+test('an obsolete configured preset retry failure cannot repaint a different project',async()=>{
+  const retry=deferred(),h=panelHarness(undefined,{refreshReader:()=>retry.promise});try{
+    await h.open();h.button('Refresh presets').click();h.context.epoch='next';retry.reject(Error('Obsolete preset failure'));await settle();assert.doesNotMatch(h.field('role',h.root).textContent,/Obsolete preset failure/);assert.equal(h.reads.filter(read=>read.path.startsWith('/presets/pages/')).length,1);assert.deepEqual(h.writes,[]);
   }finally{h.destroy();}
 });

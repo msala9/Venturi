@@ -14,7 +14,7 @@ use std::{
     os::{fd::AsRawFd, unix::fs::MetadataExt},
     path::{Path, PathBuf},
     sync::{
-        Arc,
+        Arc, OnceLock,
         atomic::{AtomicBool, Ordering},
     },
 };
@@ -22,9 +22,12 @@ use vv_core::Id;
 
 pub(crate) const MAX_JSON: u64 = 4 * 1024 * 1024;
 #[derive(Clone)]
-pub struct Store(Arc<Directories>);
-struct Directories {
+pub struct Store(Arc<Storage>);
+struct Storage {
     root: PathBuf,
+    directories: OnceLock<Directories>,
+}
+struct Directories {
     directory: File,
     assets: File,
     media: File,
@@ -276,20 +279,18 @@ pub(crate) fn regular(parent: &File, child: &str) -> Result<File> {
 impl Store {
     pub fn new(root: &Path) -> std::io::Result<Self> {
         std::fs::create_dir_all(root)?;
-        let root_dir = File::from(rustix::fs::open(
-            root,
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-            Mode::empty(),
-        )?);
+        let normalized = crate::media_roots::configured_path(root)?;
+        let root_dir = crate::media_roots::open_configured(&normalized)?;
         let assets = directory(&root_dir, "assets").map_err(|e| std::io::Error::other(e.2))?;
         let media = directory(&root_dir, "media").map_err(|e| std::io::Error::other(e.2))?;
-        let store = Self(Arc::new(Directories {
-            root: root.canonicalize()?,
-            directory: root_dir,
-            assets,
-            media,
+        let store = Self(Arc::new(Storage {
+            root: normalized,
+            directories: OnceLock::from(Directories {
+                directory: root_dir,
+                assets,
+                media,
+            }),
         }));
-        // Reads and mutations retry catalog availability on the pinned directories.
         match store.read_guard() {
             Ok(_guard) => (),
             Err(error) if error.1 == "LIBRARY_BUSY" => (),
@@ -297,13 +298,68 @@ impl Store {
         }
         Ok(store)
     }
+    pub(crate) fn configured(root: &Path) -> std::io::Result<Self> {
+        let store = Self(Arc::new(Storage {
+            root: crate::media_roots::configured_path(root)?,
+            directories: OnceLock::new(),
+        }));
+        match store.retry() {
+            Ok(()) => (),
+            Err(error) if crate::media_roots::transient(&error) => (),
+            Err(error) => return Err(error),
+        }
+        Ok(store)
+    }
+    pub(crate) fn retry(&self) -> std::io::Result<()> {
+        if self.0.directories.get().is_some() {
+            return self.validate_root().map_err(|e| std::io::Error::other(e.2));
+        }
+        let root_dir = crate::media_roots::open_configured(self.root())?;
+        let open = |name: &str| -> std::io::Result<File> {
+            match rustix::fs::mkdirat(&root_dir, name, Mode::RUSR | Mode::WUSR | Mode::XUSR) {
+                Ok(()) => root_dir.sync_all()?,
+                Err(rustix::io::Errno::EXIST) => (),
+                Err(error) => return Err(error.into()),
+            }
+            openat(
+                &root_dir,
+                name,
+                OFlags::RDONLY
+                    | OFlags::DIRECTORY
+                    | OFlags::NOFOLLOW
+                    | OFlags::NONBLOCK
+                    | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .map(File::from)
+            .map_err(std::io::Error::from)
+        };
+        let assets = open("assets")?;
+        let media = open("media")?;
+        let _ = self.0.directories.set(Directories {
+            directory: root_dir,
+            assets,
+            media,
+        });
+        self.validate_root().map_err(|e| std::io::Error::other(e.2))
+    }
+    fn directories(&self) -> Result<&Directories> {
+        self.0
+            .directories
+            .get()
+            .ok_or_else(crate::media_roots::unavailable)
+    }
+    pub(crate) fn is_available(&self) -> bool {
+        self.0.directories.get().is_some()
+    }
     pub(crate) fn root(&self) -> &Path {
         &self.0.root
     }
-    pub(crate) fn media(&self) -> &File {
-        &self.0.media
+    pub(crate) fn media(&self) -> Result<&File> {
+        Ok(&self.directories()?.media)
     }
     pub(crate) fn validate_root(&self) -> Result<()> {
+        self.directories()?;
         let live = File::from(
             rustix::fs::open(
                 self.root(),
@@ -312,8 +368,11 @@ impl Store {
             )
             .map_err(|_| changed())?,
         );
-        same_directory(&live, &self.0.directory)?;
-        for (name, pinned) in [("assets", &self.0.assets), ("media", &self.0.media)] {
+        same_directory(&live, &self.directories()?.directory)?;
+        for (name, pinned) in [
+            ("assets", &self.directories()?.assets),
+            ("media", &self.directories()?.media),
+        ] {
             let live = File::from(
                 openat(
                     &live,
@@ -331,7 +390,7 @@ impl Store {
         self.validate_root()?;
         let file = File::from(
             openat(
-                &self.0.directory,
+                &self.directories()?.directory,
                 ".venturi-assets.lock",
                 OFlags::RDWR
                     | OFlags::CREATE
@@ -355,13 +414,13 @@ impl Store {
         )?;
         let _catalog = self.catalog_lock(true)?;
         self.no_native_pending()?;
-        asset_journal::recover(&self.0.directory, &self.0.assets)?;
+        asset_journal::recover(&self.directories()?.directory, &self.directories()?.assets)?;
         Ok(file)
     }
     fn catalog_lock(&self, exclusive: bool) -> Result<File> {
         let file = File::from(
             openat(
-                &self.0.directory,
+                &self.directories()?.directory,
                 ".venturi-assets-catalog.lock",
                 OFlags::RDWR
                     | OFlags::CREATE
@@ -395,7 +454,7 @@ impl Store {
         self.validate_root()?;
         let guard = self.catalog_lock(false)?;
         self.no_native_pending()?;
-        if !asset_journal::pending(&self.0.directory)? {
+        if !asset_journal::pending(&self.directories()?.directory)? {
             return Ok(guard);
         }
         drop(guard);
@@ -406,7 +465,7 @@ impl Store {
     }
     fn no_native_pending(&self) -> Result<()> {
         match rustix::fs::statat(
-            &self.0.directory,
+            &self.directories()?.directory,
             ".venturi-native-assets-pending.json",
             AtFlags::SYMLINK_NOFOLLOW,
         ) {
@@ -451,7 +510,7 @@ impl Store {
             return Err(ApiError::invalid("Invalid managed native media name"));
         }
         let dir = match openat(
-            self.media(),
+            self.media()?,
             hash,
             OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
             Mode::empty(),
@@ -494,7 +553,7 @@ impl Store {
     }
     fn folders_raw(&self) -> Result<(Tree, String, Option<Before>)> {
         let fd = match openat(
-            &self.0.directory,
+            &self.directories()?.directory,
             "folders.json",
             OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::empty(),
@@ -515,7 +574,8 @@ impl Store {
             .map_err(|_| ApiError::io())?;
         if bytes.len() > crate::asset_folders::MAX_BYTES
             || stable_identity(&file)? != identity
-            || stable_identity(&regular(&self.0.directory, "folders.json")?)? != identity
+            || stable_identity(&regular(&self.directories()?.directory, "folders.json")?)?
+                != identity
         {
             return Err(changed());
         }
@@ -537,16 +597,18 @@ impl Store {
     pub fn completion(&self, id: &str, binding: &str) -> Result<Option<([u8; 32], Value)>> {
         let _guard = self.read_guard()?;
         Ok(
-            asset_journal::completion_for(&self.0.directory, id, binding)?
+            asset_journal::completion_for(&self.directories()?.directory, id, binding)?
                 .map(|entry| (entry.fingerprint, entry.receipt)),
         )
     }
     pub fn completions(&self, binding: &str) -> Result<Vec<(String, [u8; 32], Value)>> {
         let _guard = self.read_guard()?;
-        Ok(asset_journal::completions(&self.0.directory, binding)?
-            .into_iter()
-            .map(|entry| (entry.command_id, entry.fingerprint, entry.receipt))
-            .collect())
+        Ok(
+            asset_journal::completions(&self.directories()?.directory, binding)?
+                .into_iter()
+                .map(|entry| (entry.command_id, entry.fingerprint, entry.receipt))
+                .collect(),
+        )
     }
     pub fn acknowledge_completion(
         &self,
@@ -556,7 +618,7 @@ impl Store {
     ) -> Result<()> {
         let _global = self.lock()?;
         let _catalog = self.catalog_lock(true)?;
-        asset_journal::acknowledge(&self.0.directory, id, fingerprint, binding)
+        asset_journal::acknowledge(&self.directories()?.directory, id, fingerprint, binding)
     }
     fn raw(&self, file_name: &str) -> Result<Option<Raw>> {
         self.raw_limit(file_name, MAX_JSON)
@@ -572,7 +634,7 @@ impl Store {
     ) -> Result<Option<Raw>> {
         self.validate_root()?;
         let fd = match openat(
-            &self.0.assets,
+            &self.directories()?.assets,
             file_name,
             OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::empty(),
@@ -615,7 +677,7 @@ impl Store {
         if bytes.len() as u64 > limit || stable_identity(&file)? != identity {
             return Err(changed());
         }
-        let live = regular(&self.0.assets, file_name)?;
+        let live = regular(&self.directories()?.assets, file_name)?;
         if stable_identity(&live)? != identity {
             return Err(changed());
         }
@@ -636,7 +698,7 @@ impl Store {
         if bytes.len() as u64 > MAX_JSON {
             return Err(ApiError::invalid("Native asset exceeds 4 MiB"));
         }
-        let disk = rustix::fs::fstatvfs(&self.0.assets).map_err(|_| ApiError::io())?;
+        let disk = rustix::fs::fstatvfs(&self.directories()?.assets).map_err(|_| ApiError::io())?;
         if disk.f_bavail.saturating_mul(disk.f_frsize) < 512 * 1024 * 1024 + bytes.len() as u64 {
             return Err(ApiError::conflict(
                 "ASSET_DISK_FULL",
@@ -651,7 +713,7 @@ impl Store {
         let result = (|| {
             let mut file = File::from(
                 openat(
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     temp.as_str(),
                     OFlags::WRONLY
                         | OFlags::CREATE
@@ -671,21 +733,29 @@ impl Store {
                 return Err(changed());
             }
             if expected.is_some() {
-                renameat(&self.0.assets, temp.as_str(), &self.0.assets, file_name)
-                    .map_err(|_| ApiError::io())?;
+                renameat(
+                    &self.directories()?.assets,
+                    temp.as_str(),
+                    &self.directories()?.assets,
+                    file_name,
+                )
+                .map_err(|_| ApiError::io())?;
             } else {
                 renameat_with(
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     temp.as_str(),
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     file_name,
                     RenameFlags::NOREPLACE,
                 )
                 .map_err(|_| ApiError::conflict("FILE_EXISTS", "Existing asset was preserved"))?;
             }
-            self.0.assets.sync_all().map_err(|_| ApiError::io())
+            self.directories()?
+                .assets
+                .sync_all()
+                .map_err(|_| ApiError::io())
         })();
-        let _ = unlinkat(&self.0.assets, temp.as_str(), AtFlags::empty());
+        let _ = unlinkat(&self.directories()?.assets, temp.as_str(), AtFlags::empty());
         result
     }
     pub fn create(&self, id: &str, asset: &AssetFile) -> Result<()> {
@@ -793,10 +863,12 @@ impl Store {
             ".json"
         };
         let mut names = Vec::new();
-        for (count, entry) in
-            std::fs::read_dir(format!("/proc/self/fd/{}", self.0.assets.as_raw_fd()))
-                .map_err(|_| ApiError::io())?
-                .enumerate()
+        for (count, entry) in std::fs::read_dir(format!(
+            "/proc/self/fd/{}",
+            self.directories()?.assets.as_raw_fd()
+        ))
+        .map_err(|_| ApiError::io())?
+        .enumerate()
         {
             if count >= 10000 {
                 return Err(ApiError::invalid(
@@ -980,9 +1052,9 @@ impl Store {
                     return Err(changed());
                 }
                 renameat_with(
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     from.as_str(),
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     to.as_str(),
                     RenameFlags::NOREPLACE,
                 )
@@ -992,7 +1064,10 @@ impl Store {
                         "An existing active or archived asset was preserved",
                     )
                 })?;
-                self.0.assets.sync_all().map_err(|_| ApiError::io())
+                self.directories()?
+                    .assets
+                    .sync_all()
+                    .map_err(|_| ApiError::io())
             }
             Edit::RestorePrevious { id, revision } => {
                 let file_name = name(id, false)?;
@@ -1006,14 +1081,17 @@ impl Store {
                     return Err(changed());
                 }
                 renameat_with(
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     file_name.as_str(),
-                    &self.0.assets,
+                    &self.directories()?.assets,
                     backup_name.as_str(),
                     RenameFlags::EXCHANGE,
                 )
                 .map_err(|_| ApiError::io())?;
-                self.0.assets.sync_all().map_err(|_| ApiError::io())
+                self.directories()?
+                    .assets
+                    .sync_all()
+                    .map_err(|_| ApiError::io())
             }
             _ => unreachable!("Prepared folder edits are handled separately"),
         }
@@ -1063,11 +1141,15 @@ impl Store {
                 "Native asset folders changed; refresh before editing",
             ));
         }
-        let mut prepared = PreparedEdit::new(&self.0.directory, completion.clone(), json!({}))?;
+        let mut prepared = PreparedEdit::new(
+            &self.directories()?.directory,
+            completion.clone(),
+            json!({}),
+        )?;
         prepared.guard(false, "folders.json".into(), before.clone());
         let mut affected = 0;
         let mut read_bytes = if before.is_some() {
-            regular(&self.0.directory, "folders.json")?
+            regular(&self.directories()?.directory, "folders.json")?
                 .metadata()
                 .map_err(|_| ApiError::io())?
                 .len()
@@ -1088,7 +1170,7 @@ impl Store {
             Edit::RemoveFolder { id, .. } => {
                 let parent = tree.remove(id)?.parent;
                 tree_changed = true;
-                let entries = asset_journal::active_roster(&self.0.assets)?;
+                let entries = asset_journal::active_roster(&self.directories()?.assets)?;
                 for entry in &entries {
                     if cancel.load(Ordering::Acquire) {
                         return Err(ApiError::conflict(
@@ -1213,7 +1295,11 @@ impl Store {
         let _global = self.lock()?;
         let _catalog = self.catalog_lock(true)?;
         self.validate_root()?;
-        prepared.commit(&self.0.directory, &self.0.assets, cancel)?;
+        prepared.commit(
+            &self.directories()?.directory,
+            &self.directories()?.assets,
+            cancel,
+        )?;
         self.cleanup_deleted_media(prepared.cleanup(), cancel);
         Ok(())
     }
@@ -1227,7 +1313,11 @@ impl Store {
         let _catalog = self.catalog_lock(true)?;
         self.validate_root()?;
         check()?;
-        prepared.commit(&self.0.directory, &self.0.assets, cancel)?;
+        prepared.commit(
+            &self.directories()?.directory,
+            &self.directories()?.assets,
+            cancel,
+        )?;
         self.cleanup_deleted_media(prepared.cleanup(), cancel);
         Ok(())
     }
@@ -1290,7 +1380,7 @@ impl Store {
         completion.receipt["deleted_assets"] = json!(ids.len());
         completion.receipt["deleted_ids"] = json!(ids);
         let mut prepared = PreparedEdit::new(
-            &self.0.directory,
+            &self.directories()?.directory,
             completion,
             json!({"deleted_assets":ids.len(),"deleted_ids":ids}),
         )?;
@@ -1321,10 +1411,12 @@ impl Store {
         let retained = (|| -> Result<std::collections::HashSet<PathBuf>> {
             let mut retained = std::collections::HashSet::new();
             let mut bytes = 0u64;
-            for (index, entry) in
-                std::fs::read_dir(format!("/proc/self/fd/{}", self.0.assets.as_raw_fd()))
-                    .map_err(|_| ApiError::io())?
-                    .enumerate()
+            for (index, entry) in std::fs::read_dir(format!(
+                "/proc/self/fd/{}",
+                self.directories()?.assets.as_raw_fd()
+            ))
+            .map_err(|_| ApiError::io())?
+            .enumerate()
             {
                 if index >= 10000 || cancel.load(Ordering::Acquire) {
                     return Err(changed());
@@ -1392,7 +1484,7 @@ impl Store {
                     .ok_or_else(changed)?;
                 let directory = File::from(
                     openat(
-                        &self.0.media,
+                        &self.directories()?.media,
                         parent,
                         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
                         Mode::empty(),
@@ -1402,7 +1494,7 @@ impl Store {
                 let pinned = directory.metadata().map_err(|_| ApiError::io())?;
                 let live = File::from(
                     openat(
-                        &self.0.media,
+                        &self.directories()?.media,
                         parent,
                         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
                         Mode::empty(),
@@ -1537,7 +1629,7 @@ impl Store {
         {
             return Err(ApiError::invalid("Replacement report exceeds 4 MiB"));
         }
-        let mut prepared = PreparedEdit::new(&self.0.directory, completion, summary)?;
+        let mut prepared = PreparedEdit::new(&self.directories()?.directory, completion, summary)?;
         let before = Some(Before {
             identity: raw.identity.clone(),
             sha256: raw.revision.clone(),
@@ -1597,7 +1689,7 @@ impl Store {
         if let Some(parent) = parent {
             tree.path(parent)?;
         }
-        let roster = asset_journal::active_roster(&self.0.assets)?;
+        let roster = asset_journal::active_roster(&self.directories()?.assets)?;
         let mut present = std::collections::HashSet::new();
         let mut bytes = 0_u64;
         for entry in &roster {
@@ -1695,7 +1787,7 @@ impl Store {
         ] {
             completion.receipt[key] = summary[key].clone();
         }
-        let mut prepared = PreparedEdit::new(&self.0.directory, completion, summary)?;
+        let mut prepared = PreparedEdit::new(&self.directories()?.directory, completion, summary)?;
         prepared.roster(plan.roster);
         prepared.guard(false, "folders.json".into(), plan.before.clone());
         if plan.created_folders != 0 {

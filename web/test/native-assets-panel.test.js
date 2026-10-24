@@ -10,7 +10,7 @@ const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
 const draggableAsset=(id,name=id)=>({id,name,revision:`revision-${id}`,media_count:1,file_count:1,archived:false,placement:{project_epoch:'epoch',generation:'7',error:null,items:[{source_in:0,source_out:48,fps:{num:24,den:1},has_video:true,has_audio:true,audio_streams:1,is_image:false}]}});
 function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancelable:true});event.dataTransfer={effectAllowed:'none',setData:(type,value)=>values.set(type,value)};return {event,values};}
-function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked,getThumbnail,onThumbnailDemand,intersectionObserver}={}){
+function harness({refreshReader,pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked,getThumbnail,onThumbnailDemand,intersectionObserver}={}){
   const original={document:globalThis.document,Option:globalThis.Option,IntersectionObserver:globalThis.IntersectionObserver};
   if(intersectionObserver)globalThis.IntersectionObserver=intersectionObserver;
   class Element extends EventTarget{
@@ -39,7 +39,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],relinked=[],notices=[],deleteGate=deferred();
+  const refreshReads=[],pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],relinked=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
   const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,onRemoved:(ids,receipt)=>{removed.push({ids,receipt});return onRemoved?.(ids,receipt);},
     getThumbnail,onThumbnailDemand,
@@ -49,6 +49,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
     projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:operation.kind==='import_native_asset_set'?operation.assets.map(item=>`new-${item.asset_id}`):['new-media'],...(operation.kind==='import_native_asset_set'?{changed:true,new_count:operation.assets.length,reused_count:0,errors:[]}: {})});},
     timelineCommit(operation){timelineWrites.push(structuredClone(operation));return timelineCommit?timelineCommit(operation):Promise.resolve({command_id:'placed',project_epoch:context.project_epoch,media_ids:['new-media'],clip_ids:['placed-video','placed-audio']});},
     api(path,body,options={}){
+      if(path==='/native-assets/refresh'){refreshReads.push({path,body,options});return refreshReader?refreshReader(body,options):Promise.resolve({project_epoch:body.project_epoch,available:true});}
       if(path.startsWith('/native-assets/folders?')){
         folderReads.push({path,options});
         return folderReader?folderReader(folderReads.length-1,path,structuredClone(folders)):Promise.resolve({project_epoch:context.project_epoch,version:1,folders_revision:foldersRevision,folders:structuredClone(folders)});
@@ -72,7 +73,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
   const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,document:globalThis.document,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,relinked,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),menuField:label=>{const node=walk(body).find(node=>node.getAttribute('aria-label')===label);assert(node,`Expected menu control ${label}`);return node;},setModal:value=>{modal=value;},
+  return {panel,root,document:globalThis.document,refreshReads,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,relinked,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),menuField:label=>{const node=walk(body).find(node=>node.getAttribute('aria-label')===label);assert(node,`Expected menu control ${label}`);return node;},setModal:value=>{modal=value;},
     confirmation:()=>walk(root).find(node=>node.tag==='dialog' && node.open),confirmDelete:()=>button('Permanently delete native assets').parent.dispatchEvent(new Event('submit',{cancelable:true})),
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
@@ -684,4 +685,27 @@ test('stale or canceled pool batch acknowledgment never commits even when the pr
       h.prepares[0].resolve(h.job(0,{result:{assets}}));await settle();assert.deepEqual(h.projectWrites,[],action);assert.deepEqual(h.timelineWrites,[],action);assert.deepEqual(h.imported,[],action);assert.equal(h.deletes.length,1,action);
     }finally{h.destroy();}
   }
+});
+
+
+test('only explicit native Library Refresh attaches the configured root and then reads its catalog',async()=>{
+  let available=false;const h=harness({refreshReader:body=>{available=true;return Promise.resolve({project_epoch:body.project_epoch,available:true});},folderReader:(_index,_path,folders)=>{if(!available)throw Error('Configured Library unavailable');return Promise.resolve({project_epoch:'epoch',version:1,folders_revision:foldersRevision,folders});}});try{
+    await h.open();assert.equal(h.refreshReads.length,0);assert.equal(h.pages.length,0);assert.match(h.status(),/unavailable/);
+    h.button('Refresh native assets').click();await settle();assert.deepEqual(h.refreshReads.map(read=>read.body),[{project_epoch:'epoch'}]);assert.equal(h.pages.length,1);assert.equal(h.button('Import native asset into project').disabled,false);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.projectWrites,[]);
+  }finally{h.destroy();}
+});
+
+test('a late configured Library retry cannot read into a hidden or replaced project panel',async()=>{
+  for(const replace of [h=>h.panel.hide(),h=>h.setContext({...h.context(),project_epoch:'next'})]){
+    const retry=deferred(),h=harness({refreshReader:()=>retry.promise});try{
+      await h.open();h.button('Refresh native assets').click();replace(h);retry.resolve({project_epoch:'epoch',available:true});await settle();assert.deepEqual(h.folderReads.map(read=>new URL(read.path,'http://fixture').searchParams.get('project_epoch')),h.context().project_epoch==='epoch'?['epoch']:['epoch','next']);assert.equal(h.pages.length,h.folderReads.length);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.projectWrites,[]);
+    }finally{h.destroy();}
+  }
+});
+
+
+test('an obsolete Library retry failure cannot replace status for a different project',async()=>{
+  const retry=deferred(),h=harness({refreshReader:()=>retry.promise});try{
+    await h.open();h.button('Refresh native assets').click();h.setContext({...h.context(),project_epoch:'next'});retry.reject(Error('Obsolete NAS failure'));await settle();assert.doesNotMatch(h.status(),/Obsolete NAS failure/);assert.deepEqual(h.pages.map(read=>new URL(read.path,'http://fixture').searchParams.get('project_epoch')),['epoch','next']);assert.deepEqual(h.projectWrites,[]);
+  }finally{h.destroy();}
 });

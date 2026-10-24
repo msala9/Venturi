@@ -3207,7 +3207,8 @@ fn native_project_copy_preserves_legacy_names_unicode_bounds_and_rejects_cancele
         "ASSET_CANCELED"
     );
     assert!(!fixture.project.join("library").exists());
-    let legacy_dir = asset_store::directory(fixture.store.media(), "0123456789abcdef").unwrap();
+    let legacy_dir =
+        asset_store::directory(fixture.store.media().unwrap(), "0123456789abcdef").unwrap();
     let legacy_path = fixture
         .store
         .root()
@@ -3521,7 +3522,7 @@ fn quota_checks_are_metadata_only_and_cancel_budget_never_removes_completed_or_f
         cancel,
     };
     assert_eq!(
-        budget.check(fixture.store.media()).unwrap_err().1,
+        budget.check(fixture.store.media().unwrap()).unwrap_err().1,
         "ASSET_CANCELED"
     );
     let expired = Budget {
@@ -3529,7 +3530,7 @@ fn quota_checks_are_metadata_only_and_cancel_budget_never_removes_completed_or_f
         cancel: Arc::new(AtomicBool::new(false)),
     };
     assert_eq!(
-        expired.check(fixture.store.media()).unwrap_err().1,
+        expired.check(fixture.store.media().unwrap()).unwrap_err().1,
         "ASSET_TIMEOUT"
     );
     assert!(fixture.path.exists());

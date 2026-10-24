@@ -6,6 +6,139 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn unavailable_native_library_refresh_http_is_explicit_epoch_bound_and_lease_free() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-refresh-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let shared = root.join("missing-library");
+    let preset_root = shared.join("presets");
+    let host = Host::start_with_libraries(&root, &preset_root, &shared).unwrap();
+    host.call(Action::Lease("other-client".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let epoch = before["project_epoch"].as_str().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    for route in [
+        "native-assets/refresh",
+        "presets/refresh",
+        "audio/presets/refresh",
+    ] {
+        for (body, expected) in [
+            (
+                json!({"project_epoch":epoch,"path":"/foreign"}),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (json!({"project_epoch":"old"}), StatusCode::CONFLICT),
+            (json!({"project_epoch":epoch}), StatusCode::CONFLICT),
+        ] {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .header("host", "127.0.0.1:8787")
+                        .method("POST")
+                        .uri(format!("/api/v1/{route}"))
+                        .header("content-type", "application/json")
+                        .body(Body::from(body.to_string()))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), expected);
+        }
+    }
+    assert!(!shared.exists());
+    drop(crate::asset_store::Store::new(&shared).unwrap());
+    drop(crate::preset_store::Store::new(&preset_root).unwrap());
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .header("host", "127.0.0.1:8787")
+                .uri(format!(
+                    "/api/v1/native-assets/folders?project_epoch={epoch}"
+                ))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CONFLICT);
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .header("host", "127.0.0.1:8787")
+                .method("POST")
+                .uri("/api/v1/native-assets/refresh")
+                .header("content-type", "application/json")
+                .header("origin", "https://foreign.invalid")
+                .body(Body::from(json!({"project_epoch":epoch}).to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        host.call(Action::Session).await.unwrap()["native_libraries"]["assets_available"],
+        false
+    );
+    for route in [
+        "native-assets/refresh",
+        "presets/refresh",
+        "audio/presets/refresh",
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .header("host", "127.0.0.1:8787")
+                    .method("POST")
+                    .uri(format!("/api/v1/{route}"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(json!({"project_epoch":epoch}).to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        assert_eq!(value, json!({"project_epoch":epoch,"available":true}));
+    }
+    let after = host.call(Action::Session).await.unwrap();
+    for key in [
+        "project_epoch",
+        "generation",
+        "history",
+        "timelines",
+        "media",
+        "unsaved",
+    ] {
+        assert_eq!(after[key], before[key], "Refresh changed {key}");
+    }
+    assert_eq!(
+        after["native_libraries"],
+        json!({"assets_available":true,"presets_available":true,"audio_presets_available":true})
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn timeline_waveform_http_is_strict_read_only_and_revision_bound() {
     use vv_core::{Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind};
     let root =

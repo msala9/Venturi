@@ -1,5 +1,22 @@
 # UX/UI specification — professional NLE with AI review
 
+## Native fullscreen presentation
+
+Fullscreen fits the active Source or Program image into the entire black
+Viewer, independently of normal zoom and pan. The existing seek and transport
+controls become an overlay in the bottom90 CSS pixels, revealed by pointer
+proximity or keyboard navigation/focus. Normal header, scopes, source actions
+and editing handles reserve no fullscreen area. Offline/preparation failures
+remain visible. Exit restores normal zoom/pan and the entry focus.
+
+Ctrl+F and Escape operate only on the owned Viewer. Space on the fullscreen
+Viewer delegates the existing Play/Pause action; focused buttons and inputs
+retain their normal keyboard behavior. Entry cancels local editing gestures
+and drafts without committing them or resetting playback. A refused browser
+request restores the normal view; another element's fullscreen is left to its
+owner.
+
+
 ## V1 audio tradeoff — owner decision, 2026-10-23
 
 The owner explicitly accepted applying audio effects with video stopped and

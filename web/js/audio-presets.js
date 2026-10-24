@@ -50,10 +50,15 @@ export function createAudioPresets({kind,channel,index,expectedContext,getContex
   const rows=()=>catalog?.[kind==='Equalizer'?'eq_presets':'compressor_presets'] || [];
   const available=()=>live() && !working && canCommit();
   const selected=name=>rows().some(row=>row.name===name);
-  async function load(){
+  async function load(recover=false){
     if(!live() || working)return null;
     const attempt=++sequence;reader?.abort();reader=new AbortController();const signal=reader.signal;catalog=null;emit('loading','Reading custom audio presets…');
     try{
+      if(recover){
+        const epoch=getContext().project_epoch,result=await api('/audio/presets/refresh',{project_epoch:epoch},{signal});
+        if(!live() || attempt!==sequence || signal.aborted)return null;
+        if(result?.project_epoch!==epoch || result.available!==true)throw Error('The configured audio preset library is still unavailable');
+      }
       if(!live() || signal.aborted)return null;const value=await api(`/audio/presets?${new URLSearchParams({project_epoch:getContext().project_epoch})}`,undefined,{signal});
       if(!live() || attempt!==sequence || signal.aborted)return null;catalog=checkedAudioPresets(value,getContext().project_epoch);emit('ready',`${rows().length} custom ${kind==='Equalizer'?'EQ':'compressor'} presets`);return catalog;
     }catch(error){if(!live() || attempt!==sequence || signal.aborted)return null;emit('error',error.message);throw error;}
@@ -85,7 +90,7 @@ export function createAudioPresets({kind,channel,index,expectedContext,getContex
       else if(live())onChange(state);
     }
   }
-  return {load,save:name=>run('save',name),remove:name=>run('delete',name),apply:name=>run('apply',name),state:()=>state,rows,current:live,canAct:()=>available() && Boolean(catalog),busy:()=>working,replaces:name=>{try{return selected(audioPresetName(name));}catch{return false;}},suspend(){sequence++;reader?.abort();reader=null;catalog=null;},dispose(){disposed=true;sequence++;reader?.abort();reader=null;}};
+  return {load,refresh:()=>load(true),save:name=>run('save',name),remove:name=>run('delete',name),apply:name=>run('apply',name),state:()=>state,rows,current:live,canAct:()=>available() && Boolean(catalog),busy:()=>working,replaces:name=>{try{return selected(audioPresetName(name));}catch{return false;}},suspend(){sequence++;reader?.abort();reader=null;catalog=null;},dispose(){disposed=true;sequence++;reader?.abort();reader=null;}};
 }
 
 export function renderAudioPresets(root,{label,...options}){
@@ -106,6 +111,6 @@ export function renderAudioPresets(root,{label,...options}){
   }});
   const invoke=promise=>void promise.catch(error=>{if(controller.current()){status.textContent=error.message;options.notice?.(error.message);controls();}});
   list.addEventListener('change',()=>{if(list.value)name.value=list.value;controls();});name.addEventListener('input',controls);
-  save.addEventListener('click',()=>invoke(controller.save(name.value)));apply.addEventListener('click',()=>invoke(controller.apply(list.value)));remove.addEventListener('click',()=>invoke(controller.remove(list.value)));refresh.addEventListener('click',()=>invoke(controller.load()));
+  save.addEventListener('click',()=>invoke(controller.save(name.value)));apply.addEventListener('click',()=>invoke(controller.apply(list.value)));remove.addEventListener('click',()=>invoke(controller.remove(list.value)));refresh.addEventListener('click',()=>invoke(controller.refresh()));
   controls();invoke(controller.load());return controller;
 }

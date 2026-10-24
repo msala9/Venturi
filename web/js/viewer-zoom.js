@@ -8,6 +8,60 @@ const fresh=()=>({scale:null,pan:[0,0]});
 export function isViewerFullscreenShortcut(event,{dialogOpen=false}={}){
   return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.getModifierState?.('AltGraph') && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && event.key?.toLowerCase()==='f' && !isTextTarget(event.target);
 }
+export function createViewerFullscreen({root,button,controls,zoom,beforeEnter=()=>{},onTogglePlayback=()=>{},onChange=()=>{},onError=()=>{}}){
+  const documentRef=root.ownerDocument,listeners=[];
+  let pending=false,disposed=false,owned=false,returnFocus=null,hovering=false;
+  const listen=(target,type,callback)=>{target.addEventListener(type,callback);listeners.push(()=>target.removeEventListener(type,callback));};
+  const active=()=>documentRef.fullscreenElement===root;
+  function reveal(value,focused=controls.contains(documentRef.activeElement)){
+    const visible=active() && (value || focused);
+    root.dataset.fullscreenControls=String(visible);controls.inert=active() && !visible;
+  }
+  function sync(){
+    if(disposed)return;
+    const next=active(),changed=next!==owned;owned=next;
+    root.dataset.viewerFullscreen=String(next);button.setAttribute('aria-pressed',String(next));zoom.setFullscreen(next);
+    if(changed){
+      hovering=false;reveal(false);onChange(next);
+      if(next)root.focus({preventScroll:true});
+      else{
+        const previous=returnFocus;returnFocus=null;
+        if(previous?.isConnected!==false && typeof previous?.focus==='function')previous.focus({preventScroll:true});
+      }
+    }else if(!next)controls.inert=false;
+  }
+  async function toggle(){
+    if(disposed || pending || documentRef.querySelector?.('dialog[open]') || documentRef.fullscreenElement && !active())return false;
+    pending=true;
+    try{
+      if(active())await documentRef.exitFullscreen();
+      else{
+        returnFocus=documentRef.activeElement;beforeEnter();zoom.setFullscreen(true);
+        await root.requestFullscreen();
+      }
+      if(disposed){if(active())await documentRef.exitFullscreen();return false;}
+      sync();return active();
+    }catch(error){if(!active())returnFocus=null;if(!disposed)onError(error?.message || 'Fullscreen viewer is unavailable');sync();return false;}
+    finally{pending=false;}
+  }
+  listen(button,'click',()=>{void toggle();});
+  listen(documentRef,'fullscreenchange',sync);
+  listen(documentRef,'keydown',event=>{
+    if(event.key==='Escape' && active() && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]')){
+      event.preventDefault();event.stopPropagation();void toggle();
+    }else if(isViewerFullscreenShortcut(event,{dialogOpen:Boolean(documentRef.querySelector?.('dialog[open]'))}) && (!documentRef.fullscreenElement || active())){
+      event.preventDefault();event.stopPropagation();void toggle();
+    }else if(event.key==='Tab' && active() && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]'))reveal(true);
+    else if(active() && [' ','Spacebar'].includes(event.key) && !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !documentRef.querySelector?.('dialog[open]') && !event.target?.closest?.('button,input,select,textarea,summary,a,[contenteditable],[role="button"]')){
+      event.preventDefault();event.stopPropagation();onTogglePlayback();
+    }
+  });
+  listen(root,'pointermove',event=>{if(!active())return;const rect=root.getBoundingClientRect();hovering=event.clientY>=rect.bottom-90 && event.clientY<=rect.bottom;reveal(hovering);});
+  listen(root,'pointerleave',()=>{hovering=false;reveal(false);});
+  listen(controls,'focusin',()=>reveal(true));listen(controls,'focusout',event=>reveal(hovering,controls.contains(event.relatedTarget)));
+  sync();
+  return {toggle,active,sync,dispose(){if(disposed)return;disposed=true;for(const remove of listeners)remove();controls.inert=false;zoom.setFullscreen(false);delete root.dataset.viewerFullscreen;delete root.dataset.fullscreenControls;if(active())void documentRef.exitFullscreen().catch(()=>{});}};
+}
 const valid=(area,frame,dpr)=>area && [area.left,area.top,area.width,area.height,...frame,dpr].every(Number.isFinite) && area.width>0 && area.height>0 && frame.every(value=>value>0) && dpr>0;
 export function viewerZoomPercent(scale){
   const percent=scale*100;
@@ -45,7 +99,8 @@ export function viewerZoomPan(state,delta,area,frame,dpr=1){
 
 export function createViewerZoom({screen,media,getActive,getContext=()=>null,onChange=()=>{},select,status}){
   const documentRef=screen.ownerDocument,windowRef=documentRef.defaultView,listeners=[],groups=new Map(),originals=[];
-  let state=fresh(),binding=null,pan=null,disposed=false;
+  let state=fresh(),binding=null,pan=null,disposed=false,fullscreen=false;
+  const displayState=()=>fullscreen?fresh():state;
   const listen=(target,type,callback,options)=>{target.addEventListener(type,callback,options);listeners.push(()=>target.removeEventListener(type,callback,options));};
   for(const element of media){
     const parent=element.parentNode;
@@ -77,15 +132,15 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     if(owner)try{if(screen.hasPointerCapture(owner.id))screen.releasePointerCapture(owner.id);}catch{}
   }
   function paint(next){
-    const geometry=next && viewerZoomRect(state,next.area,next.frame,dpr());
+    const shown=displayState(),geometry=next && viewerZoomRect(shown,next.area,next.frame,dpr());
     if(select){
-      select.disabled=!geometry;
-      select.value=state.scale===null?'fit':VIEWER_ZOOM_PRESETS.includes(state.scale)?String(state.scale):'custom';
+      select.disabled=fullscreen || !geometry;
+      select.value=shown.scale===null?'fit':VIEWER_ZOOM_PRESETS.includes(shown.scale)?String(shown.scale):'custom';
       const custom=select.querySelector?.('option[value="custom"]');if(custom)custom.textContent=`${geometry?viewerZoomPercent(geometry.scale):'Custom'} · custom`;
     }
-    if(status)status.textContent=geometry?`${state.scale===null?'Fit':viewerZoomPercent(geometry.scale)} · ${next.frame[0]} × ${next.frame[1]} received preview pixels · 100% = one preview pixel per display pixel`:'Zoom applies to a received Source or Program preview';
+    if(status)status.textContent=geometry?`${shown.scale===null?'Fit':viewerZoomPercent(geometry.scale)} · ${next.frame[0]} × ${next.frame[1]} received preview pixels · 100% = one preview pixel per display pixel`:'Zoom applies to a received Source or Program preview';
     if(!geometry)return null;
-    state={scale:state.scale,pan:geometry.pan};
+    if(!fullscreen)state={scale:state.scale,pan:geometry.pan};
     Object.assign(next.element.style,{left:`${geometry.left-next.area.left}px`,top:`${geometry.top-next.area.top}px`,width:`${geometry.width}px`,height:`${geometry.height}px`});
     return geometry;
   }
@@ -97,13 +152,13 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     return paint(next);
   }
   function change(next,reason){
-    if(disposed)return false;
+    if(disposed || fullscreen)return false;
     const current=target();if(!current)return false;
     state=next;onChange({reason});binding={...current,stamp:stamp(current)};paint(current);return true;
   }
-  function fit(){cancelPan();state=fresh();if(!disposed){onChange({reason:'fit'});refresh();}}
+  function fit(){if(fullscreen)return;cancelPan();state=fresh();if(!disposed){onChange({reason:'fit'});refresh();}}
   function setScale(scale){
-    cancelPan();const current=target();
+    if(fullscreen)return false;cancelPan();const current=target();
     if(!current)return false;
     return change(viewerZoomScale(state,scale,current.area,current.frame,dpr()),'zoom');
   }
@@ -112,6 +167,7 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     if(select.value==='fit')fit();else if(select.value!=='custom')setScale(Number(select.value));
   });
   listen(screen,'wheel',event=>{
+    if(fullscreen)return;
     const current=target();if(!current || event.defaultPrevented)return;
     const {area,frame}=current,x=event.clientX,y=event.clientY;
     if(x<area.left || y<area.top || x>=area.left+area.width || y>=area.top+area.height)return;
@@ -123,7 +179,7 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     }else change(viewerZoomAround(state,[x,y],Math.exp(-delta[1]/200),area,frame,dpr()),'zoom');
   },{passive:false,capture:true});
   listen(screen,'pointerdown',event=>{
-    if(event.button!==1 || pan || event.defaultPrevented)return;
+    if(fullscreen || event.button!==1 || pan || event.defaultPrevented)return;
     const current=target();if(!current)return;
     const {area}=current;
     if(event.clientX<area.left || event.clientX>=area.left+area.width || event.clientY<area.top || event.clientY>=area.top+area.height)return;
@@ -152,7 +208,8 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
   for(const parent of groups.keys())mutation.observe(parent,{attributes:true,attributeFilter:['hidden','data-viewer-mode','data-program-playback','data-slip-preview']});
   refresh();
   return {refresh,fit,setScale,
-    current(){const next=target();if(!next)return null;const rect=viewerZoomRect(state,next.area,next.frame,dpr());return {media:next.element,viewport:next.viewport,rect,preview_pixels:[...next.frame],scale:rect.scale,is_fit:state.scale===null};},
+    setFullscreen(value){const next=Boolean(value);if(next===fullscreen)return;cancelPan();fullscreen=next;onChange({reason:'fullscreen'});refresh();},
+    current(){const next=target();if(!next)return null;const shown=displayState(),rect=viewerZoomRect(shown,next.area,next.frame,dpr());return {media:next.element,viewport:next.viewport,rect,preview_pixels:[...next.frame],scale:rect.scale,is_fit:shown.scale===null};},
     bounds(){return this.current()?.rect ?? null;},
     dispose(){
       if(disposed)return;disposed=true;cancelPan();resize.disconnect();mutation.disconnect();for(const remove of listeners)remove();

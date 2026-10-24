@@ -142,3 +142,19 @@ test('custom UI separates its library controls, warns about replacement and uses
     const select=nodes.find(node=>node.tag==='select');select.value='Warm';select.dispatchEvent(new Event('change'));find('Apply custom preset').click();await settle();assert.equal(h.applies.length,1);assert.deepEqual(h.writes,[]);controller.dispose();
   }finally{globalThis.document=original.document;globalThis.Option=original.Option;}
 });
+
+
+test('custom audio preset Refresh explicitly retries its configured root before reading without a project write',async()=>{
+  const h=harness({read:path=>path==='/audio/presets/refresh'?{project_epoch:'epoch',available:true}:catalog()});await h.controller.load();assert.equal(h.reads.length,1);
+  await h.controller.refresh();assert.deepEqual(h.reads.map(read=>read.path.split('?')[0]),['/audio/presets','/audio/presets/refresh','/audio/presets']);assert.deepEqual(h.reads[1].body,{project_epoch:'epoch'});assert.equal(h.controller.canAct(),true);assert.deepEqual(h.writes,[]);assert.deepEqual(h.applies,[]);
+});
+
+test('configured audio preset recovery ignores late results after context loss and never reads a replacement catalog',async()=>{
+  const retry=deferred(),h=harness({read:()=>retry.promise}),loading=h.controller.refresh();h.setContext({...context(),project_epoch:'next'});retry.resolve({project_epoch:'epoch',available:true});assert.equal(await loading,null);assert.equal(h.reads.length,1);assert.deepEqual(h.controller.rows(),[]);assert.deepEqual(h.writes,[]);
+});
+
+test('configured audio preset retry failure or a wrong acknowledgment cannot read or apply stale presets',async()=>{
+  for(const read of [()=>{throw Error('NAS unavailable');},()=>({project_epoch:'different',available:true}),()=>({project_epoch:'epoch',available:false})]){
+    const h=harness({read});await assert.rejects(()=>h.controller.refresh());assert.equal(h.reads.length,1);assert.equal(h.controller.canAct(),false);assert.deepEqual(h.writes,[]);assert.deepEqual(h.applies,[]);
+  }
+});

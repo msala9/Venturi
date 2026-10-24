@@ -68,13 +68,13 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 .viewer-seek input[type="range"] { display: block; padding: 0; margin: 0; height: 14px; min-height: 14px; width: 100%; accent-color: #cc4c42; }
 #source-seek-control { width: 100%; }
 #source-seek-control > label { font-size: 0; display: block; }
-#viewer > .transport { height: 28px; min-height: 28px; padding: 1px 8px; gap: 4px; overflow: visible; justify-content: center; }
-#viewer > .transport button { min-height: 22px; padding: 1px 5px; font-size: 11px; }
+#viewer > #viewer-playback-controls > .transport { height: 28px; min-height: 28px; padding: 1px 8px; gap: 4px; overflow: visible; justify-content: center; }
+#viewer > #viewer-playback-controls > .transport button { min-height: 22px; padding: 1px 5px; font-size: 11px; }
 #timecode { position: absolute; left: 8px; font-size: 11px; }
-#viewer > .transport { position: relative; }
+#viewer > #viewer-playback-controls > .transport { position: relative; }
 #program-marks { display: flex; padding: 0; gap: 3px; margin-left: 8px; }
 #program-mark-range { max-width: 20ch; overflow: hidden; text-overflow: ellipsis; font-size: 9px; color: var(--muted); }
-#viewer > .transport > .spacer { display: none; }
+#viewer > #viewer-playback-controls > .transport > .spacer { display: none; }
 #program-view > .source-toolbar { position: absolute; bottom: 0; left: 0; right: 0; min-height: 20px; padding: 2px 5px; gap: 4px; background: #171717dd; font-size: 9px; }
 #program-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #program-cancel { font-size: 9px; min-height: 18px; padding: 1px 4px; }
@@ -142,7 +142,7 @@ footer button { min-height: 17px; padding: 0 4px; font-size: 9px; }
  .viewer-primary-row > #viewer-caption { overflow: hidden; text-overflow: ellipsis; }
  #timecode { position: static; margin-right: auto; font-size: 10px; }
  #program-mark-range { display: none; }
- #viewer > .transport { justify-content: flex-start; }
+ #viewer:not(:fullscreen) > #viewer-playback-controls > .transport { justify-content: flex-start; }
  .menu-items { position: fixed; top: 24px; left: 3px; }
 }
 

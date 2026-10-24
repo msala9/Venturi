@@ -205,7 +205,7 @@
         aria-valuemax="450"
         aria-valuenow="260"
       ></div>
-      <section id="viewer" class="panel">
+      <section id="viewer" class="panel" tabindex="-1">
         <div class="panel-heading viewer-heading">
           <div class="viewer-primary-row">
           <div class="tabs">
@@ -228,6 +228,7 @@
           </div>
         </div>
         <div id="screen">
+          <output id="viewer-fullscreen-status" role="status"></output>
           <section id="slip-view" hidden aria-label="Slip source edges">
             <div class="slip-frames">
               <figure><video muted playsinline preload="metadata" aria-label="Slip first source frame"></video><figcaption data-slip-label>First source frame</figcaption></figure>
@@ -278,6 +279,7 @@
             </div></details>
           </div>
         </div>
+        <div id="viewer-playback-controls">
         <div class="viewer-seek"><input id="program-position" type="range" min="0" max="0" step="1" value="0" aria-label="Program position" disabled><div id="source-seek-control" hidden><label>Source position (full file) <input id="source-position" type="range" min="0" max="0" step="1" value="0" disabled></label></div></div>
         <div class="transport">
           <button id="step-back" aria-label="Previous frame">◀│</button
@@ -296,6 +298,7 @@
           <div class="spacer"></div>
 
 
+        </div>
         </div>
         <div id="workspace-tools" class="workspace-tools" hidden></div>
         <section id="scopes" aria-label="Native clip scopes" hidden>

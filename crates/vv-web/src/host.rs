@@ -20,6 +20,7 @@ use vv_core::{Rational, Timeline, Track, TrackKind};
 use vv_session::Session;
 
 const LIBRARY_BUSY_NOTICE: &str = "Native libraries are busy. Project editing remains available; refresh the library after the current operation or native recovery finishes.";
+const LIBRARY_UNAVAILABLE_NOTICE: &str = "A configured native library is unavailable. Local project editing remains available; restore the same library and use Refresh.";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -66,6 +67,7 @@ pub enum Action {
     CapturePreset(crate::presets::Capture),
     PresetList(usize, crate::preset_store::Query),
     AudioPresets(SourceQuery),
+    RefreshNativeLibrary(SourceQuery, bool),
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
@@ -257,11 +259,24 @@ impl Editor {
         shared: bool,
     ) -> std::io::Result<Self> {
         let mut files = Files::new(root)?;
-        let presets = crate::preset_store::Store::new(preset_root)?;
-        let audio_presets = crate::audio_presets::Store::new(preset_root)?;
-        let assets = crate::asset_store::Store::new(asset_root)?;
+        let external_presets = preset_root != root.join(".presets");
+        let presets = if external_presets {
+            crate::preset_store::Store::configured(preset_root)?
+        } else {
+            crate::preset_store::Store::new(preset_root)?
+        };
+        let audio_presets = if external_presets {
+            crate::audio_presets::Store::configured(preset_root)?
+        } else {
+            crate::audio_presets::Store::new(preset_root)?
+        };
+        let assets = if shared {
+            crate::asset_store::Store::configured(asset_root)?
+        } else {
+            crate::asset_store::Store::new(asset_root)?
+        };
         if shared {
-            files.set_shared_root(assets.root())?;
+            files.configure_shared_root(assets.root(), assets.is_available())?;
         }
         let asset_jobs = crate::asset_jobs::Jobs::new_with_roots(
             assets.clone(),
@@ -343,8 +358,11 @@ impl Editor {
             receipts,
         };
         if let Err(error) = editor.harvest_native_completions(true) {
-            editor.library_refresh_pending = error.1 == "LIBRARY_BUSY";
-            editor.persistence_notice.get_or_insert(if error.1 == "LIBRARY_BUSY" {
+            editor.library_refresh_pending =
+                matches!(error.1, "LIBRARY_BUSY" | "LIBRARY_UNAVAILABLE");
+            editor.persistence_notice.get_or_insert(if error.1 == "LIBRARY_UNAVAILABLE" {
+                LIBRARY_UNAVAILABLE_NOTICE
+            } else if error.1 == "LIBRARY_BUSY" {
                 LIBRARY_BUSY_NOTICE
             } else {
                 "Native library command outcomes require recovery. Existing metadata was preserved; resolve the command before retrying."
@@ -365,6 +383,7 @@ impl Editor {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
         snapshot["command_epoch"] = json!(self.command_epoch.to_string());
         snapshot["capabilities"]["native_assets"] = json!(true);
+        snapshot["native_libraries"] = json!({"assets_available":self.assets.is_available(),"presets_available":self.presets.is_available(),"audio_presets_available":self.audio_presets.is_available()});
         snapshot["capabilities"]["media_imports"] = json!(true);
         let origins: HashMap<_, _> = self
             .session
@@ -1782,10 +1801,42 @@ impl Editor {
     fn retry_busy_libraries(&mut self) {
         if self.library_refresh_pending && self.harvest_native_completions(true).is_ok() {
             self.library_refresh_pending = false;
-            if self.persistence_notice == Some(LIBRARY_BUSY_NOTICE) {
+            if matches!(
+                self.persistence_notice,
+                Some(LIBRARY_BUSY_NOTICE | LIBRARY_UNAVAILABLE_NOTICE)
+            ) {
                 self.persistence_notice = None;
             }
         }
+    }
+    fn refresh_native_library(&mut self, query: SourceQuery, assets: bool) -> Result<Value> {
+        self.validate_asset_epoch(&query.project_epoch, None)?;
+        let map = |error: std::io::Error| {
+            if crate::media_roots::transient(&error) {
+                crate::media_roots::unavailable()
+            } else {
+                ApiError::invalid(
+                    "The configured native library root is unsafe or changed; existing data was preserved",
+                )
+            }
+        };
+        if assets {
+            self.assets.retry().map_err(map)?;
+            self.files.media_roots().retry_shared().map_err(map)?;
+            self.assets.folders()?;
+        } else {
+            self.presets.retry().map_err(map)?;
+            self.audio_presets.retry().map_err(map)?;
+            self.presets.list(
+                0,
+                &crate::preset_store::Query {
+                    project_epoch: query.project_epoch.clone(),
+                    ..Default::default()
+                },
+            )?;
+        }
+        self.retry_busy_libraries();
+        Ok(json!({"project_epoch":query.project_epoch,"available":true}))
     }
     fn prepare_native_edit(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
         if !matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation())
@@ -2790,6 +2841,9 @@ impl Editor {
                 )
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
+            Action::RefreshNativeLibrary(query, assets) => {
+                self.refresh_native_library(query, assets)
+            }
             Action::AudioPresets(query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 let mut value = self.audio_presets.list()?;

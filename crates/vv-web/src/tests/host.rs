@@ -1,6 +1,190 @@
 use super::*;
 
 #[test]
+fn unavailable_library_startup_keeps_saved_offline_media_local_import_and_explicit_refresh() {
+    let (root, mut seed, local) = native_asset_fixture("unavailable-library");
+    let shared = root.with_file_name(format!(
+        "vv-restored-library-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let preset_root = shared.join("presets");
+    let shared_file = shared
+        .join("media")
+        .join("a".repeat(64))
+        .join("capture.wav");
+    let meta = seed.session.project.media_pool[local].meta.clone();
+    let shared_media = seed.session.add_media(shared_file.clone(), meta);
+    seed.files.configure_shared_root(&shared, false).unwrap();
+    let save = request(&seed, Operation::Save, "unavailable-baseline", None);
+    seed.mutation(None, save).unwrap();
+    let saved_path = seed.session.path().unwrap().to_owned();
+    let saved = std::fs::read(&saved_path).unwrap();
+    let project = json!(seed.session.project);
+    let original = std::fs::read(root.join("capture.wav")).unwrap();
+    drop(seed);
+
+    let mut editor = Editor::with_libraries(&root, &preset_root, &shared).unwrap();
+    assert_eq!(editor.session.path(), Some(saved_path.as_path()));
+    assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(
+        editor.session.project.media_pool[shared_media].path,
+        shared_file
+    );
+    assert!(!shared.exists());
+    assert_eq!(
+        editor.snapshot()["native_libraries"]["assets_available"],
+        false
+    );
+    let roots = editor.files.media_roots();
+    assert_eq!(
+        roots.open(&shared_file).unwrap_err().1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    std::fs::write(root.join("local.wav"), &original).unwrap();
+    let before = editor.session.history.position();
+    let ready = prepare_import_batch(&mut editor, &["local.wav"]);
+    let import = request(
+        &editor,
+        Operation::ImportPreparedMedia {
+            job_id: ready["id"].as_str().unwrap().into(),
+        },
+        "unavailable-local-import",
+        None,
+    );
+    editor.mutation(None, import).unwrap();
+    assert_eq!(editor.session.history.position(), before + 1);
+    let undo = request(&editor, Operation::Undo, "unavailable-local-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(editor.session.history.position(), before);
+    let redo = request(&editor, Operation::Redo, "unavailable-local-redo", None);
+    editor.mutation(None, redo).unwrap();
+    let save = request(&editor, Operation::Save, "unavailable-local-save", None);
+    editor.mutation(None, save).unwrap();
+    assert!(!shared.exists());
+    let saved = std::fs::read(&saved_path).unwrap();
+    let project = json!(editor.session.project);
+    let history = editor.snapshot()["history"].clone();
+    let epoch = editor.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_eq!(
+        editor
+            .handle(Action::RefreshNativeLibrary(
+                SourceQuery {
+                    project_epoch: "old".into()
+                },
+                true
+            ))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(
+        editor
+            .handle(Action::RefreshNativeLibrary(
+                SourceQuery {
+                    project_epoch: epoch.clone()
+                },
+                true
+            ))
+            .unwrap_err()
+            .1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    assert!(!shared.exists());
+    drop(crate::asset_store::Store::new(&shared).unwrap());
+    drop(crate::preset_store::Store::new(&preset_root).unwrap());
+    std::fs::create_dir_all(shared_file.parent().unwrap()).unwrap();
+    std::fs::write(&shared_file, &original).unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::NativeAssetFolders(SourceQuery {
+                project_epoch: epoch.clone()
+            }))
+            .unwrap_err()
+            .1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    assert_eq!(
+        roots.open(&shared_file).unwrap_err().1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    assert_eq!(
+        editor
+            .handle(Action::RefreshNativeLibrary(
+                SourceQuery {
+                    project_epoch: epoch.clone()
+                },
+                true
+            ))
+            .unwrap()["available"],
+        true
+    );
+    assert_eq!(
+        crate::source::file_identity(&roots.open(&shared_file).unwrap()).unwrap(),
+        crate::source::file_identity(&std::fs::File::open(&shared_file).unwrap()).unwrap()
+    );
+    assert_eq!(
+        editor
+            .handle(Action::PresetList(
+                0,
+                crate::preset_store::Query {
+                    project_epoch: epoch.clone(),
+                    ..Default::default()
+                }
+            ))
+            .unwrap_err()
+            .1,
+        "LIBRARY_UNAVAILABLE"
+    );
+    editor
+        .handle(Action::RefreshNativeLibrary(
+            SourceQuery {
+                project_epoch: epoch,
+            },
+            false,
+        ))
+        .unwrap();
+    assert_eq!(
+        editor.snapshot()["native_libraries"],
+        json!({"assets_available":true,"presets_available":true,"audio_presets_available":true})
+    );
+    assert!(!editor.library_refresh_pending);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.snapshot()["history"], history);
+    assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+    assert_eq!(std::fs::read(root.join("capture.wav")).unwrap(), original);
+    drop(editor);
+    drop(roots);
+    let reopened = Editor::with_libraries(&root, &preset_root, &shared).unwrap();
+    assert_eq!(json!(reopened.session.project), project);
+    assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(shared).unwrap();
+}
+
+#[test]
+fn unavailable_assets_leave_default_local_presets_ready_without_creating_the_external_root() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-unavailable-default-presets-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let shared = root.join("not-mounted");
+    let editor = Editor::with_libraries(&root, &root.join(".presets"), &shared).unwrap();
+    assert!(editor.presets.is_available());
+    assert!(editor.audio_presets.is_available());
+    assert!(!editor.assets.is_available());
+    assert!(root.join(".presets").is_dir());
+    assert!(!root.join(".assets").exists());
+    assert!(!shared.exists());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_library_busy_startup_keeps_local_edit_save_undo_and_refresh_on_configured_roots() {
     use vv_core::Id;
 
@@ -13,6 +197,8 @@ fn native_library_busy_startup_keeps_local_edit_save_undo_and_refresh_on_configu
         let project_root = root.join("project");
         let assets_root = root.join("shared");
         let preset_root = assets_root.join("presets");
+        drop(crate::asset_store::Store::new(&assets_root).unwrap());
+        drop(crate::preset_store::Store::new(&preset_root).unwrap());
         let mut seed = Editor::with_libraries(&project_root, &preset_root, &assets_root).unwrap();
         let create = request(
             &seed,

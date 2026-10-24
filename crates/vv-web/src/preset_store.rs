@@ -11,7 +11,8 @@ use std::{
     fs::File,
     io::{Read, Write},
     os::{fd::AsRawFd, unix::fs::MetadataExt},
-    path::Path,
+    path::{Path, PathBuf},
+    sync::OnceLock,
 };
 
 const MAX_BYTES: u64 = 4 * 1024 * 1024;
@@ -20,7 +21,8 @@ const DELETE_OWNER: &str = "vv-web-preset-delete";
 const COMPLETIONS: &str = ".venturi-preset-completions";
 const MAX_INTENT: u64 = 16 * 1024;
 pub struct Store {
-    dir: File,
+    root: PathBuf,
+    dir: OnceLock<File>,
     #[cfg(test)]
     fail_after_intent: std::sync::atomic::AtomicBool,
 }
@@ -284,23 +286,64 @@ fn parse(bytes: &[u8]) -> Result<Preset> {
 impl Store {
     pub fn new(root: &Path) -> std::io::Result<Self> {
         std::fs::create_dir_all(root)?;
-        let fd = rustix::fs::open(
-            root,
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-            Mode::empty(),
-        )?;
+        let path = crate::media_roots::configured_path(root)?;
+        let dir = crate::media_roots::open_configured(&path)?;
         Ok(Self {
-            dir: File::from(fd),
+            root: path,
+            dir: OnceLock::from(dir),
             #[cfg(test)]
             fail_after_intent: std::sync::atomic::AtomicBool::new(false),
         })
+    }
+    pub(crate) fn configured(root: &Path) -> std::io::Result<Self> {
+        let store = Self {
+            root: crate::media_roots::configured_path(root)?,
+            dir: OnceLock::new(),
+            #[cfg(test)]
+            fail_after_intent: std::sync::atomic::AtomicBool::new(false),
+        };
+        match store.retry() {
+            Ok(()) => (),
+            Err(error) if crate::media_roots::transient(&error) => (),
+            Err(error) => return Err(error),
+        }
+        Ok(store)
+    }
+    pub(crate) fn retry(&self) -> std::io::Result<()> {
+        let live = crate::media_roots::open_configured(&self.root)?;
+        if let Some(pinned) = self.dir.get() {
+            crate::asset_store::same_directory(pinned, &live)
+                .map_err(|_| std::io::Error::other("The configured preset root changed"))?;
+        } else {
+            let _ = self.dir.set(live);
+        }
+        Ok(())
+    }
+    pub(crate) fn is_available(&self) -> bool {
+        self.dir.get().is_some()
+    }
+    fn directory(&self) -> Result<&File> {
+        self.dir.get().ok_or_else(crate::media_roots::unavailable)
     }
     fn lock(&self) -> Result<File> {
         self.catalog_lock(true)
     }
     fn catalog_lock(&self, exclusive: bool) -> Result<File> {
+        let pinned = self.directory()?;
+        let live = crate::media_roots::open_configured(&self.root).map_err(|_| {
+            ApiError::conflict(
+                "PRESET_CHANGED",
+                "The configured preset root changed; existing data was preserved",
+            )
+        })?;
+        crate::asset_store::same_directory(pinned, &live).map_err(|_| {
+            ApiError::conflict(
+                "PRESET_CHANGED",
+                "The configured preset root changed; existing data was preserved",
+            )
+        })?;
         let fd = openat(
-            &self.dir,
+            self.directory()?,
             ".venturi-presets.lock",
             OFlags::RDWR | OFlags::CREATE | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::RUSR | Mode::WUSR,
@@ -324,7 +367,7 @@ impl Store {
                 "Preset library is busy; retain the draft and retry",
             )
         })?;
-        match rustix::fs::statat(&self.dir, DELETE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
+        match rustix::fs::statat(self.directory()?, DELETE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
             Err(rustix::io::Errno::NOENT) => (),
             Ok(_) => {
                 if !exclusive {
@@ -338,7 +381,7 @@ impl Store {
         Ok(file)
     }
     fn completion_catalog(&self) -> Result<CompletionCatalog> {
-        let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+        let directory = crate::asset_store::directory(self.directory()?, COMPLETIONS)?;
         let mut records = Vec::new();
         let mut bytes = 0u64;
         let mut entries = 0;
@@ -413,7 +456,7 @@ impl Store {
     }
     fn persist_completion(&self, completion: &Completion) -> Result<()> {
         self.receipt_capacity(completion)?;
-        let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+        let directory = crate::asset_store::directory(self.directory()?, COMPLETIONS)?;
         let filename = format!("{}.json", completion.command_id);
         if strong_raw(&directory, &filename, 4096)?.is_none() {
             atomic_record(
@@ -425,7 +468,7 @@ impl Store {
         Ok(())
     }
     fn recover_delete(&self) -> Result<()> {
-        let raw = strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)
+        let raw = strong_raw(self.directory()?, DELETE_PENDING, MAX_INTENT)
             .map_err(|_| recovery_required())?
             .ok_or_else(recovery_required)?;
         let intent: DeleteIntent =
@@ -436,26 +479,28 @@ impl Store {
         validate_intent(&intent)?;
         self.receipt_capacity(&intent.completion)?;
         let filename = name(&intent.id, intent.archived)?;
-        if let Some(current) = strong_raw(&self.dir, &filename, MAX_BYTES)? {
+        if let Some(current) = strong_raw(self.directory()?, &filename, MAX_BYTES)? {
             if current.identity != intent.before_identity || current.revision != intent.revision {
                 return Err(journal_changed());
             }
-            let pending =
-                strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)?.ok_or_else(journal_changed)?;
+            let pending = strong_raw(self.directory()?, DELETE_PENDING, MAX_INTENT)?
+                .ok_or_else(journal_changed)?;
             if pending.identity != raw.identity || pending.bytes != raw.bytes {
                 return Err(journal_changed());
             }
-            unlinkat(&self.dir, filename.as_str(), AtFlags::empty()).map_err(|_| ApiError::io())?;
-            self.dir.sync_all().map_err(|_| ApiError::io())?;
+            unlinkat(self.directory()?, filename.as_str(), AtFlags::empty())
+                .map_err(|_| ApiError::io())?;
+            self.directory()?.sync_all().map_err(|_| ApiError::io())?;
         }
         self.persist_completion(&intent.completion)?;
-        let pending =
-            strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)?.ok_or_else(journal_changed)?;
+        let pending = strong_raw(self.directory()?, DELETE_PENDING, MAX_INTENT)?
+            .ok_or_else(journal_changed)?;
         if pending.identity != raw.identity || pending.bytes != raw.bytes {
             return Err(journal_changed());
         }
-        unlinkat(&self.dir, DELETE_PENDING, AtFlags::empty()).map_err(|_| ApiError::io())?;
-        self.dir.sync_all().map_err(|_| ApiError::io())
+        unlinkat(self.directory()?, DELETE_PENDING, AtFlags::empty())
+            .map_err(|_| ApiError::io())?;
+        self.directory()?.sync_all().map_err(|_| ApiError::io())
     }
     pub fn delete(&self, edit: &Edit, mut completion: Completion) -> Result<()> {
         let Edit::Delete {
@@ -489,7 +534,7 @@ impl Store {
             };
         }
         self.receipt_capacity(&completion)?;
-        let raw = strong_raw(&self.dir, &name(id, *archived)?, MAX_BYTES)?
+        let raw = strong_raw(self.directory()?, &name(id, *archived)?, MAX_BYTES)?
             .ok_or_else(ApiError::missing)?;
         if raw.revision != *revision {
             return Err(ApiError::conflict(
@@ -509,7 +554,7 @@ impl Store {
         };
         validate_intent(&intent)?;
         atomic_record(
-            &self.dir,
+            self.directory()?,
             DELETE_PENDING,
             &serde_json::to_vec(&intent).map_err(|_| ApiError::io())?,
         )?;
@@ -558,7 +603,7 @@ impl Store {
             if record.fingerprint != fingerprint {
                 return Err(journal_changed());
             }
-            let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+            let directory = crate::asset_store::directory(self.directory()?, COMPLETIONS)?;
             unlinkat(&directory, format!("{id}.json").as_str(), AtFlags::empty())
                 .map_err(|_| ApiError::io())?;
             directory.sync_all().map_err(|_| ApiError::io())?;
@@ -575,7 +620,7 @@ impl Store {
     }
     fn raw_budgeted(&self, file_name: &str, mut budget: Option<&mut u64>) -> Result<Option<Raw>> {
         let fd = match openat(
-            &self.dir,
+            self.directory()?,
             file_name,
             OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::empty(),
@@ -651,7 +696,7 @@ impl Store {
         );
         let result = (|| {
             let fd = openat(
-                &self.dir,
+                self.directory()?,
                 temp.as_str(),
                 OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
                 Mode::RUSR | Mode::WUSR,
@@ -671,21 +716,26 @@ impl Store {
             }
             if expected.is_none() {
                 renameat_with(
-                    &self.dir,
+                    self.directory()?,
                     temp.as_str(),
-                    &self.dir,
+                    self.directory()?,
                     file_name,
                     RenameFlags::NOREPLACE,
                 )
                 .map_err(|_| ApiError::conflict("FILE_EXISTS", "Existing preset was preserved"))?;
             } else {
-                renameat(&self.dir, temp.as_str(), &self.dir, file_name)
-                    .map_err(|_| ApiError::io())?;
+                renameat(
+                    self.directory()?,
+                    temp.as_str(),
+                    self.directory()?,
+                    file_name,
+                )
+                .map_err(|_| ApiError::io())?;
             }
-            self.dir.sync_all().map_err(|_| ApiError::io())?;
+            self.directory()?.sync_all().map_err(|_| ApiError::io())?;
             Ok(())
         })();
-        let _ = unlinkat(&self.dir, temp.as_str(), AtFlags::empty());
+        let _ = unlinkat(self.directory()?, temp.as_str(), AtFlags::empty());
         result
     }
     pub fn create(&self, id: &str, preset: &Preset) -> Result<()> {
@@ -736,9 +786,12 @@ impl Store {
         })
     }
     fn has_previous(&self, id: &str, archived: bool) -> bool {
+        let Ok(directory) = self.directory() else {
+            return false;
+        };
         !archived
             && openat(
-                &self.dir,
+                directory,
                 format!("{id}.json.bak").as_str(),
                 OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
                 Mode::empty(),
@@ -761,9 +814,10 @@ impl Store {
             ".json"
         };
         let mut names = Vec::new();
-        for (index, entry) in std::fs::read_dir(format!("/proc/self/fd/{}", self.dir.as_raw_fd()))
-            .map_err(|_| ApiError::io())?
-            .enumerate()
+        for (index, entry) in
+            std::fs::read_dir(format!("/proc/self/fd/{}", self.directory()?.as_raw_fd()))
+                .map_err(|_| ApiError::io())?
+                .enumerate()
         {
             if query.sort.is_some() && index >= 10000 {
                 return Err(ApiError::invalid(
@@ -919,9 +973,9 @@ impl Store {
                     ));
                 }
                 renameat_with(
-                    &self.dir,
+                    self.directory()?,
                     from.as_str(),
-                    &self.dir,
+                    self.directory()?,
                     to.as_str(),
                     RenameFlags::NOREPLACE,
                 )
@@ -931,7 +985,7 @@ impl Store {
                         "An existing active or archived preset was preserved",
                     )
                 })?;
-                self.dir.sync_all().map_err(|_| ApiError::io())?;
+                self.directory()?.sync_all().map_err(|_| ApiError::io())?;
                 Ok(())
             }
             Edit::RestorePrevious { id, revision } => {
@@ -949,14 +1003,14 @@ impl Store {
                     ));
                 }
                 renameat_with(
-                    &self.dir,
+                    self.directory()?,
                     file_name.as_str(),
-                    &self.dir,
+                    self.directory()?,
                     backup_name.as_str(),
                     RenameFlags::EXCHANGE,
                 )
                 .map_err(|_| ApiError::io())?;
-                self.dir.sync_all().map_err(|_| ApiError::io())
+                self.directory()?.sync_all().map_err(|_| ApiError::io())
             }
             Edit::Import { .. } | Edit::Delete { .. } => unreachable!(),
         }

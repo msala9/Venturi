@@ -1,6 +1,30 @@
 use super::*;
 use vv_core as core;
 
+#[test]
+fn unavailable_audio_preset_store_requires_explicit_retry_without_seeding_a_catalog() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-unavailable-audio-presets-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let store = Store::configured(&root).unwrap();
+    assert!(!root.exists());
+    assert_eq!(store.list().unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    drop(Store::new(&root).unwrap());
+    assert_eq!(store.list().unwrap_err().1, "LIBRARY_UNAVAILABLE");
+    store.retry().unwrap();
+    store.list().unwrap();
+    assert!(!root.join(FILE_NAME).exists());
+    let previous = root.with_extension("previous");
+    std::fs::rename(&root, &previous).unwrap();
+    drop(Store::new(&root).unwrap());
+    assert!(store.retry().is_err());
+    assert!(store.list().is_err());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(previous).unwrap();
+}
+
 struct Fixture {
     root: PathBuf,
     store: Store,
@@ -548,7 +572,7 @@ fn audio_preset_links_and_foreign_temporary_replacements_are_preserved() {
     );
     assert_eq!(std::fs::read(&foreign).unwrap(), b"foreign bytes");
     std::fs::remove_file(fixture.root.join(FILE_NAME)).unwrap();
-    let temp = Temporary::new(&fixture.store.dir).unwrap();
+    let temp = Temporary::new(fixture.store.directory().unwrap()).unwrap();
     let path = fixture.root.join(&temp.name);
     std::fs::remove_file(&path).unwrap();
     std::fs::write(&path, b"foreign temporary replacement").unwrap();

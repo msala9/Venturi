@@ -3697,14 +3697,20 @@ fn original_desktop_fingerprint_directories_import_with_stale_path_fingerprint_b
 fn obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files()
  {
     let fixture = Fixture::new();
+    let published = fixture.capture();
+    assert_eq!(published["state"], "ready", "{published}");
+    let published_id = published["id"].as_str().unwrap();
+    fixture
+        .jobs
+        .publish("preserved", published_id, "epoch", "7")
+        .unwrap();
+    let applied = fixture.jobs.status(published_id, "epoch", false).unwrap();
+    assert_eq!(applied["state"], "applied");
+    let exported = fixture.store.export("preserved").unwrap();
     let ready = fixture.capture();
     assert_eq!(ready["state"], "ready", "{ready}");
     let ready_id = ready["id"].as_str().unwrap();
-    fixture
-        .jobs
-        .publish("preserved", ready_id, "epoch", "7")
-        .unwrap();
-    let exported = fixture.store.export("preserved").unwrap();
+    assert_ne!(ready_id, published_id);
     let (sender, receiver) = mpsc::sync_channel(1);
     let isolated = Jobs(Arc::new(Inner {
         store: fixture.store.clone(),
@@ -3741,6 +3747,14 @@ fn obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_pres
     let canceled = fixture.jobs.status(ready_id, "epoch", false).unwrap();
     assert_eq!(canceled["state"], "canceled");
     assert!(canceled["result"].is_null());
+    assert_eq!(
+        fixture.jobs.status(published_id, "epoch", false).unwrap(),
+        applied
+    );
+    fixture
+        .jobs
+        .publish("preserved", published_id, "epoch", "7")
+        .unwrap();
     assert_eq!(fixture.store.export("preserved").unwrap(), exported);
     let loaded = asset_payload::parse(&exported).unwrap();
     for media in asset_payload::decode(&loaded).unwrap().files() {

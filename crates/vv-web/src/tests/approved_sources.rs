@@ -107,6 +107,8 @@ fn approved_source_tokens_are_exact_bounded_and_preserve_native_managed_image_na
 #[test]
 fn approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_links_or_special_files()
  {
+    use std::os::fd::AsRawFd;
+
     let root = root();
     let dir = File::open(&root).unwrap();
     std::fs::create_dir(root.join("Folder")).unwrap();
@@ -117,7 +119,12 @@ fn approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_li
     std::fs::write(root.join("project.vvproj"), b"not media").unwrap();
     std::fs::write(root.join(".hidden.wav"), b"private").unwrap();
     std::os::unix::fs::symlink(root.join("clip-00.wav"), root.join("link.wav")).unwrap();
-    let _socket = std::os::unix::net::UnixListener::bind(root.join("special.wav")).unwrap();
+    // The entry stays in this fixture even when TMPDIR exceeds sockaddr_un's path limit.
+    let _socket = std::os::unix::net::UnixListener::bind(format!(
+        "/proc/self/fd/{}/special.wav",
+        dir.as_raw_fd()
+    ))
+    .unwrap();
     let page = browse(&root, &dir, "", 0);
     assert_eq!(page["project_epoch"], "epoch");
     assert_eq!(page["directory_token"], "");

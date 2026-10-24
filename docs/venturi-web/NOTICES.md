@@ -5,13 +5,15 @@ The following immutable companions supply original package texts and additional
 notice material separately. Existing binary archives retain their recorded
 contents; the prior77d7 assembly includes all three companions and their
 checksums, as recorded in BINARY_DELIVERY.md. RUNNING.md identifies the current
-455662c/8b975f434990 executable; its additive r5 package is pending. The immutable
+455662c/8b975f434990 executable; its additive r5 package passes in
+`evidence/f7-current-prebuilt-r5-workflow.json`. The immutable
 77d7 and87bc packages and their notices retain their original version bindings.
 The87bc package retains all three verbatim companions, with its separately recorded zlib delta; see
 `evidence/f7-current-prebuilt-r4-workflow.json`.
-Final r5 assembly will recheck the current189 loader identities against the
-reviewed188-plus-zlib binding and installed notice texts without changing those
-archives, installing packages or implying full release acceptance.
+Final r5 assembly rechecked all189 current loader identities against the
+reviewed188-plus-zlib binding and199 installed notice texts before/after assembly.
+All three original companions remain verbatim; no package installation or full
+release acceptance is implied.
 
 | Companion on halo1 | Bytes | SHA256 |
 |---|---|---|

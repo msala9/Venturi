@@ -1,5 +1,29 @@
 # Prebuilt Linux development candidate
 
+## Current8b975 internal prebuilt package — 2026-10-24
+
+The immutable archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8b975f434990-c8ada6e108f5.tar`,
+91166720bytes, SHA256
+`c8ada6e108f52e9da569fbc1c2e8e19c4252cf7d8c7c22e04a92dc683acc7cab`.
+It binds binary source455662c and documentation source372612e separately,
+including the API contract, FINAL_CHECKS and actual NAS/Mixer/import GUI proof.
+All archive members and packaged launcher --help pass; all three original notice
+companions remain verbatim. The189 current loader bindings,199 installed notice
+files and reviewed zlib delta remain exact before/after assembly. Live8855
+PID485839, executable, arguments and Session are unchanged; prior r4 is exact.
+One1CPU/512MiB/noSwap low-priority assembly passes with peak238067712B and
+zero limit/OOM/kill events. No build/render/server or Windows archive copy ran.
+See evidence/f7-current-prebuilt-r5-workflow.json.
+
+This publication receipt postdates the immutable archive: its packaged documents
+retain their exact372612e snapshot, including the then-pending package status.
+Do not replace that archive to refresh its own receipt. Existing77d7/59b6 runback
+proof stays version-bound; no new downgrade or host reboot is claimed. Full
+F1-F7/M7 and62done/28partial/2excluded remain open. Continue independent work;
+FINAL_CHECKS reserves unavailable acceptance without waiving it.
+
+
 ## Final runtime qualified; additive package pending — 2026-10-24
 
 Current source455662c supplies native NAS Restore/input and truthful cached-import

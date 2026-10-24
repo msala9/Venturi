@@ -19,7 +19,8 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
   Actual NAS/Mixer GUI observations and the focused source-bound gates are in
   `evidence/f2-f5-native-nas-restore-input-workflow.json`. R3 passes3 exact Host
   cases;54 client/49 module cases are reused from unchanged R2 inputs. Current
-  runtime8b975f434990 is deployed; additive r5 packaging remains pending.
+  runtime8b975f434990 is deployed; additive r5 package passes in
+  evidence/f7-current-prebuilt-r5-workflow.json.
   These fixes do not promote rows or waive FINAL_CHECKS.md requirements.
 - **Program navigation:** ruler and Program position seeks must preserve the
   native playing/stopped state and selected tempo. Native `main.rs` transport

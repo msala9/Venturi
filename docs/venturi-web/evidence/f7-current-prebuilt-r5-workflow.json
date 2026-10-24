@@ -1,0 +1,411 @@
+{
+  "date": "2026-10-24",
+  "status": "passed within internal development package scope",
+  "binary_source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+  "documentation_source_commit": "372612eab99f72ea5fc1c8e349da696886f23b5f",
+  "archive": {
+    "persistent_archive": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8b975f434990-c8ada6e108f5.tar",
+    "archive_bytes": 91166720,
+    "archive_sha256": "c8ada6e108f52e9da569fbc1c2e8e19c4252cf7d8c7c22e04a92dc683acc7cab"
+  },
+  "manifest": {
+    "format": 3,
+    "kind": "internal-development-prebuilt",
+    "delivery_source_commit": "372612eab99f72ea5fc1c8e349da696886f23b5f",
+    "binary_source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+    "source_repository": "https://github.com/msala9/Venturi",
+    "source_branch": "feat/venturi-web",
+    "binary": {
+      "path": ".runtime/vv-web",
+      "sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+      "bytes": 80385544
+    },
+    "runtime_inventory": "runtime-libraries.json",
+    "third_party_rust_inventory": "docs/venturi-web/evidence/f7-linux-normal-dependencies.json",
+    "notices": "docs/venturi-web/NOTICES.md",
+    "release_ready": false,
+    "rust_notices": {
+      "path": "third-party/rust-notices.tar",
+      "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+      "reuse": "third-party/notice-reuse.json"
+    },
+    "notice_companions": {
+      "rust-notices": {
+        "path": "third-party/rust-notices.tar",
+        "bytes": 4014080,
+        "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+        "provenance": "third-party/notice-reuse.json",
+        "original_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+        "original_binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+        "original_archive_and_index_unchanged": true
+      },
+      "notice-supplement": {
+        "path": "third-party/notice-supplement.tar",
+        "bytes": 194560,
+        "sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true,
+        "provenance": {
+          "unit": "venturi-halo1-notice-supplement-r1-20261024.service",
+          "state": "/home/halo/.cache/venturi-build/notice-supplement-r1/state.json",
+          "private_observation_sha256": "d0b3c61fce73bc8f5f0eaad5c25a4d5d1d19a6bc8b26a131a8693fa0671048c2",
+          "index_member": "venturi-web-notice-supplement-bf0b322/index.json",
+          "index_sha256": "3213ec6b0a3347e4de43ba5db4da5fa1bbde26caab3d6dfc90a63117e2bc2050"
+        }
+      },
+      "host-notices": {
+        "path": "third-party/host-notices.tar",
+        "bytes": 3747840,
+        "sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true,
+        "provenance": {
+          "unit": "venturi-halo1-host-notices-r1-20261024.service",
+          "state": "/home/halo/.cache/venturi-build/host-notices-r1/state.json",
+          "private_observation_sha256": "0ae787b9fe9085fe198f866cbbcb1633b53397af1d611f934ff7275a052fd03c",
+          "index_member": "venturi-web-host-notices-bf0b322/index.json",
+          "index_sha256": "259e623de12109562a79a885d1e2a96bfdc5ceb994499e2b80e3f8399c36b1bf"
+        },
+        "loader_comparison": {
+          "count": 189,
+          "exact": false,
+          "current_binding_exact": true,
+          "unchanged_count": 188,
+          "changed_count": 1,
+          "fields": [
+            "loader_name",
+            "path",
+            "resolved",
+            "bytes",
+            "sha256"
+          ],
+          "delta": "third-party/host-notice-delta.json"
+        }
+      }
+    },
+    "notice_reuse_candidate": {
+      "binary_source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+      "binary_sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+      "manifest": "third-party/notice-reuse.json"
+    },
+    "external_prerequisites": [
+      "dynamic host libraries",
+      "configured Vulkan userspace",
+      "fonts",
+      "project media",
+      "NAS catalogs",
+      "ds4"
+    ],
+    "host_loader_identity_exact": false,
+    "host_loader_current_binding_exact": true,
+    "host_notice_delta": "third-party/host-notice-delta.json",
+    "functional_parity": "docs/venturi-web/FUNCTIONAL_PARITY.csv",
+    "completion_plan": "docs/venturi-web/COMPLETION_PLAN.md",
+    "final_checks": "docs/venturi-web/FINAL_CHECKS.md",
+    "running": "docs/venturi-web/RUNNING.md",
+    "handover": "docs/venturi-web/DELIVERY_HANDOVER.md",
+    "binary_delivery_notes": "docs/venturi-web/BINARY_DELIVERY.md",
+    "qualification_evidence": [
+      "docs/venturi-web/evidence/f7-linux-normal-dependencies.json",
+      "docs/venturi-web/evidence/f7-third-party-notice-texts.json",
+      "docs/venturi-web/evidence/f7-notice-supplement-workflow.json",
+      "docs/venturi-web/evidence/f7-host-notices-workflow.json",
+      "docs/venturi-web/evidence/f3-f4-native-toolwindows-title-reset-workflow.json",
+      "docs/venturi-web/evidence/f7-public-real-media-export-workflow.json",
+      "docs/venturi-web/evidence/f7-host-zlib-notice-delta.json",
+      "docs/venturi-web/evidence/f7-current-prebuilt-r4-workflow.json",
+      "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json"
+    ],
+    "actual_gui_evidence": [
+      "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json"
+    ],
+    "packaging_preflight": {
+      "public_media_export_terminal": true,
+      "public_export": {
+        "unit": "venturi-halo1-public-4k-export-r1-20261024.service",
+        "state": "/home/halo/.cache/venturi-build/public-4k-export-r1/state.json",
+        "binary_sha256": "87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff",
+        "private_observation_sha256": "d5f370fa79e19ab0da6b4defe844f8e9d5049e6c9c3caf715a137974cccd0371"
+      },
+      "previous_r3_failed_terminal": true,
+      "reviewed_loader_delta_terminal": true,
+      "final_native_restore_terminal": true
+    },
+    "prior_immutable_package": {
+      "unit": "venturi-halo1-current-prebuilt-r4-20261024.service",
+      "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar",
+      "bytes": 89907200,
+      "sha256": "9647db624e70680745d256e1b9c1b762a27b1196f97f7085e23739e057dafb0b"
+    }
+  },
+  "packaged_file_hashes": {
+    ".runtime/vv-web": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+    "LICENSE": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+    "README.txt": "26d8f3c4103b92f7b7c1ae89b3049a99f4ac371e1742eab815da644cc32d1f13",
+    "crates/vv-vad/model/LICENSE-silero-vad": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b",
+    "docs/venturi-web/API_CONTRACT.md": "5f19dbf42004706540320f62675f156d47c0ec3fa3df941f5288533d0cd668b7",
+    "docs/venturi-web/BINARY_DELIVERY.md": "599775a408f75dc23706bcf97590cb01dc4a7492d93c12d90874ddc25f8010da",
+    "docs/venturi-web/COMPLETION_PLAN.md": "e7e683e21851f2bbce68ca5464219ff5e67beeaa08e3e719ef1419b2ba1eae92",
+    "docs/venturi-web/DELIVERY_HANDOVER.md": "2775e3b82e3a1d7df5c3a7dcd96897380a432727419ee3d40fe74ca68f97d8a1",
+    "docs/venturi-web/FINAL_CHECKS.md": "60a4e2ca183769b61cb878a2c0a8db8bddad314238ca5fcfd177eabad8648e2f",
+    "docs/venturi-web/FUNCTIONAL_PARITY.csv": "283507857a748ff878e3577c7501c9fbeb8155a0e6f65c20894112ec044a0381",
+    "docs/venturi-web/IMPLEMENTATION_PLAN.md": "65b77a16053b947ffdbf89711cc9a517bac3d4b9a54ab8a639ab62cbafbc79d7",
+    "docs/venturi-web/IMPLEMENTATION_STATUS.md": "9cef83653811b1698daf61a3d2ac8f6bf787e0e38c400b7371488f14b6e83c46",
+    "docs/venturi-web/NOTICES.md": "fac7035276eac9a748c5e1787841bbde813046515c07e06aebcfce1e998826a5",
+    "docs/venturi-web/RELEASE_CHECKLIST.md": "bb1521c3dec93eea792ff9cb98d63e7142f5d8019561e70f5ad245626a20389a",
+    "docs/venturi-web/REMAINING_WORK.md": "9538db82f9b33f5f26262348de72dd878a4a5d4b483cc9c67d217a95ced05da2",
+    "docs/venturi-web/RUNNING.md": "06d7df18d85b19fc25461c0cc817be936a64325a8ac649934edd7dd397a59f5e",
+    "docs/venturi-web/SECURITY_DEPLOY.md": "12a3f0070b023501428b525787943e1a82c0c20a02974a11304e6b5555f75b51",
+    "docs/venturi-web/TEST_PLAN.md": "6501697a7428b434f72d3eb9bfa1b8fbcdfaa78d3052ee2a27fe9e9a4940ff20",
+    "docs/venturi-web/UX_SPEC.md": "b43afd66619bd9e156d3d47aafba560df8921ed23dc0177c6c5bb8c9f83c5f44",
+    "docs/venturi-web/evidence/f2-f5-native-nas-restore-input-workflow.json": "de31ba9fb2bf9d80cbfb2d714d039c3196ae4cd3f1d4b1906e8c3b9c9ab9d477",
+    "docs/venturi-web/evidence/f3-f4-native-toolwindows-title-reset-workflow.json": "92d53a3d37365aafac4221821003ab69e075da3c3780390bc9dac482c3ea33ee",
+    "docs/venturi-web/evidence/f7-current-prebuilt-r4-workflow.json": "3beb652926eaab71cb945bd5454b61857671ca9fdc18c6b76f26f18b58d825b3",
+    "docs/venturi-web/evidence/f7-host-notices-workflow.json": "f51e627a6c0fde1c3851100b65f47fa66af5e8fc5e45992c1f3b21e919edc463",
+    "docs/venturi-web/evidence/f7-host-zlib-notice-delta.json": "054eb43aa6895f478cbf6d5cee535b1797c372bc1c77998b387a7a8ecc0ccc54",
+    "docs/venturi-web/evidence/f7-linux-normal-dependencies.json": "d520fdedc1f8912bd76a48c9d005331b5ff1d856edf6b9a197196bd01761ee91",
+    "docs/venturi-web/evidence/f7-notice-supplement-workflow.json": "b1a6c4de3e573aa991baae27b4f8c8063700cfedcee38259bcb29782a54c4042",
+    "docs/venturi-web/evidence/f7-public-real-media-export-workflow.json": "f5605a229c7df48db0760814c8a0e15e42f79e4a3860776262d9ea18605d7a1d",
+    "docs/venturi-web/evidence/f7-third-party-notice-texts.json": "6e1ba9258d2117c27c0e424ea5fe43e86ca9dce12aa1be068a86ee3b64e16ebe",
+    "manifest.json": "9fb9b15caaa9ae58bfc25a1348227002cdaa09f433fb0c57a573dc248a88e9fd",
+    "runtime-libraries.json": "b889ab3d13beeea9f0648c70a28e4d42aeb9cc33751b3e32f5c6c56dfc0567c1",
+    "scripts/venturi-web.sh": "833f2037d360cca5128e32334923d1e7adc501311a56b8a41ff29d31886b543c",
+    "third-party/companions.json": "4ddddb3db1ed706a16895dfea6b685a850fbe3aaf78fb0d9632f13b6037d1d74",
+    "third-party/host-notice-delta.json": "a6764b0c32c7a5e9d9f8e130837577b816060de236db43dbb8cc5413ee306475",
+    "third-party/host-notices.tar": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+    "third-party/notice-reuse.json": "892e3f145319d56576764dfd3854accd53edce6471b0ea32c7698fe65459bb10",
+    "third-party/notice-supplement.tar": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+    "third-party/rust-notices.tar": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57"
+  },
+  "runtime_before": {
+    "unit": "venturi-web-halo1-native-import-receipt.service",
+    "pid": "485839",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990",
+    "sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+    "cmdline_sha256": "dceb3786ce70db06ab75febc7c67e2af1daf3f9c849f9fe446c3d54f1cafa548",
+    "session_sha256": "9d248eec202e0f7a4639caa5ce228b141b34ebf89a70335857d6718c3fb87eee"
+  },
+  "runtime_after": {
+    "unit": "venturi-web-halo1-native-import-receipt.service",
+    "pid": "485839",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990",
+    "sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+    "cmdline_sha256": "dceb3786ce70db06ab75febc7c67e2af1daf3f9c849f9fe446c3d54f1cafa548",
+    "session_sha256": "9d248eec202e0f7a4639caa5ce228b141b34ebf89a70335857d6718c3fb87eee"
+  },
+  "prior_package_exact": {
+    "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar",
+    "bytes": 89907200,
+    "sha256": "9647db624e70680745d256e1b9c1b762a27b1196f97f7085e23739e057dafb0b"
+  },
+  "notice_companions": {
+    "rust-notices": {
+      "path": "third-party/rust-notices.tar",
+      "bytes": 4014080,
+      "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+      "provenance": "third-party/notice-reuse.json",
+      "original_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+      "original_binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+      "original_archive_and_index_unchanged": true
+    },
+    "notice-supplement": {
+      "path": "third-party/notice-supplement.tar",
+      "bytes": 194560,
+      "sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+      "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+      "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+      "original_archive_and_index_unchanged": true,
+      "provenance": {
+        "unit": "venturi-halo1-notice-supplement-r1-20261024.service",
+        "state": "/home/halo/.cache/venturi-build/notice-supplement-r1/state.json",
+        "private_observation_sha256": "d0b3c61fce73bc8f5f0eaad5c25a4d5d1d19a6bc8b26a131a8693fa0671048c2",
+        "index_member": "venturi-web-notice-supplement-bf0b322/index.json",
+        "index_sha256": "3213ec6b0a3347e4de43ba5db4da5fa1bbde26caab3d6dfc90a63117e2bc2050"
+      }
+    },
+    "host-notices": {
+      "path": "third-party/host-notices.tar",
+      "bytes": 3747840,
+      "sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+      "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+      "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+      "original_archive_and_index_unchanged": true,
+      "provenance": {
+        "unit": "venturi-halo1-host-notices-r1-20261024.service",
+        "state": "/home/halo/.cache/venturi-build/host-notices-r1/state.json",
+        "private_observation_sha256": "0ae787b9fe9085fe198f866cbbcb1633b53397af1d611f934ff7275a052fd03c",
+        "index_member": "venturi-web-host-notices-bf0b322/index.json",
+        "index_sha256": "259e623de12109562a79a885d1e2a96bfdc5ceb994499e2b80e3f8399c36b1bf"
+      },
+      "loader_comparison": {
+        "count": 189,
+        "exact": false,
+        "current_binding_exact": true,
+        "unchanged_count": 188,
+        "changed_count": 1,
+        "fields": [
+          "loader_name",
+          "path",
+          "resolved",
+          "bytes",
+          "sha256"
+        ],
+        "delta": "third-party/host-notice-delta.json"
+      }
+    }
+  },
+  "host_loader_identity_exact": false,
+  "host_loader_current_binding_exact": true,
+  "library_count": 189,
+  "loader_comparison": {
+    "count": 189,
+    "exact": false,
+    "current_binding_exact": true,
+    "unchanged_count": 188,
+    "changed_count": 1,
+    "fields": [
+      "loader_name",
+      "path",
+      "resolved",
+      "bytes",
+      "sha256"
+    ],
+    "delta": "third-party/host-notice-delta.json"
+  },
+  "host_notices_before": {
+    "count": 199,
+    "bindings_sha256": "c3773211474a810597e57a0471cb2f2de30022798d2f5f7689fda907799f5054"
+  },
+  "host_notices_after": {
+    "count": 199,
+    "bindings_sha256": "c3773211474a810597e57a0471cb2f2de30022798d2f5f7689fda907799f5054"
+  },
+  "zlib_before": {
+    "package": {
+      "binary_package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "architecture": "amd64"
+    },
+    "notice_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+    "library_sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+  },
+  "zlib_after": {
+    "package": {
+      "binary_package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "architecture": "amd64"
+    },
+    "notice_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+    "library_sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+  },
+  "reused_r2": {
+    "source_commit": "59edfe56cd10af495c1a5e444ed5677be9e97e67",
+    "binary_sha256": "e2d59b0b5db6e0ac88f4d2668b46bd6e9737a68046914e63a82982141e13e2ec",
+    "client_counts": {
+      "tests": 54,
+      "pass": 54,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "native_counts": {
+      "asset_journal::tests::": {
+        "passed": 10,
+        "failed": 0,
+        "ignored": 0
+      },
+      "asset_store::tests::": {
+        "passed": 19,
+        "failed": 0,
+        "ignored": 0
+      },
+      "preset_store::tests::": {
+        "passed": 20,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "historical_native_counts": {
+      "asset_journal::tests::": {
+        "passed": 10,
+        "failed": 0,
+        "ignored": 0
+      },
+      "asset_store::tests::": {
+        "passed": 19,
+        "failed": 0,
+        "ignored": 0
+      },
+      "preset_store::tests::": {
+        "passed": 20,
+        "failed": 0,
+        "ignored": 0
+      },
+      "host::tests::library_restore_previous_survives_lost_receipt_and_restart_without_swapping_twice": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "host::tests::saved_preset_delete_preserves_project_history_and_recovers_a_lost_receipt_without_redeleting": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "final_changed_files": [
+      "crates/vv-web/src/host.rs",
+      "crates/vv-web/src/tests/host.rs"
+    ],
+    "unchanged_inputs_verified": true
+  },
+  "help_exit_code": 0,
+  "resources": {
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=100%",
+      "MemoryMax=512M",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=180",
+      "TimeoutStopSec=10",
+      "KillMode=control-group",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/current-prebuilt-r5/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/current-prebuilt-r5/worker.log"
+    ],
+    "peak_bytes": 238067712,
+    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+  },
+  "unit": {
+    "LoadState": "not-found",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "MemoryCurrent": "[not set]",
+    "MemoryPeak": "[not set]"
+  },
+  "scope": "Final native-restore source/binary and explicit committed GUI/docs payload plus all3 verbatim immutable notice companions with ORIGINAL2dbc/b8d and77d7/bf0b bindings; unchanged graph inputs; exact reviewed189 current loader binding consisting of188 original-identical DSOs and one pinned zlib Ubuntu3.2 patch. All199 installed host notice bindings and zlib package/library/notice checked before/end. Current8855unit/PID/executable/Session and prior r4 archive checked unchanged. No compilation/render/server/downgrade/installation/NAS/live-editor mutation or Windows large copy. Archive members streamed and launcher --help checked. FINAL_CHECKS retains unavailable criteria; DSOs/fonts external and fullM7 not inferred.",
+  "publication_note": "This receipt and its publication documentation postdate the immutable archive; the archive retains its exact documentation source372612e, including then-pending packaging text. No archive replacement or second assembly.",
+  "private_observation_sha256": "bc608975cfd7e3891e6dc1a86e7e718c72c10eb7396a79237008fdaba0dc9f4e",
+  "qualification_proof": "f2-f5-native-nas-restore-input-workflow.json",
+  "remaining_checks": "FINAL_CHECKS.md; full release acceptance remains open",
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2
+  }
+}

@@ -10,7 +10,7 @@ export function mixerDraftContext(query) {
   const params=new URLSearchParams(query),keys=['project_epoch','if_generation','timeline_id','revision'];
   return keys.every(key=>params.get(key))?JSON.stringify(keys.map(key=>params.get(key))):null;
 }
-export function renderMixer(root, timeline, { writable, commit, commitEffects=operation=>commit(operation), notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets, meters, mixDrafts, canInteract=()=>true }) {
+export function renderMixer(root, timeline, { writable, commit, commitEffects=operation=>commit(operation), notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets, meters, mixDrafts, canInteract=()=>true, canRead=canInteract }) {
   const customPresets=audioPresets?{...audioPresets,expectedContext:{...audioPresets.getContext()}}:null;
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Audio mixer";section.open=open;section.append(summary);
   const console=document.createElement('div');console.className='mixer-console';section.append(console);
@@ -63,7 +63,7 @@ export function renderMixer(root, timeline, { writable, commit, commitEffects=op
     mixInputs.push({channel:track.channel,inputs});
     console.append(form);
     if(catalog){
-      const effects=renderEffects(section,track,catalog,!writable || track.locked,commit,commitEffects,notice,openPaths,timeline.id,query,customPresets,meters,canInteract);
+      const effects=renderEffects(section,track,catalog,!writable || track.locked,commit,commitEffects,notice,openPaths,timeline.id,query,customPresets,meters,canRead);
       const expected=JSON.stringify(audioPresets?.getContext?.() ?? query),current=()=>!disposed && section.isConnected!==false && section.open && JSON.stringify(audioPresets?.getContext?.() ?? query)===expected;
       const stack=createMixerInsertStack({root:insertHost,label:track.label,effects:track.effects,slots:effectSlots,catalog,isCurrent:current,getContext:()=>JSON.stringify(audioPresets?.getContext?.() ?? query),canInteract:()=>writable && !track.locked && current() && (audioPresets?.canCommit?.() ?? true),onOpen:index=>effects.open(index),onEdit:edit=>effects.edit(edit),notice});
       insertStacks.push(stack);effectCancels.push(()=>{stack.cancel();effects.cancel();});effectSyncs.push(effects.sync);effectDisposers.push(()=>{stack.dispose();effects();});
@@ -84,7 +84,7 @@ export function renderMixer(root, timeline, { writable, commit, commitEffects=op
   const syncMeters=()=>{if(!section.open)for(const control of directControls)control.cancel();meters?.sync();};section.addEventListener('toggle',syncMeters);
   section.captureMixDrafts=()=>{for(const control of directControls)control.cancel();return context?{context,channels:mixInputs.map(({channel,inputs})=>({channel,gain_db:String(inputs.gain_db.value),pan:String(inputs.pan.value)}))}:null;};
   section.cancelGestures=()=>{for(const control of directControls)control.cancel();for(const cancel of effectCancels)cancel();};
-  section.syncVisibility=()=>{for(const stack of insertStacks)stack.sync();if(canInteract())for(const sync of effectSyncs)sync();};
+  section.syncVisibility=()=>{for(const stack of insertStacks)stack.sync();if(canRead())for(const sync of effectSyncs)sync();};
   section.disposeMeters=()=>{for(const control of directControls)control.dispose();for(const dispose of effectDisposers)dispose();disposed=true;unsubscribe?.();section.removeEventListener('toggle',syncMeters);};
   return section;
 }

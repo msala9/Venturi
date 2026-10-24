@@ -28,7 +28,7 @@ import {createZoomLink} from './curves.js';
 import {createFontCatalogReader} from './fonts.js';
 import {effectDragItem,effectPlacementOperation} from './timeline/effect-drop.js';
 import {createCurveWindow,createToolWindow} from './curve-window.js';
-import {createToolPanels} from './tool-panels.js';
+import {createToolPanels,createMixerRefresh} from './tool-panels.js';
 import {maskFocusAfterEdit} from './masks.js';
 import { renderMixer, mixerDraftContext } from "./mixer.js";
 import {createMixerEditorState,notifyMixerMutation} from './mixer-inserts.js';
@@ -763,19 +763,37 @@ function mountTimelineMixer(){
   if(!documentState || !timeline || timeline.id==='fixture'){mixerWindow.setStatus('Open a native timeline to edit its mix');return;}
   mixerWindow.setStatus('');
   const mixQuery=new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
+  const context=Object.fromEntries(mixQuery);
+  const canRead=()=>context.project_epoch===documentState?.project_epoch && context.if_generation===documentState?.generation && context.timeline_id===timeline?.id && context.revision===timeline?.revision && nativeTools.panels.visible('mixer') && !document.querySelector('dialog[open]');
+  const canInteract=()=>canRead() && writable && !busy && !unresolved;
   const commitEffects=(operation,edit)=>{
     const query=Object.fromEntries(mixQuery),channel=operation.channel==='master'?timeline?.master:timeline?.tracks.find(track=>track.id===operation.channel)?.mix;
     if(!channel || query.project_epoch!==documentState?.project_epoch || query.if_generation!==documentState?.generation || query.timeline_id!==timeline?.id || query.revision!==timeline?.revision)throw Error('The native insert context changed');
     const callbacks=mixerEditors.begin(query,operation.channel,channel.effects,edit);
     if(!callbacks || JSON.stringify(callbacks.effects)!==JSON.stringify(operation.effects))throw Error('The native insert edit changed');
+    mixerRefresh.invalidate();
     return mutate(operation,false,null,null,null,callbacks).catch(error=>{callbacks.onError(error);if(!error.code)selected();throw error;});
   };
-  mixerDetail=renderMixer(mixerWindow.content,timeline,{canInteract:()=>nativeTools.panels.visible('mixer') && !document.querySelector('dialog[open]'),writable:writable && !busy && !unresolved,commit,commitEffects,notice,open:true,mixDrafts:mixerMixDrafts,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),meters:{subscribe:options=>audioMeters?.subscribe(options),sync:()=>audioMeters?.sync(),visible:()=>nativeTools.panels.visible('mixer') && viewerMode==='program'},audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>nativeTools.panels.visible('mixer') && writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
+  mixerDetail=renderMixer(mixerWindow.content,timeline,{canRead,canInteract,writable:writable && !busy && !unresolved,commit,commitEffects,notice,open:true,mixDrafts:mixerMixDrafts,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),meters:{subscribe:options=>audioMeters?.subscribe(options),sync:()=>audioMeters?.sync(),visible:()=>nativeTools.panels.visible('mixer') && viewerMode==='program'},audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:canInteract,libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
   nativeTools.panels.setMixer(mixerDetail);
 }
+const mixerRefresh=createMixerRefresh({
+  getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,writable:writable && !busy && !unresolved,catalog:documentState?.audio_effects}),
+  getNode:()=>mixerDetail,
+  rebuild:()=>{
+    mixerViewport?.capture();
+    mixerMixDrafts=mixerDetail?.captureMixDrafts?.() ?? mixerMixDrafts;
+    const mixContext=documentState && timeline?mixerDraftContext({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}):null;
+    if(!mixContext || mixerMixDrafts?.context!==mixContext)mixerMixDrafts=null;
+    mixerEditors.capture(documentState && timeline?{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}:null,
+      mixerDetail?.querySelectorAll("details[data-mixer-path]") || [],
+      timeline?[...timeline.tracks.filter(track=>track.kind==='audio').map(track=>({channel:track.id,effects:track.mix.effects})),{channel:'master',effects:timeline.master.effects}]:[]);
+    mixerDetail?.disposeMeters?.();mixerDetail=null;
+    nativeTools.panels.clearMixer();mountTimelineMixer();
+  },
+});
 function selected() {
   inspectorViewport?.capture();
-  mixerViewport?.capture();
   cancelInspectorDraft();
   timelineContextMenu?.invalidate();
   inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
@@ -807,14 +825,7 @@ function selected() {
   for(const node of document.querySelectorAll("#inspector-content details[data-visual-path],.curve-window-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
   for(const control of visualControls){if(typeof control.dispose==='function')control.dispose();else control.cancel();}visualControls=[];
   curveWindow.content.replaceChildren();curveWindow.setTitle('Curves');curveWindow.setStatus('Select a native clip to edit its keyframes');
-  mixerMixDrafts=mixerDetail?.captureMixDrafts?.() ?? mixerMixDrafts;
-  const mixContext=documentState && timeline?mixerDraftContext({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}):null;
-  if(!mixContext || mixerMixDrafts?.context!==mixContext)mixerMixDrafts=null;
-  mixerEditors.capture(documentState && timeline?{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}:null,
-    mixerDetail?.querySelectorAll("details[data-mixer-path]") || [],
-    timeline?[...timeline.tracks.filter(track=>track.kind==='audio').map(track=>({channel:track.id,effects:track.mix.effects})),{channel:'master',effects:timeline.master.effects}]:[]);
-  mixerDetail?.disposeMeters?.();mixerDetail=null;
-  nativeTools.panels.clearMixer();mountTimelineMixer();
+  mixerRefresh.refresh();
   const getVideoSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
   const getAudioSelection=()=>audioPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
   const getRetimeSelection=()=>retimePropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
@@ -1570,10 +1581,12 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
       body,
     );
     if(!notifyMixerMutation(mixerCallbacks,'onReceipt',receipt,body))mixerEditors.reset();
+    if(mixerCallbacks)mixerRefresh.invalidate();
     notice(commandNotice(receipt));
     return receipt;
   } catch (error) {
     if(!notifyMixerMutation(mixerCallbacks,'onError',error,body))mixerEditors.reset();
+    if(mixerCallbacks)mixerRefresh.invalidate();
     if (error.code === "OUTCOME_UNKNOWN") {
       unresolved = body.command_id;
       writable = false;

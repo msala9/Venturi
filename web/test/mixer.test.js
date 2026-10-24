@@ -168,3 +168,51 @@ test('native loudness preset shortcuts preserve mode, bypass, clip policy and ch
     section.disposeMeters();event(buttons(master)[0],'click');assert.equal(writes.length,count);assert.deepEqual(timeline,snapshot);
   }finally{section?.disposeMeters();globalThis.document=previous.document;globalThis.Option=previous.Option;}
 });
+
+test('readonly Mixer reads EQ and compressor curves on open and reopen while all edits stay blocked',async()=>{
+  class Element extends EventTarget{
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes={};this.dataset={};this.properties={};this.isConnected=true;this.disabled=false;this.open=false;this.value='';this.rect={left:0,top:0,width:300,height:200};}
+    style={setProperty:(key,value)=>{this.properties[key]=value;}};
+    append(...nodes){this.children.push(...nodes);}setAttribute(key,value){this.attributes[key]=value;}
+    getBoundingClientRect(){return {...this.rect};}getClientRects(){return [this.rect];}
+    focus(){}reportValidity(){return true;}checkValidity(){return true;}
+  }
+  const previous={document:globalThis.document,Option:globalThis.Option,fetch:globalThis.fetch};
+  const doc=new EventTarget();doc.hidden=false;doc.createElement=tag=>new Element(tag);globalThis.document=doc;
+  globalThis.Option=class extends Element{constructor(label,value){super('option');this.textContent=label;this.value=value;}};
+  const eqGraph={frequency_hz:[20,20000],display_db:[-27,27],gain_db:[-24,24],q_wheel_factor:Math.fround(1.15),shape_has_gain:{HighPass:false,LowShelf:true,Peak:true,HighShelf:true,LowPass:false}};
+  const eq={enabled:true,kind:{Equalizer:{bands:Array.from({length:6},(_,index)=>({enabled:true,shape:'Peak',freq_hz:[80,200,600,2000,6000,12000][index],gain_db:0,q:1}))}};
+  const compressor={enabled:true,kind:{MultibandCompressor:{crossovers_hz:[200,2000],bands:Array.from({length:3},()=>({threshold_db:-12,ratio:2,attack_ms:10,release_ms:100,makeup_db:0}))}};
+  const catalog={defaults:{Equalizer:eq,MultibandCompressor:compressor},
+    eq:{graph:eqGraph,freq_hz:[20,20000],gain_db:[-24,24],q:[.1,18],shapes:Object.keys(eqGraph.shape_has_gain)},
+    compressor:{graph:{frequency_hz:[20,20000],display_db:[-30,24],min_crossover_ratio:Math.fround(1.2),response_kind:'makeup_only'},crossovers_hz:[20,20000],makeup_db:[-24,24],threshold_db:[-60,0],ratio:[1,20],attack_ms:[.1,200],release_ms:[1,2000]}};
+  const timeline={id:'1',tracks:[],master:{gain_db:0,pan:0,effects:[eq,compressor]}},before=structuredClone(timeline),reads=[],writes=[];
+  const all=node=>[node,...node.children.flatMap(all)],send=(node,type,values={})=>{const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries(values))Object.defineProperty(event,key,{value});node.dispatchEvent(event);};
+  const settle=()=>new Promise(resolve=>setImmediate(resolve));let visible=true,section;
+  globalThis.fetch=async(url,options)=>{
+    assert.equal(options.method,'GET');reads.push(url);
+    return Response.json({sample_rate:48000,enabled:true,points:[[20,0],[20000,0]],...(url.includes('/compressor/')?{response_kind:'makeup_only',activity:null}:{})});
+  };
+  try{
+    section=renderMixer(new Element('div'),timeline,{writable:false,open:true,catalog,canInteract:()=>false,canRead:()=>visible,
+      query:new URLSearchParams({project_epoch:'epoch',if_generation:'3',timeline_id:'1',revision:'revision'}),
+      openPaths:new Set(['master:effects','master:effects:0','master:effects:1']),commit:async operation=>{writes.push(operation);},notice(){}});
+    const openButtons=all(section).filter(node=>node.className==='mixer-insert-open');assert.equal(openButtons.length,2);
+    for(const button of openButtons)send(button,'click');
+    await settle();
+    assert.equal(reads.length,2);assert.ok(reads.some(url=>url.includes('/audio/master/eq/0?')));assert.ok(reads.some(url=>url.includes('/audio/master/compressor/1?')));
+    const statuses=all(section).filter(node=>node.className==='audio-graph-status');assert.equal(statuses.length,2);
+    assert.ok(statuses.every(node=>node.textContent.includes('Committed native response')));
+    const handles=all(section).filter(node=>node.dataset.audioGraphHandle);assert.equal(handles.length,11);assert.ok(handles.every(node=>node.disabled));
+    const fader=all(section).find(node=>node.attributes['aria-label']==='Master gain fader');assert.equal(fader.disabled,true);
+    const apply=all(section).find(node=>node.tag==='button' && node.textContent==='Apply Master mix');assert.equal(apply.disabled,true);
+    for(const form of all(section).filter(node=>node.tag==='form'))send(form,'submit');
+    for(const handle of handles)send(handle,'keydown',{key:'ArrowUp'});
+    await settle();assert.deepEqual(writes,[]);
+    visible=false;section.cancelGestures();section.syncVisibility();await settle();assert.equal(reads.length,2);
+    visible=true;section.syncVisibility();await settle();assert.equal(reads.length,4);
+    assert.ok(handles.every(node=>node.disabled));assert.ok(statuses.every(node=>node.textContent.includes('Committed native response')));
+    section.disposeMeters();section.syncVisibility();await settle();assert.equal(reads.length,4);
+    assert.deepEqual(writes,[]);assert.deepEqual(timeline,before);
+  }finally{section?.disposeMeters();globalThis.document=previous.document;globalThis.Option=previous.Option;globalThis.fetch=previous.fetch;}
+});

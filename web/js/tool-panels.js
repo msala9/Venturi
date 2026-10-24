@@ -1,3 +1,21 @@
+export function createMixerRefresh({getContext,getNode,rebuild}){
+  let built=false,previous=null;
+  function invalidate(){built=false;previous=null;}
+  function refresh(){
+    const context=getContext();
+    const identity=!context?.project_epoch || !context.timeline || context.timeline.id==='fixture' ? null : JSON.stringify([context.project_epoch,context.generation,context.timeline.id,context.timeline.revision,Boolean(context.writable),context.catalog]);
+    if(built && identity===previous){
+      if(identity===null)return false;
+      const node=getNode();if(node && node.isConnected!==false)return false;
+    }
+    invalidate();
+    rebuild(identity);
+    previous=identity;built=true;
+    return true;
+  }
+  return {refresh,invalidate};
+}
+
 export function createToolPanels({mixer,color,getState}){
   let grade=null,mixerRoot=null,colorVisible=false,mixerVisible=false;
   const visible=name=>{

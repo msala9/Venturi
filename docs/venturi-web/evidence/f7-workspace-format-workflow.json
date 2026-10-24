@@ -1,0 +1,120 @@
+{
+  "schema": "venturi-workspace-format-v1",
+  "date": "2026-10-25",
+  "format_commit": "61e761e93fc459c971099c6a821ff112ce2836b7",
+  "binary_source_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+  "source_manifest_count": 622,
+  "formatted_manifest_sha256": "f701b0e5d444a6459bff1a024577e61db7f6b6073a25f8f0e68540ef58610be0",
+  "before_manifest_sha256": "26c25b6d9dcae0befc66468646595f54d672064f00a526df1fa79eb17ec2f47c",
+  "commands": [
+    "cargo fmt --all -- --check",
+    "cargo fmt --all",
+    "cargo fmt --all -- --check"
+  ],
+  "steps": [
+    {
+      "label": "before-check",
+      "exit_code": 1,
+      "seconds": 1.367,
+      "log_bytes": 59611
+    },
+    {
+      "label": "format",
+      "exit_code": 0,
+      "seconds": 1.217,
+      "log_bytes": 0
+    },
+    {
+      "label": "after-check",
+      "exit_code": 0,
+      "seconds": 1.217,
+      "log_bytes": 0
+    }
+  ],
+  "changed": {
+    "crates/vv-web/build.rs": {
+      "before_sha256": "bbc70c394ec5402467f27aa6718253c17174266c5b51f0378f3bb97a8415bef5",
+      "after_sha256": "a6d7c67849ce6e91e88428d83f5e4ba5aca34166a606d6dc07eae08be470504c"
+    },
+    "crates/vv-web/src/api.rs": {
+      "before_sha256": "15d3c19ba6f55f939c1af995e9d95e19bafd1c6e8af1ca7583498d32ba7e5da3",
+      "after_sha256": "2e095776a15c04933338105833d380f65a4e4ba2292eeecdbd0d7eb52bf1dc27"
+    },
+    "crates/vv-web/src/commands.rs": {
+      "before_sha256": "0999577401805db92c92ebc37c138d017b563e6bc3188e7e338570eccb54433f",
+      "after_sha256": "af365b2bebe8e1728eea61eaf26a17bf1ffcb195c1ba9d6fda51db2973ff9871"
+    },
+    "crates/vv-web/src/host.rs": {
+      "before_sha256": "2464be78abea69934025a14c876af1ef4f96dc23ae4896442f7805054a646769",
+      "after_sha256": "d78653db35b22429f2fd2ce94f6223e4f98a2ad92fd4c0e6f8352e61d0d12e85"
+    },
+    "crates/vv-web/src/source.rs": {
+      "before_sha256": "cae14f3c700a9446df68a9f15b0fae66c5849c2335af9b7263738abceb1bb495",
+      "after_sha256": "077dd2ddf252e72ddaabd0a7b800789c4b26c5180aea53487f300c89334e0256"
+    },
+    "crates/vv-web/src/tests/api.rs": {
+      "before_sha256": "0e33ca1d8dbd3885237248d71499caad07944db404df2251ab85bb3b5cac99ff",
+      "after_sha256": "5782a85b6cf97840a3ea66527b9212c4edb3aa32cc9a71e39e5f1fc70ca21366"
+    },
+    "crates/vv-web/src/tests/commands.rs": {
+      "before_sha256": "d01b2bf24a8b2e3268a45cc93261d86bb50f24f0314d928b3b799de46f3c1fce",
+      "after_sha256": "3fc69749bb6c7439b0ad88a3bd92b51b111286cc1f0ca816aba59c2a6709ee85"
+    },
+    "crates/vv-web/src/tests/host.rs": {
+      "before_sha256": "7179faad1708ab414ccd866adb53fe2bb1487bc0fdae94d293de55f751032704",
+      "after_sha256": "1e713f1a17dcde495c3ac7b3909b15665ff3ce0fae35dc89b1d71e641137575d"
+    },
+    "crates/vv-web/src/tests/preview.rs": {
+      "before_sha256": "98df61469851bf5ea9e61a4d868246a5bf8ab4d0f1fb031480dfe628252cee93",
+      "after_sha256": "0b80f4576bc4e995f5b65af32ebec641279744ba2c45d373751841353890adc6"
+    },
+    "crates/vv-web/src/tests/source.rs": {
+      "before_sha256": "9b4cfacfae75792671f7d3c77c162c98b533871b21a73e8d60171b25bef22c5c",
+      "after_sha256": "e33d2afbedca9053b2a3e820635ff5e2d879b1dfdb23e6caee3ad066a1f49428"
+    }
+  },
+  "patch_sha256": "f33f76e158821924420ce531f3fb9f650119cb501622ce0e332129394444a0ca",
+  "patch_bytes": 56069,
+  "qualification": {
+    "scope": "All workspace Rust targets through cargo fmt; first check reports formatting drift, standard rustfmt applies ten vv-web source/test/build-script files, second full check passes. Root imports only the exact formatter patch and verifies every resulting hash. Native/shared crates and all JavaScript/Cargo inputs remain untouched.",
+    "memory_peak_bytes": 152997888,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "cpu_limit": 1,
+    "memory_limit_bytes": 536870912,
+    "swap_limit_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "terminal_unit": {
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0"
+    }
+  },
+  "preservation": {
+    "runtime_exact": true,
+    "session_exact": true,
+    "runtime_unit": "venturi-web-halo1-static-compression.service",
+    "runtime_pid": "565076",
+    "runtime_sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f"
+  },
+  "private_receipt": {
+    "name": "halo1-workspace-format-r1-observed.json",
+    "sha256": "850104886aa688c5b9ce85fd668bc860b9ba4229ac690b9f25fe0c3717a41985"
+  },
+  "limitations": [
+    "Formatting is the only new qualification. No build, functional test, renderer, package or browser run was performed or claimed.",
+    "Existing native/client proofs and running binary stay bound to their recorded source commits. The live binary remains d0ee294; this formatting-only source commit does not claim a new runtime build.",
+    "Nine physical native clock cases and all outstanding FINAL_CHECKS/M7/parity acceptance remain open; no row promotion."
+  ]
+}

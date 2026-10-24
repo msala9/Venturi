@@ -1,5 +1,17 @@
 # Release checklist
 
+## Full workspace Rust formatting - 2026-10-25
+
+Source61e761e imports the exact standard rustfmt output for ten vv-web files.
+The first full workspace check reports drift; after formatting,
+`cargo fmt --all -- --check` passes. One halo1 CPU/512MiB/no swap job peaks
+152997888B with zero memory events; runtime/Session remain exact.
+See `evidence/f7-workspace-format-workflow.json`. No build, functional test,
+renderer, browser or package was rerun for this formatting-only change.
+The live9e29a444f47b binary stays source d0ee294-bound; native/shared crates,
+JavaScript and Cargo inputs are untouched. FINAL_CHECKS and62/28/2 stay open.
+
+
 ## Current immutable R10 development delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8e190ba8189f-r10-f1858d8a6e20.tar`.

@@ -1,5 +1,17 @@
 # Implementation status
 
+## Full workspace Rust formatting - 2026-10-25
+
+Source61e761e imports the exact standard rustfmt output for ten vv-web files.
+The first full workspace check reports drift; after formatting,
+`cargo fmt --all -- --check` passes. One halo1 CPU/512MiB/no swap job peaks
+152997888B with zero memory events; runtime/Session remain exact.
+See `evidence/f7-workspace-format-workflow.json`. No build, functional test,
+renderer, browser or package was rerun for this formatting-only change.
+The live9e29a444f47b binary stays source d0ee294-bound; native/shared crates,
+JavaScript and Cargo inputs are untouched. FINAL_CHECKS and62/28/2 stay open.
+
+
 ## Static asset transfer reduced - 2026-10-25
 
 Source `d0ee294` / runtime `9e29a444f47b` is active on halo1/8855.

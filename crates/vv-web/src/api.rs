@@ -9,7 +9,7 @@ use crate::{
 use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, Path, Query, Request, State},
-    http::{StatusCode, header},
+    http::{HeaderMap, StatusCode, header},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -2771,13 +2771,76 @@ async fn security(State(state): State<AppState>, request: Request, next: Next) -
     headers.insert(header::REFERRER_POLICY, "no-referrer".parse().unwrap());
     response
 }
+fn encoding_quality(value: &str) -> Option<u16> {
+    let (whole, fraction) = value.split_once('.').unwrap_or((value, ""));
+    if fraction.len() > 3 || !fraction.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    match whole {
+        "0" => Some(
+            fraction
+                .bytes()
+                .fold(0, |value, byte| value * 10 + u16::from(byte - b'0'))
+                * 10_u16.pow(3 - fraction.len() as u32),
+        ),
+        "1" if fraction.bytes().all(|byte| byte == b'0') => Some(1000),
+        _ => None,
+    }
+}
+
+fn static_encoding(headers: &HeaderMap) -> Option<bool> {
+    let (mut gzip, mut identity, mut wildcard): (Option<u16>, Option<u16>, Option<u16>) =
+        (None, None, None);
+    for value in headers.get_all(header::ACCEPT_ENCODING) {
+        let Ok(value) = value.to_str() else {
+            continue;
+        };
+        for item in value.split(',') {
+            let mut parts = item.split(';');
+            let coding = parts.next().unwrap_or("").trim();
+            let target = if coding.eq_ignore_ascii_case("gzip") {
+                &mut gzip
+            } else if coding.eq_ignore_ascii_case("identity") {
+                &mut identity
+            } else if coding == "*" {
+                &mut wildcard
+            } else {
+                continue;
+            };
+            let quality = match parts.next() {
+                None => 1000,
+                Some(parameter) => parameter
+                    .split_once('=')
+                    .filter(|(name, _)| name.trim().eq_ignore_ascii_case("q"))
+                    .and_then(|(_, value)| encoding_quality(value.trim()))
+                    .filter(|_| parts.next().is_none())
+                    .unwrap_or(0),
+            };
+            *target = Some(target.map_or(quality, |previous| previous.min(quality)));
+        }
+    }
+    let gzip_quality = gzip.or(wildcard).unwrap_or(0);
+    let identity_quality = identity.unwrap_or(if wildcard == Some(0) { 0 } else { 1000 });
+    if gzip_quality > 0 && (identity.is_none() || gzip_quality >= identity_quality) {
+        Some(true)
+    } else if identity_quality > 0 {
+        Some(false)
+    } else {
+        None
+    }
+}
+
 async fn assets(request: Request) -> Response {
     macro_rules! asset {
         ($path:literal,$mime:literal) => {
-            ($mime, include_str!(concat!("../../..", $path)))
+            (
+                $mime,
+                include_str!(concat!("../../..", $path)),
+                include_bytes!(concat!(env!("OUT_DIR"), $path, ".gz")).as_slice(),
+            )
         };
     }
-    let (mime, body) = match request.uri().path() {
+    let (mime, identity, gzip) = match request.uri().path() {
         "/" => asset!("/web/index.html", "text/html; charset=utf-8"),
         "/style/tokens.css" => asset!("/web/style/tokens.css", "text/css"),
         "/style/app.css" => asset!("/web/style/app.css", "text/css"),
@@ -2906,7 +2969,46 @@ async fn assets(request: Request) -> Response {
         "/js/timeline/draw.js" => asset!("/web/js/timeline/draw.js", "text/javascript"),
         _ => return ApiError::missing().into_response(),
     };
-    ([(header::CONTENT_TYPE, mime)], body).into_response()
+    let Some(compressed) = static_encoding(request.headers()) else {
+        let mut response = ApiError(
+            StatusCode::NOT_ACCEPTABLE,
+            "CONTENT_ENCODING_UNAVAILABLE",
+            "No acceptable static asset encoding is available",
+        )
+        .into_response();
+        response
+            .headers_mut()
+            .insert(header::VARY, "Accept-Encoding".parse().unwrap());
+        return response;
+    };
+    let body = if compressed {
+        gzip
+    } else {
+        identity.as_bytes()
+    };
+    let length = body.len();
+    let payload = if request.method() == axum::http::Method::HEAD {
+        axum::body::Body::empty()
+    } else {
+        axum::body::Body::from(body)
+    };
+    let mut response = (
+        [
+            (header::CONTENT_TYPE, mime),
+            (header::VARY, "Accept-Encoding"),
+        ],
+        payload,
+    )
+        .into_response();
+    response
+        .headers_mut()
+        .insert(header::CONTENT_LENGTH, length.to_string().parse().unwrap());
+    if compressed {
+        response
+            .headers_mut()
+            .insert(header::CONTENT_ENCODING, "gzip".parse().unwrap());
+    }
+    response
 }
 
 #[cfg(test)]

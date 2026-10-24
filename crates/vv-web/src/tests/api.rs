@@ -2924,6 +2924,261 @@ async fn http_command_roundtrip_and_malformed_requests() {
     std::fs::remove_dir_all(root).unwrap();
 }
 
+fn static_delivery_request(method: &str, path: &str, encodings: &[&str]) -> Request<Body> {
+    let mut request = Request::builder()
+        .method(method)
+        .uri(path)
+        .header(header::HOST, "127.0.0.1:8787")
+        .header(header::ORIGIN, "http://127.0.0.1:8787");
+    for encoding in encodings {
+        request = request.header(header::ACCEPT_ENCODING, *encoding);
+    }
+    request.body(Body::empty()).unwrap()
+}
+
+fn static_delivery_app() -> (std::path::PathBuf, Host, Router) {
+    let root = std::env::temp_dir().join(format!("vv-static-http-{}", crate::asset_jobs::nonce()));
+    let host = Host::start(&root).unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    (root, host, app)
+}
+
+#[test]
+fn precompressed_static_encoding_uses_all_fields_and_strict_quality_precedence() {
+    for (encodings, expected) in [
+        (vec![], Some(false)),
+        (vec![""], Some(false)),
+        (vec!["br"], Some(false)),
+        (vec!["GZip;Q=0.500"], Some(true)),
+        (vec!["gzip;q=0.5, identity;q=1"], Some(false)),
+        (vec!["gzip;q=0.5, identity;q=0.5"], Some(true)),
+        (vec!["gzip;q=0, *;q=1"], Some(false)),
+        (vec!["*;q=0.5"], Some(true)),
+        (vec!["*;q=0, identity;q=1"], Some(false)),
+        (vec!["gzip", "GZIP;q=0"], Some(false)),
+        (
+            vec!["identity;q=1", "identity;q=0", "gzip;q=0.5"],
+            Some(true),
+        ),
+        (vec!["gzip;q=0, identity;q=0"], None),
+        (vec!["*;q=0"], None),
+        (vec!["br, identity;q=0"], None),
+    ] {
+        let request = static_delivery_request("GET", "/js/main.js", &encodings);
+        assert_eq!(static_encoding(request.headers()), expected, "{encodings:?}");
+    }
+    for invalid in [
+        "gzip;q=.5",
+        "gzip;q=1.001",
+        "gzip;q=0.0000",
+        "gzip;q=-1",
+        "gzip;q=NaN",
+        "gzip;q=1;q=1",
+        "gzip;unknown=1",
+        "gzip;q=0.5;other=1",
+    ] {
+        let request = static_delivery_request("GET", "/", &[invalid]);
+        assert_eq!(static_encoding(request.headers()), Some(false), "{invalid}");
+    }
+}
+
+#[tokio::test]
+async fn precompressed_static_assets_decode_to_exact_editor_sources_with_security_headers() {
+    use std::io::Read;
+    let (root, host, app) = static_delivery_app();
+    let before = host.call(Action::Session).await.unwrap();
+    for (path, mime, original) in [
+        (
+            "/js/main.js",
+            "text/javascript",
+            include_str!("../../../../web/js/main.js"),
+        ),
+        (
+            "/",
+            "text/html; charset=utf-8",
+            include_str!("../../../../web/index.html"),
+        ),
+        (
+            "/style/app.css",
+            "text/css",
+            include_str!("../../../../web/style/app.css"),
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(static_delivery_request("GET", path, &["gzip"]))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK, "{path}");
+        let headers = response.headers();
+        assert_eq!(headers[header::CONTENT_TYPE], mime);
+        assert_eq!(headers[header::CONTENT_ENCODING], "gzip");
+        assert_eq!(headers[header::VARY], "Accept-Encoding");
+        assert_eq!(headers[header::CACHE_CONTROL], "no-store");
+        assert_eq!(headers[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+        assert_eq!(headers[header::REFERRER_POLICY], "no-referrer");
+        assert!(
+            headers[header::CONTENT_SECURITY_POLICY]
+                .to_str()
+                .unwrap()
+                .contains("frame-ancestors 'none'")
+        );
+        let length = headers[header::CONTENT_LENGTH]
+            .to_str()
+            .unwrap()
+            .parse::<usize>()
+            .unwrap();
+        let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+        assert_eq!(bytes.len(), length);
+        assert!(bytes.len() < original.len(), "{path}");
+        let mut decoded = Vec::new();
+        flate2::read::GzDecoder::new(bytes.as_ref())
+            .read_to_end(&mut decoded)
+            .unwrap();
+        assert_eq!(decoded.as_slice(), original.as_bytes(), "{path}");
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn precompressed_static_identity_and_head_preserve_selected_representation_headers() {
+    let (root, host, app) = static_delivery_app();
+    let before = host.call(Action::Session).await.unwrap();
+    for encodings in [vec![], vec!["gzip"], vec!["br"], vec!["gzip;q=0"]] {
+        let get = app
+            .clone()
+            .oneshot(static_delivery_request("GET", "/js/main.js", &encodings))
+            .await
+            .unwrap();
+        let headers = get.headers().clone();
+        assert_eq!(get.status(), StatusCode::OK);
+        assert_eq!(headers[header::VARY], "Accept-Encoding");
+        let bytes = to_bytes(get.into_body(), 1024 * 1024).await.unwrap();
+        if encodings.is_empty() || encodings[0] != "gzip" {
+            assert!(!headers.contains_key(header::CONTENT_ENCODING));
+            assert_eq!(
+                bytes.as_ref(),
+                include_str!("../../../../web/js/main.js").as_bytes()
+            );
+        }
+        let head = app
+            .clone()
+            .oneshot(static_delivery_request("HEAD", "/js/main.js", &encodings))
+            .await
+            .unwrap();
+        assert_eq!(head.status(), StatusCode::OK);
+        for name in [
+            header::CONTENT_TYPE,
+            header::CONTENT_ENCODING,
+            header::CONTENT_LENGTH,
+            header::VARY,
+            header::CACHE_CONTROL,
+            header::CONTENT_SECURITY_POLICY,
+        ] {
+            assert_eq!(head.headers().get(&name), headers.get(&name), "{name}");
+        }
+        assert!(to_bytes(head.into_body(), 1024).await.unwrap().is_empty());
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn precompressed_static_http_negotiates_multiple_fields_and_refuses_only_unacceptable_assets() {
+    let (root, host, app) = static_delivery_app();
+    for (encodings, expected) in [
+        (vec!["br;q=1", "GZiP;Q=0.250"], Some(true)),
+        (vec!["gzip", "gzip;q=0"], Some(false)),
+        (vec!["gzip;q=0.5, IDENTITY;Q=1"], Some(false)),
+        (vec!["gzip;q=0, *;q=1"], Some(false)),
+        (vec!["gzip;q=.5"], Some(false)),
+        (vec!["gzip;q=0", "identity;q=0"], None),
+        (vec!["*;q=0"], None),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(static_delivery_request(
+                "GET",
+                "/style/tokens.css",
+                &encodings,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.headers()[header::VARY], "Accept-Encoding");
+        if let Some(gzip) = expected {
+            assert_eq!(response.status(), StatusCode::OK, "{encodings:?}");
+            assert_eq!(
+                response.headers().contains_key(header::CONTENT_ENCODING),
+                gzip
+            );
+        } else {
+            assert_eq!(
+                response.status(),
+                StatusCode::NOT_ACCEPTABLE,
+                "{encodings:?}"
+            );
+            assert!(!response.headers().contains_key(header::CONTENT_ENCODING));
+        }
+    }
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn precompressed_static_delivery_leaves_api_errors_and_host_origin_boundaries_unchanged() {
+    let (root, host, app) = static_delivery_app();
+    let before = host.call(Action::Session).await.unwrap();
+    for (path, expected) in [
+        ("/missing.js", StatusCode::NOT_FOUND),
+        ("/api/v1/health", StatusCode::OK),
+        ("/api/v1/session", StatusCode::OK),
+    ] {
+        for encoding in ["gzip", "*;q=0"] {
+            let response = app
+                .clone()
+                .oneshot(static_delivery_request("GET", path, &[encoding]))
+                .await
+                .unwrap();
+            assert_eq!(response.status(), expected, "{path}");
+            assert!(!response.headers().contains_key(header::CONTENT_ENCODING));
+            let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+            assert!(serde_json::from_slice::<Value>(&bytes).is_ok());
+        }
+    }
+    for (name, value, code) in [
+        (header::HOST, "foreign.invalid:8787", "INVALID_HOST"),
+        (header::ORIGIN, "https://foreign.invalid", "INVALID_ORIGIN"),
+    ] {
+        let mut request = static_delivery_request("GET", "/js/main.js", &["gzip"]);
+        request.headers_mut().insert(name, value.parse().unwrap());
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        assert!(!response.headers().contains_key(header::CONTENT_ENCODING));
+        let body: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        assert_eq!(body["error"]["code"], code);
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[tokio::test]
 async fn health_assets_snapshot_and_host_boundary() {
     let root = std::env::temp_dir().join(format!(

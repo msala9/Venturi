@@ -5424,6 +5424,7 @@ name = "vv-web"
 version = "0.8.1"
 dependencies = [
  "axum",
+ "flate2",
  "png",
  "pollster 1.0.1",
  "reqwest",

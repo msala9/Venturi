@@ -1,5 +1,25 @@
 # Remaining implementation and acceptance work
 
+## Dense500 cold derived assets checked - 2026-10-24
+
+On unchanged R9 source `0667653` / runtime `718850754776`, actual Chrome loads
+the existing 500-clip / 250-linked-pair Saved project with a fresh private
+derived cache. The single shared 11-second source produces one ready analysis
+job: a 256x144 thumbnail and a full-source waveform with 1100 peaks. The two
+known artifacts total 90546 bytes. They retain their job identity, sizes and
+timestamps after Fit, two zoom-in/out operations and Fit again; the same
+decoded thumbnail remains attached. Timeline waveforms are visually observed.
+See `evidence/f1-chrome-dense500-cold-assets-workflow.json`.
+The isolated companion stops normally, peak 199622656 bytes, zero memory events.
+Its Saved/model stay exact after the initial copy-only path/fingerprint
+relocation; all 16 original Saved files, the main full Session and Recovery
+remain exact. No new build, movie conversion, NAS change or R9 repackaging.
+This is a cold derived-cache/reuse check for repeated media, not cold OS cache,
+500 distinct sources, an HTTP request count, a cache-pressure/eviction test,
+60fps, input latency, browser memory or two-hour M7 qualification. Those final
+criteria remain open. The ledger stays 62 done / 28 partial / 2 excluded.
+
+
 ## Current immutable R9 delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.
@@ -229,8 +249,8 @@ feature passes every requirement or cannot contain defects.
 | program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; actual Chrome ruler seek/resume1x/2x and source5ce758c edit-induced end clamp/CURRENT black/Undo/Save/reopen pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
 | transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard and actual Chrome ruler1x/2x seek/resume pass, including stopped seek retaining selected2x and explicit Pause resetting1x. Keep native paused arrow stepping; qualify remaining held/cancel, required scaling and output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
-| thumbnail_workers | Dense500 ordinary navigation is qualified. Qualify cold visible demand/scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
-| waveforms_cached | Dense500 ordinary navigation is qualified. Qualify cold/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
+| thumbnail_workers | Dense500 ordinary navigation and cold derived-cache readiness/reuse for its repeated source are qualified. Qualify broader cold/multiasset pressure and cache behavior; retain existing native producer and visibility/recovery evidence. |
+| waveforms_cached | Dense500 ordinary navigation and cold 264-frame full-source waveform readiness/reuse are qualified. Qualify broader cold/large-media pressure and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
 | shared_library | Unavailable-root retry and actual native NAS two-way Restore are delivered; cached import no-op reporting is corrected. Retain accepted cross-project import/Relink/CIFS proof. Remaining actual HTML Project-to-Library capture and other explicit final checks stay in FINAL_CHECKS.md; no blanket new GUI-lifecycle blocker is introduced. |
 | track_arm_record | Qualification: real microphone permission, disconnect and device latency with native arming/placement semantics. |
 | linked_groups | Dense500 linked move/Undo/Redo/Save/reopen is qualified. Retain physical Alt-copy, held/cancel, required DPI and dense performance gates. Shared preset cross-project Apply is already qualified. |

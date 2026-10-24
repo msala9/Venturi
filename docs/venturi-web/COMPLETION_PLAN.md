@@ -1,5 +1,25 @@
 # Active completion plan — full Venturi Web scope
 
+## Dense500 cold derived assets checked - 2026-10-24
+
+On unchanged R9 source `0667653` / runtime `718850754776`, actual Chrome loads
+the existing 500-clip / 250-linked-pair Saved project with a fresh private
+derived cache. The single shared 11-second source produces one ready analysis
+job: a 256x144 thumbnail and a full-source waveform with 1100 peaks. The two
+known artifacts total 90546 bytes. They retain their job identity, sizes and
+timestamps after Fit, two zoom-in/out operations and Fit again; the same
+decoded thumbnail remains attached. Timeline waveforms are visually observed.
+See `evidence/f1-chrome-dense500-cold-assets-workflow.json`.
+The isolated companion stops normally, peak 199622656 bytes, zero memory events.
+Its Saved/model stay exact after the initial copy-only path/fingerprint
+relocation; all 16 original Saved files, the main full Session and Recovery
+remain exact. No new build, movie conversion, NAS change or R9 repackaging.
+This is a cold derived-cache/reuse check for repeated media, not cold OS cache,
+500 distinct sources, an HTTP request count, a cache-pressure/eviction test,
+60fps, input latency, browser memory or two-hour M7 qualification. Those final
+criteria remain open. The ledger stays 62 done / 28 partial / 2 excluded.
+
+
 ## Current immutable R9 delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.

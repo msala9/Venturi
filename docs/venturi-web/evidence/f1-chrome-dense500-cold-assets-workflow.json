@@ -1,0 +1,285 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-24",
+ "status": "bounded-cold-visible-derived-assets-workflow-passed",
+ "title": "Dense500 existing native project: cold derived-cache visible assets and viewport reuse",
+ "binding": {
+  "binary_source_commit": "0667653e905dbb414828abfce52a69990c18cb4e",
+  "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-718850754776",
+  "binary_sha256": "71885075477688824eb7839fcc38d9212a1e9094c68652b446fc7af46e2bba24",
+  "unit": "venturi-web-halo1-cold-visible.service",
+  "pid": 547395,
+  "isolated_root": "/home/halo/VenturiWeb-cold-visible-20261024",
+  "project_epoch": "1792870963669236551:1",
+  "browser": "Existing owner-controlled Windows Chrome, one tab; no OS-scaling or geometry matrix."
+ },
+ "fixture": {
+  "project": "Venturi_Dense500_Chrome_V1.vvproj",
+  "original_saved": {
+   "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Dense500_Chrome_V1.vvproj",
+   "sha256": "c6632fe53c7379d96df3c996d2664697d8fa11e45ede95121ab077e067cbd3f6",
+   "bytes": 2407445,
+   "serialized_file_paths": [
+    "/home/halo/VenturiWeb-color-audio-controls-20261023/Repair/River_AV_11s.mp4"
+   ]
+  },
+  "original_source": {
+   "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Repair/River_AV_11s.mp4",
+   "sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+   "bytes": 2854042,
+   "dev": 64512,
+   "ino": 4212162,
+   "mtime_ns": 1792775263399232075,
+   "ctime_ns": 1792775263399232075
+  },
+  "isolated_copy_sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+  "cloned_saved_sha256": "a673d235a7f7af8c5533f41245ce5b2eced49d8c94f9ffe0ca8fb6d6174e3dbe",
+  "native_path_fingerprint": "12138251265058153269",
+  "relocation": "Only the exact one absolute River path and its native path/size/mtime FNV fingerprint changed in the copied Saved. Reverse-normalization restored every original Saved byte. The SHA256 file digest is separate from the native path fingerprint. Main originals were never rewritten.",
+  "clips": 500,
+  "linked_AV_pairs": 250,
+  "ordinary_originals": 1,
+  "timeline_frames": 47904,
+  "fps": 24,
+  "duration_seconds": 1996,
+  "scope": "Existing Saved and one2.85MB/11s River source were copied onhalo1 only. The500 clips repeat that short source; this is not500 independent originals or a33-minute original. No native import/edit commands regenerated the model.",
+  "remote_checkpoint_only": "Original and cloned2.4MB Saved bytes remain in the owned remote proof directory. No Saved/base64/full Dense Session was embedded in privileged command arguments."
+ },
+ "cold_scope": {
+  "tmpdir": "/home/halo/.cache/venturi-build/cold-visible-r1/tmp",
+  "tmp_initially_empty": true,
+  "native_cache": "New private application TMPDIR and XDG cache/runtime directories; backend Saved load only before browser.",
+  "initial_owned_job_directories": 0,
+  "initial_known_assets": 0,
+  "no_helper_analysis_prepare_or_warmup": true,
+  "limits": "Derived application/job cache only. File/page/OS/decoder caches were not made cold; the fixed originals were hashed in preflight. Native cache-directory/job counts are not HTTP request counts."
+ },
+ "actual_GUI_observations": [
+  {
+   "at_utc": "2026-10-24T19:43:05.367Z",
+   "reported_by": "Root actual Chrome DOM",
+   "clips": 500,
+   "playing_videos": 0
+  },
+  {
+   "at_utc": "2026-10-24T19:43:21.494Z",
+   "reported_by": "Root actual Chrome DOM/native status",
+   "status": "Full-source analysis ready",
+   "clips": 500
+  },
+  {
+   "at_utc_approx": "2026-10-24T19:43:40Z",
+   "reported_by": "Root actual Chrome child IMG and visually inspected screenshot",
+   "thumbnail": {
+    "element": "IMG child of catalog-thumbnail wrapper",
+    "complete": true,
+    "natural_width": 256,
+    "natural_height": 144,
+    "blob_url_fragment": "9c05bece"
+   },
+   "visible_timeline": "Actual thumbnail and waveform painted across three visible AV pairs.",
+   "preliminary_oracle": "The wrapper SPAN was initially queried as an image; checking its IMG child corrected the observation. No product defect or repeated edit."
+  },
+  {
+   "at_utc": "2026-10-24T19:44:49.705Z",
+   "actions": [
+    "Fit",
+    "Zoom In twice",
+    "Zoom Out twice"
+   ],
+   "reported_by": "Root actual Chrome DOM",
+   "thumbnail_same_blob_image": true,
+   "analysis": "Full-source ready",
+   "clips": 500,
+   "dialogs": 0,
+   "playing_videos": 0,
+   "frame": 0
+  },
+  {
+   "at_utc": "2026-10-24T19:45:18.346Z",
+   "action": "Fit again",
+   "reported_by": "Root visually inspected screenshot",
+   "result": "Overview of all500 clips across33:16 rendered. Screenshot appearance is not a frame-rate or input-latency measurement."
+  },
+  {
+   "at_utc": "2026-10-24T19:46:36.808Z",
+   "reported_by": "Root actual Chrome",
+   "result": "Returned to original8855 Saved editor."
+  }
+ ],
+ "native_derived_assets": {
+  "job_id": "1792870986145331547",
+  "state": "ready",
+  "metadata": {
+   "audio_stream_index": 0,
+   "fps": {
+    "den": 1,
+    "num": 24
+   },
+   "has_audio": true,
+   "has_video": true,
+   "include_waveform": true,
+   "source_version": "64512:4223545:2854042:1792775263:399232075:1792870963:399762359",
+   "total_frames": 264
+  },
+  "known_files": {
+   "thumb.png": {
+    "bytes": 77000,
+    "mtime_ns": 1792870986340739575,
+    "sha256": "94292bce109e522431dfc17006826172a2a2ecd4583493d8baf8e4fd186a4c11"
+   },
+   "waveform.json": {
+    "bytes": 13546,
+    "mtime_ns": 1792870986390790104,
+    "sha256": "ad8025c98303d939846d28d5635a906fd8b902344fa258690eede7fd25eac11d",
+    "waveform": {
+     "scope": "full_source",
+     "duration_seconds": 11.008,
+     "peaks": 1100
+    }
+   }
+  },
+  "known_file_bytes_total": 90546,
+  "before_page_receipt": "halo1-cold-visible-r1-capture-1792870974251856500.json",
+  "post_paint_receipt": "halo1-cold-visible-r1-capture-1792870994939469500.json",
+  "post_zoom_receipt": "halo1-cold-visible-r1-capture-1792871150524497000.json",
+  "hash_receipt": "halo1-cold-visible-r1-capture-1792871167106074800.json",
+  "same_job_id_after_viewport_changes": true,
+  "same_known_file_sizes_and_mtime_after_viewport_changes": true,
+  "full_source_waveform": "1100 native peaks over11.008s; no browser waveform/DSP was invented.",
+  "observation_limit": "Exactly one owned native job and its two outputs were observed. Server-side dedup means this does not prove only one POST or that no500 requests occurred. No POST diagnostic was sent.",
+  "read_routes": [
+   "GET /api/v1/media/1/jobs/1792870986145331547?project_epoch=<captured>"
+  ],
+  "capture_scope": "At most8 immediate owned numeric MediaJobs directories and known asset filenames. Final bounded hash/waveform validation read the two small outputs; no foreign/cache-tree/NAS scan."
+ },
+ "preservation": {
+  "cloned_full_session_sha256": "244aa4af18d50d998c50030ac228092d9024c1d77a8e54f7acde0f6e9aaf360f",
+  "clone_500_clips_250_links_native_model_unchanged": true,
+  "cloned_saved_exact_after_GUI": true,
+  "cloned_saved_sha256_after": "a673d235a7f7af8c5533f41245ce5b2eced49d8c94f9ffe0ca8fb6d6174e3dbe",
+  "no_root_view_change": true,
+  "copied_source_exact": true,
+  "main_unit": "venturi-web-halo1-playback-start.service",
+  "main_pid": 545891,
+  "main_full_session_sha256": "095514c9ef155d1c09f42e3a28a796483adaa4c0df2530c46d571e02cccdf02d",
+  "main_full_session_exact": true,
+  "all16_main_saved_exact": true,
+  "main_pending_recovery_sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+  "main_recovery_exact": true,
+  "original_Saved_and_River_preserved": "Preflight and all owned protection checks retained the original main files; clone isolation used only the known local source. No NAS mutation or NAS-catalog scan was performed.",
+  "no_project_commands": true
+ },
+ "resources_and_cleanup": {
+  "unit_terminal": {
+   "LoadState": "not-found",
+   "ActiveState": "inactive",
+   "SubState": "dead",
+   "MainPID": "0",
+   "Result": "success",
+   "ExecMainStatus": "0",
+   "ControlGroup": "",
+   "MemoryCurrent": "[not set]",
+   "MemoryPeak": "[not set]"
+  },
+  "elapsed_ready_to_stop_seconds": 222.635,
+  "peak_bytes": 199622656,
+  "resources_before_stop": {
+   "memory.current": "185864192",
+   "memory.peak": "199622656",
+   "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+   "memory.max": "4294967296",
+   "memory.swap.max": "0",
+   "cpu.max": "800000 100000"
+  },
+  "limits": {
+   "cpus": 8,
+   "memory_max_bytes": 4294967296,
+   "swap_max_bytes": 0,
+   "nice": 19,
+   "io_weight": 10,
+   "oom_score_adjust": 1000,
+   "tasks_max": 128,
+   "runtime_max_seconds": 600
+  },
+  "headroom": {
+   "memory_available_bytes": 121552896000,
+   "disk_available_bytes": 100329545728
+  },
+  "shared_lock": "Exclusive nonblocking admission; not held across HTTP/browser rendering.",
+  "normal_stop": true,
+  "owned_Windows_tunnel41544_stopped": true,
+  "original_tunnel23536_preserved": true,
+  "tunnel_receipt": "halo1-cold-visible-r1-tunnel-stopped.json",
+  "tunnel_immediate_check_note": "Not satisfied at the first immediate check; a subsequent bounded CIM read confirmed owned PID absent. No second termination or foreign-process signal.",
+  "helper_safety_correction": "Before any stop attempt, the helper was corrected to pass only at_unix/session_sha256/readiness. The full Session remains remote; no ARG_MAX stop failure occurred."
+ },
+ "private_receipts": [
+  {
+   "file": "halo1-cold-visible-r1-preflight.json",
+   "bytes": 1474,
+   "sha256": "b05a6757cab8bf3903e9efacb01cea023b9164b20e452fb2d96594ac7d9193bc"
+  },
+  {
+   "file": "halo1-cold-visible-r1-start.json",
+   "bytes": 2085,
+   "sha256": "128a2b04f236e1fa1b4cb63f5996def5413771fae520059c4054ed76207b68b5"
+  },
+  {
+   "file": "halo1-cold-visible-r1-capture-1792870974251856500.json",
+   "bytes": 1648,
+   "sha256": "e04991cd603b438e7352e5fee305d4f91ef26880a84570947c8ac84d1211dd2c"
+  },
+  {
+   "file": "halo1-cold-visible-r1-capture-1792870994939469500.json",
+   "bytes": 2716,
+   "sha256": "ba47d25dab90fb2e4cfeda1431480c60d886ca3b3d07507f70579884a9189570"
+  },
+  {
+   "file": "halo1-cold-visible-r1-capture-1792871150524497000.json",
+   "bytes": 2715,
+   "sha256": "8e9ac877ae36d0de2d94d1c87695d305f2a078de8f48f1763312fefdc6f1f6fe"
+  },
+  {
+   "file": "halo1-cold-visible-r1-capture-1792871167106074800.json",
+   "bytes": 3024,
+   "sha256": "8cdcba6cc1a8730ab7f825f8e84505a0f8beae9e9477519cc74503ecac6a7b78"
+  },
+  {
+   "file": "halo1-cold-visible-r1-final-idle.json",
+   "bytes": 255,
+   "sha256": "54c4c8d5815c6d4a8a2c1ab2e6d06e217bba316a96018b3d77f4ed292bd3df32"
+  },
+  {
+   "file": "halo1-cold-visible-r1-stopped.json",
+   "bytes": 2042,
+   "sha256": "3f52d6207c417cdeee62ff3676b21f29a03226ba9b85eb716966f4f75afe5f8b"
+  },
+  {
+   "file": "halo1-cold-visible-r1-tunnel-stopped.json",
+   "bytes": 905,
+   "sha256": "dfeb24457bb4a22d355b235dc2fe164fd60747e455e0bdca2e06e3db088ee634"
+  }
+ ],
+ "capture_helper_current_binding": {
+  "file": "capture-halo1-cold-visible-r1.py",
+  "bytes": 2633,
+  "sha256": "ac5d4995c42471f4f551fe04e69e538255e51285b7c653d0f7351cfe6f97aa20"
+ },
+ "existing_public_evidence": [
+  "docs/venturi-web/evidence/f1-chrome-dense500-editing-workflow.json",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r9-workflow.json"
+ ],
+ "limits": [
+  "Cold-visible and viewport reuse subset only; no60fps, paint-duration, input-latency, browser-memory, prolonged uncached scrolling, held/cancel/modifier, required OS-scaling/DPI, device or two-hour soak qualification.",
+  "Existing R9 remains immutable and predates this workflow. No new code, tests, build, benchmark, render/export matrix, source download or Windows large-copy operation.",
+  "No server/native-job count is promoted into an HTTP request-count or broad dense-performance claim. Remaining criteria stay in FINAL_CHECKS."
+ ],
+ "ledger": {
+  "changed": false,
+  "done": 62,
+  "partial": 28,
+  "exclusions": 2,
+  "full_goal_and_M7_remain_active": true
+ }
+}

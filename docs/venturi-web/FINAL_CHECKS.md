@@ -1,5 +1,25 @@
 # Checks reserved for final acceptance
 
+## Dense500 cold derived assets checked - 2026-10-24
+
+On unchanged R9 source `0667653` / runtime `718850754776`, actual Chrome loads
+the existing 500-clip / 250-linked-pair Saved project with a fresh private
+derived cache. The single shared 11-second source produces one ready analysis
+job: a 256x144 thumbnail and a full-source waveform with 1100 peaks. The two
+known artifacts total 90546 bytes. They retain their job identity, sizes and
+timestamps after Fit, two zoom-in/out operations and Fit again; the same
+decoded thumbnail remains attached. Timeline waveforms are visually observed.
+See `evidence/f1-chrome-dense500-cold-assets-workflow.json`.
+The isolated companion stops normally, peak 199622656 bytes, zero memory events.
+Its Saved/model stay exact after the initial copy-only path/fingerprint
+relocation; all 16 original Saved files, the main full Session and Recovery
+remain exact. No new build, movie conversion, NAS change or R9 repackaging.
+This is a cold derived-cache/reuse check for repeated media, not cold OS cache,
+500 distinct sources, an HTTP request count, a cache-pressure/eviction test,
+60fps, input latency, browser memory or two-hour M7 qualification. Those final
+criteria remain open. The ledger stays 62 done / 28 partial / 2 excluded.
+
+
 ## Current immutable R9 delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.
@@ -97,7 +117,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Remaining Slip input | Actual linked video-body and audio-body Canvas Slip, two native commands/Undo/Redo and exact edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json. Both clips retain timing/rate/pitch; neutral wording9fbc205 is now embedded in5ce758c. | Qualify prolonged uncached held continuity, remaining cancellation and required OS scaling. | Keep ordinary paused gestures short; do not substitute synthetic prolonged/held input or launch a Windows soak. |
 | Remaining speed input | Actual percentage draft scrub/Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Source5ce758c also repairs live Program cursor/preview after end shrink. | Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. | One existing Windows tab with short paused interaction; no synthetic held-pointer or OS scaling substitution. |
 | Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Current718 short-start Source/Program/A-B450-to2250 rollover also passes in evidence/f2-playback-short-start-workflow.json;782 late5s A/B/five-frame Program EOF is separately bound in evidence/f2-real-public-ab-program-tail-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
-| Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. The older5002-key/4clip fixture is separate. | Qualify cold visible thumbnail/waveform demand,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
+| Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. Cold derived-cache ready/reuse for its repeated source also passes in evidence/f1-chrome-dense500-cold-assets-workflow.json; this is not an HTTP count or pressure/eviction/FPS proof. The older5002-key/4clip fixture is separate. | Qualify broader cold/multiasset pressure,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
 | Final delivery and regression receipt | Current718850754776/source0667653 is packaged in verified R9 with docsba72e70 separately bound; see evidence/f7-current-prebuilt-r9-workflow.json. All54 members, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R8 remain exact. | Current package assembly is complete. Retain sustained Source/Program/A-B and remaining functional/physical/soak gates; historical77d7/59b6 runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |

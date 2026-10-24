@@ -1,8 +1,23 @@
 # Prebuilt Linux development candidate
 
-## Current verified87bc package - 2026-10-24
+## Final runtime qualified; additive package pending — 2026-10-24
 
-The current internal Linux x86_64 package is
+Current source455662c supplies native NAS Restore/input and truthful cached-import
+receipts. Its80385544-byte executable has SHA256
+`8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea`;
+RUNNING.md records its deployment at8855. R3 passes3 exact Host cases and reuses
+R2's54 client/49 unchanged module cases, with formatting/Clippy/build passed.
+See `evidence/f2-f5-native-nas-restore-input-workflow.json`.
+
+Additive r5 assembly awaits final GUI/documentation freeze; no archive hash,
+packaged --help or new runback result is claimed before it runs. It will bind
+the final source and committed documents separately, include FINAL_CHECKS.md and
+retain all three original notice companions plus the reviewed zlib delta.
+The87bc/r4 archive below remains immutable. Full F1-F7/M7 and62/28/2 remain open.
+
+## Previous verified87bc package - 2026-10-24
+
+The prior internal Linux x86_64 package is
 `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar`.
 It is 89907200bytes, SHA256
 `9647db624e70680745d256e1b9c1b762a27b1196f97f7085e23739e057dafb0b`;

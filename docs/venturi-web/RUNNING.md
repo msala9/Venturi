@@ -2,6 +2,33 @@
 
 ## Current working instance — 2026-10-24
 
+Use **http://127.0.0.1:8855/** through the existing tunnel/browser. Source
+`455662c18e0d9ab886ad6fab24471edfd559749c` runs in the transient system-manager
+unit `venturi-web-halo1-native-import-receipt.service`, captured PID485839.
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990`
+is80385544bytes, SHA256
+`8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea`.
+Re-read its PID/executable and live state before any operation; captured PIDs
+never authorize a later restart.
+
+The project root, explicit NAS/ds4/GPU arguments, unprivileged `halo:halo`
+identity and8CPU/4GiB/noSwap bounds below remain unchanged. Deployment preserves
+all14 Saved hashes and39 foreign Sessions/40 PIDs. The original Saved project
+SHA256 is `bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1`.
+Retained recovery data for another owned project remains preserved; do not
+discard it merely to pass an operational gate.
+
+Native NAS asset/preset two-way Restore and first-drag Mixer focus/scroll behavior
+have actual GUI proof. The final native import receipt now reports cached no-op
+truthfully. R3 passes3 exact Host cases;54 client and49 module cases are reused
+from unchanged R2 inputs, with formatting/Clippy/build passed. See
+`evidence/f2-f5-native-nas-restore-input-workflow.json` for the final GUI scope.
+The additive r5 package is pending;87bc/r4 and all original notice archives stay
+immutable. FINAL_CHECKS.md reserves unavailable acceptance checks without waiving
+them; ledger62done/28partial/2excluded and full F1-F7/M7 remain active.
+
+## Previous working instance — 87bc, 2026-10-24
+
 Open **http://127.0.0.1:8855/** through the existing Windows SSH tunnel
 (captured PID 23536). Keep that tunnel and the existing browser intact. No local
 server, browser installation, driver change or new boot service is required.

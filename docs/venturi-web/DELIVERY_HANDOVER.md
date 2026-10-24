@@ -2,6 +2,28 @@
 
 ## Current owned delivery — 2026-10-24
 
+Source455662c runs at **http://127.0.0.1:8855/** in the existing browser/tunnel,
+unit `venturi-web-halo1-native-import-receipt.service`, captured PID485839.
+The80385544-byte executable is
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990`, SHA256
+`8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea`.
+RUNNING.md retains the actual CLI, resource limits and refusal gates. All14 Saved
+files and39 foreign Sessions/40 PIDs are unchanged against the fresh deployment
+baseline; original Saved SHA256 is
+`bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1`.
+
+Actual GUI asset/preset two-way NAS Restore and first Mixer drag are qualified;
+the final server receipt fixes cached single-asset import reporting without
+another project edit. R3 passes3 exact Host cases; R2 supplies54 unchanged client
+and49 module cases, plus the source-bound formatting/Clippy/build checks. See
+`evidence/f2-f5-native-nas-restore-input-workflow.json` for final GUI observations.
+No permanent NAS deletion or new media/render qualification is implied.
+The r5 package remains pending; r4/87bc and the three notice companions are
+immutable. Continue independent work and retain unavailable acceptance in
+FINAL_CHECKS.md;62/28/2 and the complete F1-F7/M7 goal are unchanged.
+
+## Previous owned delivery — 87bc, 2026-10-24
+
 Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
 existing SSH tunnel (captured PID 23536). Tested source is
 `5567359d14ac2a1539e05ff2750e413a20146f1e`; native tool-window code is `14d2cc3`.

@@ -1,5 +1,25 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Shared Library version restoration
+
+Native asset and attribute-preset `restore_previous` commands retain their
+existing routes and revision guards. Both complete JSON after-images are staged
+and synced before a durable intent is published; catalog readers recover a
+pending pair before exposing either version. Restore does not require filesystem
+EXCHANGE support, which the configured CIFS NAS rejects. Preset swap recovery
+uses its own `.venturi-preset-swaps` namespace, separate from native/Delete
+intents and receipts; existing receipt entry/byte limits remain combined.
+
+The durable completion binds the original command ID, request fingerprint and
+project-root identity. Reconciliation after a lost response or server restart
+returns that completion without swapping again. Foreign replacements or links
+are refused with both recovery images retained. A successful Library restore
+does not change the project, generation, timeline revisions or Undo history.
+
+Single `import_native_asset` receipts include `changed` from the actual native
+history generation before/after import. New imports can offer Undo; cached or
+content-reused imports that leave the project unchanged report no Undo added.
+
 ## Explicit native Library recovery
 
 `POST /native-assets/refresh`, `/presets/refresh` and

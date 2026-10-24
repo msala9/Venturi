@@ -28,6 +28,11 @@ The owner clarified that browser checks must use the existing Windows browser
 environment, one tab at a time. Do not download or install browsers on halo2.
 Keep compilation, rendering and heavy test workloads on resource-limited halo1;
 small browser interaction checks on Windows are authorized.
+On 2026-10-24 the owner explicitly requested continuing the full plan while
+unavailable input/device/long-running acceptance checks are reserved for the end.
+Record those checks in `docs/venturi-web/FINAL_CHECKS.md` and continue independent
+implementation and bounded GUI workflows. Preserve their acceptance criteria;
+parking a check does not qualify its capability or justify stopping other work.
 Check shared-host memory headroom before heavy tests/builds. Make disposable
 test/build processes sacrificial with OOMScoreAdjust=1000; never protect them
 at the expense of inference or the live editor. Preserve global OOM evidence

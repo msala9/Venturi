@@ -1,5 +1,23 @@
 # Implementation status
 
+## Native NAS Restore, Mixer input and import receipts — 2026-10-24
+
+Source455662c18e0d9ab886ad6fab24471edfd559749c is deployed at8855 in
+`venturi-web-halo1-native-import-receipt.service`, captured PID485839. The80385544-byte
+executable SHA256 is `8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea`.
+Actual GUI asset/preset two-way NAS Restore and first Mixer drag with preserved
+scroll are qualified; the final server receipt reports cached single-asset import
+no-op truthfully. R3 passes3 exact Host cases; R2 contributes54 unchanged client
+and49 module cases, with source-bound formatting/Clippy/build passed. See
+`evidence/f2-f5-native-nas-restore-input-workflow.json` for final GUI observations.
+All14 Saved hashes and39 foreign Sessions/40 PIDs match the fresh deployment
+baseline. Original Saved SHA256 is
+`bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1`.
+Additive r5 packaging remains pending;87bc/r4 and the original notice archives
+remain immutable. FINAL_CHECKS.md is the owner-approved deferred-check queue,
+not a waiver or exclusion: continue independent work, retain every criterion and
+the full90/F1-F7/M7 goal. Ledger62done/28partial/2excluded is unchanged.
+
 ## Chrome physical input checkpoint - 2026-10-24
 
 The owner-installed Chrome extension is connected. One bounded actual mouse

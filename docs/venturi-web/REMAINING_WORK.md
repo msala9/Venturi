@@ -5,8 +5,22 @@
 requirements, or add exclusions. Global M7 gates stay separate from individual
 functionality. A physical-input blocker does not block unrelated implementation.
 
+The owner reaffirmed on2026-10-24 that unavailable checks must be reserved for
+the end while work continues. Track them in FINAL_CHECKS.md, retain their
+acceptance criteria and continue every independent implementation/GUI workflow.
+Do not stop the plan for disconnected input, OS scaling, native fullscreen or
+device/soak prerequisites; do not promote rows merely by deferring their checks.
+
 ## Concrete production work
 
+- **Native NAS Restore and import reporting delivered:** source455662c preserves
+  native asset/preset two-way Restore on the shared filesystem, first-drag Mixer
+  focus/scroll behavior and truthful cached single-asset import no-op receipts.
+  Actual NAS/Mixer GUI observations and the focused source-bound gates are in
+  `evidence/f2-f5-native-nas-restore-input-workflow.json`. R3 passes3 exact Host
+  cases;54 client/49 module cases are reused from unchanged R2 inputs. Current
+  runtime8b975f434990 is deployed; additive r5 packaging remains pending.
+  These fixes do not promote rows or waive FINAL_CHECKS.md requirements.
 - **Program navigation:** ruler and Program position seeks must preserve the
   native playing/stopped state and selected tempo. Native `main.rs` transport
   seek and `timeline_audio.rs::seek_sample` preserve playback; arrow stepping
@@ -84,7 +98,7 @@ feature passes every requirement or cannot contain defects.
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
 | thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
 | waveforms_cached | Qualification: dense/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
-| shared_library | Unavailable-root startup/retry delivered; qualify remaining physical Project-to-Library capture and native GUI lifecycle. Existing cross-project import/Relink/CIFS evidence stays accepted. |
+| shared_library | Unavailable-root retry and actual native NAS two-way Restore are delivered; cached import no-op reporting is corrected. Retain accepted cross-project import/Relink/CIFS proof. Remaining actual HTML Project-to-Library capture and other explicit final checks stay in FINAL_CHECKS.md; no blanket new GUI-lifecycle blocker is introduced. |
 | track_arm_record | Qualification: real microphone permission, disconnect and device latency with native arming/placement semantics. |
 | linked_groups | Qualification: physical Alt-copy, gestures/DPI and dense timelines. Shared preset cross-project Apply is already qualified. |
 | select_multiclip_marquee | Qualification: physical marquee/modifiers/scrollbars, DPI and500-clip interactions. |

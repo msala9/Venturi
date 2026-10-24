@@ -1,0 +1,422 @@
+{
+  "date": "2026-10-24",
+  "scope": "Owner-directed continued implementation with unavailable checks reserved for final acceptance; bounded actual Chrome/NAS workflow, no whole-row promotion",
+  "source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+  "runtime": {
+    "new_unit": "venturi-web-halo1-native-import-receipt.service",
+    "pid": "485839",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990",
+    "sha256": "8b975f434990bca48c10d504d50d5e3cc9454e43f4d3379fa5a5efbfabd97fea",
+    "args": [
+      "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b975f434990",
+      "--listen",
+      "127.0.0.1:8855",
+      "--projects-root",
+      "/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "--assets-root",
+      "/mnt/madrock-share/madrock-library",
+      "--presets-root",
+      "/mnt/madrock-share/madrock-library/presets",
+      "--library-url",
+      "http://127.0.0.1:8787",
+      "--gpu-device",
+      "0x7551",
+      "--gpu-lock",
+      "/tmp/HALO_BENCHMARK.lock"
+    ],
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "Restart=no",
+      "TimeoutStopSec=30",
+      "KillMode=control-group",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-color-audio-controls-20261023/.xdg",
+      "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+      "Environment=WGPU_BACKEND=vulkan",
+      "Environment=TOKIO_WORKER_THREADS=4",
+      "StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log",
+      "StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log"
+    ],
+    "root": "/home/halo/VenturiWeb-color-audio-controls-20261023"
+  },
+  "runtime_bytes": 80385544,
+  "url": "http://127.0.0.1:8855/",
+  "implementation": {
+    "nas_restore": "Both native asset and attribute-preset RestorePrevious stage two complete JSON after-images through the existing durable asset journal. Preset swaps use their own namespace, retain the combined completion budget and strict separate Delete validation. Real command fingerprint/project binding and completion replay prevent a second swap after lost response/restart.",
+    "mixer_focus": "Pointer focus uses preventScroll so a partially clipped control does not scroll its window and invalidate the first drag. Genuine later scrolling still cancels the gesture.",
+    "import_ack": "Native single-import receipt.changed is derived from actual native generation before/after import; the client reports existing media/project unchanged/no new Undo for a no-op."
+  },
+  "demonstrated_failures": {
+    "nas_exchange_probe": {
+      "result": -1,
+      "errno": 22,
+      "error": "EINVAL",
+      "expected_bytes_preserved": true,
+      "path": "/mnt/madrock-share/madrock-library/presets"
+    },
+    "old_gui": "Old runtime87bc preset RestorePrevious failed IO with both versions retained. First Mixer fader drag focused/scrolled the window by102.4 CSSpx and canceled; an already-focused second drag worked.",
+    "incomplete_import_increment": "R2 retained its real passing store/Mixer qualification, but actual GUI exposed missing changed in the server ACK. R3 fixes only the two Host files and reuses untouched R2 modules/client evidence.",
+    "gate_r1": {
+      "phase": "failed",
+      "reason": "Pre-transfer manifest included unrelated scripts/tests absent from the owned build mirror. No test/build ran; terminal failure retained. R2 fences all619 actual Rust/Web/Cargo inputs."
+    }
+  },
+  "gates": {
+    "r2": {
+      "source_commit": "59edfe56cd10af495c1a5e444ed5677be9e97e67",
+      "client_counts": {
+        "tests": 54,
+        "pass": 54,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "native_counts": {
+        "asset_journal::tests::": {
+          "passed": 10,
+          "failed": 0,
+          "ignored": 0
+        },
+        "asset_store::tests::": {
+          "passed": 19,
+          "failed": 0,
+          "ignored": 0
+        },
+        "preset_store::tests::": {
+          "passed": 20,
+          "failed": 0,
+          "ignored": 0
+        },
+        "host::tests::library_restore_previous_survives_lost_receipt_and_restart_without_swapping_twice": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        "host::tests::saved_preset_delete_preserves_project_history_and_recovers_a_lost_receipt_without_redeleting": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "memory_peak_bytes": 2096820224,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "source_manifest_count": 619,
+      "source_manifest_sha256": "1cd370130b4b15e8e5bc8ba41cdc071db348002c28cb30007202259e7f8647ba"
+    },
+    "r3": {
+      "source_commit": "455662c18e0d9ab886ad6fab24471edfd559749c",
+      "native_counts": {
+        "host::tests::native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edited_child": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        "host::tests::native_asset_cache_invalidates_after_undo_removes_imported_ids": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        },
+        "host::tests::library_restore_previous_survives_lost_receipt_and_restart_without_swapping_twice": {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "reuse_r2": {
+        "unit": "venturi-halo1-native-restore-r2-20261024.service",
+        "observation": "halo1-native-restore-r2-observed.json",
+        "source_commit": "59edfe56cd10af495c1a5e444ed5677be9e97e67",
+        "client_counts": {
+          "tests": 54,
+          "pass": 54,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "native_counts": {
+          "asset_journal::tests::": {
+            "passed": 10,
+            "failed": 0,
+            "ignored": 0
+          },
+          "asset_store::tests::": {
+            "passed": 19,
+            "failed": 0,
+            "ignored": 0
+          },
+          "preset_store::tests::": {
+            "passed": 20,
+            "failed": 0,
+            "ignored": 0
+          }
+        },
+        "historical_native_counts": {
+          "asset_journal::tests::": {
+            "passed": 10,
+            "failed": 0,
+            "ignored": 0
+          },
+          "asset_store::tests::": {
+            "passed": 19,
+            "failed": 0,
+            "ignored": 0
+          },
+          "preset_store::tests::": {
+            "passed": 20,
+            "failed": 0,
+            "ignored": 0
+          },
+          "host::tests::library_restore_previous_survives_lost_receipt_and_restart_without_swapping_twice": {
+            "passed": 1,
+            "failed": 0,
+            "ignored": 0
+          },
+          "host::tests::saved_preset_delete_preserves_project_history_and_recovers_a_lost_receipt_without_redeleting": {
+            "passed": 1,
+            "failed": 0,
+            "ignored": 0
+          }
+        },
+        "source_hashes": {
+          "crates/vv-web/src/asset_journal.rs": "fb08694f71d212efe65578f07302eb6fa1743d2b59dbed1e46b902f77e84a58a",
+          "crates/vv-web/src/asset_store.rs": "9175dae3571647bee6f4a3f1343a651bb83ae6e5b49a56228db1363ceac76648",
+          "crates/vv-web/src/preset_store.rs": "a34b48dc4144348a59ea29002dc4852a5e3bb468235a2889f971bbad4588629c",
+          "crates/vv-web/src/tests/asset_store.rs": "4b5c1440db207040cbe7fa4100fd1ba9499fd3c496b96894da0a34eefc9ca932",
+          "crates/vv-web/src/tests/preset_store.rs": "53c9b9781df6c85847711207b3b54418084df4564d8454d3d4673fbfd06f2540",
+          "web/js/mixer-controls.js": "47cbba42b87a845967004231cc833afb35c4714ebe9d215563f1e977e42d5ee0",
+          "web/js/native-assets.js": "25c6d1e0e86b2f2f8eb9c85b5d6012937c7f5b35a080055e06fcf3301c32798e",
+          "web/test/mixer-controls.test.js": "2ace586855782e12264066e363770aac3ebe5a5076b2000a238948c02872b3bf",
+          "web/test/native-assets.test.js": "1551f334c5e2b9ad6a6a98c585c171460a531b2d5e962d8190368ad8842819cd"
+        },
+        "note": "R2 client54 and49 native asset/preset module cases reused by unchanged hashes. R2 historical51 includes2Host cases; three exact current Host receipt/cache/retry cases rerun here."
+      },
+      "memory_peak_bytes": 2088411136,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "source_manifest_count": 619,
+      "source_manifest_sha256": "a6c9bd604f76f52032e2fb5e5a2089f6e7a6b1170075441da227956e318c7314"
+    },
+    "format_clippy_build": "All required stages pass on halo1; no Windows build/render/test fleet",
+    "bound": "8CPU/4GiB/noSwap/Nice19/IOWeight10/OOMScore1000/Tasks128; one gate at a time; finite deadlines and nonblocking shared lock"
+  },
+  "actual_gui": {
+    "browser": "Existing Chrome extension, one work tab, observed DPR1.25 and1536x858 CSS viewport",
+    "capture": {
+      "method": "Actual Project context menu Add to Library",
+      "media_id": "17",
+      "media_bytes": 140,
+      "asset_id": "d4feecee-ecc8-46b2-a146-623646408e76",
+      "asset_name": "Venturi Chrome Capture 20261024 d4feecee",
+      "source_preview_pixels": [
+        64,
+        36
+      ],
+      "project_generation": "0",
+      "history_unchanged": true,
+      "html_drop": "One real draggable-row-to-Library drag had no tab switch or write; deferred instead of repeated"
+    },
+    "preset": {
+      "id": "d0295640-cd22-4aa5-8d8b-b05aabb5ac29",
+      "created": "Actual Save selection as preset from Title12; Filters/color only; native Start anchor and Keep shortcut",
+      "edited": true,
+      "restore_roundtrip_exact_active_and_backup_sha256": true,
+      "permanent_delete_dialog_cancel": true,
+      "permanent_delete_submitted": false
+    },
+    "asset_restore_roundtrip_exact_active_and_backup_sha256": true,
+    "owned_versions": {
+      "preset": {
+        ".json": {
+          "sha256": "c9caf396ea206dc8adfe09962c6dc55c1d29fe608da21f81139b09391f3f1720",
+          "bytes": 6632
+        },
+        ".json.bak": {
+          "sha256": "d8bde279d1851325221f8c20cba9e4cd4f5a5e1a3a75eddd0eb3e262a8ff60b5",
+          "bytes": 6625
+        }
+      },
+      "asset": {
+        ".json": {
+          "sha256": "bc225cf1c9191421c92e83f5240262c4d0185ecbbca18da497b27ab3b909d648",
+          "bytes": 825
+        },
+        ".json.bak": {
+          "sha256": "ec55b0b0185ca14fd21348c90f33dbe3a34af4b3eb84a119d6e9d08cdbdb273f",
+          "bytes": 821
+        }
+      }
+    },
+    "mixer": {
+      "first_drag_css": {
+        "from": [
+          287,
+          550
+        ],
+        "to": [
+          287,
+          530
+        ]
+      },
+      "scroll_top_before": 0,
+      "scroll_top_after": 0,
+      "gain_db": 5.660389423370361,
+      "one_history_label": "MixerGain",
+      "undo_all_timelines_exact": true,
+      "save_reopen_timelines_media_and_saved_hashes_exact": true
+    },
+    "program_ruler": {
+      "start_frame": 48,
+      "click_css": [
+        605,
+        590
+      ],
+      "before": {
+        "paused": false,
+        "rate": 1,
+        "time": 0.010521
+      },
+      "after": {
+        "paused": false,
+        "rate": 1,
+        "time": 0.023971
+      },
+      "frame_after": 96,
+      "stopped_after_check": true,
+      "elapsed_tool_seconds": 4.0392,
+      "viewport_css": [
+        1536,
+        858
+      ],
+      "dpr": 1.25
+    },
+    "final_import_status": "Native asset already in Media pool \u00b7 project unchanged \u00b7 no Undo added",
+    "final_import_generation": "0",
+    "final_import_history_empty": true
+  },
+  "preservation": {
+    "protected_saved_files": 13,
+    "current_saved_files": 14,
+    "all_current_saved_hashes_exact_across_final_deployment_and_gui": true,
+    "original_project_sha256": "bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1",
+    "historical_hash_drift": "Before any new catalog write, the original Saved keyframe project differed from the historicala027 hash. Freshbd26 hash was frozen and preserved; no old state was restored over it.",
+    "owned_copy": "Only dedicated Chrome qualification copy was deliberately Saved/reopened after exact Mixer Undo. Native compound-cache generations and persisted view changed; timeline revisions/editing content and ordinary-media metadata were preserved.",
+    "foreign_pids": 40,
+    "foreign_sessions": 39,
+    "foreign_changes": {},
+    "original_clean_project_restored": true
+  },
+  "private_stage_receipts": [
+    {
+      "stage": "before_capture",
+      "sha256": "9cd3a5234f2499699fcc80f23d1ac12caa61c22e7d9631ff70a4c8faf9121b27"
+    },
+    {
+      "stage": "asset_captured",
+      "sha256": "c96491dcc1eb2eafef743a66f488ce3d9dfca107d2a79d79169ba60264f27630"
+    },
+    {
+      "stage": "asset_import_settled",
+      "sha256": "4c4c406b1cadead14b620c3f20f769aeb98916e73cf47dd4a41b1e3a7af5cb2e"
+    },
+    {
+      "stage": "preset_created",
+      "sha256": "f0177ac6f542b247d2c17dbf6df309c00a68bdc611b5312893d707bde8a0be13"
+    },
+    {
+      "stage": "preset_edited",
+      "sha256": "d977a9baaa2cd5d420829ed66e07c1bb4b02c38baa8ca34dbbc7ee09bd303380"
+    },
+    {
+      "stage": "mixer_dragged",
+      "sha256": "b40fe9395ef20c1da3b4e8c82f5b35c02969400ec22cd769313add33330f3914"
+    },
+    {
+      "stage": "mixer_undone",
+      "sha256": "b7e62a2841c52377d4b44de72e48dbe540f21cdf5da84b0e4663159a1f15f44f"
+    },
+    {
+      "stage": "mixer_saved",
+      "sha256": "775285aead126c4ac71c595933cca1293c99f2bce9f950421d8e397250d6a974"
+    },
+    {
+      "stage": "copy_reopened",
+      "sha256": "89b29fdc1cdd01970d068efbf3d78fcbe08bcdd4cd41ee47fc3787feaea61834"
+    },
+    {
+      "stage": "after_ruler",
+      "sha256": "379c0ab5b62c08fb1e8c168934a1d72fdced7be012d0ee1c1fcc8ef5d2e49737"
+    },
+    {
+      "stage": "new_runtime",
+      "sha256": "76a7cb68bb91e2a0735806f3ef23a571c3db4c5c6870fa8d4436fd64bc7bfa72"
+    },
+    {
+      "stage": "preset_restored_nas",
+      "sha256": "4d98ee091b6f3378f879a9e54934844ef3c439ca741b52bd8c8113d6c9047fd2"
+    },
+    {
+      "stage": "preset_roundtrip_nas",
+      "sha256": "8a0be7389081bd313a386ce3de00e20fdf1004434212e272a9e5aab682a91d51"
+    },
+    {
+      "stage": "asset_restored_nas",
+      "sha256": "ac9739bbf381dec7d5258b1e0894c9a0084c58ec192c88f8565cc2d5865253c8"
+    },
+    {
+      "stage": "mixer_first_drag_fixed",
+      "sha256": "86b662c33beaf24d1393dd7bdb49b6b60a8a44c9bf30f702bbcd051cf4a49390"
+    },
+    {
+      "stage": "mixer_fixed_undone",
+      "sha256": "7c878b53169ba74455d92a03a25277444a6ee7545560d2cd29152e56ca50a40a"
+    },
+    {
+      "stage": "mixer_fixed_saved",
+      "sha256": "19544af9a817ebf2504804c9ad6c10df5cf4d52eff5f8f085be8139141455217"
+    },
+    {
+      "stage": "mixer_fixed_reopened",
+      "sha256": "7af5c96b955ed27b3ba6ed89367babf7f84e129ebb55805b73b87b650e2ea841"
+    },
+    {
+      "stage": "import_noop_fixed",
+      "sha256": "e3231a531ba1e6ca4ca62f161e435a0c5b00238d2c32958a8db96dc79c71e650"
+    },
+    {
+      "stage": "final",
+      "sha256": "fc7880715563e1e32e444d4eba929d69a292842f5a85afd99ab053ef0723485b"
+    }
+  ],
+  "remaining_checks": "FINAL_CHECKS.md and REMAINING_WORK.md; device/audio/OS100%/150%, held modifiers/cancel/HTML drop, dense input, native fullscreen, long playback and two-hour browser-memory acceptance remain open",
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2,
+    "promotion": null
+  }
+}

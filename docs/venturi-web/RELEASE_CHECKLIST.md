@@ -1,5 +1,20 @@
 # Release checklist
 
+## Current Source/proxy clock correction - 2026-10-24
+
+Source dea7f17 fixes index-zero alignment in windowed and full proxies within
+native imported frame bounds. Actual Chrome public FullHD/4K initial60s Source
+preparation from 0 passes at Medium 960px with all audio streams;4K final5s reaches EOF19037,
+10:34:17. See evidence/f2-real-public-source-clock-workflow.json.
+The 24 affected native cases (13 proxy/11 browser), Clippy and build pass: peak1523445760B,
+zero memory events. The isolated companion peaks837091328B/events0 and stops
+normally.16 Saved, Recovery and40foreign PIDs/39 Sessions remain exact.
+Live782eb350d0d0/PID540668 replaces cf00; R8 packaging is pending. R7 and older
+package/deployment sections below remain historical, immutable and version-bound.
+Sustained Source/Program/A-B playback and physical/device/held/OS/M7 checks remain open.
+Ledger stays62done/28partial/2excluded; no row promotion.
+
+
 ## Current R7 packaging receipt - 2026-10-24
 
 R7 assembly/stream verification is complete: all members, launcher --help,

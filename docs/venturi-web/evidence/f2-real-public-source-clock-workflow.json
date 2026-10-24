@@ -1,0 +1,687 @@
+{
+ "schema_version": 1,
+ "status": "bounded-workflow-passed-with-retained-earlier-failures",
+ "title": "Real public-media Source frame-zero windows, late EOF and prior single-Play continuation",
+ "current_binding": {
+  "source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+  "binary_sha256": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+  "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-782eb350d0d0",
+  "main_unit": "venturi-web-halo1-source-zero.service",
+  "main_pid": 540668,
+  "companion_unit": "venturi-web-halo1-public-source-r2.service",
+  "companion_pid": 539645,
+  "public_project": "Venturi_Public_Real_Media_V2.vvproj",
+  "project_epoch": "1792867310356311404:1"
+ },
+ "source_scope": {
+  "actual_browser": "Existing owner-controlled Chrome; one existing tab",
+  "quality": "Medium, 960 pixels wide",
+  "audio_mode": "all",
+  "source_files": [
+   {
+    "id": "2",
+    "name": "bbb_sunflower_1080p_30fps_normal.mp4",
+    "width": 1920,
+    "height": 1080,
+    "fps": {
+     "den": 1,
+     "num": 30
+    },
+    "duration_frames": 19038,
+    "audio_stream_count": 2,
+    "channels": 2
+   },
+   {
+    "id": "3",
+    "name": "bbb_sunflower_2160p_30fps_normal.mp4",
+    "width": 3840,
+    "height": 2160,
+    "fps": {
+     "den": 1,
+     "num": 30
+    },
+    "duration_frames": 19038,
+    "audio_stream_count": 2,
+    "channels": 2
+   }
+  ],
+  "source_original_dimensions_only": "FullHD and 4K describe the original files, not the browser decode dimensions.",
+  "cache": "Fresh initially empty private TMPDIR establishes cold application Source-job cache only. OS, page and decoder caches were not made cold.",
+  "helper_reads": "R2 helper operations were bounded GET Session/proxy/explicit Source job status reads; GUI triggered Source preparations.",
+  "r2_browser": "Actual existing owner-controlled Windows Chrome tab; Medium960 with all audio streams.",
+  "fixture_provenance": "Existing official Big Buck Bunny Sunflower FullHD/4K originals and acquired hashes are retained in f7-public-real-media-export-workflow.json; no new acquisition or large-copy operation."
+ },
+ "native_correction": {
+  "files": [
+   "crates/vv-media/src/proxy.rs",
+   "crates/vv-media/src/tests/proxy.rs"
+  ],
+  "behavior": "Preserve the native source-frame clock when the first decoded picture has a delayed presentation index. Hold that first available picture for earlier source indices rather than rejecting frame zero or rebasing all subsequent indices; complete proxies also preserve the independently probed native imported duration.",
+  "native_oracles": [
+   "proxy::tests::ranged_proxy_holds_the_first_picture_without_rebasing_a_delayed_video_stream",
+   "proxy::tests::full_proxy_preserves_delayed_first_picture_indices_and_duration"
+  ],
+  "oracle_scope": "Tiny independently probed native media fixture: exact sequential frame indices, native held-picture luma, exclusive end, FPS/duration equality, cancellation and absence of unpublished temporary output. No complete ten-minute BBB proxy was generated.",
+  "strict_web_mapping_unchanged": true,
+  "source_manifest_count": 619,
+  "source_manifest_sha256": "0e1c8351a1c8799d4b3a402d6a6cd2df0e1e607827c7a8aec7392f1733a7b2dd"
+ },
+ "gate": {
+  "receipt": "halo1-source-zero-r4-observed.json",
+  "unit": {
+   "LoadState": "not-found",
+   "ActiveState": "inactive",
+   "SubState": "dead",
+   "MainPID": "0",
+   "Result": "success",
+   "ExecMainStatus": "0",
+   "MemoryCurrent": "[not set]",
+   "MemoryPeak": "[not set]"
+  },
+  "native_counts": {
+   "proxy::tests": {
+    "passed": 13,
+    "failed": 0,
+    "ignored": 0
+   },
+   "browser_proxy::tests": {
+    "passed": 11,
+    "failed": 0,
+    "ignored": 0
+   }
+  },
+  "native_total": 24,
+  "steps": [
+   {
+    "label": "format-check",
+    "exit_code": 0,
+    "elapsed_seconds": 0.251
+   },
+   {
+    "label": "native-proxy",
+    "exit_code": 0,
+    "elapsed_seconds": 7.261
+   },
+   {
+    "label": "native-browser-proxy",
+    "exit_code": 0,
+    "elapsed_seconds": 0.502
+   },
+   {
+    "label": "web-media-clippy",
+    "exit_code": 0,
+    "elapsed_seconds": 14.271
+   },
+   {
+    "label": "web-build",
+    "exit_code": 0,
+    "elapsed_seconds": 79.862
+   },
+   {
+    "label": "strip",
+    "exit_code": 0,
+    "elapsed_seconds": 0.502
+   }
+  ],
+  "memory_peak_bytes": 1523445760,
+  "memory_events": {
+   "low": 0,
+   "high": 0,
+   "max": 0,
+   "oom": 0,
+   "oom_kill": 0,
+   "oom_group_kill": 0,
+   "sock_throttled": 0
+  },
+  "unchanged_frontend_reuse": {
+   "source_commit": "67882ef198f82148f922ef74f8595037adb3eb7c",
+   "client_counts": {
+    "tests": 212,
+    "pass": 212,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+   }
+  },
+  "limits": "No fresh full-client matrix, full-film proxy or export/render benchmark was run for this correction."
+ },
+ "retained_attempts": [
+  {
+   "attempt": "Source-zero gate R1",
+   "outcome": "failed",
+   "scope": "Formatting check only; no native tests/build or qualification credit.",
+   "receipt": "halo1-source-zero-r1-observed.json"
+  },
+  {
+   "attempt": "Source-zero gate R2",
+   "outcome": "passed historical intermediate",
+   "source_commit": "915bd36b096c6df237f387d2213bbb1575878316",
+   "native_counts": {
+    "proxy::tests": {
+     "passed": 12,
+     "failed": 0,
+     "ignored": 0
+    },
+    "browser_proxy::tests": {
+     "passed": 11,
+     "failed": 0,
+     "ignored": 0
+    }
+   },
+   "scope": "Ranged-Source strict-first-index fix only; not final complete-proxy producer proof.",
+   "receipt": "halo1-source-zero-r2-observed.json"
+  },
+  {
+   "attempt": "Source-zero gate R3",
+   "outcome": "failed",
+   "native_proxy_passed": 12,
+   "native_proxy_failed": 1,
+   "scope": "New complete-proxy regression failed: produced proxy duration 8 disagreed with the independently probed native original duration 6. The final producer is bounded by the native imported range; the native expectation was not relaxed. No qualification credit.",
+   "receipt": "halo1-source-zero-r3-observed.json"
+  }
+ ],
+ "r1_older_binary_observations": {
+  "binding": {
+   "source_commit": "67882ef198f82148f922ef74f8595037adb3eb7c",
+   "binary_sha256": "cf00a18d78dc0f01062b7d1b7e014dca0a2319cbee0fcb1abd9d48a21c947e70",
+   "pid": 533636,
+   "project_epoch": "1792865105124851030:1"
+  },
+  "r1_observations": [
+   {
+    "kind": "initial-window-failure",
+    "reported_by": "Root actual Chrome observations",
+    "media_ids": [
+     "2",
+     "3"
+    ],
+    "window": [
+     0,
+     1800
+    ],
+    "quality": "medium",
+    "outcome": "Both initial FullHD and 4K preparations failed with zero frames; not acceptance passes.",
+    "diagnostic_repeat": {
+     "job_id": "1792865453485815484",
+     "captured_states": [
+      "queued",
+      "running",
+      "failed"
+     ],
+     "final_error": "INVALID_OPERATION",
+     "final_frames": 0,
+     "window": {
+      "start_frame": 0,
+      "end_frame": 1800,
+      "total_frames": 19038,
+      "fps": {
+       "num": 30,
+       "den": 1
+      },
+      "audio_mode": "all"
+     },
+     "native_session_model_unchanged": true
+    }
+   },
+   {
+    "kind": "FullHD-late-tail-EOF",
+    "reported_by": "Root actual Chrome DOM/video observations; job status was not captured before unit expiry",
+    "at_utc": "2026-10-24T18:13:12.902Z",
+    "media_id": "2",
+    "job_id": "1792865537338083831",
+    "window_half_open": [
+     18888,
+     19038
+    ],
+    "decoded_dimensions": [
+     960,
+     540
+    ],
+    "browser_video_duration_seconds": 5.013,
+    "one_play": true,
+    "observed": {
+     "ended": true,
+     "paused": true,
+     "last_source_frame": 19037,
+     "source_clock": "00:10:34:17",
+     "playback_rate": 1,
+     "status": "End of Source"
+    }
+   },
+   {
+    "kind": "FullHD-window-handoff-to-EOF",
+    "reported_by": "Root actual Chrome DOM/video observations; native ready responses were not retained before unit expiry",
+    "media_id": "2",
+    "single_play_start_frame": 17138,
+    "initial_job_id": "1792865674174175543",
+    "initial_window_half_open": [
+     17138,
+     18938
+    ],
+    "initial_video_duration_seconds": 60.01,
+    "initial_clock": "00:09:31:08",
+    "next_job_id": "1792865698444554540",
+    "next_window_half_open": [
+     18938,
+     19038
+    ],
+    "next_ready_observed_at_utc": "2026-10-24T18:15:42.896Z",
+    "same_source_version_fps_audio_mode_observed": true,
+    "second_video_source_adopted": true,
+    "no_second_Play": true,
+    "EOF_observed_at_utc": "2026-10-24T18:16:10.298Z",
+    "final_video_duration_seconds": 3.349,
+    "final_source_frame": 19037,
+    "nominal_source_span_seconds": 63.333333333333336,
+    "limits": "Demonstrates one observed browser continuation and final EOF; does not establish audible, gapless or timing-jitter performance."
+   }
+  ],
+  "terminal_and_preservation": {
+   "deadline": "Finite 900-second service expired before a final job-status read. No restart, stop signal, cache scan or process recovery was attempted.",
+   "port8856_closed": true,
+   "job_status_unavailable_after_exit": true,
+   "memory_peak_bytes": 750637056,
+   "memory_events": "Unavailable after cgroup removal; no zero-events claim.",
+   "main8855": {
+    "pid_unchanged": true,
+    "full_session_exact": true,
+    "saved_files_exact": 16,
+    "recovery_exact": true
+   },
+   "public_saved": {
+    "Venturi_Public_Real_Media_V2.vvproj": {
+     "before_sha256": "ecad528d091770c820544e8db30d01b40c4255946d2579f19e654e062b444638",
+     "after_sha256": "9342b242c31bd362a21a3e5b972ef28cd50a298ad7b54e5242645e3b2e92c37a",
+     "exact": false,
+     "only_native_root_view": true
+    },
+    "Venturi_Public_Real_Media_V1.vvproj": {
+     "before_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+     "after_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+     "exact": true
+    },
+    "Draft_Public_Real_Media_V2.vvproj": {
+     "before_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+     "after_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+     "exact": true
+    }
+   },
+   "public_recovery_exact": true,
+   "proxy_preferences_restored": {
+    "version": 1,
+    "enabled": false,
+    "quality": "medium",
+    "paused": false
+   },
+   "original_movies_identity_preserved_count": 3
+  }
+ },
+ "r2_fixed_binary_observations": {
+  "browser": {
+   "full_hd_initial": {
+    "at_utc": "2026-10-24T18:42:27.553Z",
+    "job": "1792867328500272452",
+    "media": "2",
+    "window": [
+     0,
+     1800
+    ],
+    "position": 0,
+    "clock": "Source 00:00:00:00",
+    "width": 960,
+    "height": 540,
+    "duration": 60.01,
+    "time": 0,
+    "paused": true,
+    "ended": false,
+    "playback_rate": 1,
+    "state": "SOURCE WINDOW"
+   },
+   "four_k_initial": {
+    "at_utc": "2026-10-24T18:43:13.833Z",
+    "job": "1792867356108463227",
+    "media": "3",
+    "window": [
+     0,
+     1800
+    ],
+    "position": 0,
+    "clock": "Source 00:00:00:00",
+    "width": 960,
+    "height": 540,
+    "duration": 60.01,
+    "time": 0,
+    "paused": true,
+    "ended": false,
+    "playback_rate": 1,
+    "state": "SOURCE WINDOW"
+   },
+   "four_k_tail_ready": {
+    "at_utc": "2026-10-24T18:43:36.824Z",
+    "job": "1792867406386860178",
+    "media": "3",
+    "window": [
+     18888,
+     19038
+    ],
+    "position": 18888,
+    "clock": "Source 00:10:29:18",
+    "width": 960,
+    "height": 540,
+    "duration": 5.013,
+    "time": 0,
+    "paused": true,
+    "ended": false,
+    "playback_rate": 1,
+    "state": "SOURCE WINDOW"
+   },
+   "four_k_tail_play": {
+    "at_utc": "2026-10-24T18:43:40.686Z",
+    "job": "1792867406386860178",
+    "position": 18888,
+    "clock": "Source 00:10:29:18",
+    "time": 0.012122,
+    "paused": false,
+    "ended": false,
+    "playback_rate": 1,
+    "play_clicks": 1
+   },
+   "four_k_tail_eof": {
+    "at_utc": "2026-10-24T18:43:48.948Z",
+    "job": "1792867406386860178",
+    "media": "3",
+    "position": 19037,
+    "clock": "Source 00:10:34:17",
+    "width": 960,
+    "height": 540,
+    "duration": 5.013,
+    "time": 5.013,
+    "paused": true,
+    "ended": true,
+    "playback_rate": 1,
+    "state": "End of Source"
+   },
+   "restoration": {
+    "source_closed_before_proxy_restoration": true,
+    "proxy_settings": {
+     "enabled": false,
+     "quality": "medium",
+     "paused": false
+    },
+    "program_mode_selected": true,
+    "all_videos_paused": true,
+    "dialogs": 0,
+    "returned_to": "http://127.0.0.1:8855/",
+    "main_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "main_saved": true
+   }
+  },
+  "native_ready_job_GETs": [
+   {
+    "media_job": "2:1792867328500272452",
+    "state": "ready",
+    "frames": 1800,
+    "source_window": {
+     "audio_mode": "all",
+     "audio_stream_index": null,
+     "end_frame": 1800,
+     "fps": {
+      "den": 1,
+      "num": 30
+     },
+     "source_version": "64512:4222597:276134947:1792834711:517657171:1792834711:517657171",
+     "start_frame": 0,
+     "total_frames": 19038
+    }
+   },
+   {
+    "media_job": "3:1792867356108463227",
+    "state": "ready",
+    "frames": 1800,
+    "source_window": {
+     "audio_mode": "all",
+     "audio_stream_index": null,
+     "end_frame": 1800,
+     "fps": {
+      "den": 1,
+      "num": 30
+     },
+     "source_version": "64512:4222600:633016449:1792834772:728272612:1792834772:728272612",
+     "start_frame": 0,
+     "total_frames": 19038
+    }
+   },
+   {
+    "media_job": "3:1792867406386860178",
+    "state": "ready",
+    "frames": 150,
+    "source_window": {
+     "audio_mode": "all",
+     "audio_stream_index": null,
+     "end_frame": 19038,
+     "fps": {
+      "den": 1,
+      "num": 30
+     },
+     "source_version": "64512:4222600:633016449:1792834772:728272612:1792834772:728272612",
+     "start_frame": 18888,
+     "total_frames": 19038
+    }
+   }
+  ],
+  "job_capture_receipts": [
+   "halo1-public-source-r2-capture-1792867352355862800.json",
+   "halo1-public-source-r2-capture-1792867412603640400.json",
+   "halo1-public-source-r2-capture-1792867425799573600.json"
+  ],
+  "all_three_jobs_captured_ready_before_stop": true,
+  "paused_initial_windows_only": true,
+  "one_actual_tail_Play_then_natural_EOF": true,
+  "no_second_handoff_run_claim": "The prior ~63.33-second FullHD continuation remains bound to the older R1 binary; R2 verifies corrected initial FullHD/4K windows and the 4K five-second tail."
+ },
+ "r2_stop_and_preservation": {
+  "stop_receipt": "halo1-public-source-r2-stopped.json",
+  "unit": {
+   "LoadState": "not-found",
+   "ActiveState": "inactive",
+   "SubState": "dead",
+   "MainPID": "0",
+   "Result": "success",
+   "ExecMainStatus": "0",
+   "ControlGroup": "",
+   "MemoryCurrent": "[not set]",
+   "MemoryPeak": "[not set]"
+  },
+  "normal_explicit_stop": true,
+  "elapsed_start_ready_to_stopped_seconds": 177.985,
+  "service_limit_seconds": 600,
+  "application_cache_initially_empty": true,
+  "cache_retained_no_deletion": true,
+  "resources_before_stop": {
+   "memory.current": "729235456",
+   "memory.peak": "837091328",
+   "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+   "memory.max": "4294967296",
+   "memory.swap.max": "0",
+   "cpu.max": "800000 100000"
+  },
+  "memory_peak_bytes": 837091328,
+  "memory_events": {
+   "low": 0,
+   "high": 0,
+   "max": 0,
+   "oom": 0,
+   "oom_kill": 0,
+   "oom_group_kill": 0,
+   "sock_throttled": 0
+  },
+  "public_session_exact_start_to_stop": true,
+  "public_saved_hashes": {
+   "Venturi_Public_Real_Media_V2.vvproj": "9342b242c31bd362a21a3e5b972ef28cd50a298ad7b54e5242645e3b2e92c37a",
+   "Venturi_Public_Real_Media_V1.vvproj": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+   "Draft_Public_Real_Media_V2.vvproj": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20"
+  },
+  "public_saved_view_changes": {},
+  "existing_public_recovery_sha256": "0fbf896900bc4d1fac25041bdf3bc0a0bdd10e7b2fbe4d241eeb55540e04f24b",
+  "main8855_preserved_before_deployment": {
+   "session_sha256": "0721fc60bf68f861986ba1f9f9d51d50b80e190b583d8d01472d4aa70e70c9d3",
+   "saved_count": 16,
+   "recovery_sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a"
+  },
+  "proxy_settings_restored": {
+   "version": 1,
+   "enabled": false,
+   "quality": "medium",
+   "paused": false
+  },
+  "active_generating_proxy_jobs_at_stop": 0,
+  "originals_fixed_path_identity_scope": "All three known originals retained preflight device/inode/size/mtime/ctime; complete media hashes were not reread.",
+  "tunnel_cleanup_root_observation": "Owned 8856 forward PID29216 stopped after strict command-line check; existing 8855 forward PID23536 preserved."
+ },
+ "main_deployment_and_final": {
+  "receipt": "halo1-source-zero-r4-deployed.json",
+  "phase": "deployed",
+  "pid": 540668,
+  "saved_files_exact": 16,
+  "recovery_exact": true,
+  "foreign_pids_exact": 40,
+  "foreign_sessions_exact": 39,
+  "foreign_changes": {},
+  "old_to_new_session_change_only": [
+   "project_epoch"
+  ],
+  "latest_idle_receipt": "halo1-final-gui-source_zero_package_idle.json",
+  "full_session_sha256": "79fea3f492ee65cc2f157396da55f30fd353191bd10d2a3df0d9ced650aa254d",
+  "saved_hashes_sha256": "d0f96c8fffa687c70ff6fe932c4bb86672a8bd4c9652327baeb492d0bc336245",
+  "original_saved_clean": true,
+  "history": {
+   "labels": [],
+   "position": 0
+  },
+  "resources": {
+   "memory.current": "95809536",
+   "memory.peak": "111648768",
+   "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0",
+   "memory.max": "4294967296",
+   "memory.swap.max": "0",
+   "cpu.max": "800000 100000"
+  },
+  "resource_scope": "Lifetime of current owned runtime, not an isolated performance benchmark."
+ },
+ "private_receipt_bindings": [
+  {
+   "file": "halo1-public-source-r2-browser.json",
+   "bytes": 2734,
+   "sha256": "fb9a1f6fb5d93a4b823eac541795f9aed40107596ea98730394a446a851d76c1"
+  },
+  {
+   "file": "halo1-public-source-r2-start.json",
+   "bytes": 47515,
+   "sha256": "812e64682b7a155950b3ae1638d3f133fcdcc167f60ce2d26d683dd01aea19a5"
+  },
+  {
+   "file": "halo1-public-source-r2-capture-1792867352355862800.json",
+   "bytes": 48524,
+   "sha256": "af9dfd602faa0dca41f8d92f4c6cd1be1fa161ea51ae032259c1c63b55805323"
+  },
+  {
+   "file": "halo1-public-source-r2-capture-1792867412603640400.json",
+   "bytes": 49422,
+   "sha256": "0f682deafc6824cde742ad8167b750203b97ad28e6093e898b8e26285b31a1da"
+  },
+  {
+   "file": "halo1-public-source-r2-capture-1792867425799573600.json",
+   "bytes": 50323,
+   "sha256": "ca796f6ef296d906c4c081ce98ef1191f40d5c0b1833add52efce02ce41bb795"
+  },
+  {
+   "file": "halo1-public-source-r2-final-idle.json",
+   "bytes": 47794,
+   "sha256": "ef265d507301c2291b97d9c0d78022cbc139eed5ffde1c43c657260e54a51f9e"
+  },
+  {
+   "file": "halo1-public-source-r2-stopped.json",
+   "bytes": 139146,
+   "sha256": "c5cd51fa5c5b2d555899731484740d102f6e4253455239d188e0ebb787422d78"
+  },
+  {
+   "file": "halo1-source-zero-r1-observed.json",
+   "bytes": 8783,
+   "sha256": "9153f4374e1cef24efa7340fbbda3940a5dfcb827a6f7012a3ccf863d2e75111"
+  },
+  {
+   "file": "halo1-source-zero-r2-observed.json",
+   "bytes": 12682,
+   "sha256": "76f909ceea6be87708db62e17761ee889d40f0f020b82b0ae3e287eaff15b106"
+  },
+  {
+   "file": "halo1-source-zero-r3-observed.json",
+   "bytes": 14700,
+   "sha256": "71391c15adcce43f59089c955b7f46f1780a6a482c2bf1d2b9cc1bfd470116da"
+  },
+  {
+   "file": "halo1-source-zero-r4-observed.json",
+   "bytes": 18387,
+   "sha256": "1a1e1c923f811b82af341c3f1fd7e1f726a49ca099dbec6c36aeb24f54fd69cb"
+  },
+  {
+   "file": "halo1-source-zero-r4-deployed.json",
+   "bytes": 165096,
+   "sha256": "87dee9384436881839cad0109ea576d54400fb316d912a337615b898c8dcc474"
+  },
+  {
+   "file": "halo1-final-gui-source_zero_final.json",
+   "bytes": 87078,
+   "sha256": "c7fc8e4a706f985f48b026ccb645fefcfec4040a9bcec05a3c9734e9c80bf029"
+  },
+  {
+   "file": "halo1-final-gui-source_zero_package_idle.json",
+   "bytes": 87441,
+   "sha256": "b111dd916b87cede5f1b899dcbb71120e76fee89a3dd000c01f500b44c6d0036"
+  },
+  {
+   "file": "halo1-public-source-r1-preflight.json",
+   "bytes": 94260,
+   "sha256": "e6a1289f72e6d442819cbe39888c6c2f16e81239df45b3bd52126f8209daa4ed"
+  },
+  {
+   "file": "halo1-public-source-r1-start.json",
+   "bytes": 47492,
+   "sha256": "a0af5f4fea63714312c9db2c51c421df55e2411b352b3fa796721b3f5125fc60"
+  },
+  {
+   "file": "halo1-public-source-r1-failed-job.json",
+   "bytes": 2925,
+   "sha256": "64d4a56c9aa0f934e2c547891b4f85e353eeb41c4b6b41feeb9d1821d9b5939f"
+  },
+  {
+   "file": "halo1-public-source-r1-terminal-audit.json",
+   "bytes": 4431,
+   "sha256": "5f86eb8d9bf2a9e56cf3a9fba65e043726c1367104aad57e1e654ec0f86d827b"
+  }
+ ],
+ "limits": [
+  "The initial FullHD and 4K windows were verified paused at frame zero; they were not played end-to-end.",
+  "Only the final five seconds of the 4K source were played in this run.",
+  "A 4K input was decoded into a 960x540 browser preview; full-resolution 4K browser playback is not claimed.",
+  "No speaker, acoustic gap, physical device, OS scaling or two-hour soak qualification.",
+  "The bounded-job cache was fresh; OS/page/shader caches were not declared cold.",
+  "No complete long native proxy was generated; complete-proxy mapping is covered by the tiny native regression and unchanged strict Web validation.",
+  "The older R1 900-second deadline expired before native job status capture; its timeout and unavailable terminal memory.events are preserved above.",
+  "The R2 companion was explicitly stopped normally after approximately three minutes; no timeout or hidden restart was used.",
+  "No new download, large-copy, whole-film playback, complete long native proxy, acoustic/gapless, full-resolution 4K browser, physical-device, OS-scaling/DPI, two-hour soak or full M7 claim.",
+  "R7 remains immutable and predates the corrected source and this workflow. New package assembly is a separate pending operation."
+ ],
+ "ledger": {
+  "changed": false,
+  "done": 62,
+  "partial": 28,
+  "exclusions": 2,
+  "full_goal_and_M7_remain_active": true
+ },
+ "existing_public_evidence": [
+  "docs/venturi-web/evidence/f7-public-real-media-export-workflow.json",
+  "docs/venturi-web/evidence/f7-current-prebuilt-r7-workflow.json"
+ ],
+ "local_assertions": "Ready native job source windows/frame totals match observed browser media/job IDs; three GET captures precede stop. Native gate counts/terminal/resource events, exact public Session, Saved/recovery, restored proxy settings, deployed foreign witnesses and current clean main Session/Saved were checked locally from the hashed receipts."
+}

@@ -1,5 +1,20 @@
 # Checks reserved for final acceptance
 
+## Current Source/proxy clock correction - 2026-10-24
+
+Source dea7f17 fixes index-zero alignment in windowed and full proxies within
+native imported frame bounds. Actual Chrome public FullHD/4K initial60s Source
+preparation from 0 passes at Medium 960px with all audio streams;4K final5s reaches EOF19037,
+10:34:17. See evidence/f2-real-public-source-clock-workflow.json.
+The 24 affected native cases (13 proxy/11 browser), Clippy and build pass: peak1523445760B,
+zero memory events. The isolated companion peaks837091328B/events0 and stops
+normally.16 Saved, Recovery and40foreign PIDs/39 Sessions remain exact.
+Live782eb350d0d0/PID540668 replaces cf00; R8 packaging is pending. R7 and older
+package/deployment sections below remain historical, immutable and version-bound.
+Sustained Source/Program/A-B playback and physical/device/held/OS/M7 checks remain open.
+Ledger stays62done/28partial/2excluded; no row promotion.
+
+
 Owner instruction, 2026-10-24: continue the full plan and record unavailable
 checks here instead of stopping unrelated implementation or GUI work. This is
 a deferred-check queue, not an exclusion list or evidence of completion.
@@ -22,10 +37,10 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Remaining Mixer input | Actual EQ XY/wheel and compressor add/crossover/makeup pass with stable viewport, five Undo/Redo and exact edited Save/reopen in evidence/f4-chrome-mixer-graph-scroll-workflow.json. Source d49ed8c fixes refresh scroll and detached knob hit interception. | Qualify remaining Shift precision, held/cancel, required OS scaling and audible device behavior. | Bounded paused interactions in one existing Windows tab; preserve stopped-edit/explicit-Play V1 and reuse unchanged native DSP/export proof. |
 | Remaining Slip input | Actual linked video-body and audio-body Canvas Slip, two native commands/Undo/Redo and exact edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json. Both clips retain timing/rate/pitch; neutral wording9fbc205 is now embedded in5ce758c. | Qualify prolonged uncached held continuity, remaining cancellation and required OS scaling. | Keep ordinary paused gestures short; do not substitute synthetic prolonged/held input or launch a Windows soak. |
 | Remaining speed input | Actual percentage draft scrub/Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Source5ce758c also repairs live Program cursor/preview after end shrink. | Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. | One existing Windows tab with short paused interaction; no synthetic held-pointer or OS scaling substitution. |
-| Long browser playback and comparison | Complete real public FullHD/4K sources and bounded native render/export evidence exist. Sustained Source/Program/A-B browser playback remains open. | Use the existing unmodified sources, check cold preparation, late seeking, EOF and output behavior. | No new media downloads/copies; no prolonged Windows workload without respecting the owner's workstation resource constraint. |
+| Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. The older5002-key/4clip fixture is separate. | Qualify cold visible thumbnail/waveform demand,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Current cf00/source67882ef is packaged in verified R7, with docs1487519 separately bound; see evidence/f7-current-prebuilt-r7-workflow.json. All members, launcher --help, three notice companions and189-loader/zlib bindings pass; live Session/16 Saved/Recovery and R6 remain exact. | Current package assembly is complete. Retain affected source-bound checks and remaining functional/physical/soak gates; additional runback/reboot is not newly qualified. Historical77d7/59b6 runback remains version-bound. | Publication receipt postdates the immutable packaged docs snapshot. Preserve all old archives, manifests and notices; no repeated unchanged build/export matrices or M7 completion claim. |
+| Final delivery and regression receipt | Live782eb350d0d0/source dea7f17 passes24 native proxy cases, Clippy/build and bounded real Source proof. R7/cf00 remains the verified immutable prior package. | Assemble additive R8 for the current runtime. Remaining functional/physical/soak gates and historical77d7/59b6 runback remain version-bound. | Preserve old archives/manifests/notices; no repeated unchanged render matrix or new runback/reboot/M7 claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

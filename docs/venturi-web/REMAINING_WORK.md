@@ -1,5 +1,20 @@
 # Remaining implementation and acceptance work
 
+## Current Source/proxy clock correction - 2026-10-24
+
+Source dea7f17 fixes index-zero alignment in windowed and full proxies within
+native imported frame bounds. Actual Chrome public FullHD/4K initial60s Source
+preparation from 0 passes at Medium 960px with all audio streams;4K final5s reaches EOF19037,
+10:34:17. See evidence/f2-real-public-source-clock-workflow.json.
+The 24 affected native cases (13 proxy/11 browser), Clippy and build pass: peak1523445760B,
+zero memory events. The isolated companion peaks837091328B/events0 and stops
+normally.16 Saved, Recovery and40foreign PIDs/39 Sessions remain exact.
+Live782eb350d0d0/PID540668 replaces cf00; R8 packaging is pending. R7 and older
+package/deployment sections below remain historical, immutable and version-bound.
+Sustained Source/Program/A-B playback and physical/device/held/OS/M7 checks remain open.
+Ledger stays62done/28partial/2excluded; no row promotion.
+
+
 2026-10-24. This file separates production changes from qualification in the
 28 partial rows. It does not replace FUNCTIONAL_PARITY.csv, weaken its evidence
 requirements, or add exclusions. Global M7 gates stay separate from individual
@@ -119,7 +134,7 @@ Representative long real-media and sustained bounded native-scale H.264/AAC
 export pass. Only export_h264_aac is accepted; ledger62done/28partial/2excluded.
 See evidence/f7-public-real-media-export-workflow.json for FullHD634.6s and
 real4K300s outputs, resources, preservation, failed attempts and reused evidence.
-Native Source/Program long browser playback, physical/DPI/device, dense editing
+Bounded real Source preparation/late EOF now passes; sustained Program/A-B playback, physical/DPI/device, dense performance
 and two-hour M7 remain open. No new package or whole-release acceptance.
 
 ## Row-specific residuals
@@ -151,7 +166,7 @@ feature passes every requirement or cannot contain defects.
 
 | Partial capability | Concrete next work |
 |---|---|
-| source_viewer | Native explicit Pause/final EOF speed reset delivered; qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
+| source_viewer | Native Pause/EOF and proxy frame-zero alignment delivered. Actual public FullHD/4K initial60s preparation and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Sustained playback, cold-pressure and actual audio/device acceptance remain open; retain existing seeking/quality/continuation proof. |
 | program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; actual Chrome ruler seek/resume1x/2x and source5ce758c edit-induced end clamp/CURRENT black/Undo/Save/reopen pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
 | transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard and actual Chrome ruler1x/2x seek/resume pass, including stopped seek retaining selected2x and explicit Pause resetting1x. Keep native paused arrow stepping; qualify remaining held/cancel, required scaling and output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |

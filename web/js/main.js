@@ -1297,7 +1297,7 @@ $("retime-overwrite").addEventListener('change',()=>{
   canvasTimeline.cancel();view.retimeOverwrite=$("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Timeline overwrite enabled · trim, Alt-duplicate, speed and Library asset drags may replace overlapping clips; Undo restores them':'Timeline drags refuse overlaps');
 });
 document.addEventListener('keydown',event=>{if(isRetimeShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))})){event.preventDefault();event.stopPropagation();$("retime-handles").click();}});
-$("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag right to advance source; linked clips follow" : "Move / trim tool");});
+$("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag horizontally to shift source content; linked clips follow" : "Move / trim tool");});
 for (const [id, factor] of [
   ["zoom-in", 1.4],
   ["zoom-out", 1 / 1.4],

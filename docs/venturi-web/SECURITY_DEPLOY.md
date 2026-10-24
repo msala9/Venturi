@@ -91,7 +91,9 @@ with empty history; this must be checked again before any operational change.
 Earlier protected halo1/halo2 editor services remain live. No public listener
 is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
 client drafts and Undo chains. A saved project alone does not authorize restarting
-an editor with nonempty Undo history. Final reboot/rollback acceptance stays open.
+an editor with nonempty Undo history. The isolated packaged/prior/forward
+runback passes in `evidence/f7-prebuilt-runback-workflow.json`. M7 requires
+reload/recovery and documented operation; a whole-host reboot is not a gate.
 
 Last-saved project reopening uses a private, bounded version-1 cursor containing
 only the root token and SHA-256. Atomic writes and NOFOLLOW reads preserve

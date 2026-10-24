@@ -1,0 +1,582 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "9ab281e2fadf9065169a751e47535d9d0fe0e098",
+  "production_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+  "scope": "Integrated software qualification with two test-fixture corrections; no production engine, client, binary, editor or NAS mutation.",
+  "result": "Software gates qualified by unchanged-source reuse plus affected corrections; whole native workspace remains unqualified on nine audio-clock cases. Full F1-F7/M7 remains active.",
+  "source_identity": {
+    "tracked_code_blobs_checked": 613,
+    "bytes_read": 12645165,
+    "mismatches": [],
+    "matrix_sha256": "1e55adf280676825a7bb5673f99223f3e65c9f9b80ce2c5e253bed864ad8adbf"
+  },
+  "resource_policy": {
+    "host": "halo1",
+    "serial": true,
+    "max_cpus": 8,
+    "memory_max_bytes": 4294967296,
+    "memory_swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks_max": 128,
+    "admission_min_available_bytes": 8589934592,
+    "admission_min_disk_free_bytes": 17179869184,
+    "shared_gpu_lock": "/tmp/HALO_BENCHMARK.lock",
+    "lock_mode": "exclusive nonblocking, wrapper-owned for native tests",
+    "finite_runtime": true
+  },
+  "format": {
+    "result": "pass",
+    "step": {
+      "label": "workspace-format",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.166,
+      "log": "/home/halo/.cache/venturi-build/integrated-regression-r1/workspace-format.log",
+      "log_bytes": 0
+    },
+    "affected_rust_format": {
+      "label": "format-fixes",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "crates/vv-web/src/tests/approved_sources.rs",
+        "crates/vv-web/src/tests/asset_jobs.rs"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.064,
+      "log": "/home/halo/.cache/venturi-build/native-fixture-fixes-r11/format-fixes.log"
+    }
+  },
+  "workspace_clippy": {
+    "result": "pass",
+    "step": {
+      "label": "workspace-clippy",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--all-targets",
+        "--no-deps",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 48.265,
+      "log": "/home/halo/.cache/venturi-build/integrated-regression-r2/workspace-clippy.log",
+      "log_bytes": 4492
+    },
+    "affected_web_clippy": {
+      "label": "web-all-target-clippy",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "vv-web",
+        "--all-targets",
+        "--no-deps",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.28,
+      "log": "/home/halo/.cache/venturi-build/native-fixture-fixes-r11/web-all-target-clippy.log"
+    }
+  },
+  "workspace_test_build": {
+    "result": "pass",
+    "step": {
+      "label": "workspace-test-build",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--no-run"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 436.737,
+      "log": "/home/halo/.cache/venturi-build/integrated-regression-r2/workspace-test-build.log",
+      "log_bytes": 5497
+    },
+    "unit_peak_bytes": 4294967296,
+    "memory_observation": "R2 reached its cgroup cap and reclaimed cache (max events observed); the last live sample had oom=0/oom_kill=0. Compilation completed with exit0. No final zero-max/zero-event claim is inferred."
+  },
+  "client": {
+    "initial_all_110_files": {
+      "label": "client-all",
+      "args": [
+        "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        "test/api.test.js",
+        "test/attributes.test.js",
+        "test/audio-graphs.test.js",
+        "test/audio-meters.test.js",
+        "test/audio-presets.test.js",
+        "test/audition.test.js",
+        "test/balance.test.js",
+        "test/capture.test.js",
+        "test/catalog-interactions.test.js",
+        "test/catalog-menu.test.js",
+        "test/catalog.test.js",
+        "test/clipboard-image.test.js",
+        "test/clipboard.test.js",
+        "test/color-picker.test.js",
+        "test/command-ownership.test.js",
+        "test/compound-navigation.test.js",
+        "test/compressor-controls.test.js",
+        "test/context-actions.test.js",
+        "test/context-menu.test.js",
+        "test/curve-viewport.test.js",
+        "test/curve-window.test.js",
+        "test/curves.test.js",
+        "test/eq-controls.test.js",
+        "test/eventkeys.test.js",
+        "test/export-codecs.test.js",
+        "test/export-panel.test.js",
+        "test/export.test.js",
+        "test/fast-transport.test.js",
+        "test/fonts.test.js",
+        "test/inspector-compositing.test.js",
+        "test/inspector-selection.test.js",
+        "test/inspector.test.js",
+        "test/keyframe-lanes.test.js",
+        "test/keyframe-navigation.test.js",
+        "test/keyselection.test.js",
+        "test/library-capture-drop.test.js",
+        "test/library.test.js",
+        "test/mark-range.test.js",
+        "test/masks.test.js",
+        "test/media-import-panel.test.js",
+        "test/media-import.test.js",
+        "test/media-relink.test.js",
+        "test/mixer-controls.test.js",
+        "test/mixer-inserts.test.js",
+        "test/mixer.test.js",
+        "test/native-asset-folders.test.js",
+        "test/native-asset-pool.test.js",
+        "test/native-assets-panel.test.js",
+        "test/native-assets.test.js",
+        "test/otio-import.test.js",
+        "test/preset-panel.test.js",
+        "test/preset-shortcuts.test.js",
+        "test/presets.test.js",
+        "test/preview-cache.test.js",
+        "test/program-range.test.js",
+        "test/program.test.js",
+        "test/project-pool-placement.test.js",
+        "test/project-view.test.js",
+        "test/proxies.test.js",
+        "test/recording-waveform.test.js",
+        "test/recovery.test.js",
+        "test/retime-inspector.test.js",
+        "test/retime-menu.test.js",
+        "test/retime-visibility.test.js",
+        "test/review.test.js",
+        "test/reviewmeta.test.js",
+        "test/scopes.test.js",
+        "test/silence.test.js",
+        "test/slip.test.js",
+        "test/source-assets.test.js",
+        "test/source-clock.test.js",
+        "test/source-picker.test.js",
+        "test/source-placement.test.js",
+        "test/source-seek.test.js",
+        "test/source-streams.test.js",
+        "test/source-waveform.test.js",
+        "test/source-windows.test.js",
+        "test/source.test.js",
+        "test/timeline-asset-drop.test.js",
+        "test/timeline-compound-input.test.js",
+        "test/timeline-context-input.test.js",
+        "test/timeline-effect-drop.test.js",
+        "test/timeline-fades.test.js",
+        "test/timeline-gap.test.js",
+        "test/timeline-layout.test.js",
+        "test/timeline-preset-drop.test.js",
+        "test/timeline-retime-input.test.js",
+        "test/timeline-retime.test.js",
+        "test/timeline-selection-anchor.test.js",
+        "test/timeline-selection.test.js",
+        "test/timeline-slip.test.js",
+        "test/timeline-transition-input.test.js",
+        "test/timeline-transition-placement-input.test.js",
+        "test/timeline-transition-placement.test.js",
+        "test/timeline-transitions.test.js",
+        "test/timeline-waveform.test.js",
+        "test/timeline-waveforms.test.js",
+        "test/timeline.test.js",
+        "test/transition-controls.test.js",
+        "test/transition-selection.test.js",
+        "test/ui.test.js",
+        "test/viewer-mask-overlay.test.js",
+        "test/viewer-mask-pen.test.js",
+        "test/viewer-mask.test.js",
+        "test/viewer-transform-overlay.test.js",
+        "test/viewer-transform.test.js",
+        "test/viewer-zoom.test.js",
+        "test/viewer.test.js",
+        "test/visual.test.js",
+        "test/voiceover.test.js"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 5.274,
+      "log": "/home/halo/.cache/venturi-build/integrated-regression-r1/client-all.log",
+      "log_bytes": 446091
+    },
+    "initial_counts": {
+      "tests": 1775,
+      "passed": 1768,
+      "failed": 7,
+      "skipped": 0
+    },
+    "initial_failure_cause": "Seven obsolete select/change fixtures after native compositing controls became preview comboboxes.",
+    "corrected_file": {
+      "path": "web/test/inspector-compositing.test.js",
+      "source_commit": "f1be118db3691d7a97483c8b7fd5636cedc1792c",
+      "state": {
+        "phase": "passed",
+        "started_unix": 1792805089.3303785,
+        "updated_unix": 1792805089.4491973,
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "--test-reporter=tap",
+          "test/inspector-compositing.test.js"
+        ],
+        "source_hashes": {
+          "web/test/inspector-compositing.test.js": "ab4295e9a965eb51c14de0d80d4c0b49c1e86532ff0c7065e968530a74c5dc71"
+        },
+        "exit_code": 0,
+        "summary": [
+          "1..16",
+          "# tests 16",
+          "# suites 0",
+          "# pass 16",
+          "# fail 0",
+          "# cancelled 0",
+          "# skipped 0",
+          "# todo 0",
+          "# duration_ms 76.525395"
+        ],
+        "memory_peak_bytes": 41897984,
+        "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+        "scope": "Test-fixture-only real combobox lifecycle update; existing110-suite source production unchanged, passing client cases reused; no browser/build/GPU/NAS/editor change."
+      }
+    },
+    "acceptance": {
+      "reused_cases_in_109_unchanged_files": 1761,
+      "corrected_file_cases": 16,
+      "unique_accepted_cases": 1777,
+      "fresh_all_suite_run": false
+    }
+  },
+  "native": {
+    "initial_step": {
+      "label": "workspace-tests",
+      "args": [
+        "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--no-fail-fast",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 101,
+      "elapsed_seconds": 101.387,
+      "log": "/home/halo/.cache/venturi-build/integrated-regression-r5/workspace-tests.log",
+      "log_bytes": 225402
+    },
+    "initial_counts": {
+      "passed": 2029,
+      "failed": 11,
+      "default_ignored": 9
+    },
+    "target_summaries": [
+      "test result: FAILED. 554 passed; 9 failed; 4 ignored; 0 measured; 0 filtered out; finished in 23.36s",
+      "error: test failed, to rerun pass `-p vv-app --bin vv-app`",
+      "test result: ok. 103 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.25s",
+      "test result: ok. 296 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+      "test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.44s",
+      "test result: ok. 128 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 5.13s",
+      "test result: ok. 105 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.22s",
+      "test result: ok. 115 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.96s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "test result: FAILED. 691 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.97s",
+      "error: test failed, to rerun pass `-p vv-web --bin vv-web`",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "error: 2 targets failed:"
+    ],
+    "unit_peak_bytes": 843558912,
+    "corrected_test_files": {
+      "crates/vv-web/src/tests/approved_sources.rs": "147c037d0b5910a7fc8a8a172e88bd541191af78ed66365d11c224cf5ad534f4",
+      "crates/vv-web/src/tests/asset_jobs.rs": "9c5e0bf9018826a5591f9f3c8845be85e9ecfeb222ef569df9370c62afe8285a"
+    },
+    "corrected_test_results": [
+      {
+        "label": "long-private-socket",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "files::approved_sources::tests::approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_links_or_special_files",
+          "--",
+          "--exact",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 105.602,
+        "log": "/home/halo/.cache/venturi-build/native-fixture-fixes-r11/long-private-socket.log"
+      },
+      {
+        "label": "unpublished-cancel",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "asset_jobs::tests::obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files",
+          "--",
+          "--exact",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.164,
+        "log": "/home/halo/.cache/venturi-build/native-fixture-fixes-r11/unpublished-cancel.log"
+      }
+    ],
+    "corrected_gate_peak_bytes": 2024058880,
+    "corrected_gate_memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "accepted_by_reuse_and_targeted_rerun": 2031,
+    "still_unqualified": [
+      "tests::fast_playback_advances_the_playhead_faster",
+      "tests::space_plays_the_media_pool_preview_instead_of_leaving_it",
+      "timeline_audio::tests::a_drag_during_a_fast_forward_stretches_one_window_at_a_time",
+      "timeline_audio::tests::a_fast_forward_started_before_the_audio_is_decoded_plays_it_once_decoded",
+      "timeline_audio::tests::another_timeline_during_a_fast_forward_plays_its_own_audio_at_once",
+      "timeline_audio::tests::clock_advances_while_playing_and_stops_on_pause",
+      "timeline_audio::tests::fast_forward_applies_when_the_first_window_is_ready_without_jumping_back",
+      "timeline_audio::tests::fast_forward_window_extends_seamlessly_at_8x",
+      "timeline_audio::tests::seeking_outside_the_window_restarts_fast_forward_from_there"
+    ],
+    "default_ignored": 9,
+    "whole_workspace_green": false,
+    "original_assertions_preserved": true
+  },
+  "fixture_corrections": [
+    {
+      "path": "crates/vv-web/src/tests/approved_sources.rs",
+      "behavior": "Place the special socket in the same long private fixture through a pinned directory fd; no global cwd or production path change."
+    },
+    {
+      "path": "crates/vv-web/src/tests/asset_jobs.rs",
+      "behavior": "Preserve published applied jobs and receipt/file identity; cancel a distinct unpublished ready job while respecting the unchanged two-active-job admission bound."
+    }
+  ],
+  "failed_attempts_retained": [
+    {
+      "attempt": "R2",
+      "result": "Headless ALSA with no output caused13 native app failures; later R5 uses private null PCM, all targets, no bespoke skips."
+    },
+    {
+      "attempt": "R8/R9",
+      "result": "Private paced Pulse null sink did not satisfy the original300ms native clock assertion; aborted remaining probes and stopped each owned daemon. No production audio change or assertion loosening."
+    },
+    {
+      "attempt": "R10",
+      "result": "An extra third active fixture job violated the existing admission limit; removed that test-only job. R11 passes both corrected fixtures."
+    }
+  ],
+  "virtual_audio_scope": {
+    "null_pcm": "Private userspace ALSA null PCM supports mixer creation but is unpaced; nine native clock assertions remain unqualified.",
+    "paced_probe": "Seven authenticated Ubuntu userspace package archives (~1.7MiB) extracted under the private test cache only; no package installation, system config or service change. Exact original clock assertion still failed with this virtual sink.",
+    "all_probe_daemons_stopped": true,
+    "physical_audio_accepted": false,
+    "further_audio_fixture_work": "deferred; preserve native assertions and qualify physical behavior separately"
+  },
+  "retained_logs": {
+    "root": "/home/halo/.cache/venturi-build",
+    "runs": [
+      "integrated-regression-r1",
+      "integrated-regression-r2",
+      "integrated-regression-r5",
+      "native-fixture-fixes-r10",
+      "native-fixture-fixes-r11"
+    ],
+    "full_client_log": "integrated-regression-r1/client-all.log",
+    "full_native_log": "integrated-regression-r5/workspace-tests.log"
+  },
+  "failure_details": [
+    "---- tests::fast_playback_advances_the_playhead_faster stdout ----\nvv-render: High precision, composing in Rgba16Float on AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)\n\nthread 'tests::fast_playback_advances_the_playhead_faster' (383370) panicked at crates/vv-app/src/tests/main.rs:2571:5:\nadvanced=3090\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "---- tests::space_plays_the_media_pool_preview_instead_of_leaving_it stdout ----\nvv-render: High precision, composing in Rgba16Float on AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)\n\nthread 'tests::space_plays_the_media_pool_preview_instead_of_leaving_it' (384826) panicked at crates/vv-app/src/tests/main.rs:4061:5:\nassertion failed: !app.is_timeline_playing()\n",
+    "---- timeline_audio::tests::a_drag_during_a_fast_forward_stretches_one_window_at_a_time stdout ----\n\nthread 'timeline_audio::tests::a_drag_during_a_fast_forward_stretches_one_window_at_a_time' (385269) panicked at crates/vv-app/src/tests/timeline_audio.rs:269:9:\nstill Some(0.0) after 1.5s\n",
+    "---- timeline_audio::tests::a_fast_forward_started_before_the_audio_is_decoded_plays_it_once_decoded stdout ----\n\nthread 'timeline_audio::tests::a_fast_forward_started_before_the_audio_is_decoded_plays_it_once_decoded' (385722) panicked at crates/vv-app/src/tests/timeline_audio.rs:269:9:\nstill Some(0.0) after 1.5s\n",
+    "---- timeline_audio::tests::another_timeline_during_a_fast_forward_plays_its_own_audio_at_once stdout ----\n\nthread 'timeline_audio::tests::another_timeline_during_a_fast_forward_plays_its_own_audio_at_once' (386144) panicked at crates/vv-app/src/tests/timeline_audio.rs:269:9:\nstill Some(0.0) after 1.5s\n",
+    "---- timeline_audio::tests::clock_advances_while_playing_and_stops_on_pause stdout ----\n\nthread 'timeline_audio::tests::clock_advances_while_playing_and_stops_on_pause' (386518) panicked at crates/vv-app/src/tests/timeline_audio.rs:39:5:\npos=618\n",
+    "---- timeline_audio::tests::fast_forward_applies_when_the_first_window_is_ready_without_jumping_back stdout ----\n\nthread 'timeline_audio::tests::fast_forward_applies_when_the_first_window_is_ready_without_jumping_back' (386523) panicked at crates/vv-app/src/tests/timeline_audio.rs:69:5:\nadvanced=46.25866666666667\n",
+    "---- timeline_audio::tests::fast_forward_window_extends_seamlessly_at_8x stdout ----\n\nthread 'timeline_audio::tests::fast_forward_window_extends_seamlessly_at_8x' (386588) panicked at crates/vv-app/src/tests/timeline_audio.rs:95:5:\naudio must lead the playhead: covered=6 max=12.9460625\n",
+    "---- timeline_audio::tests::seeking_outside_the_window_restarts_fast_forward_from_there stdout ----\n\nthread 'timeline_audio::tests::seeking_outside_the_window_restarts_fast_forward_from_there' (386678) panicked at crates/vv-app/src/tests/timeline_audio.rs:134:5:\nassertion `left == right` failed\n  left: 3028504\n right: 2880000\n\n\nfailures:\n    tests::fast_playback_advances_the_playhead_faster\n    tests::space_plays_the_media_pool_preview_instead_of_leaving_it\n    timeline_audio::tests::a_drag_during_a_fast_forward_stretches_one_window_at_a_time\n    timeline_audio::tests::a_fast_forward_started_before_the_audio_is_decoded_plays_it_once_decoded\n    timeline_audio::tests::another_timeline_during_a_fast_forward_plays_its_own_audio_at_once\n    timeline_audio::tests::clock_advances_while_playing_and_stops_on_pause\n    timeline_audio::tests::fast_forward_applies_when_the_first_window_is_ready_without_jumping_back\n    timeline_audio::tests::fast_forward_window_extends_seamlessly_at_8x\n    timeline_audio::tests::seeking_outside_the_window_restarts_fast_forward_from_there\n\ntest result: FAILED. 554 passed; 9 failed; 4 ignored; 0 measured; 0 filtered out; finished in 23.36s",
+    "---- asset_jobs::tests::obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files stdout ----\n\nthread 'asset_jobs::tests::obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files' (394740) panicked at crates/vv-web/src/tests/asset_jobs.rs:3742:5:\nassertion `left == right` failed\n  left: String(\"applied\")\n right: \"canceled\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "---- files::approved_sources::tests::approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_links_or_special_files stdout ----\n\nthread 'files::approved_sources::tests::approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_links_or_special_files' (395056) panicked at crates/vv-web/src/tests/approved_sources.rs:120:84:\ncalled `Result::unwrap()` on an `Err` value: Error { kind: InvalidInput, message: \"path must be shorter than SUN_LEN\" }\n\n\nfailures:\n    asset_jobs::tests::obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files\n    files::approved_sources::tests::approved_source_browser_pages_exact_sorted_entries_without_exposing_hidden_links_or_special_files\n\ntest result: FAILED. 691 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 60.97s\n\nerror: test failed, to rerun pass `-p vv-web --bin vv-web`\n   Doc-tests vv_audio\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n   Doc-tests vv_core"
+  ],
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "pid": 351463,
+    "binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+    "unit": "ActiveState=active\nMainPID=351463\nResult=success\nMemoryCurrent=111464448\nMemoryPeak=192913408\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+    "session_sha256": "524e4f7fa39a10aef0e1a5a27d265e56c6f00361d71ed8579de0dc4b82a21db7",
+    "saved_project": "Venturi_Library_Replacement_V1.vvproj",
+    "unsaved": false,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "jobs": [],
+    "protection": {
+      "prior_sessions": 39,
+      "prior_pids": 40,
+      "candidate_saved_files": 11,
+      "candidate_local_files": 5,
+      "fixed_nas_files_unchanged": 4,
+      "prior_library_copy_unchanged": true,
+      "prior_effects_settled_save_and_render_backup_unchanged": true,
+      "shared_proxy_unchanged": true,
+      "candidate_session_unchanged": true
+    }
+  },
+  "reused_workflows": [
+    "f3-native-inspector-choice-previews.json",
+    "f7-native-4k-export-workflow.json",
+    "f6-verified-take-workflow.json",
+    "f7-prebuilt-bundle-workflow.json",
+    "f7-prebuilt-runback-workflow.json"
+  ],
+  "remaining": [
+    "Nine native app audio-clock cases on a suitable output device",
+    "Original plan physical pointer/DPI/audio/microphone and dense-editing requirements",
+    "Representative long moving footage and sustained full-resolution A/B",
+    "Two-hour typical editing soak with browser memory observation",
+    "Remaining scoped release/license obligations and row-specific F1-F7 acceptance"
+  ],
+  "requirements_correction": "Original IMPLEMENTATION_PLAN M7 requires loopback/tunnel, reload/recovery, threat-model, two-hour editing soak, docs and license review. A whole-host reboot and external legal sign-off were not requested; preserve foreign editors and explicit notice gaps.",
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "promoted_by_this_gate": 0
+  },
+  "private_orchestration_records": [
+    {
+      "name": "halo1-integrated-regression-r1-observed.json",
+      "sha256": "c1630d9a93047c27c45a65fdee1fe9202553552b7eaecd622f1af76d82166aa7",
+      "bytes": 6296
+    },
+    {
+      "name": "halo1-integrated-client-failures.json",
+      "sha256": "b0f5b7c6dc015b95f215e6b052b62f9364e7dccbf35b42f6e94418940a972140",
+      "bytes": 6566
+    },
+    {
+      "name": "halo1-integrated-regression-r2-observed.json",
+      "sha256": "f3a8de28ae12fe70b4d11795085d901e32379ad6402ec6ec0e866986c972e267",
+      "bytes": 3351
+    },
+    {
+      "name": "halo1-integrated-compositing-r3.json",
+      "sha256": "862be5a0666cf3551d2020e97151c67afb0f66de08fc00ae01e163bee5882ad0",
+      "bytes": 2192
+    },
+    {
+      "name": "halo1-integrated-regression-r5-observed.json",
+      "sha256": "e6506efd67f098be07e88588eed739ca4ca5736142fb194daa86c159cd69da65",
+      "bytes": 1461
+    },
+    {
+      "name": "halo1-integrated-regression-r5-native-failures.json",
+      "sha256": "2d33f4ac884167b71ac03bf598596a398e30b1b4f0416012979b4c24cd4e1581",
+      "bytes": 7430
+    },
+    {
+      "name": "halo1-native-null-audio-r4.json",
+      "sha256": "5098a4039e2aa8cbedc00e92bd78792e9f9084a2926b556dc7d351d72593bf9c",
+      "bytes": 1985
+    },
+    {
+      "name": "halo1-native-clocked-audio-r7.json",
+      "sha256": "6aafe2ecfda9e844c017536d79bf37a6ded14b8da27aa028775c5e36ccd6d9a5",
+      "bytes": 7493
+    },
+    {
+      "name": "halo1-native-clocked-audio-r8-observed.json",
+      "sha256": "a993f846456b7876f229c4d662e0ae6ea4e42309674cc729e308f28e521ca158",
+      "bytes": 1491
+    },
+    {
+      "name": "halo1-native-clocked-audio-r9-observed.json",
+      "sha256": "1012473f6d392a8ebf9c78ec892165c7de439e61f4912576bd86cc67b5942184",
+      "bytes": 3615
+    },
+    {
+      "name": "halo1-native-fixture-fixes-r10-observed.json",
+      "sha256": "e7e9ff4a2aa822cb48e1b27de167c2d86b6308fed1d08053c604ca468a5242b9",
+      "bytes": 2679
+    },
+    {
+      "name": "halo1-native-fixture-fixes-r11-observed.json",
+      "sha256": "59afee780715ebfea688b905e96afb2e56e1eb9ce42714ac9b62b1f268eb5723",
+      "bytes": 3816
+    },
+    {
+      "name": "halo1-integrated-source-inventory.json",
+      "sha256": "f58cf418691a1f714ddab5579be92376f962b0a542442064b081f9932428ea72",
+      "bytes": 51974
+    },
+    {
+      "name": "halo1-inspector-choice-modes-final.json",
+      "sha256": "c1e437db4149952dc338cc9629783445688c207948f73b3bd3f2d1ee2554074f",
+      "bytes": 544664
+    },
+    {
+      "name": "halo1-inspector-choice-modes-protected.json",
+      "sha256": "327695d14a5dff758537f76f9efea3d2b4b0cbb81e297f44ca01f6a6a8fdd79b",
+      "bytes": 332
+    }
+  ]
+}

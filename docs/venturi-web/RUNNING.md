@@ -115,8 +115,9 @@ project, backups, receipts or caches. Validate reopening on a preserved project
 copy in a separate approved candidate before allowing writes from an older
 binary. If current edits/history/drafts/jobs exist, leave the live service
 untouched. Restoring a binary does not restore an earlier unsaved session.
-Final reboot/runback qualification remains open; these instructions do not
-claim it has been performed.
+The isolated packaged/prior/forward runback is now qualified in
+`evidence/f7-prebuilt-runback-workflow.json`; it preserves the working editor.
+M7 requires reload/recovery and documented operation, not a whole-host reboot.
 
 After the gate, the following bounded system-unit template selects that prior
 binary. First verify the proposed unit name is unused. This is a manual runback

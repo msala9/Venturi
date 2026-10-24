@@ -1,5 +1,30 @@
 # Active completion plan — full Venturi Web scope
 
+## Integrated software regression checkpoint — 2026-10-24
+
+Source `9ab281e` matches all613 tracked code blobs on halo1. Full workspace
+format, Clippy (all targets, warnings denied) and test compilation pass. The
+110-file client run plus the corrected compositing fixture qualify1777 unique
+cases by unchanged-source reuse and targeted rerun; this is not a second full
+client run. The native workspace run reports2029 pass/11 fail/9 default ignored.
+Two test-only vv-web fixture corrections now pass, qualifying2031 cases by
+reuse. Nine native app audio-clock cases remain unqualified with the private
+virtual outputs; original assertions and production audio code are unchanged.
+See `evidence/f7-integrated-regression-workflow.json` for commands, counts,
+retained failed attempts, resource bounds, exact hashes and remaining scope.
+
+All heavy work is serial on halo1, at most8CPU/4GiB/noSwap. The compiler reaches
+its cgroup cap and completes; no claim of zero memory-limit events is made.
+R11 peaks2,024,058,880B with zero OOM/kill events and terminates successfully.
+The live8855 editor stays Saved with empty Undo;39 foreign Sessions/40 PIDs,
+11 Saved files,5 local media,4 NAS files and the proxy remain unchanged.
+
+Original M7 requires reload/recovery, documented operation and scoped license
+review. Whole-host reboot and external legal sign-off are not requested gates;
+historical wording below is superseded on those points. Notice gaps remain
+explicit. Physical/device/DPI, real long footage, two-hour typical editing and
+row-specific acceptance still apply. Ledger remains61 done/29 partial/2 excluded.
+
 ## Actual packaged startup, runback and forward restoration — 2026-10-24
 
 The packaged current binary starts through its real launcher, automatically

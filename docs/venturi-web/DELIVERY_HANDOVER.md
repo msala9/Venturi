@@ -26,7 +26,8 @@ changes are authorized by this handover.
 The immutable prior source `2c587b7` and binary `vv-web-9a619eebab31` are retained
 for guarded runback; the full path/hash and verification steps are in RUNNING.md.
 Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
-the final soak and reboot/runback acceptance remain open.
+the final integrated, physical and editing-soak acceptance remain open. Isolated
+packaged/prior/forward runback passes in `evidence/f7-prebuilt-runback-workflow.json`.
 
 ## Historical workflow deliveries
 

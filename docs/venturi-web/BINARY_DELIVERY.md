@@ -53,10 +53,11 @@ instance and protected sessions remain intact. See
 loader dependencies, resource settings and successful terminal state.
 
 This candidate is for the already qualified Linux x86_64 host. Self-contained
-portability, complete third-party notices/distribution review, optional dynamic
-runtime paths, fresh project/GPU startup from the archive, reboot/runback and
-the final integrated editing/device/soak gates remain unqualified. Subsequent
-isolated startup/runback acceptance is recorded below.
+portability and optional dynamic runtime paths remain unqualified. Complete
+third-party notices/distribution review retain the explicit gaps recorded below;
+the scoped technical license review does not imply redistribution clearance.
+External legal sign-off is not a user-defined gate. The final integrated editing/device/soak requirements
+remain open. Actual isolated startup/runback acceptance is recorded below.
 
 ## Actual startup, prior-binary runback and forward restoration
 
@@ -73,8 +74,10 @@ This serial halo1 service passes with512,987,136B peak under8CPU/4GiB/no swap.
 Post-run protection checks preserve39 prior Sessions/40 PIDs,11 Saved files,
 5 local media,4 NAS files and the shared proxy. This closes the actual packaged
 startup and isolated runback/forward check for that fixture; it does not prove
-every historical project, restore former unsaved state/Undo, or qualify a host
-reboot, physical devices, real long footage or the final editing soak/M7 gates.
+every historical project or restore former unsaved state/Undo. Physical devices,
+real long footage and the final editing soak/M7 gates remain open. The original
+M7 requires reload/recovery and deployment documentation, not a whole-host reboot
+that would terminate protected editors.
 
 ## Verified Rust notice-text companion
 

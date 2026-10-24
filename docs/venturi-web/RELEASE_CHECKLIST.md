@@ -1,6 +1,7 @@
 # Release checklist
 
-2026-10-24. Current working source `b8d6133`; the full
+2026-10-24. Qualified production source `b8d6133`, integrated test source
+`9ab281e`; the full
 F1-F7 goal remains active. The owned halo1 editor is available on port8855.
 This is the release audit required by IMPLEMENTATION_PLAN.md, not a release-ready
 declaration. The ledger currently records 61 done, 29 partial and two excluded
@@ -24,10 +25,10 @@ checkpoint.
 | Filesystem and worker boundaries | Source reviewed; final release gate open | Approved root-relative tokens and descriptor validation; native catalog locks/CAS/recovery; bounded probe subprocesses and GPU lock. Final changed-source safety checks remain required |
 | Secret/prompt handling and browser rendering | Source reviewed; final release gate open | web/js uses text nodes/textContent for user labels; no innerHTML/eval/Function matches in the reviewed production modules; browser storage is layout/selection preferences, not authentication secrets. This scoped review is not a public-host audit |
 | Licenses and notices | Partial inventory; distribution review open | f7-third-party-notice-texts.json supplies488 verified original text files from257/265 normal third-party crate archives; the exact eight missing-text packages, system/font and wider distribution scope remain explicit.  f7-prebuilt-bundle-workflow.json adds189 loader-resolved system-library identities/hashes and supplies GPL/Silero MIT notices with the candidate; aggregate third-party license texts and optional dynamic paths remain open.  f7-linux-normal-dependencies.json collects the selected Linux normal dependency graph offline:272 packages,265 third-party packages with declared licenses, Cargo.lock checksums and current cached-manifest hashes. Six workspace crates omit package license metadata; repository LICENSE is recorded separately. Build/dev edges, exact linked machine code/system libraries, bundled notices/assets and final packaging/distribution review remain. Earlier conservative408-package inventory is retained as historical evidence |
-| Rust/JavaScript regression gate | Affected gates pass; final gate open | f6-verified-take-gate.json and f5-shared-audio-presets-gate.json. These do not substitute for the final workspace fmt/Clippy/tests and relevant browser checks in TEST_PLAN.md |
-| Native desktop regression | Affected native gate passes; final gate open | F5's 45 native cases cover changed catalog/Mixer/Settings/recovery paths; full final native regression and physical UX remain |
+| Rust/JavaScript regression gate | Software gates qualified; native clock scope remains | f7-integrated-regression-workflow.json: full workspace fmt/Clippy/test compilation pass;1777 unique client cases qualify by full-run reuse plus corrected fixture,2031 native cases by reuse plus two corrected fixtures. Nine native app clock cases remain unqualified on virtual output;9 default ignored cases stay explicit. No claim of a green complete native workspace |
+| Native desktop regression | Full run performed;9 clock cases unqualified | f7-integrated-regression-workflow.json records every target:2029 initial pass,11 fail,9 default ignored; two vv-web test fixtures are corrected and pass. Production audio/assertions remain unchanged; virtual ALSA/Pulse does not qualify real native clock/device behavior. Physical UX remains open |
 | Two-hour typical editing soak | Not passed | m7-two-hour-backend-soak.json is interrupted; m7-halo2-backend-soak-oom.json is failed. Neither qualifies browser memory, hardware or the current candidate. Run once after functionality stabilizes, with bounded halo1 resources; do not repeat failed co-residence or Windows heavy workloads |
-| Deployment and rollback | Preserved baseline; final delivery pending | f7-prebuilt-runback-workflow.json qualifies actual packaged startup -> immutable prior binary -> packaged forward restart on an owned Saved4K fixture, exact timeline/PNG and unchanged source/project; isolated8856 closes. Live8855 is not restarted. Host reboot, broad-project and full operational/M7 acceptance remain open.  f7-prebuilt-launcher-workflow.json qualifies prebuilt-only startup with no implicit Cargo invocation; current RUNNING/DELIVERY_HANDOVER/SECURITY_DEPLOY record actual system-unit CLI, immutable runback hashes and history/draft/job refusal. f7-prebuilt-bundle-workflow.json now records the persistent verified candidate archive, real packaged --help and189 actual loader-resolved libraries; final operational qualification remains open.  Current owned port8855 targets halo1 sourceb8d6133, runtime2dbc9697d6e7, with Saved project and empty Undo. f3-native-inspector-choice-previews.json, f1-native-advanced-speed-controls.json and f5-native-library-thumbnails.json bind tested source, running binary and protection of39 prior Sessions/40 PIDs,11 Saved files and NAS/proxy bytes. Older halo1/halo2 editors remain protected. Final integrated acceptance, final export and reboot/rollback qualification remain open |
+| Deployment and rollback | Qualified internal package and isolated runback; full M7 open | f7-prebuilt-runback-workflow.json proves packaged current -> immutable prior -> packaged forward on the owned Saved4K fixture, exact timeline/PNG and unchanged files; isolated8856 closes, live8855 is preserved. f7-prebuilt-launcher-workflow.json and f7-prebuilt-bundle-workflow.json qualify prebuilt-only startup and persistent verified archive. Current production sourceb8d6133/runtime2dbc9697d6e7 remains active. Full integrated physical/long-media/editing-soak acceptance and scoped license gaps remain. Original M7 requires reload/recovery and operation docs, not whole-host reboot |
 
 ## Scoped source review
 
@@ -55,7 +56,9 @@ native/Web paths and update the ledger only with matching workflow evidence.
 The canonical NAS is already available on halo1 at
 `/mnt/madrock-share/madrock-library`; do not reopen that setup requirement.
 Finish the broader shared-library/preset and physical acceptance requirements.
-Then run the final bounded regression gate and one two-hour realistic editing
-soak on halo1, preserving every protected editor and the shared GPU lock. Publish
+Reuse the integrated software gates above; rerun only code affected by later
+changes. Complete one two-hour realistic editing soak with browser memory
+observation and bounded halo1 workers, preserving protected editors and the
+shared GPU lock. Publish
 the verified final candidate, rollback procedure and artifact paths only after
 those gates pass.

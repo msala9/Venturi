@@ -1,5 +1,47 @@
 # Implementation status
 
+## Full-area viewer and unavailable Library recovery delivered — 2026-10-24
+
+Source205db70 plus379ba0c/runtime968f22b9301d is active at
+http://127.0.0.1:8855/, unit `venturi-web-halo1-fullscreen-ready.service`,
+captured PID446198. Program/Source use full-area Fit with a bottom90px
+transport overlay and restore the prior zoom/focus on exit. Native fullscreen
+is preferred; denied or still-pending admission after1200ms uses an explicitly
+labelled maximized view in the same tab, with bounded late-grant cancellation.
+
+Temporarily unavailable configured Library roots no longer abort local editing,
+import, Undo/Save or offline Saved reopen. Explicit Refresh attaches the same
+configured authority once across Source/proxy clones. Unsafe roots/replacements
+remain refused; no alternate external directories or catalogs are created.
+
+The bounded halo1 gate qualifies349 unique client and192 native cases by exact
+unchanged-source reuse plus focused followups; affected fmt/Clippy/build pass.
+All six serial stages stay within8CPU/4GiB/noSwap, with zero limit/OOM/kill
+events. Maximum recorded gate peak is2,080,440,320B; final frontend build peak
+is1,471,397,888B. Initial fixture failures and the real pending-fullscreen defect
+are recorded with their corrections, not hidden or counted as passing runs.
+
+The existing Windows tab proves1024x640 maximized Program/Source video/still
+presentation, exact zoom restoration, Escape/Exit/Tab/CtrlF re-entry and actual
+Space Play/Pause. Reachable native asset/preset Refresh also passes. Unavailable
+startup/recovery uses owned native fixtures; no real NAS outage is induced.
+Actual native browser fullscreen, physical hover/DPI/input, audio devices,
+representative long footage, dense editing and the two-hour browser-memory
+editing gate remain open under their existing row-specific requirements.
+
+Original project is restored frame48/1x/Fit/Saved/empty history, all media
+paused and console clean. All13 Saved files,5 media,4 NAS byte/fresh-identity
+witnesses and shared proxy match; all39 foreign Sessions and40 PIDs match the
+fresh pre-upgrade capture. App peak274,161,664B; zero memory events.
+
+See `evidence/f2-f5-fullscreen-library-recovery-workflow.json` and
+REMAINING_WORK.md. Keep the full90/F1-F7/M7 goal active and61done/29partial/
+2excluded. These two production gaps are delivered; their broader acceptance
+does not follow automatically. Do not reopen them or repeat unchanged gates
+merely because another row requires physical qualification. The prior77d7
+package remains immutable and version-bound;968f is the newer live executable.
+
+
 ## Program seek and busy Library startup delivered — 2026-10-24
 
 Source8995296/runtime45ab6c3fc431 is active at http://127.0.0.1:8855/,

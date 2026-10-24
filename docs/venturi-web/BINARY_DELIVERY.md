@@ -2,8 +2,11 @@
 
 ## Newer live executable — 2026-10-24
 
-Current source8995296/runtime45ab6c3fc431 supplies Program seek and transient
-Library startup fixes, qualified in `evidence/f2-f5-program-seek-library-workflow.json`.
+Current source379ba0c/backend205db70/runtime968f22b9301d supplies full-area
+viewer presentation, bounded pending-fullscreen fallback and unavailable Library
+startup/recovery, qualified in
+`evidence/f2-f5-fullscreen-library-recovery-workflow.json`. Program seek evidence
+remains accepted from the preceding delivery.
 RUNNING.md identifies the live unit and guarded configuration. Existing77d7
 archives/notices remain immutable, version-bound prior snapshots. No new archive
 is assembled for this increment; full release acceptance remains open.
@@ -11,7 +14,7 @@ is assembled for this increment; full release acceptance remains open.
 
 ## Current verified package — 2026-10-24
 
-The current package contains the same bf0b322/77d7 executable as live port8855,
+This immutable package contains the older bf0b322/77d7 executable,
 including selectable native A/B source quality, plus the committed4231ecf
 runbook/handover and all three immutable notice companions. Full F1-F7/M7
 acceptance remains open; this is an internal configured-halo1 development delivery.

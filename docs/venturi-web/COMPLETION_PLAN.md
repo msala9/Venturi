@@ -1,8 +1,50 @@
 # Active completion plan — full Venturi Web scope
 
-## Program seek and busy Library startup delivered — 2026-10-24
+## Full-area viewer and unavailable Library recovery delivered — 2026-10-24
 
-Source8995296/runtime45ab6c3fc431 is active at http://127.0.0.1:8855/,
+Source205db70 plus379ba0c/runtime968f22b9301d is active at
+http://127.0.0.1:8855/, unit `venturi-web-halo1-fullscreen-ready.service`,
+captured PID446198. Program/Source use full-area Fit with a bottom90px
+transport overlay and restore the prior zoom/focus on exit. Native fullscreen
+is preferred; denied or still-pending admission after1200ms uses an explicitly
+labelled maximized view in the same tab, with bounded late-grant cancellation.
+
+Temporarily unavailable configured Library roots no longer abort local editing,
+import, Undo/Save or offline Saved reopen. Explicit Refresh attaches the same
+configured authority once across Source/proxy clones. Unsafe roots/replacements
+remain refused; no alternate external directories or catalogs are created.
+
+The bounded halo1 gate qualifies349 unique client and192 native cases by exact
+unchanged-source reuse plus focused followups; affected fmt/Clippy/build pass.
+All six serial stages stay within8CPU/4GiB/noSwap, with zero limit/OOM/kill
+events. Maximum recorded gate peak is2,080,440,320B; final frontend build peak
+is1,471,397,888B. Initial fixture failures and the real pending-fullscreen defect
+are recorded with their corrections, not hidden or counted as passing runs.
+
+The existing Windows tab proves1024x640 maximized Program/Source video/still
+presentation, exact zoom restoration, Escape/Exit/Tab/CtrlF re-entry and actual
+Space Play/Pause. Reachable native asset/preset Refresh also passes. Unavailable
+startup/recovery uses owned native fixtures; no real NAS outage is induced.
+Actual native browser fullscreen, physical hover/DPI/input, audio devices,
+representative long footage, dense editing and the two-hour browser-memory
+editing gate remain open under their existing row-specific requirements.
+
+Original project is restored frame48/1x/Fit/Saved/empty history, all media
+paused and console clean. All13 Saved files,5 media,4 NAS byte/fresh-identity
+witnesses and shared proxy match; all39 foreign Sessions and40 PIDs match the
+fresh pre-upgrade capture. App peak274,161,664B; zero memory events.
+
+See `evidence/f2-f5-fullscreen-library-recovery-workflow.json` and
+REMAINING_WORK.md. Keep the full90/F1-F7/M7 goal active and61done/29partial/
+2excluded. These two production gaps are delivered; their broader acceptance
+does not follow automatically. Do not reopen them or repeat unchanged gates
+merely because another row requires physical qualification. The prior77d7
+package remains immutable and version-bound;968f is the newer live executable.
+
+
+## Previous delivery: Program seek and busy Library startup — 2026-10-24
+
+At this checkpoint, source8995296/runtime45ab6c3fc431 was active at http://127.0.0.1:8855/,
 unit `venturi-web-halo1-program-seek.service`, captured PID438091.
 Program navigation now preserves playing/stopped intent and selected tempo,
 including backward jumps with a fresh native audio origin, one release and no
@@ -14,7 +56,7 @@ DSP/render/export engines and V1 stopped-audio decision are unchanged.
 A temporarily busy configured native catalog no longer aborts local Editor
 startup. Existing directory pinning and operation locks/CAS/journals remain;
 explicit Refresh retries deferred completion receipts without changing project
-history. Inaccessible-root startup is a separate production gap still open.
+history. Inaccessible-root startup was a separate production gap, delivered above.
 
 The focused halo1 gate qualifies369 unique client cases by reuse plus the
 overlapping102-case follow-up,25 native cases, formatting, all-target Clippy
@@ -35,8 +77,8 @@ not asserted unchanged. Current app peak321,937,408B, zero memory events.
 
 See `evidence/f2-f5-program-seek-library-workflow.json` and REMAINING_WORK.md,
 which explicitly maps all29 partial rows to production or qualification work.
-Next production blocks are native fullscreen Fit/hover transport and safe
-unavailable-root startup/retry. These are not blocked by physical-device tests.
+The subsequent delivery above implements native fullscreen presentation and
+safe unavailable-root startup/retry independently of physical-device tests.
 Keep the full90/F1-F7/M7 objective active,61done/29partial/2excluded; no whole
 row or release promotion follows from this bounded workflow. Current45ab is
 newer than the immutable77d7 archive; defer another assembly until appropriate.

@@ -1,6 +1,6 @@
 # Release checklist
 
-2026-10-24. Current production source `8995296`, integrated test source
+2026-10-24. Current production source `379ba0c` (backend `205db70`), integrated test source
 `9ab281e`; later client increments have focused evidence. The full
 F1-F7 goal remains active. The owned halo1 editor is available on port8855.
 This is the release audit required by IMPLEMENTATION_PLAN.md, not a release-ready
@@ -16,7 +16,7 @@ checkpoint.
 | Media, ordinary-resolution playback and export | Partial | f2-f5-program-seek-library-workflow.json qualifies guarded Program seek/resume, paused navigation and explicit Play; actual keyboard1x forward/backward and2x resumption pass on Saved copy, original restored. f2-native-arrow-hold-workflow.json qualifies native timed0.5x Program arrow hold logic, single-flight seek, cancellation and actual Windows single stepping; physical held-key acceptance remains.  f7-native-4k-export-workflow.json additionally qualifies48-frame native4K A/V import/Save/reopen and byte-exact Web/native4K MP4/AAC export within4GiB, with the isolated backend stopped; synthetic2s scope leaves representative long-footage and physical acceptance open.  f6-verified-take-workflow.json proves full-HD export and native/API parity; f2-program-lookahead-workflow.json qualifies one speculative future and natural 1× five-minute boundary at 960×540 on a Full HD timeline, Save and 75-frame Full HD/AAC export EOF. f2-source-lookahead-workflow.json qualifies adjacent Source continuation; f2-source-placement-workflow.json records the EOF project-view CAS fix. Representative long moving ordinary-resolution sources and physical audio/device acceptance stay open |
 | Effects and advanced timeline | Partial | f3-native-inspector-choice-previews.json qualifies all five native choice drafts and exact cancellation without history changes; physical pointer/DPI scope remains.  f3-effects-workflow.json, nativeview-workflow.json, f3-mask-inspector-workflow.json; outstanding row-specific pointer, font, moving-media and hardware scope remains |
 | Color, audio and voiceover | Partial | f4-native-guides-inline-mixer-workflow.json and subsequent F4 evidence qualify native scopes, mixer, effects, retained recording drafts, placement and persistence. V1 audio edits explicitly stop playback and use Play for the updated mix; uninterrupted live DSP editing is deferred by the owner. Physical recording/device/output and remaining interactions stay open |
-| Shared library and presets | Partial | f2-f5-program-seek-library-workflow.json qualifies transient busy startup, local editing/Save/Undo and explicit Refresh receipt recovery. Temporarily inaccessible configured-root startup remains a concrete production gap; see REMAINING_WORK.md. f5-native-web-cifs-catalog-gate.json and f5-library-asset-drop-workflow.json: native/Web CIFS coordination and actual ordered multiasset drag, linked placement, one Undo/Redo, selection, compound playback and Save pass; full desktop GUI and broader offline/large-media lifecycle acceptance remain |
+| Shared library and presets | Partial | f2-f5-program-seek-library-workflow.json qualifies transient busy startup, local editing/Save/Undo and explicit Refresh receipt recovery. f2-f5-fullscreen-library-recovery-workflow.json qualifies temporarily inaccessible configured-root startup/local editing/explicit Refresh recovery, including actual reachable NAS asset/preset Refresh; physical/GUI lifecycle acceptance remains open. See REMAINING_WORK.md. f5-native-web-cifs-catalog-gate.json and f5-library-asset-drop-workflow.json: native/Web CIFS coordination and actual ordered multiasset drag, linked placement, one Undo/Redo, selection, compound playback and Save pass; full desktop GUI and broader offline/large-media lifecycle acceptance remain |
 | Atomic take replacement | Qualified | f6-verified-take-workflow.json, including stale shown-B refusal, one Undo, exact save/restart, actual R9700 pixels and full-HD exported-file EOF |
 | A/B comparison | Partial | f6-review-quality-workflow.json closes the Low-only implementation gap: shared Low/Medium/High/Original, retained independent source frames and audition ordinals, stale Plan invalidation, 158 client cases/build, actual paused Windows 640x360 -> 1920x1080 at frames48/24 and Medium audio-only stream1 at B30. Existing long-window/clock evidence is reused. Sustained representative full-resolution comparison and physical audio remain |
 | Safe moves, linked/locked edits and stale commands | Qualified regression baseline | Existing native command/Host tests and workflow evidence; rerun affected cases after relevant implementation changes |
@@ -51,10 +51,13 @@ in the delivered Linux binary, nor that the set is cleared for distribution.
 
 ## Remaining release sequence
 
-Complete the specific production blocks in REMAINING_WORK.md, including native
-fullscreen full-area Fit/bottom hover transport and unavailable shared-root
-startup/retry. These are independent of physical acceptance. Program seek and
-busy-catalog startup are delivered in8995296; keep all29 partial rows in scope.
+Program seek/busy startup (8995296), full-area Fit/bounded fullscreen fallback
+and unavailable shared-root startup/explicit retry (205db70 plus379ba0c) are
+delivered. Current focused evidence qualifies349 client and192 native cases,
+actual maximized Program/Source keyboard workflow and reachable NAS Refresh.
+Keep all29 partial rows in scope; REMAINING_WORK.md names their remaining
+requirements. Native fullscreen admission, physical hover/input/DPI and the
+other broader row-specific/M7 gates are not implied by these deliveries.
 
 
 Complete the coherent missing functionality blocks, qualify their affected

@@ -1,28 +1,33 @@
 # Running the implemented host
 
-## Current working instance — Program seek delivery, 2026-10-24
+## Current working instance — viewer and Library recovery, 2026-10-24
 
 Use **http://127.0.0.1:8855/** and the existing Windows tunnel/tab.
-Source `8995296`, immutable binary
-`/home/halo/.local/share/venturi-web/.runtime/vv-web-45ab6c3fc431`, SHA256
-`45ab6c3fc431c4eb7967285c5276fe25a6bb821b6327da668eff0102f4f6436e`.
-Current unit is `venturi-web-halo1-program-seek.service`, captured PID438091;
-re-read PID/executable/args/Saved/history/jobs before any operation.
+Source `379ba0c` (backend `205db70`), immutable binary
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-968f22b9301d`, SHA256
+`968f22b9301d5c09053bbea303a095f64aae752c6f21428e385fa06f35d89da9`,
+80,352,656 bytes. Current unit is `venturi-web-halo1-fullscreen-ready.service`,
+captured PID446198; re-read PID/executable/args/Saved/history/jobs before acting.
 
 It retains the exact project/NAS/ds4/GPU arguments and resource properties
 shown below:8CPU/4GiB/noSwap, Nice19, IOWeight10, OOMScoreAdjust1000, Tasks128.
 Root is `/home/halo/VenturiWeb-color-audio-controls-20261023`; original
-`Venturi_Keyframe_Replacement_V1.vvproj` is restored Saved at frame48/1x and
+`Venturi_Keyframe_Replacement_V1.vvproj` is restored Saved at frame48/1x/Fit and
 empty history. Saved acceptance copy is `Venturi_Seek_Playback_V1.vvproj`.
-R9700 Vulkan preview/playback/export are available. The preceding owned77d7
-and intermediate d100 services are stopped; their immutable binaries remain.
-No foreign service was operated by this delivery; no driver or mount was changed. This is still a development
-delivery with full F1-F7/M7 acceptance open; see REMAINING_WORK.md and
-`evidence/f2-f5-program-seek-library-workflow.json`.
+R9700 Vulkan preview/playback/export and all three configured native catalogs
+are available. App peak274,161,664B, zero limit/OOM/kill events at capture.
 
-The current45ab executable is newer than the immutable77d7 packaged archive.
-Do not mistake old captured PIDs or historical commands below for the live unit.
+Previous owned program-seek/45ab and fullscreen-library/d8b3 services are stopped;
+their immutable binaries remain. All39 foreign Sessions/40 PIDs and13 Saved
+hashes match fresh pre-upgrade references; NAS/proxy witnesses are unchanged.
+No foreign service, driver or mount was operated. The existing Windows browser
+uses a labelled full-tab viewer if native fullscreen admission remains pending.
+See `evidence/f2-f5-fullscreen-library-recovery-workflow.json` and
+REMAINING_WORK.md for implemented behavior and acceptance limits.
 
+The current968f executable is newer than the immutable77d7 packaged archive.
+Full F1-F7/M7 release acceptance remains open. Historical captured PIDs and
+commands below are not ownership proof for current operations.
 
 ## Earlier working instance (historical) — 2026-10-24
 

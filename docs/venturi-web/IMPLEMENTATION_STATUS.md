@@ -1,5 +1,32 @@
 # Implementation status
 
+## Native-resolution 4K A/V import, persistence and export — 2026-10-24
+
+The unchanged `228bae5e27c1` runtime now passes a finite native-resolution4K
+workflow on halo1: generated moving3840x2160/24fps H.264 plus stereo48kHz audio,
+prepared import, linked video/audio placement, Save and fresh-backend reopen,
+then100% native-scale export. All48 frames retain3840x2160. The6,801,767-byte
+Web MP4 and its HTTP download exactly match a fresh original native export;
+the entire non-silent decoded AAC float32 stream also matches. Source and
+export frame0/24 hashes differ, confirming motion. Composition uses R9700/Vulkan,
+software decode and x26418/veryfast with native AAC128/Twoloop defaults.
+
+The isolated serial unit peaks at1,166,893,056 bytes, has zero memory/OOM events,
+no swap and an8CPU/4GiB ceiling. Its backend is stopped and port8856 closed;
+the shared GPU lock is released. All39 protected Sessions/40 PIDs, the current
+8855 editor,11 Saved files,5 project media,4 NAS files and shared proxy remain
+unchanged. No build, browser installation or workstation render was needed.
+
+The first helper attempt stopped before export because its external precheck
+met its own fresh Preview startup context. The continuation reuses the exact
+Saved fixture and the existing native context-yield/lock protocol; no product
+change or weakened admission is required. Raw attempts are retained.
+
+See `evidence/f7-native-4k-export-workflow.json`. This closes the actual native
+4K source-decode/composition/output check, not representative long-footage
+throughput, physical audio/browser or full M7 acceptance. Ledger remains
+**61 done /29 partial /2 excluded**; the full F1-F7/M7 goal stays active.
+
 ## Native AdvancedSpeed local controls — 2026-10-24
 
 Source `0f1e355`, runtime `228bae5e27c1`, owns halo1/8855.

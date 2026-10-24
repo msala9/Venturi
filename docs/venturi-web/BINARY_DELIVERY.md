@@ -55,7 +55,26 @@ loader dependencies, resource settings and successful terminal state.
 This candidate is for the already qualified Linux x86_64 host. Self-contained
 portability, complete third-party notices/distribution review, optional dynamic
 runtime paths, fresh project/GPU startup from the archive, reboot/runback and
-the final integrated editing/device/soak gates remain unqualified.
+the final integrated editing/device/soak gates remain unqualified. Subsequent
+isolated startup/runback acceptance is recorded below.
+
+## Actual startup, prior-binary runback and forward restoration
+
+[The runback workflow](evidence/f7-prebuilt-runback-workflow.json) subsequently
+starts the packaged executable through its real launcher against the owned
+Saved48-frame native4K fixture on port8856. It automatically reopens with empty
+Undo, renders frame24 at960x540 and stops. The retained prior `9a619eebab31`
+binary repeats this, followed by another fresh packaged current process. All
+three timeline snapshots and rendered PNG hashes match exactly. Saved project
+and source bytes are unchanged. The isolated listener closes and shared GPU lock
+releases after completion; the live8855 instance is never restarted.
+
+This serial halo1 service passes with512,987,136B peak under8CPU/4GiB/no swap.
+Post-run protection checks preserve39 prior Sessions/40 PIDs,11 Saved files,
+5 local media,4 NAS files and the shared proxy. This closes the actual packaged
+startup and isolated runback/forward check for that fixture; it does not prove
+every historical project, restore former unsaved state/Undo, or qualify a host
+reboot, physical devices, real long footage or the final editing soak/M7 gates.
 
 ## Verified Rust notice-text companion
 

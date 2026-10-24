@@ -1,5 +1,22 @@
 # Implementation status
 
+## Actual packaged startup, runback and forward restoration — 2026-10-24
+
+The packaged current binary starts through its real launcher, automatically
+reopens the owned Saved native4K fixture, renders frame24 at960x540 and stops.
+The retained prior `9a619eebab31` binary then does the same; a fresh packaged
+current process repeats it. All three native timeline snapshots and PNG SHA256
+values match exactly; Saved/source bytes remain unchanged and each process has
+explicitly empty history. The isolated8856 listener closes and GPU lock releases.
+One serial halo1 unit,8CPU/4GiB/noSwap, peaks512,987,136B and exits successfully.
+
+The live8855 editor is never restarted. Post-run checks preserve all39 prior
+Sessions/40 PIDs,11 Saved files,5 local media,4 NAS files and shared proxy.
+See `evidence/f7-prebuilt-runback-workflow.json`. This proves the isolated
+packaged startup/runback/forward workflow for this48-frame fixture. Physical
+devices/DPI, long real footage, host reboot, editing soak and full integrated
+F1-F7/M7 remain open. Ledger stays61 done/29 partial/2 excluded.
+
 ## Offline Rust notice-text companion — 2026-10-24
 
 The prebuilt candidate now has a persistent companion archive containing488

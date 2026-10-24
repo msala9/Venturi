@@ -13,7 +13,8 @@ export function createTransitionChoice(button,{label,values,canInteract,onConfir
   const doc=button.ownerDocument ?? globalThis.document,view=doc?.defaultView ?? globalThis.window,listeners=[],prefix=`transition-choice-${++choiceSequence}`;
   let disposed=false,popup=null,draft=null,previewTimer=null,wheelTimer=null,previewSent=false,waiting=false;
   const listen=(node,key,handler,options)=>{node?.addEventListener?.(key,handler,options);listeners.push(()=>node?.removeEventListener?.(key,handler,options));};
-  const available=()=>!disposed && !waiting && button.isConnected!==false && !button.disabled && canInteract();
+  const visible=()=>!doc?.hidden && button.getClientRects?.().length!==0 && !button.closest?.('[hidden],[inert],details:not([open])') && !doc?.querySelector?.('dialog[open]');
+  const available=()=>!disposed && !waiting && button.isConnected!==false && !button.disabled && visible() && canInteract();
   const attr=(node,name,value)=>node.setAttribute?.(name,String(value));
   button.type='button';button.className='transition-combobox';attr(button,'role','combobox');attr(button,'aria-label',label);attr(button,'aria-haspopup','listbox');attr(button,'aria-expanded','false');
   function report(value){try{Promise.resolve(onPreview?.(value)).catch(error=>{if(!disposed)notice(error.message);});}catch(error){if(!disposed)notice(error.message);}}
@@ -32,7 +33,7 @@ export function createTransitionChoice(button,{label,values,canInteract,onConfir
   function select(index){if(!draft || !available() || index<0 || index>=values.length)return;if(index!==draft.index && previewSent){previewSent=false;report(null);}draft.index=index;paint();preview(draft);}
   async function confirm(owner=draft){
     if(!owner || !owned(owner))return;const next=values[owner.index],before=button.value;cancel();if(next===before)return;waiting=true;button.value=next;paint();
-    try{await onConfirm(next);}catch(error){button.value=before;notice(error.message);}finally{waiting=false;if(!disposed)paint();}
+    try{if(await onConfirm(next)===false)button.value=before;}catch(error){button.value=before;notice(error.message);}finally{waiting=false;if(!disposed)paint();}
   }
   function open(){
     if(!available())return;cancel();const node=doc.createElement('div'),owner={index:Math.max(0,values.indexOf(button.value)),mode:'popup'},rows=[];
@@ -62,6 +63,7 @@ export function createTransitionChoice(button,{label,values,canInteract,onConfir
   listen(button,'click',event=>{if(!plain(event))return;if(popup)cancel();else open();});listen(button,'keydown',keyboard);listen(button,'wheel',wheel,{passive:false});
   listen(doc,'pointerdown',event=>{if((popup || draft) && !inside(event.target))cancel();},true);listen(doc,'focusin',event=>{if((popup || draft) && !inside(event.target))cancel();});listen(doc,'scroll',event=>{if((popup || draft) && !popup?.node.contains?.(event.target))cancel();},true);
   listen(doc,'visibilitychange',()=>{if(doc.hidden)cancel();});listen(view,'blur',()=>cancel());listen(view,'resize',()=>cancel());paint();
+  for(let parent=button.parentElement ?? button.parentNode;parent;parent=parent.parentElement ?? parent.parentNode)if(parent.tagName?.toLowerCase()==='details')listen(parent,'toggle',()=>{if(!visible())cancel();});
   return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
 }
 

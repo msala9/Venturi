@@ -27,6 +27,7 @@ mod frame_sources;
 mod host;
 mod image_derivative;
 mod inspector;
+mod inspector_choice_preview;
 mod keyselection;
 mod library;
 mod masks;

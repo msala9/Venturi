@@ -223,6 +223,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/preview/transition",
             post(transition_preview).layer(DefaultBodyLimit::max(256 * 1024)),
         )
+        .route(
+            "/api/v1/preview/inspector-choice",
+            post(inspector_choice_preview).layer(DefaultBodyLimit::max(256 * 1024)),
+        )
         .route("/api/v1/preview/cache", get(preview_cache))
         .route("/api/v1/preview/audio.wav", get(audition))
         .route("/api/v1/preview/audio/window", post(program_audio_window))
@@ -2266,6 +2270,45 @@ async fn transition_preview(
     let original = payload.query.clone();
     let snapshot = state.host.frame_snapshot(original.clone()).await?;
     let (mut snapshot, tag) = crate::transition_preview::apply(snapshot, &payload)?;
+    snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
+        &state.source.proxies,
+        &snapshot,
+    )?);
+    let data = state.preview.draft(snapshot, tag).await?;
+    state.host.call(Action::CheckFrame(original)).await?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "image/png"),
+            (header::CACHE_CONTROL, "no-store"),
+            (
+                header::HeaderName::from_static("x-venturi-preview-draft"),
+                "1",
+            ),
+        ],
+        data,
+    )
+        .into_response())
+}
+async fn inspector_choice_preview(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::inspector_choice_preview::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid Inspector preview"))?
+        .0;
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "Native preview is unavailable",
+        ));
+    }
+    let original = payload.query.clone();
+    let snapshot = state.host.frame_snapshot(original.clone()).await?;
+    let (mut snapshot, tag) = crate::inspector_choice_preview::apply(snapshot, &payload)?;
     snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
         &state.source.proxies,
         &snapshot,

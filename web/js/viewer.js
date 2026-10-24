@@ -124,6 +124,8 @@ export function createViewer({ image, empty, status, getState, matches = matches
       ? { path: "/api/v1/preview/title-font", label: "FONT PREVIEW", error: "INVALID_FONT_PREVIEW" }
       : kind === "transition"
         ? { path: "/api/v1/preview/transition", label: "TRANSITION PREVIEW", error: "INVALID_TRANSITION_PREVIEW" }
+        : kind === "inspector-choice"
+          ? { path: "/api/v1/preview/inspector-choice", label: "INSPECTOR PREVIEW", error: "INVALID_INSPECTOR_PREVIEW" }
         : null;
     if (!preview || destroyed || matches !== matchesFrame || !body?.query || !url || !displayed)
       return false;

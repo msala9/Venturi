@@ -29,15 +29,18 @@ test('Inspector mask edits retain valid focus except reset-all, and invalid stru
   assert.equal(maskFocusAfterEdit(1,{action:'add',shape:'Path'},8),null);assert.equal(maskFocusAfterEdit(1,{action:'set'},9),null);
 });
 
-function harness(t,{detail=fixture(),disabled=false,seekEnabled=true,openState=new Map([['masks',true]]),commit,drawPath}={}){
+function harness(t,{detail=fixture(),disabled=false,seekEnabled=true,openState=new Map([['masks',true]]),commit,drawPath,onPreview}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option,commands=[],frames=[],notices=[];
   let frame=detail.timeline_frame,allowed=true,dialog=false;
-  const view=new EventTarget(),document={activeElement:null,querySelector:()=>dialog?{}:null,defaultView:view};
+  const view=new EventTarget(),document=Object.assign(new EventTarget(),{activeElement:null,querySelector:()=>dialog?{}:null,defaultView:view});
   class Element extends EventTarget{
     constructor(tag){super();this.tagName=tag.toUpperCase();this.dataset={};this.children=[];this.attributes=new Map();this.disabled=false;this.textContent='';this.value='';this.open=false;this.ownerDocument=document;this.captured=new Set();}
+    get parentNode(){return this.parent;}
     append(...children){for(const child of children){if(typeof child==='string')continue;child.parent=this;this.children.push(child);}}
     replaceChildren(...children){for(const child of this.children)child.parent=null;this.children=[];this.append(...children);}
     setAttribute(name,value){this.attributes.set(name,String(value));}getAttribute(name){return this.attributes.get(name)??null;}
+    removeAttribute(name){this.attributes.delete(name);}remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
+    contains(node){return this===node || this.children.some(child=>child.contains(node));}
     get isConnected(){return this===document.body || Boolean(this.parent?.isConnected);}
     reportValidity(){return true;}focus(){document.activeElement=this;}
     setPointerCapture(id){this.captured.add(id);}hasPointerCapture(id){return this.captured.has(id);}releasePointerCapture(id){this.captured.delete(id);emit(this,'lostpointercapture',{pointerId:id});}
@@ -46,7 +49,7 @@ function harness(t,{detail=fixture(),disabled=false,seekEnabled=true,openState=n
   globalThis.document=document;globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   t.after(()=>{globalThis.document=priorDocument;globalThis.Option=priorOption;});
   const root=new Element('div');document.body.append(root);
-  const options={disabled,getFrame:()=>frame,canInteract:()=>allowed,seek:seekEnabled?value=>{frames.push(value);frame=value;}:undefined,drawPath,commit:async operation=>{commands.push(operation);return commit?.(operation);},notice:value=>notices.push(value),openState,bindNumber:bindInspectorNumber};
+  const options={disabled,getFrame:()=>frame,canInteract:()=>allowed,seek:seekEnabled?value=>{frames.push(value);frame=value;}:undefined,drawPath,commit:async operation=>{commands.push(operation);return commit?.(operation);},notice:value=>notices.push(value),openState,bindNumber:bindInspectorNumber,onPreview};
   const control=renderMasks(root,detail,options);
   const all=(node=root)=>[node,...node.children.flatMap(child=>all(child))];
   const button=action=>all().find(element=>element.dataset.pathKeyAction===action);
@@ -79,6 +82,25 @@ test('path arrows navigate beyond summarized keys without mutation and suppress 
   for(const key of [' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'])assert.equal(emit(h.button('next'),'keydown',{key}).stopped,true,key);
   h.click('next');assert.deepEqual(h.frames,[47]);assert.deepEqual(h.commands,[]);
   h.click('previous');assert.deepEqual(h.frames,[47]);assert.match(h.notices[0],/current playhead/);assert.equal(h.button('previous').disabled,true);
+});
+
+test('mask combination previews captured native mode and confirms once at the existing single-clip target',async t=>{
+  const timers=new Map();let id=0;t.mock.method(globalThis,'setTimeout',callback=>{timers.set(++id,callback);return id;});t.mock.method(globalThis,'clearTimeout',key=>timers.delete(key));
+  const detail=fixture(),previews=[];detail.masks.modes.push('Intersect');const h=harness(t,{detail,onPreview:value=>previews.push(value)}),mode=h.named('Mask 1 combination');
+  const popup=()=>h.all(h.document.body).find(node=>node.getAttribute('role')==='listbox'),advance=()=>{for(const [key,callback] of [...timers]){timers.delete(key);callback();}};
+  h.clickNamed('Mask 1 combination');emit(popup().children[2],'pointerenter');assert.deepEqual(previews,[]);advance();assert.deepEqual(previews.at(-1),{kind:'mask_mode',index:0,mode:'Intersect'});assert.deepEqual(h.commands,[]);
+  emit(mode,'keydown',{key:'Tab'});assert.equal(previews.at(-1),null);assert.equal(mode.value,'Add');assert.equal(popup(),undefined);
+  h.clickNamed('Mask 1 combination');const chosen=popup().children[1];emit(chosen,'click');emit(chosen,'click');await settle();
+  assert.deepEqual(h.commands,[{kind:'edit_mask',clip_id:detail.clip_id,edit:{action:'set',index:0,patch:{mode:'Subtract'}}}]);h.control.dispose();assert.equal(timers.size,0);
+});
+
+test('mask combination wheel confirmation is canceled by frame changes or reusable owner cancellation',async t=>{
+  for(const reason of ['frame','cancel','dispose'])await t.test(reason,async child=>{
+    const timers=new Map();let id=0;child.mock.method(globalThis,'setTimeout',callback=>{timers.set(++id,callback);return id;});child.mock.method(globalThis,'clearTimeout',key=>timers.delete(key));
+    const h=harness(child);emit(h.named('Mask 1 combination'),'wheel',{deltaY:1});
+    if(reason==='frame')h.setFrame(46);else h.control[reason]();
+    for(const [key,callback] of [...timers]){if(!timers.has(key))continue;timers.delete(key);callback();}await settle();assert.deepEqual(h.commands,[]);h.control.dispose();assert.equal(timers.size,0);
+  });
 });
 
 test('path diamond sends one native Inspector toggle and then awaits refreshed detail',async t=>{

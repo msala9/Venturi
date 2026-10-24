@@ -1,3 +1,5 @@
+import {createTransitionChoice} from './transition-controls.js';
+
 function currentPath(detail,mask,frame){
   if(!Number.isSafeInteger(frame) || frame!==detail.timeline_frame)throw Error('Read native mask properties at the current playhead before editing or navigating path keys');
   if(mask.shape!=='Path' || typeof mask.path_navigation?.on_keyframe!=='boolean')throw Error('Read native path-key navigation before editing or navigating path keys');
@@ -29,7 +31,7 @@ export function maskPathKeyOperation(detail,mask,frame){
   if(!mask.path_navigation.on_keyframe && !mask.evaluated_path)throw Error('Read the native evaluated path before setting a path key');
   return {kind:'edit_mask',clip_id:detail.clip_id,edit:{action:'path_key',index:mask.index,timeline_frame:frame,path:mask.path_navigation.on_keyframe?null:structuredClone(mask.evaluated_path)}};
 }
-export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openState,seek,drawPath,canInteract=()=>!disabled,bindNumber}) {
+export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openState,seek,drawPath,canInteract=()=>!disabled,bindNumber,onPreview}) {
   const section=document.createElement('details'),summary=document.createElement('summary');section.className='inspector-masks';section.dataset.visualPath='masks';section.open=openState?.get('masks') || false;summary.textContent=`Masks (${detail.masks.items.length})`;section.append(summary);root.append(section);
   const identity=()=>JSON.stringify([detail.project_epoch,detail.generation,detail.timeline_id,detail.revision,detail.clip_id,detail.timeline_frame,detail.source_frame]);
   const captured=identity(),frame=detail.timeline_frame,complete=['project_epoch','generation','timeline_id','revision','clip_id'].every(key=>typeof detail[key]==='string' && detail[key]) && Number.isSafeInteger(frame) && frame>=0 && Number.isSafeInteger(detail.source_frame);
@@ -42,10 +44,10 @@ export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openSta
   const sync=()=>{for(const [control,enabled] of controls)control.disabled=waiting || settled || unknown || !context() || control.isConnected===false || !enabled();};
   const register=(control,enabled=()=>true)=>{controls.set(control,enabled);control.disabled=waiting || settled || unknown || !context() || !enabled();return control;};
   const submit=(edit,inspector=true)=>{
-    if(waiting || settled || unknown || disposed)return;
-    if(!current()){sync();notice('Read native mask properties at the current playhead before editing');return;}
+    if(waiting || settled || unknown || disposed)return false;
+    if(!current()){sync();notice('Read native mask properties at the current playhead before editing');return false;}
     const operation={kind:'edit_mask',clip_id:detail.clip_id,edit:inspector?{action:'inspector',timeline_frame:frame,edit}:edit},attempt={sequence,dispatched:false};pending=attempt;waiting=true;sync();
-    return Promise.resolve().then(()=>{if(attempt.sequence!==sequence || pending!==attempt)return;if(!current())throw Error('The mask Inspector context changed');attempt.dispatched=true;return commit(operation);}).then(()=>{if(attempt.dispatched)settled=true;}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')unknown=true;if(!disposed && root.isConnected!==false && section.isConnected!==false && identity()===captured && getFrame()===frame)notice(error.message);}).finally(()=>{if(pending===attempt){pending=null;waiting=false;sync();}});
+    return Promise.resolve().then(()=>{if(attempt.sequence!==sequence || pending!==attempt)return;if(!current())throw Error('The mask Inspector context changed');attempt.dispatched=true;return commit(operation);}).then(()=>{if(attempt.dispatched){settled=true;return true;}return false;}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')unknown=true;if(!disposed && root.isConnected!==false && section.isConnected!==false && identity()===captured && getFrame()===frame)notice(error.message);return false;}).finally(()=>{if(pending===attempt){pending=null;waiting=false;sync();}});
   };
   const keyboard=event=>{if([' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))event.stopPropagation();};
   const button=(parent,label,action,enabled=()=>true,text=label)=>{const node=register(document.createElement('button'),enabled);node.type='button';node.textContent=text;node.title=label;node.setAttribute('aria-label',label);listen(node,'keydown',keyboard);listen(node,'click',()=>{if(node.isConnected!==false && enabled())action(node);});parent.append(node);return node;};
@@ -78,7 +80,8 @@ export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openSta
       const menu=document.createElement('details'),menuHeading=document.createElement('summary');menu.className='inspector-mask-actions';menuHeading.textContent='Actions';menu.append(menuHeading);header.append(menu);
       for(const [label,to] of [['Move up',mask.index-1],['Move down',mask.index+1]])write(menu,`${label} mask ${n}`,{action:'move',index:mask.index,to_index:to},{legacy:true,enabled:()=>to>=0 && to<detail.masks.items.length});
       write(menu,`Reset mask ${n}`,{kind:'reset_mask',index:mask.index});write(menu,`Remove mask ${n}`,{action:'remove',index:mask.index},{legacy:true});
-      const modeRow=document.createElement('div'),modeLabel=document.createElement('label'),mode=register(document.createElement('select'));modeRow.className='property-row';modeLabel.className='field';modeLabel.textContent='Combination';mode.setAttribute('aria-label',`Mask ${n} combination`);for(const name of detail.masks.modes)mode.append(new Option(name,name));mode.value=mask.mode;listen(mode,'change',()=>{if(mode.isConnected!==false && detail.masks.modes.includes(mode.value) && mode.value!==mask.mode)submit({action:'set',index:mask.index,patch:{mode:mode.value}},false);});own({cancel(){mode.value=mask.mode;}});modeLabel.append(mode);modeRow.append(modeLabel);reset(modeRow,`Reset mask ${n} combination`,{kind:'reset_mode',index:mask.index});group.append(modeRow);
+      const modeRow=document.createElement('div'),modeLabel=document.createElement('label'),mode=register(document.createElement('button'));modeRow.className='property-row';modeLabel.className='field';modeLabel.textContent='Combination';mode.value=mask.mode;modeLabel.append(mode);modeRow.append(modeLabel);reset(modeRow,`Reset mask ${n} combination`,{kind:'reset_mode',index:mask.index});group.append(modeRow);
+      own(createTransitionChoice(mode,{label:`Mask ${n} combination`,values:detail.masks.modes,canInteract:available,notice,onPreview:value=>onPreview?.(value===null?null:{kind:'mask_mode',index:mask.index,mode:value}),onConfirm:value=>submit({action:'set',index:mask.index,patch:{mode:value}},false)}));
       for(const parameter of mask.parameters) {
         const form=document.createElement('form'),label=document.createElement('label'),input=register(document.createElement('input'));form.className='property-row inspector-number inspector-mask-parameter';label.className='field';label.textContent=parameter.param;input.type='number';input.step='any';input.min=parameter.min;input.max=parameter.max;input.required=true;input.value=parameter.value;input.setAttribute('aria-label',`Mask ${n} ${parameter.param}`);label.append(input);form.append(label);
         const apply=register(document.createElement('button'));apply.className='inspector-number-apply';apply.textContent='Apply';apply.setAttribute('aria-label',`Apply mask ${n} ${parameter.param}`);form.append(apply);

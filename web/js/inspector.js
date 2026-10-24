@@ -5,7 +5,7 @@ import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 import {createTitleFontChooser} from './fonts.js';
 import {renderColorPicker} from './color-picker.js';
-import {renderTransitionControls} from './transition-controls.js';
+import {createTransitionChoice,renderTransitionControls} from './transition-controls.js';
 
 export function createInspectorViewportKeeper(root,{getContext,documentRef=root.ownerDocument ?? globalThis.document,windowRef=documentRef?.defaultView ?? globalThis.window,Observer=windowRef?.MutationObserver ?? globalThis.MutationObserver,requestFrame=callback=>windowRef.requestAnimationFrame(callback),cancelFrame=id=>windowRef.cancelAnimationFrame(id)}={}){
   let context=null,pending=null,frame=null,disposed=false,lastFocus=null,restoring=false;const listeners=[];
@@ -157,12 +157,12 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   const sync=()=>{for(const [control,available,navigation] of controls)control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();};
   const register=(control,available=()=>true,navigation=false)=>{controls.push([control,available,navigation]);control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();return control;};
   const submit=edit=>{
-    if(!edit)return;
-    if(waiting || outcomeUnknown)return;
-    if(!current()){notice('Inspector selection changed; read its current properties before editing');return;}
+    if(!edit)return false;
+    if(waiting || outcomeUnknown)return false;
+    if(!current()){notice('Inspector selection changed; read its current properties before editing');return false;}
     const operation={kind:'edit_inspector_selection',clip_ids:[...captured.clip_ids],timeline_frame:frame,edit};
     const sequence=++commandSequence;waiting=true;sync();
-    return Promise.resolve().then(()=>{if(sequence!==commandSequence)return;if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
+    return Promise.resolve().then(()=>{if(sequence!==commandSequence)return false;if(!current())throw Error('Inspector selection changed; read its current properties before editing');return Promise.resolve(commit(operation)).then(()=>true);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);return false;}).finally(()=>{waiting=false;sync();});
   };
   const button=(label,edit,parent,available=()=>true)=>{const node=register(document.createElement('button'),available);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>{if(available())submit(typeof edit==='function'?edit():edit);});parent.append(node);if(label.startsWith('Reset '))compactReset(node);return node;};
   const localButton=(label,frame,parent)=>{
@@ -286,7 +286,8 @@ export function renderSelectedVideoEffects(root,detail,options){
     for(const field of ['underline','strikethrough'])checkbox(parent,`Title ${field}`,title[field],value=>submit({[field]:value}));
     reset(parent,'title decorations',['underline','strikethrough']);
     function choice(parent,label,value,values,change){const row=document.createElement('label'),select=controls.register(document.createElement('select'));row.className='field';row.textContent=label;select.setAttribute('aria-label',label);for(const value of values)select.append(new Option(value,value));select.value=value;row.append(select);select.addEventListener('change',()=>{if(controls.current() && values.includes(select.value))change(select.value);});parent.append(row);}
-    choice(parent,'Title case',title.case,['Mixed','Upper','Lower','Title'],value=>submit({case:value}));reset(parent,'title case',['case']);
+    const caseRow=document.createElement('label'),caseChoice=controls.register(document.createElement('button'));caseRow.className='field';caseRow.textContent='Title case';caseChoice.value=title.case;caseRow.append(caseChoice);parent.append(caseRow);
+    controls.own(createTransitionChoice(caseChoice,{label:'Title case',values:['Mixed','Upper','Lower','Title'],canInteract:controls.available,notice:options.notice,onPreview:value=>options.previewInspectorChoice?.(value===null?null:{kind:'title_case',case:value}),onConfirm:value=>submit({case:value})}));reset(parent,'title case',['case']);
     choice(parent,'Title alignment',title.align,['Left','Center','Right','Justify'],value=>submit({align:value}));reset(parent,'title alignment',['align']);
     choice(parent,'Title horizontal anchor',title.anchor[0],['Left','Center','Right'],value=>submit({anchor:[value,title.anchor[1]]}));
     choice(parent,'Title vertical anchor',title.anchor[1],['Top','Middle','Bottom'],value=>submit({anchor:[title.anchor[0],value]}));reset(parent,'title anchor',['anchor']);
@@ -309,7 +310,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     const parent=group('Selected solid color'),info=solid;
     colorRow(parent,'Solid color',info.value,value=>controls.submit({action:'solid_color',value}));keyDiamond(parent,'solid color',[info],controls,{action:'toggle_color_key'});
   }
-  return [...renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize,bindNumber:bindInspectorNumber}),controls];
+  return [...renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize,bindNumber:bindInspectorNumber,onPreview:options.previewInspectorChoice}),controls];
 }
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
@@ -333,7 +334,7 @@ export function bindKeyEditorDelete(root,{selection,remove,canInteract,documentR
   root.addEventListener('keydown',keydown);
   return {cancel(){},dispose(){disposed=true;root.removeEventListener('keydown',keydown);}};
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,readCurveViewport,keyEditorRoot=root,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,readCurveViewport,keyEditorRoot=root,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit,previewInspectorChoice }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page && keyEditorRoot && detail.key_page.total_pages>1){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -420,7 +421,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     const keySelection=renderKeySelection(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
     if(keyEditorRoot!==root && keySelection)controls.push(bindKeyEditorDelete(keyEditorRoot.closest?.('[data-key-editor-window]') || keyEditorRoot,{selection:selectedKeys,remove:keySelection.removeSelected,canInteract:()=>!disabled && keyEditorRoot.isConnected!==false && canInteract()}));
   }
-  if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath,bindNumber:bindInspectorNumber});if(masks)controls.push(masks);}
+  if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath,bindNumber:bindInspectorNumber,onPreview:previewInspectorChoice});if(masks)controls.push(masks);}
   if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);
   return controls;

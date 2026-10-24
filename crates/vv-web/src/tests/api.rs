@@ -684,6 +684,96 @@ async fn title_font_draft_http_is_strict_origin_bound_and_never_changes_session(
 }
 
 #[tokio::test]
+async fn inspector_choice_draft_http_is_strict_origin_bound_lease_free_and_preserves_session() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-inspector-choice-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("other-choice-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let valid = json!({"query":{"project_epoch":"epoch","if_generation":"0","timeline_id":"1","revision":"r","frame":0,"width":320},"clip_ids":["1"],"choice":{"kind":"title_case","case":"Title"}});
+    let mut extra = valid.clone();
+    extra["path"] = json!("/tmp/project");
+    let mut extra_choice = valid.clone();
+    extra_choice["choice"]["path"] = json!("/tmp/project");
+    let mut invalid_choice = valid.clone();
+    invalid_choice["choice"] =
+        json!({"kind":"blur_direction","filter":"Exposure","direction":"Both"});
+    let mut extra_query = valid.clone();
+    extra_query["query"]["path"] = json!("/tmp/project");
+    for (body, origin, status) in [
+        (
+            valid.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::SERVICE_UNAVAILABLE,
+        ),
+        (
+            extra.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            extra_choice.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            invalid_choice.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            extra_query.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            valid.to_string(),
+            "https://foreign.example",
+            StatusCode::FORBIDDEN,
+        ),
+        (
+            " ".repeat(256 * 1024 + 1),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/preview/inspector-choice")
+                    .header("host", "127.0.0.1:8787")
+                    .header("origin", origin)
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status);
+        assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    }
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn native_font_catalog_http_is_cached_lease_free_strict_and_preserves_session_and_undo() {
     let root = std::env::temp_dir().join(format!(
         "vv-native-fonts-http-{}",

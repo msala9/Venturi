@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {renderTransitionControls,transitionDuration,transitionFrameRate} from '../js/transition-controls.js';
+import {createTransitionChoice,renderTransitionControls,transitionDuration,transitionFrameRate} from '../js/transition-controls.js';
 import {bindInspectorNumber,transitionSelectionOperation} from '../js/inspector.js';
 
 const settle=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
@@ -12,7 +12,8 @@ function harness(options={}){
     count(){return [...this.listeners.values()].reduce((sum,handlers)=>sum+handlers.size,0);}
   }
   class Element extends Surface{
-    constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.style={};this.disabled=false;this.value='';this.ownerDocument=doc;this.captures=new Set();}
+    constructor(tag){super();this.tag=tag;this.tagName=tag.toUpperCase();this.children=[];this.attributes=new Map();this.style={};this.disabled=false;this.value='';this.ownerDocument=doc;this.captures=new Set();}
+    get parentNode(){return this.parent;}
     get isConnected(){return this===doc.body || !!this.parent?.isConnected;}
     append(...nodes){for(const node of nodes){this.children.push(node);node.parent=this;}}
     remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
@@ -117,4 +118,17 @@ test('a refused or unknown transition write restores local values and is never a
     assert.equal(h.commands.length,1);assert.equal(h.field('Curve').value,'0.625');assert(h.notices.includes('Transition write unresolved'));assert.equal(h.timers.size,0);
   }finally{h.dispose();}
   let reject;const late=harness({commit:()=>new Promise((_,fail)=>{reject=fail;})});late.field('Curve').value='0.75';late.fire(late.root.children[1],'submit');late.dispose();reject(Error('Native transition refused'));await settle();assert(late.notices.includes('Native transition refused'));assert.equal(late.commands.length,1);
+});
+
+test('shared native choice cancels collapsed and hidden drafts, then recovers without retaining disposed listeners',async()=>{
+  const h=harness(),group=h.doc.createElement('details'),button=h.doc.createElement('button'),timers=new Map(),previews=[],confirmed=[];let id=0,visible=true;
+  group.open=true;h.root.append(group);group.append(button);button.value='Add';button.getClientRects=()=>visible?[{}]:[];button.closest=()=>group.open?null:group;
+  const choice=createTransitionChoice(button,{label:'Mask combination',values:['Add','Subtract','Intersect'],canInteract:()=>true,onPreview:value=>previews.push(value),onConfirm:value=>{confirmed.push(value);return false;},schedule:callback=>{timers.set(++id,callback);return id;},unschedule:key=>timers.delete(key)});
+  const run=()=>{for(const [key,callback] of [...timers]){if(!timers.has(key))continue;timers.delete(key);callback();}};
+  try{
+    assert.equal(group.listeners.get('toggle')?.size,1,'The native DETAILS ancestor owns a collapse listener');
+    h.fire(button,'click');h.fire(h.popup().children[1],'pointerenter');run();assert.equal(previews.at(-1),'Subtract');group.open=false;h.fire(group,'toggle');assert.equal(Boolean(h.popup()),false,'Collapsing the owning native group removes its popup');assert.equal(previews.at(-1),null);assert.deepEqual(confirmed,[]);
+    group.open=true;h.fire(button,'wheel',{deltaY:1});visible=false;run();await settle();assert.deepEqual(confirmed,[]);assert.equal(button.value,'Add');
+    visible=true;h.fire(button,'click');h.fire(h.popup().children[2],'click');await settle();assert.deepEqual(confirmed,['Intersect']);assert.equal(button.value,'Add','A canceled or refused queued native edit restores the committed choice');
+  }finally{choice.dispose();h.dispose();}assert.equal(timers.size,0);assert.equal(h.doc.count(),0);assert.equal(h.view.count(),0);assert.equal(group.count(),0);
 });

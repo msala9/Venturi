@@ -50,10 +50,11 @@ function detail(video=true){
 }
 const settle=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 const scalarEvent=(node,type,properties={})=>{const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries({pointerId:1,button:0,buttons:type==='pointerup'?0:1,clientX:0,...properties}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);return event;};
-function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts}={}){
+function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts,previewInspectorChoice}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option;
   class Element extends EventTarget{
-    constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.disabled=false;this.isConnected=true;this.value='';}
+    constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.disabled=false;this.isConnected=true;this.value='';this.ownerDocument=globalThis.document;}
+    get parentNode(){return this.parent;}
     append(...children){for(const child of children){this.children.push(child);if(typeof child==='object')child.parent=this;}}
     replaceChildren(...children){this.children=[];this.append(...children);}
     setAttribute(name,value){this[name]=String(value);}
@@ -65,20 +66,22 @@ function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts}
     get options(){return this.children;}
     reportValidity(){return true;}
   }
-  globalThis.document={createElement:tag=>new Element(tag)};
+  globalThis.document=new EventTarget();globalThis.document.createElement=tag=>new Element(tag);globalThis.document.body=new Element('body');globalThis.document.defaultView=new EventTarget();globalThis.document.querySelector=()=>null;
   globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   t.after(()=>{globalThis.document=priorDocument;globalThis.Option=priorOption;});
-  const state=snapshot(),root=new Element('div'),native=detail(video),commands=[],notices=[],seeks=[],visualState=new Map();editDetail(native);
+  const state=snapshot(),root=new Element('div'),native=detail(video),commands=[],notices=[],seeks=[],visualState=new Map();document.body.append(root);editDetail(native);
   let allowed=true,frame=20;
   const getSelection=()=>video?videoPropertySelection(state):audioPropertySelection(state);
-  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,timelineSize:[1920,1080],seek:frame=>seeks.push(frame),readFonts};
+  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,timelineSize:[1920,1080],seek:frame=>seeks.push(frame),readFonts,previewInspectorChoice};
   const all=(node=root)=>[node,...node.children.flatMap(child=>typeof child==='object'?all(child):[])];
   const field=label=>all().find(node=>node['aria-label']===label);
   const render=()=>effects?renderSelectedVideoEffects(root,native,options):video?renderSelectedVideoProperties(root,native,options):renderSelectedAudioGain(root,native,options);
   const control=render();
+  const popup=()=>all(document.body).find(node=>node.getAttribute('role')==='listbox');
   return {state,root,native,commands,notices,seeks,visualState,options,all,field,render,control,
     click:label=>{assert.ok(field(label),label);field(label).dispatchEvent(new Event('click'));},
     apply(label,value){const input=field(label);assert.ok(input,label);input.value=value;input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));},
+    choose(label,value){const input=field(label);assert.ok(input,label);input.dispatchEvent(new Event('click'));const item=popup()?.children.find(node=>node.textContent===value);assert.ok(item,value);item.dispatchEvent(new Event('click',{cancelable:true}));},popup,
     allow:value=>{allowed=value;},setFrame:value=>{frame=value;},Element};
 }
 
@@ -296,7 +299,7 @@ test('title fonts load only on opening typography and confirmed family/style edi
   let reads=0;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:async()=>{reads++;return fontCatalog();}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
   assert.equal(reads,0);assert.equal(h.field('Server font family').disabled,true);h.field('Title text').value='Unsubmitted text draft';group.open=true;group.dispatchEvent(new Event('toggle'));await settle();
   assert.equal(reads,1);assert.equal(h.field('Title text').value,'Unsubmitted text draft');assert.equal(h.field('Server font family').value,'Server font');
-  const choose=(label,value)=>{h.click(label);const option=h.all().find(node=>node.role==='option' && node.textContent===value);assert(option,value);option.dispatchEvent(new Event('click',{cancelable:true}));};
+  const choose=(label,value)=>{h.click(label);const option=h.all(document.body).find(node=>node.role==='option' && node.textContent===value);assert(option,value);option.dispatchEvent(new Event('click',{cancelable:true}));};
   choose('Server font style','Regular');await settle();assert.deepEqual(h.commands,[]);
   choose('Server font style','Italic');await settle();assert.deepEqual(h.commands[0].edit,{action:'title',patch:{italic:true}},'Native apply_title_edit broadcasts only fields changed from the primary');
   choose('Server font style','Black');await settle();assert.deepEqual(h.commands[1].edit,{action:'title',patch:{font_weight:1000}});
@@ -315,7 +318,7 @@ test('late font reads cannot republish controls for a different playhead or disp
     let resolve,signal;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:options=>{signal=options.signal;return new Promise(done=>{resolve=done;});}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
     group.open=true;group.dispatchEvent(new Event('toggle'));
     if(action==='frame')h.setFrame(21);else if(action==='selection')h.state.selection=['9'];else h.control.at(-1).dispose();
-    resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').value,'Server font');h.click('Server font family');await settle();assert(!h.all().some(node=>node.role==='listbox'));assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
+    resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').value,'Server font');h.click('Server font family');await settle();assert(!h.all(document.body).some(node=>node.role==='listbox'));assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
   });
 });
 function filterDetail(native){
@@ -332,11 +335,36 @@ test('title patches contain only changed fields and never copy unrelated text or
   assert.deepEqual(titleSelectionPatch(before,after),{background:after.background});assert.deepEqual(before.text,'One title');assert.deepEqual(titleSelectionPatch(before,{size:96}),{});
 });
 
+test('Title case and native blur choices preview without edits and confirm only their selected native field',async t=>{
+  const scheduled=new Map();let id=0;
+  t.mock.method(globalThis,'setTimeout',callback=>{scheduled.set(++id,callback);return id;});t.mock.method(globalThis,'clearTimeout',key=>scheduled.delete(key));
+  const previews=[],h=harness(t,{effects:true,editDetail:native=>{titleDetail(native);filterDetail(native);},previewInspectorChoice:value=>previews.push(value)});
+  const advance=()=>{for(const [key,callback] of [...scheduled]){scheduled.delete(key);callback();}};
+  h.click('Title case');let popup=h.popup();assert.equal(h.field('Title case').getAttribute('role'),'combobox');
+  popup.children[1].dispatchEvent(new Event('pointerenter'));assert.deepEqual(previews,[]);advance();assert.deepEqual(previews.at(-1),{kind:'title_case',case:'Upper'});assert.deepEqual(h.commands,[]);
+  scalarEvent(h.field('Title case'),'keydown',{key:'Escape'});assert.equal(h.popup(),undefined);assert.equal(previews.at(-1),null);assert.equal(h.field('Title case').value,'Mixed');
+  h.choose('Title case','Title');await settle();assert.deepEqual(h.commands[0],{kind:'edit_inspector_selection',clip_ids:['9','2'],timeline_frame:20,edit:{action:'title',patch:{case:'Title'}}});
+  h.click('GaussianBlur direction');popup=h.popup();popup.children[2].dispatchEvent(new Event('pointerenter'));advance();assert.deepEqual(previews.at(-1),{kind:'blur_direction',filter:'GaussianBlur',direction:'Vertical'});assert.equal(h.commands.length,1);
+  scalarEvent(h.field('GaussianBlur direction'),'keydown',{key:'Enter'});scalarEvent(h.field('GaussianBlur direction'),'keydown',{key:'Enter'});await settle();
+  assert.deepEqual(h.commands[1],{kind:'edit_inspector_selection',clip_ids:['9','2'],timeline_frame:20,edit:{action:'filter',filter:'GaussianBlur',patch:{direction:'Vertical'}}});assert.equal(previews.at(-1),null);
+  for(const control of h.control)control.dispose?.();assert.equal(scheduled.size,0);
+});
+
+test('Inspector choice confirmation refuses stale frame, selection, readonly and canceled queued writes',async t=>{
+  for(const mode of ['frame','selection','readonly','cancel','dispose'])await t.test(mode,async child=>{
+    const h=harness(child,{effects:true,editDetail:titleDetail});h.click('Title case');const item=h.popup().children[1];
+    if(mode==='frame')h.setFrame(21);if(mode==='selection')h.state.generation='changed';if(mode==='readonly')h.allow(false);
+    item.dispatchEvent(new Event('click',{cancelable:true}));
+    if(mode==='cancel')h.control.at(-1).cancel();if(mode==='dispose')for(const control of h.control)control.dispose?.();
+    await settle();assert.deepEqual(h.commands,[],mode);assert.equal(h.field('Title case').value,'Mixed');for(const control of h.control)control.dispose?.();
+  });
+});
+
 test('selected Title includes native missing placement/case/background controls and emits changed fields only',async t=>{
   const h=harness(t,{effects:true,editDetail:titleDetail});
   assert.equal(h.field('Title text').value,'Current animated text');assert.equal(h.field('Title position X (from bottom-left)').value,970);assert.equal(h.field('Title position Y (from bottom-left)').value,520);
   for(const label of ['Title case','Title horizontal anchor','Title vertical anchor','Background color R','Background outline color A','Background outline width','Background width','Background height','Background corner radius','Background center X','Background center Y','Background opacity'])assert.ok(h.field(label),label);
-  h.apply('Font size',120);await settle();h.field('Title case').value='Upper';h.field('Title case').dispatchEvent(new Event('change'));await settle();h.apply('Title position X (from bottom-left)',1000);await settle();h.apply('Background width',0.5);await settle();
+  h.apply('Font size',120);await settle();h.choose('Title case','Upper');await settle();h.apply('Title position X (from bottom-left)',1000);await settle();h.apply('Background width',0.5);await settle();
   assert.deepEqual(h.commands.slice(0,3).map(command=>command.edit),[{action:'title',patch:{size:120}},{action:'title',patch:{case:'Upper'}},{action:'title',patch:{position:[40,-20]}}]);
   assert.deepEqual(h.commands[3].edit,{action:'title',patch:{background:{...h.native.title.background,width:0.5}}});assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20 && !Object.hasOwn(command,'source_frame')));
 });
@@ -362,7 +390,7 @@ test('type-specific Title/Solid controls follow the authoritative primary rather
 });
 
 test('selected filter Apply, direction, enabled and stack operations each send one native selected edit',async t=>{
-  const h=harness(t,{effects:true,editDetail:filterDetail});h.apply('GaussianBlur radius',8);await settle();h.field('GaussianBlur direction').value='Horizontal';h.field('GaussianBlur direction').dispatchEvent(new Event('change'));await settle();h.click('Exposure enabled');await settle();
+  const h=harness(t,{effects:true,editDetail:filterDetail});h.apply('GaussianBlur radius',8);await settle();h.choose('GaussianBlur direction','Horizontal');await settle();h.click('Exposure enabled');await settle();
   h.click('Move up DropShadow');await settle();h.click('Remove Exposure from selection');await settle();h.field('Visual filter type').value='Exposure';h.click('Add visual filter to selection');await settle();
   assert.deepEqual(h.commands.map(command=>command.edit),[{action:'filter',filter:'GaussianBlur',patch:{radius:8}},{action:'filter',filter:'GaussianBlur',patch:{direction:'Horizontal'}},{action:'filter',filter:'Exposure',patch:{enabled:true}},{action:'filter_move',filter:'DropShadow',to_index:0},{action:'filter_presence',filter:'Exposure',enabled:false},{action:'filter_presence',filter:'Exposure',enabled:true}]);assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2'));
   h.apply('GaussianBlur radius','');h.apply('GaussianBlur radius',Infinity);h.click('Move up GaussianBlur');await settle();assert.equal(h.commands.length,6);

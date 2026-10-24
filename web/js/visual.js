@@ -1,4 +1,5 @@
 import {renderColorPicker} from './color-picker.js';
+import {createTransitionChoice} from './transition-controls.js';
 
 export function wheelDelta(x,y,dx,dy,radius,fine=false) {
   const scale=(fine ? 0.2 : 1)/(radius*2.5);let nextX=x+dx*scale,nextY=y-dy*scale;
@@ -73,7 +74,7 @@ export function bindScalarRange(input,slider,{canInteract,complete}){
   listen(input,'keydown',event=>{if(event.key==='Escape' && !gesture)slider.value=input.value;});
   return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
 }
-export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize,bindNumber}){
+export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize,bindNumber,onPreview}){
   if(!detail.filters)return [];
   const gestures=[],section=document.createElement('details'),heading=document.createElement('summary');section.dataset.visualPath='selected-filters';section.open=openState.get('selected-filters') ?? true;heading.textContent='Selected filters and color';section.append(heading);root.append(section);
   const help=document.createElement('details'),helpTitle=document.createElement('summary'),note=document.createElement('p');help.className='inspector-help';helpTitle.textContent='Editing selected filters';note.className='muted';note.textContent='Add affects the selected video clips; existing filters keep their settings. Parameter edits skip clips without this filter. Apply changes a constant default or writes a native key. Moving a filter refuses incompatible peer stack positions.';help.append(helpTitle,note);section.append(help);
@@ -102,8 +103,8 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
     }
     if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'},{scrub:true,slider:true,speed:0.5});
     if(['BoxBlur','GaussianBlur'].includes(kind)){
-      const field=document.createElement('label'),select=controls.register(document.createElement('select'));field.className='field';field.textContent=`${kind} direction`;select.setAttribute('aria-label',field.textContent);for(const value of detail.filters.blur_directions)select.append(new Option(value,value));select.value=filter.direction_info?.value ?? filter.direction;field.append(select);card.append(field);
-      select.addEventListener('change',()=>{if(controls.current() && detail.filters.blur_directions.includes(select.value) && select.value!==(filter.direction_info?.value ?? filter.direction))edit({direction:select.value});});keyControls(field,`${kind} direction`,[filter.direction_info || {}],[{kind:'direction'}]);
+      const field=document.createElement('label'),select=controls.register(document.createElement('button'));field.className='field';field.textContent=`${kind} direction`;select.value=filter.direction_info?.value ?? filter.direction;field.append(select);card.append(field);
+      controls.own(createTransitionChoice(select,{label:`${kind} direction`,values:detail.filters.blur_directions,canInteract:controls.available,notice,onPreview:value=>onPreview?.(value===null?null:{kind:'blur_direction',filter:kind,direction:value}),onConfirm:direction=>edit({direction})}));keyControls(field,`${kind} direction`,[filter.direction_info || {}],[{kind:'direction'}]);
     }
     if(filter.amount_range)number(card,kind==='Exposure'?'Exposure stops':`${kind} opacity`,filter.amount,filter.amount_range,amount=>({amount}),{kind:'amount'},{scrub:true,slider:true,speed:kind==='Exposure'?0.01:0.5});
     if(kind==='DropShadow'){

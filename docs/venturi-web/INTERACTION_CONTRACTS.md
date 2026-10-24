@@ -2,6 +2,21 @@
 
 The goal is measurable input behavior, not a framework. Use the following as a starting point, revise after G0.
 
+## Inspector choice drafts
+
+Mask combination, Box/Gaussian blur direction and Title case reuse the existing
+native choice popup. Their stable hover/keyboard previews render immutable
+snapshots; no pointer-move request or live mutation is issued. Confirm dispatches
+one existing native edit. Escape, Tab, outside focus/click, hidden documents,
+parent collapse, navigation, selection/revision changes and disposal cancel
+owned work and restore only the still-current confirmed Program frame.
+
+Closed wheel bursts preview and confirm once after 150 ms, with native endpoint
+clamping. Read-only, locked, detached or stale controls cannot submit. A queued
+command canceled before dispatch, or refused by the native command path, returns
+a false outcome so the label restores its confirmed value. Unknown outcomes
+retain the existing resolution guard and are never automatically replayed.
+
 ## Timeline module boundaries
 
 ```js

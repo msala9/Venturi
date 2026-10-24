@@ -670,6 +670,19 @@ const curveWindow=createCurveWindow({notice,onChange:open=>{
 function openCurveWindow(){curveWindow.open();}
 let visualControls=[],inspectorDraftOwner=null;
 function cancelInspectorDraft(){inspectorDraftOwner=null;viewer?.cancelDraft();}
+function inspectorChoicePreview(query,clip_ids,isCurrent){
+  const owner={},captured=structuredClone(query),ids=[...clip_ids];
+  const current=()=>isCurrent() && documentState?.capabilities.preview && writable && !busy && !unresolved && !document.hidden && viewerMode==='program' && programPlayer?.state()==='stopped' && $('inspector').dataset.inspectorTab==='video' && $('show-inspector').getAttribute('aria-expanded')==='true' && !document.querySelector('dialog[open]');
+  return choice=>{
+    if(choice===null){if(inspectorDraftOwner===owner)cancelInspectorDraft();return;}
+    if(!current())return;
+    inspectorDraftOwner=owner;
+    return viewer?.previewDraft({query:captured,clip_ids:ids,choice},{kind:'inspector-choice',isCurrent:()=>inspectorDraftOwner===owner && current()}).then(shown=>{
+      if(!shown && inspectorDraftOwner===owner && current())throw Error('Preview could not be shown; confirm to apply or cancel');
+      return shown;
+    });
+  };
+}
 function selectedKeyController(){return visualControls.find(control=>control.hasSelectedKeys?.());}
 function currentDeleteOwner(target=document.activeElement){const owner=commandOwnership.owner(target);return owner==='keys' && !selectedKeyController()?'timeline':owner;}
 function deleteOwnedSelection(owner=currentDeleteOwner()){
@@ -811,6 +824,7 @@ function selected() {
       const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
       const draftOwner={};
       const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,readFonts,timelineSize:[timeline.resolution.width,timeline.resolution.height],
+        previewInspectorChoice:inspectorChoicePreview({project_epoch:selection.project_epoch,if_generation:selection.generation,timeline_id:selection.timeline_id,revision:selection.revision,frame:inspectorFrame,width:960},selection.clip_ids,()=>current() && canEditInspector()),
         previewTitleFont:patch=>{
           if(patch===null){if(inspectorDraftOwner===draftOwner)cancelInspectorDraft();return;}
           if(!current() || !canEditInspector() || !documentState?.capabilities.preview)return;
@@ -864,6 +878,7 @@ function selected() {
           return request(`/timelines/${encodeURIComponent(state.timeline)}/clips/${encodeURIComponent(clip.id)}/curve-viewport`,payload,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,AbortSignal.timeout(5000)].filter(Boolean))}));
         },
         maskCommit:commitMask,
+        previewInspectorChoice:inspectorChoicePreview({project_epoch:state.project_epoch,if_generation:state.generation,timeline_id:state.timeline,revision:state.revision,frame:inspectorFrame,width:960},[clip.id],()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector()),
         drawMaskPath:()=>{
           if(identity!==detailIdentity(inspectorState(clip.id)) || !canEditInspector())return;
           const context=currentViewerContext();if(!context || context.clip_id!==detail.clip_id){notice('Seek a current Program frame before drawing a path mask');return;}

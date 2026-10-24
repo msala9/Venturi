@@ -91,6 +91,31 @@ the current confirmed image. Closed wheel bursts confirm once after150ms.
 Numeric/slider pointer movement stays local; release confirms one native command.
 The existing Apply and Remove controls remain available.
 
+## Native Inspector choice previews
+
+`POST /api/v1/preview/inspector-choice` accepts a strict `{query, clip_ids,
+choice}` body. `query` is the full current FrameQuery. The allowed choices are
+`{kind:"mask_mode", index, mode}`, `{kind:"blur_direction", filter, direction}`
+and `{kind:"title_case", case}`. Mask modes are Add/Subtract/Intersect and require
+one clip with the existing mask index. Blur filters are BoxBlur/GaussianBlur,
+with native Both/Horizontal/Vertical directions. Title case is
+Mixed/Upper/Lower/Title. Existing native validation and selected-field difference
+semantics preserve peers, bypass state, animation and each clip's source clock.
+
+The adapter applies only these native edits to an owned snapshot. It shares
+the existing bounded draft renderer, source resolver, proxy selection and
+nonblocking GPU lock, then rechecks the captured composition. The response is
+a no-store PNG with `x-venturi-preview-draft: 1`; the body limit is 256 KiB.
+Origin restrictions apply, and no live project, writer lease, revision or Undo
+changes. Its cache tag is separate from confirmed frames and other draft kinds.
+
+The three Inspector comboboxes reuse the transition choice popup. Stable hover
+and keyboard choices preview after 130 ms; confirmation uses the existing native
+editing command once. Escape, Tab, outside focus/click, parent collapse,
+visibility or stale-context changes cancel the draft. Closed wheel bursts
+confirm once after 150 ms without wrapping. A refused or canceled queued edit
+restores the committed choice label; it is never automatically replayed.
+
 ## Effects palette placement
 
 Timeline commands add `place_generator` with `generator: title|solid|adjustment`,

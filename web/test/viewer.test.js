@@ -304,3 +304,15 @@ test("a late font decode cannot replace an owned transition and invalid draft ki
   h.viewer.destroy();
   assert.deepEqual([...h.revoked].sort(), [...h.created].sort());
 });
+
+test("Inspector choices use the immutable native PNG route and isolate late owners from the committed frame", async (t) => {
+  const h=draftHarness(t),base=await h.committed();let owner=true;
+  const body={query:h.state(),clip_ids:['7'],choice:{kind:'mask_mode',index:0,mode:'Subtract'}};
+  const first=h.viewer.previewDraft(body,{kind:'inspector-choice',isCurrent:()=>owner}),request=h.requests.at(-1);
+  assert.equal(request.path,'/api/v1/preview/inspector-choice');assert.equal(request.options.method,'POST');assert.deepEqual(JSON.parse(request.options.body),body);
+  request.respond(png());assert.equal(await first,true);assert.equal(h.status.textContent,'INSPECTOR PREVIEW');assert.equal(h.viewer.current(),null);
+  h.viewer.cancelDraft();assert.equal(h.image.src,base);assert.equal(h.status.textContent,'CURRENT');
+  const old=h.viewer.previewDraft(body,{kind:'inspector-choice',isCurrent:()=>owner}),oldRequest=h.requests.at(-1);owner=false;
+  const replacement=h.viewer.previewDraft({...body,choice:{kind:'title_case',case:'Upper'}},{kind:'inspector-choice'});h.requests.at(-1).respond(png());assert.equal(await replacement,true);const image=h.image.src;
+  oldRequest.respond(png());assert.equal(await old,false);assert.equal(h.image.src,image);h.viewer.cancelDraft();assert.equal(h.image.src,base);h.viewer.destroy();assert.deepEqual([...h.revoked].sort(),[...h.created].sort());
+});

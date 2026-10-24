@@ -1,0 +1,2769 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+  "binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+  "qualification": {
+    "phase": "passed",
+    "started_unix": 1792814913.3496418,
+    "updated_unix": 1792814913.488846,
+    "archive": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-host-notices-bf0b322.tar",
+    "archive_bytes": 3747840,
+    "archive_sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+    "memory_peak_bytes": 29052928,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    }
+  },
+  "unit": {
+    "LoadState": "not-found",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "MemoryCurrent": "[not set]",
+    "MemoryPeak": "[not set]"
+  },
+  "properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=100%",
+    "MemoryMax=256M",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=16",
+    "RuntimeMaxSec=45",
+    "TimeoutStopSec=5",
+    "Restart=no",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/host-notices-r1/worker.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/host-notices-r1/worker.log"
+  ],
+  "archive_index_sha256": "259e623de12109562a79a885d1e2a96bfdc5ceb994499e2b80e3f8399c36b1bf",
+  "scope": "Verbatim installed Debian package copyright texts and common license references for the189 previously recorded executable-loader libraries, the configured Radeon Vulkan ICD and its31 loader dependencies, and8 fontconfig-listed DejaVu files. Executable DSOs and fonts are external prerequisites and are not copied. Recorded executable DSO hashes come from accepted prior loader inventory and must be compared with fresh loader inventory during next package assembly. Exact arbitrary optional dlopen/device/plugin or font paths beyond this configured host are not claimed.",
+  "counts": {
+    "main_loader_libraries": 189,
+    "main_library_owning_packages": 168,
+    "configured_vulkan_loader_dependencies": 31,
+    "configured_font_files": 8,
+    "total_installed_packages": 182,
+    "copyright_files": 182,
+    "common_license_files": 17,
+    "all_notice_files": 199,
+    "missing_copyright_files": 0
+  },
+  "packages": [
+    {
+      "requested_package": "fonts-dejavu-core",
+      "binary_package": "fonts-dejavu-core",
+      "version": "2.37-8build1",
+      "source_package": "fonts-dejavu",
+      "source_version": "2.37-8build1",
+      "architecture": "all",
+      "copyright_sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+      "archive_path": "copyright/fonts-dejavu-core/copyright",
+      "installed_copyright_path": "/usr/share/doc/fonts-dejavu-core/copyright",
+      "resolved_copyright_path": "/usr/share/doc/fonts-dejavu-core/copyright"
+    },
+    {
+      "requested_package": "fonts-dejavu-mono",
+      "binary_package": "fonts-dejavu-mono",
+      "version": "2.37-8build1",
+      "source_package": "fonts-dejavu",
+      "source_version": "2.37-8build1",
+      "architecture": "all",
+      "copyright_sha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+      "archive_path": "copyright/fonts-dejavu-mono/copyright",
+      "installed_copyright_path": "/usr/share/doc/fonts-dejavu-mono/copyright",
+      "resolved_copyright_path": "/usr/share/doc/fonts-dejavu-mono/copyright"
+    },
+    {
+      "requested_package": "libaom3:amd64",
+      "binary_package": "libaom3:amd64",
+      "version": "3.13.1-2ubuntu0.1",
+      "source_package": "aom",
+      "source_version": "3.13.1-2ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "42721127769a2518e2355d0634942a0c10d5c8b9b9c21218a93a3dc2087699c9",
+      "archive_path": "copyright/libaom3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libaom3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libaom3/copyright"
+    },
+    {
+      "requested_package": "libapparmor1:amd64",
+      "binary_package": "libapparmor1:amd64",
+      "version": "5.0.2-0ubuntu1~26.04.1",
+      "source_package": "apparmor",
+      "source_version": "5.0.2-0ubuntu1~26.04.1",
+      "architecture": "amd64",
+      "copyright_sha256": "52b7cf37d674ca47296cf6270a95ecda0ecbef976cc090d702acbd741e36b3b4",
+      "archive_path": "copyright/libapparmor1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libapparmor1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libapparmor1/copyright"
+    },
+    {
+      "requested_package": "libasound2t64:amd64",
+      "binary_package": "libasound2t64:amd64",
+      "version": "1.2.15.3-1ubuntu1.1",
+      "source_package": "alsa-lib",
+      "source_version": "1.2.15.3-1ubuntu1.1",
+      "architecture": "amd64",
+      "copyright_sha256": "28558a697dadb5fe41ac66c8c4818ebbb7041adaf034dbf1aed67d428dac921b",
+      "archive_path": "copyright/libasound2t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libasound2t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libasound2t64/copyright"
+    },
+    {
+      "requested_package": "libass9:amd64",
+      "binary_package": "libass9:amd64",
+      "version": "1:0.17.4-2",
+      "source_package": "libass",
+      "source_version": "1:0.17.4-2",
+      "architecture": "amd64",
+      "copyright_sha256": "c3eb686a3786caa0e3033ee78908b6996a60fe9d163ecf7dc1c61871e19f88b7",
+      "archive_path": "copyright/libass9:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libass9/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libass9/copyright"
+    },
+    {
+      "requested_package": "libasyncns0:amd64",
+      "binary_package": "libasyncns0:amd64",
+      "version": "0.8-7",
+      "source_package": "libasyncns",
+      "source_version": "0.8-7",
+      "architecture": "amd64",
+      "copyright_sha256": "4c55303121812a3a9364b196eef70313e40235d2d1f590e93d45443dc73accf1",
+      "archive_path": "copyright/libasyncns0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libasyncns0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libasyncns0/copyright"
+    },
+    {
+      "requested_package": "libatomic1:amd64",
+      "binary_package": "libatomic1:amd64",
+      "version": "16-20260322-1ubuntu1",
+      "source_package": "gcc-16",
+      "source_version": "16-20260322-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+      "archive_path": "copyright/libatomic1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libatomic1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/gcc-16-base/copyright"
+    },
+    {
+      "requested_package": "libavc1394-0:amd64",
+      "binary_package": "libavc1394-0:amd64",
+      "version": "0.5.4-5build4",
+      "source_package": "libavc1394",
+      "source_version": "0.5.4-5build4",
+      "architecture": "amd64",
+      "copyright_sha256": "969fc10f87167c30b27e73f3774347f362ad4cfbca4754d3b1b95c6f4b0a0250",
+      "archive_path": "copyright/libavc1394-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavc1394-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavc1394-0/copyright"
+    },
+    {
+      "requested_package": "libavcodec62:amd64",
+      "binary_package": "libavcodec62:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libavcodec62:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavcodec62/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavcodec62/copyright"
+    },
+    {
+      "requested_package": "libavdevice62:amd64",
+      "binary_package": "libavdevice62:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libavdevice62:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavdevice62/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavdevice62/copyright"
+    },
+    {
+      "requested_package": "libavfilter11:amd64",
+      "binary_package": "libavfilter11:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libavfilter11:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavfilter11/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavfilter11/copyright"
+    },
+    {
+      "requested_package": "libavformat62:amd64",
+      "binary_package": "libavformat62:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libavformat62:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavformat62/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavformat62/copyright"
+    },
+    {
+      "requested_package": "libavutil60:amd64",
+      "binary_package": "libavutil60:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libavutil60:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libavutil60/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libavutil60/copyright"
+    },
+    {
+      "requested_package": "libblkid1:amd64",
+      "binary_package": "libblkid1:amd64",
+      "version": "2.41.3-3ubuntu2.2",
+      "source_package": "util-linux",
+      "source_version": "2.41.3-3ubuntu2.2",
+      "architecture": "amd64",
+      "copyright_sha256": "35a014187eb5d264405a91bda9ec782afdef9df148b657e67b38d07fabba2acf",
+      "archive_path": "copyright/libblkid1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libblkid1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libblkid1/copyright"
+    },
+    {
+      "requested_package": "libbluray3:amd64",
+      "binary_package": "libbluray3:amd64",
+      "version": "1:1.4.1-1",
+      "source_package": "libbluray",
+      "source_version": "1:1.4.1-1",
+      "architecture": "amd64",
+      "copyright_sha256": "f3daaedc900d6de31d876c6f8f5a3458b58603091b8c69197fa40b5443989b78",
+      "archive_path": "copyright/libbluray3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libbluray3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libbluray3/copyright"
+    },
+    {
+      "requested_package": "libbrotli1:amd64",
+      "binary_package": "libbrotli1:amd64",
+      "version": "1.2.0-3build1",
+      "source_package": "brotli",
+      "source_version": "1.2.0-3build1",
+      "architecture": "amd64",
+      "copyright_sha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1",
+      "archive_path": "copyright/libbrotli1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libbrotli1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libbrotli1/copyright"
+    },
+    {
+      "requested_package": "libbs2b0:amd64",
+      "binary_package": "libbs2b0:amd64",
+      "version": "3.1.0+dfsg-8build1",
+      "source_package": "libbs2b",
+      "source_version": "3.1.0+dfsg-8build1",
+      "architecture": "amd64",
+      "copyright_sha256": "4eae2784b24067760ee71be463d4db0dc17839c847f1bf66b2acee86cd417b6c",
+      "archive_path": "copyright/libbs2b0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libbs2b0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libbs2b0/copyright"
+    },
+    {
+      "requested_package": "libbsd0:amd64",
+      "binary_package": "libbsd0:amd64",
+      "version": "0.12.2-2build2",
+      "source_package": "libbsd",
+      "source_version": "0.12.2-2build2",
+      "architecture": "amd64",
+      "copyright_sha256": "47eaa031b1741a33a93e7cc8909bfe153acaec7ddff12e4dc7377d0e2ec10e91",
+      "archive_path": "copyright/libbsd0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libbsd0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libbsd0/copyright"
+    },
+    {
+      "requested_package": "libbz2-1.0:amd64",
+      "binary_package": "libbz2-1.0:amd64",
+      "version": "1.0.8-6ubuntu0.1",
+      "source_package": "bzip2",
+      "source_version": "1.0.8-6ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2",
+      "archive_path": "copyright/libbz2-1.0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libbz2-1.0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libbz2-1.0/copyright"
+    },
+    {
+      "requested_package": "libc6:amd64",
+      "binary_package": "libc6:amd64",
+      "version": "2.43-2ubuntu2.4",
+      "source_package": "glibc",
+      "source_version": "2.43-2ubuntu2.4",
+      "architecture": "amd64",
+      "copyright_sha256": "c31d10900fdb95d1889005145a2205bb75e3bc018d3ec8265b81364901748e09",
+      "archive_path": "copyright/libc6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libc6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libc6/copyright"
+    },
+    {
+      "requested_package": "libcairo-gobject2:amd64",
+      "binary_package": "libcairo-gobject2:amd64",
+      "version": "1.18.4-3",
+      "source_package": "cairo",
+      "source_version": "1.18.4-3",
+      "architecture": "amd64",
+      "copyright_sha256": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574",
+      "archive_path": "copyright/libcairo-gobject2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcairo-gobject2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcairo-gobject2/copyright"
+    },
+    {
+      "requested_package": "libcairo2:amd64",
+      "binary_package": "libcairo2:amd64",
+      "version": "1.18.4-3",
+      "source_package": "cairo",
+      "source_version": "1.18.4-3",
+      "architecture": "amd64",
+      "copyright_sha256": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574",
+      "archive_path": "copyright/libcairo2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcairo2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcairo2/copyright"
+    },
+    {
+      "requested_package": "libcdio-cdda2t64:amd64",
+      "binary_package": "libcdio-cdda2t64:amd64",
+      "version": "10.2+2.0.2-2",
+      "source_package": "libcdio-paranoia",
+      "source_version": "10.2+2.0.2-2",
+      "architecture": "amd64",
+      "copyright_sha256": "e63fbfa981093172cea38680a42b89c89395f75faaff3889fef0b9bd1a0b4e0b",
+      "archive_path": "copyright/libcdio-cdda2t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcdio-cdda2t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcdio-cdda2t64/copyright"
+    },
+    {
+      "requested_package": "libcdio-paranoia2t64:amd64",
+      "binary_package": "libcdio-paranoia2t64:amd64",
+      "version": "10.2+2.0.2-2",
+      "source_package": "libcdio-paranoia",
+      "source_version": "10.2+2.0.2-2",
+      "architecture": "amd64",
+      "copyright_sha256": "e63fbfa981093172cea38680a42b89c89395f75faaff3889fef0b9bd1a0b4e0b",
+      "archive_path": "copyright/libcdio-paranoia2t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcdio-paranoia2t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcdio-paranoia2t64/copyright"
+    },
+    {
+      "requested_package": "libcdio19t64:amd64",
+      "binary_package": "libcdio19t64:amd64",
+      "version": "2.2.0-4build1",
+      "source_package": "libcdio",
+      "source_version": "2.2.0-4build1",
+      "architecture": "amd64",
+      "copyright_sha256": "69dfb63c2f5be3e7c93b3336f8be4d0814a15381b6c6296ccb874c0db1bfd470",
+      "archive_path": "copyright/libcdio19t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcdio19t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcdio19t64/copyright"
+    },
+    {
+      "requested_package": "libchromaprint1:amd64",
+      "binary_package": "libchromaprint1:amd64",
+      "version": "1.6.0-2build1",
+      "source_package": "chromaprint",
+      "source_version": "1.6.0-2build1",
+      "architecture": "amd64",
+      "copyright_sha256": "0f58bcde77c462f0833d92c3c1d67d79498e6a1b9789b1e1161909e10e61d0c7",
+      "archive_path": "copyright/libchromaprint1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libchromaprint1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libchromaprint1/copyright"
+    },
+    {
+      "requested_package": "libcjson1:amd64",
+      "binary_package": "libcjson1:amd64",
+      "version": "1.7.19-2",
+      "source_package": "cjson",
+      "source_version": "1.7.19-2",
+      "architecture": "amd64",
+      "copyright_sha256": "720c3c9cc0f8d29113ac4cc6de63c23118aaa9cc8e626b79401ccfd7ce905b1d",
+      "archive_path": "copyright/libcjson1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcjson1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcjson1/copyright"
+    },
+    {
+      "requested_package": "libcodec2-1.2:amd64",
+      "binary_package": "libcodec2-1.2:amd64",
+      "version": "1.2.0-4",
+      "source_package": "codec2",
+      "source_version": "1.2.0-4",
+      "architecture": "amd64",
+      "copyright_sha256": "fd07bd00dbf40eff6b292e2b6774cd2a01f3d839137c6a7622d6f088af220d97",
+      "archive_path": "copyright/libcodec2-1.2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcodec2-1.2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcodec2-1.2/copyright"
+    },
+    {
+      "requested_package": "libcom-err2:amd64",
+      "binary_package": "libcom-err2:amd64",
+      "version": "1.47.2-3ubuntu4",
+      "source_package": "e2fsprogs",
+      "source_version": "1.47.2-3ubuntu4",
+      "architecture": "amd64",
+      "copyright_sha256": "2041b5febdc110151ca3372d01b16b85dda1888e33f3f60fce0f59940eed7d19",
+      "archive_path": "copyright/libcom-err2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libcom-err2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libcom-err2/copyright"
+    },
+    {
+      "requested_package": "libdatrie1:amd64",
+      "binary_package": "libdatrie1:amd64",
+      "version": "0.2.14-1",
+      "source_package": "libdatrie",
+      "source_version": "0.2.14-1",
+      "architecture": "amd64",
+      "copyright_sha256": "7b181788688d7ba3336782c18f3919a462503024d3e23b15ff0f52b2de994efc",
+      "archive_path": "copyright/libdatrie1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdatrie1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdatrie1/copyright"
+    },
+    {
+      "requested_package": "libdav1d7:amd64",
+      "binary_package": "libdav1d7:amd64",
+      "version": "1.5.3-1",
+      "source_package": "dav1d",
+      "source_version": "1.5.3-1",
+      "architecture": "amd64",
+      "copyright_sha256": "46762239c3e3d58f8c8219a80e5ec3f15bee23081414750e1762829c12fb5df8",
+      "archive_path": "copyright/libdav1d7:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdav1d7/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdav1d7/copyright"
+    },
+    {
+      "requested_package": "libdb5.3t64:amd64",
+      "binary_package": "libdb5.3t64:amd64",
+      "version": "5.3.28+dfsg2-10ubuntu1",
+      "source_package": "db5.3",
+      "source_version": "5.3.28+dfsg2-10ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "8b53da37d73289d9df7317b3a2dbe16491f1fa9fec8b77b86d69704b40ce2c26",
+      "archive_path": "copyright/libdb5.3t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdb5.3t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdb5.3t64/copyright"
+    },
+    {
+      "requested_package": "libdbus-1-3:amd64",
+      "binary_package": "libdbus-1-3:amd64",
+      "version": "1.16.2-2ubuntu4",
+      "source_package": "dbus",
+      "source_version": "1.16.2-2ubuntu4",
+      "architecture": "amd64",
+      "copyright_sha256": "f5fd0bfcceb21f4c23a517368abcbfe8a4c1cfb3b521757b50fae4898840fe35",
+      "archive_path": "copyright/libdbus-1-3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdbus-1-3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdbus-1-3/copyright"
+    },
+    {
+      "requested_package": "libdc1394-25:amd64",
+      "binary_package": "libdc1394-25:amd64",
+      "version": "2.2.6-6",
+      "source_package": "libdc1394",
+      "source_version": "2.2.6-6",
+      "architecture": "amd64",
+      "copyright_sha256": "98b69ff6062d9332d0544af8992e90ec0177446af1e861ebe5fec00709ae10ee",
+      "archive_path": "copyright/libdc1394-25:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdc1394-25/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdc1394-25/copyright"
+    },
+    {
+      "requested_package": "libdisplay-info3:amd64",
+      "binary_package": "libdisplay-info3:amd64",
+      "version": "0.3.0-1",
+      "source_package": "libdisplay-info",
+      "source_version": "0.3.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "930284fda1dc073a97421da7a6f92df5b6b05ce435707206eaf182aa51c4dae4",
+      "archive_path": "copyright/libdisplay-info3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdisplay-info3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdisplay-info3/copyright"
+    },
+    {
+      "requested_package": "libdrm-amdgpu1:amd64",
+      "binary_package": "libdrm-amdgpu1:amd64",
+      "version": "2.4.131-1",
+      "source_package": "libdrm",
+      "source_version": "2.4.131-1",
+      "architecture": "amd64",
+      "copyright_sha256": "90df8ca02b0e0f21eebd8e58585345a8a5cd97bd46ad6faa577dc8d07a67aeaa",
+      "archive_path": "copyright/libdrm-amdgpu1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdrm-amdgpu1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdrm-amdgpu1/copyright"
+    },
+    {
+      "requested_package": "libdrm2:amd64",
+      "binary_package": "libdrm2:amd64",
+      "version": "2.4.131-1",
+      "source_package": "libdrm",
+      "source_version": "2.4.131-1",
+      "architecture": "amd64",
+      "copyright_sha256": "90df8ca02b0e0f21eebd8e58585345a8a5cd97bd46ad6faa577dc8d07a67aeaa",
+      "archive_path": "copyright/libdrm2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdrm2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdrm2/copyright"
+    },
+    {
+      "requested_package": "libdvdnav4:amd64",
+      "binary_package": "libdvdnav4:amd64",
+      "version": "7.0.0-2",
+      "source_package": "libdvdnav",
+      "source_version": "7.0.0-2",
+      "architecture": "amd64",
+      "copyright_sha256": "e3fd6eed05e67c3c423109db3eebb71cd5e796b9452477c6f66f6e3cf596380a",
+      "archive_path": "copyright/libdvdnav4:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdvdnav4/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdvdnav4/copyright"
+    },
+    {
+      "requested_package": "libdvdread8t64:amd64",
+      "binary_package": "libdvdread8t64:amd64",
+      "version": "7.0.1-1",
+      "source_package": "libdvdread",
+      "source_version": "7.0.1-1",
+      "architecture": "amd64",
+      "copyright_sha256": "afb374123ebbe902707de5a1a2004f7842728541686f8e92afd380ec48c4b8f3",
+      "archive_path": "copyright/libdvdread8t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libdvdread8t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libdvdread8t64/copyright"
+    },
+    {
+      "requested_package": "libedit2:amd64",
+      "binary_package": "libedit2:amd64",
+      "version": "3.1-20251016-1",
+      "source_package": "libedit",
+      "source_version": "3.1-20251016-1",
+      "architecture": "amd64",
+      "copyright_sha256": "2b53671050f6319be6fcdcafa434e8ccb8af629359b4afc83185867204f3927d",
+      "archive_path": "copyright/libedit2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libedit2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libedit2/copyright"
+    },
+    {
+      "requested_package": "libelf1t64:amd64",
+      "binary_package": "libelf1t64:amd64",
+      "version": "0.194-4",
+      "source_package": "elfutils",
+      "source_version": "0.194-4",
+      "architecture": "amd64",
+      "copyright_sha256": "2409860c86675ab33f8ad22480608faf849cbc2559d6478f708c23c508a1dbf2",
+      "archive_path": "copyright/libelf1t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libelf1t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libelf1t64/copyright"
+    },
+    {
+      "requested_package": "libexpat1:amd64",
+      "binary_package": "libexpat1:amd64",
+      "version": "2.7.4-1ubuntu0.2",
+      "source_package": "expat",
+      "source_version": "2.7.4-1ubuntu0.2",
+      "architecture": "amd64",
+      "copyright_sha256": "60919fe1a156395ff14511bb6ff79756c50ade2fff59ac60c9bae1d8a7fe6292",
+      "archive_path": "copyright/libexpat1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libexpat1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libexpat1/copyright"
+    },
+    {
+      "requested_package": "libffi8:amd64",
+      "binary_package": "libffi8:amd64",
+      "version": "3.5.2-4",
+      "source_package": "libffi",
+      "source_version": "3.5.2-4",
+      "architecture": "amd64",
+      "copyright_sha256": "25ee86cfccc2b7eb9a156a127f1e1b38c46c231f516ff201912223eaf62ee186",
+      "archive_path": "copyright/libffi8:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libffi8/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libffi8/copyright"
+    },
+    {
+      "requested_package": "libfftw3-double3:amd64",
+      "binary_package": "libfftw3-double3:amd64",
+      "version": "3.3.10-2fakesync1build3",
+      "source_package": "fftw3",
+      "source_version": "3.3.10-2fakesync1build3",
+      "architecture": "amd64",
+      "copyright_sha256": "8da846cb9e375187ccee28953159c233ba788ec1e74b2089a63c27e75f5795d3",
+      "archive_path": "copyright/libfftw3-double3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libfftw3-double3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libfftw3-double3/copyright"
+    },
+    {
+      "requested_package": "libflac14:amd64",
+      "binary_package": "libflac14:amd64",
+      "version": "1.5.0+ds-5",
+      "source_package": "flac",
+      "source_version": "1.5.0+ds-5",
+      "architecture": "amd64",
+      "copyright_sha256": "74f04017cc1845b98a2582f0b6a666524bcf7e61083f7c5e2f4298017ce875bc",
+      "archive_path": "copyright/libflac14:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libflac14/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libflac14/copyright"
+    },
+    {
+      "requested_package": "libflite1:amd64",
+      "binary_package": "libflite1:amd64",
+      "version": "2.2-7build1",
+      "source_package": "flite",
+      "source_version": "2.2-7build1",
+      "architecture": "amd64",
+      "copyright_sha256": "77d13a5e6cbe7277b4721033f9ad15707241c2832baa8c74ec823c9ee5ebf71c",
+      "archive_path": "copyright/libflite1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libflite1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libflite1/copyright"
+    },
+    {
+      "requested_package": "libfontconfig1:amd64",
+      "binary_package": "libfontconfig1:amd64",
+      "version": "2.17.1-3ubuntu1",
+      "source_package": "fontconfig",
+      "source_version": "2.17.1-3ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "b215a61cdd3e62b5b17cc28b1852c78acb3dd38be0fb30706f7efc050dba91db",
+      "archive_path": "copyright/libfontconfig1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libfontconfig1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libfontconfig1/copyright"
+    },
+    {
+      "requested_package": "libfreetype6:amd64",
+      "binary_package": "libfreetype6:amd64",
+      "version": "2.14.2+dfsg-1ubuntu0.2",
+      "source_package": "freetype",
+      "source_version": "2.14.2+dfsg-1ubuntu0.2",
+      "architecture": "amd64",
+      "copyright_sha256": "8951319d2cbc54c13f091eaedff603f717026e5bf7788902ccd635a094d7a561",
+      "archive_path": "copyright/libfreetype6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libfreetype6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libfreetype6/copyright"
+    },
+    {
+      "requested_package": "libfribidi0:amd64",
+      "binary_package": "libfribidi0:amd64",
+      "version": "1.0.16-5",
+      "source_package": "fribidi",
+      "source_version": "1.0.16-5",
+      "architecture": "amd64",
+      "copyright_sha256": "200d598cca867f58739101cce4dba4bb6083f1489b37784daee7dea88bd441d2",
+      "archive_path": "copyright/libfribidi0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libfribidi0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libfribidi0/copyright"
+    },
+    {
+      "requested_package": "libgcc-s1:amd64",
+      "binary_package": "libgcc-s1:amd64",
+      "version": "16-20260322-1ubuntu1",
+      "source_package": "gcc-16",
+      "source_version": "16-20260322-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+      "archive_path": "copyright/libgcc-s1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgcc-s1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/gcc-16-base/copyright"
+    },
+    {
+      "requested_package": "libgdk-pixbuf-2.0-0:amd64",
+      "binary_package": "libgdk-pixbuf-2.0-0:amd64",
+      "version": "2.44.5+dfsg-4ubuntu1",
+      "source_package": "gdk-pixbuf",
+      "source_version": "2.44.5+dfsg-4ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "faf01d9afa1bc904c146e149c987fd5b37e8b53a5a3b1cc2353a43adee0353a5",
+      "archive_path": "copyright/libgdk-pixbuf-2.0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgdk-pixbuf-2.0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgdk-pixbuf-2.0-0/copyright"
+    },
+    {
+      "requested_package": "libglib2.0-0t64:amd64",
+      "binary_package": "libglib2.0-0t64:amd64",
+      "version": "2.88.0-1ubuntu0.1",
+      "source_package": "glib2.0",
+      "source_version": "2.88.0-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "498035c1e93c9d12306f4ba8f37686c2a527657f8b17969ec6d11c1af87e543d",
+      "archive_path": "copyright/libglib2.0-0t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libglib2.0-0t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libglib2.0-0t64/copyright"
+    },
+    {
+      "requested_package": "libglycin-2-0:amd64",
+      "binary_package": "libglycin-2-0:amd64",
+      "version": "2.1.5+ds-0ubuntu0.2",
+      "source_package": "glycin",
+      "source_version": "2.1.5+ds-0ubuntu0.2",
+      "architecture": "amd64",
+      "copyright_sha256": "1e3a7afedd39f8b7a28bfed173680ee252635eb385e5a18b33cb334b60df8899",
+      "archive_path": "copyright/libglycin-2-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libglycin-2-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libglycin-2-0/copyright"
+    },
+    {
+      "requested_package": "libgme0:amd64",
+      "binary_package": "libgme0:amd64",
+      "version": "0.6.4-1",
+      "source_package": "game-music-emu",
+      "source_version": "0.6.4-1",
+      "architecture": "amd64",
+      "copyright_sha256": "3149eacfe1713987e951be1985cd515dd4eac26e84f83a278d8d1cded72dfc42",
+      "archive_path": "copyright/libgme0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgme0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgme0/copyright"
+    },
+    {
+      "requested_package": "libgmp10:amd64",
+      "binary_package": "libgmp10:amd64",
+      "version": "2:6.3.0+dfsg-5ubuntu2",
+      "source_package": "gmp",
+      "source_version": "2:6.3.0+dfsg-5ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "7d366aef5ba325150246de1d7820c4c9926cd27ca61a69948492b26cd3b61601",
+      "archive_path": "copyright/libgmp10:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgmp10/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgmp10/copyright"
+    },
+    {
+      "requested_package": "libgnutls30t64:amd64",
+      "binary_package": "libgnutls30t64:amd64",
+      "version": "3.8.12-2ubuntu1.1",
+      "source_package": "gnutls28",
+      "source_version": "3.8.12-2ubuntu1.1",
+      "architecture": "amd64",
+      "copyright_sha256": "b32655aad8bb1530de36933f8702af1e669fabb9bf3e712c533803c7092d77da",
+      "archive_path": "copyright/libgnutls30t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgnutls30t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgnutls30t64/copyright"
+    },
+    {
+      "requested_package": "libgomp1:amd64",
+      "binary_package": "libgomp1:amd64",
+      "version": "16-20260322-1ubuntu1",
+      "source_package": "gcc-16",
+      "source_version": "16-20260322-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+      "archive_path": "copyright/libgomp1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgomp1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/gcc-16-base/copyright"
+    },
+    {
+      "requested_package": "libgraphite2-3:amd64",
+      "binary_package": "libgraphite2-3:amd64",
+      "version": "1.3.14-11ubuntu1.1",
+      "source_package": "graphite2",
+      "source_version": "1.3.14-11ubuntu1.1",
+      "architecture": "amd64",
+      "copyright_sha256": "a33017ba0308c41bdbde4751bff349ab7b26af45fadbb1e3e7ac67c372985572",
+      "archive_path": "copyright/libgraphite2-3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgraphite2-3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgraphite2-3/copyright"
+    },
+    {
+      "requested_package": "libgsm1:amd64",
+      "binary_package": "libgsm1:amd64",
+      "version": "1.0.23-2",
+      "source_package": "libgsm",
+      "source_version": "1.0.23-2",
+      "architecture": "amd64",
+      "copyright_sha256": "d8f1dc05f9f636c41deec7f75ca11daa595f36e41c79aadac1f3aa017c4e17b8",
+      "archive_path": "copyright/libgsm1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgsm1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgsm1/copyright"
+    },
+    {
+      "requested_package": "libgssapi-krb5-2:amd64",
+      "binary_package": "libgssapi-krb5-2:amd64",
+      "version": "1.22.1-2ubuntu4.1",
+      "source_package": "krb5",
+      "source_version": "1.22.1-2ubuntu4.1",
+      "architecture": "amd64",
+      "copyright_sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+      "archive_path": "copyright/libgssapi-krb5-2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libgssapi-krb5-2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libgssapi-krb5-2/copyright"
+    },
+    {
+      "requested_package": "libharfbuzz0b:amd64",
+      "binary_package": "libharfbuzz0b:amd64",
+      "version": "12.3.2-2",
+      "source_package": "harfbuzz",
+      "source_version": "12.3.2-2",
+      "architecture": "amd64",
+      "copyright_sha256": "407e84e766824b0b8ee7e06da15dbf50e924f4adeec1e4748247a07b3dbc3208",
+      "archive_path": "copyright/libharfbuzz0b:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libharfbuzz0b/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libharfbuzz0b/copyright"
+    },
+    {
+      "requested_package": "libhogweed6t64:amd64",
+      "binary_package": "libhogweed6t64:amd64",
+      "version": "3.10.2-1",
+      "source_package": "nettle",
+      "source_version": "3.10.2-1",
+      "architecture": "amd64",
+      "copyright_sha256": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6",
+      "archive_path": "copyright/libhogweed6t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libhogweed6t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libhogweed6t64/copyright"
+    },
+    {
+      "requested_package": "libhwy1t64:amd64",
+      "binary_package": "libhwy1t64:amd64",
+      "version": "1.3.0-2",
+      "source_package": "highway",
+      "source_version": "1.3.0-2",
+      "architecture": "amd64",
+      "copyright_sha256": "fd82ff294401d62244717374587aa9daa62934600096460a8565d215ff902f8c",
+      "archive_path": "copyright/libhwy1t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libhwy1t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libhwy1t64/copyright"
+    },
+    {
+      "requested_package": "libidn2-0:amd64",
+      "binary_package": "libidn2-0:amd64",
+      "version": "2.3.8-4build1",
+      "source_package": "libidn2",
+      "source_version": "2.3.8-4build1",
+      "architecture": "amd64",
+      "copyright_sha256": "a63ceb8fab281177da9a27403f0be7ae69aa6f33bf6f63c455ecc587ca131268",
+      "archive_path": "copyright/libidn2-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libidn2-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libidn2-0/copyright"
+    },
+    {
+      "requested_package": "libiec61883-0:amd64",
+      "binary_package": "libiec61883-0:amd64",
+      "version": "1.2.0-8",
+      "source_package": "libiec61883",
+      "source_version": "1.2.0-8",
+      "architecture": "amd64",
+      "copyright_sha256": "b8b6e7a3bb8e11c2006578d8e2a8acc044dc212cc2d37110b5a0cbdd871b6b54",
+      "archive_path": "copyright/libiec61883-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libiec61883-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libiec61883-0/copyright"
+    },
+    {
+      "requested_package": "libjack-jackd2-0:amd64",
+      "binary_package": "libjack-jackd2-0:amd64",
+      "version": "1.9.22~dfsg-5build1",
+      "source_package": "jackd2",
+      "source_version": "1.9.22~dfsg-5build1",
+      "architecture": "amd64",
+      "copyright_sha256": "22431492e086539e9ed8373816901405d9dd3ff44351f99fff7e1d5ca267f0dd",
+      "archive_path": "copyright/libjack-jackd2-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libjack-jackd2-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libjack-jackd2-0/copyright"
+    },
+    {
+      "requested_package": "libjxl0.11:amd64",
+      "binary_package": "libjxl0.11:amd64",
+      "version": "0.11.1-6ubuntu4.2",
+      "source_package": "jpeg-xl",
+      "source_version": "0.11.1-6ubuntu4.2",
+      "architecture": "amd64",
+      "copyright_sha256": "cf449aae49be7e62803ac2ee7f4bd63d1156c1ace680908d24a3856215cd3329",
+      "archive_path": "copyright/libjxl0.11:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libjxl0.11/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libjxl0.11/copyright"
+    },
+    {
+      "requested_package": "libk5crypto3:amd64",
+      "binary_package": "libk5crypto3:amd64",
+      "version": "1.22.1-2ubuntu4.1",
+      "source_package": "krb5",
+      "source_version": "1.22.1-2ubuntu4.1",
+      "architecture": "amd64",
+      "copyright_sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+      "archive_path": "copyright/libk5crypto3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libk5crypto3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libk5crypto3/copyright"
+    },
+    {
+      "requested_package": "libkeyutils1:amd64",
+      "binary_package": "libkeyutils1:amd64",
+      "version": "1.6.3-6ubuntu3",
+      "source_package": "keyutils",
+      "source_version": "1.6.3-6ubuntu3",
+      "architecture": "amd64",
+      "copyright_sha256": "73f5682b0466f41cea2b9b7f1ff8a8052464f6c09fb29eeac4490512af09bd50",
+      "archive_path": "copyright/libkeyutils1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libkeyutils1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libkeyutils1/copyright"
+    },
+    {
+      "requested_package": "libkrb5-3:amd64",
+      "binary_package": "libkrb5-3:amd64",
+      "version": "1.22.1-2ubuntu4.1",
+      "source_package": "krb5",
+      "source_version": "1.22.1-2ubuntu4.1",
+      "architecture": "amd64",
+      "copyright_sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+      "archive_path": "copyright/libkrb5-3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libkrb5-3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libkrb5-3/copyright"
+    },
+    {
+      "requested_package": "libkrb5support0:amd64",
+      "binary_package": "libkrb5support0:amd64",
+      "version": "1.22.1-2ubuntu4.1",
+      "source_package": "krb5",
+      "source_version": "1.22.1-2ubuntu4.1",
+      "architecture": "amd64",
+      "copyright_sha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+      "archive_path": "copyright/libkrb5support0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libkrb5support0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libkrb5support0/copyright"
+    },
+    {
+      "requested_package": "liblcms2-2:amd64",
+      "binary_package": "liblcms2-2:amd64",
+      "version": "2.17-1ubuntu0.2",
+      "source_package": "lcms2",
+      "source_version": "2.17-1ubuntu0.2",
+      "architecture": "amd64",
+      "copyright_sha256": "420fd2c72204652c08a48548a0d1002edab3d9b180d3c416578c61f74092f460",
+      "archive_path": "copyright/liblcms2-2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/liblcms2-2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/liblcms2-2/copyright"
+    },
+    {
+      "requested_package": "liblilv-0-0:amd64",
+      "binary_package": "liblilv-0-0:amd64",
+      "version": "0.26.2-1",
+      "source_package": "lilv",
+      "source_version": "0.26.2-1",
+      "architecture": "amd64",
+      "copyright_sha256": "96d6d24fc294b9b21982d012da3424136c967e6a3545d3123a4fc66f28424dc5",
+      "archive_path": "copyright/liblilv-0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/liblilv-0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/liblilv-0-0/copyright"
+    },
+    {
+      "requested_package": "libllvm21:amd64",
+      "binary_package": "libllvm21:amd64",
+      "version": "1:21.1.8-6ubuntu1",
+      "source_package": "llvm-toolchain-21",
+      "source_version": "1:21.1.8-6ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "b2ed2fd344e8ddbf2e0c83113bd40fa1853438be61a0ff20af5acd187c07cbf6",
+      "archive_path": "copyright/libllvm21:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libllvm21/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libllvm21/copyright"
+    },
+    {
+      "requested_package": "liblzma5:amd64",
+      "binary_package": "liblzma5:amd64",
+      "version": "5.8.3-1ubuntu0.1",
+      "source_package": "xz-utils",
+      "source_version": "5.8.3-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "a9c3f6e1bf373b54e29704e31afd99f5405a32cbc7897608b0f15e9d544882d4",
+      "archive_path": "copyright/liblzma5:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/liblzma5/copyright",
+      "resolved_copyright_path": "/usr/share/doc/liblzma5/copyright"
+    },
+    {
+      "requested_package": "libmbedcrypto16:amd64",
+      "binary_package": "libmbedcrypto16:amd64",
+      "version": "3.6.5-0.1ubuntu2",
+      "source_package": "mbedtls",
+      "source_version": "3.6.5-0.1ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "446042a6d62055e5617c220129b03063deff1a2b595ac29d9d10a9058cc10981",
+      "archive_path": "copyright/libmbedcrypto16:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmbedcrypto16/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmbedcrypto16/copyright"
+    },
+    {
+      "requested_package": "libmd0:amd64",
+      "binary_package": "libmd0:amd64",
+      "version": "1.1.0-2build4",
+      "source_package": "libmd",
+      "source_version": "1.1.0-2build4",
+      "architecture": "amd64",
+      "copyright_sha256": "4365ef6255ad553fce69dd4bc0e093472c5d0e41b8ea493a545cc926ce171aa6",
+      "archive_path": "copyright/libmd0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmd0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmd0/copyright"
+    },
+    {
+      "requested_package": "libmount1:amd64",
+      "binary_package": "libmount1:amd64",
+      "version": "2.41.3-3ubuntu2.2",
+      "source_package": "util-linux",
+      "source_version": "2.41.3-3ubuntu2.2",
+      "architecture": "amd64",
+      "copyright_sha256": "35a014187eb5d264405a91bda9ec782afdef9df148b657e67b38d07fabba2acf",
+      "archive_path": "copyright/libmount1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmount1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmount1/copyright"
+    },
+    {
+      "requested_package": "libmp3lame0:amd64",
+      "binary_package": "libmp3lame0:amd64",
+      "version": "3.101~svn6525+dfsg-2ubuntu0.1",
+      "source_package": "lame",
+      "source_version": "3.101~svn6525+dfsg-2ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "0e4b0e56bb8e5b72a5d3af0629b617c9d78c2c8fb42a722f4b0a0d9bb3cac202",
+      "archive_path": "copyright/libmp3lame0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmp3lame0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmp3lame0/copyright"
+    },
+    {
+      "requested_package": "libmpg123-0t64:amd64",
+      "binary_package": "libmpg123-0t64:amd64",
+      "version": "1.33.3-2",
+      "source_package": "mpg123",
+      "source_version": "1.33.3-2",
+      "architecture": "amd64",
+      "copyright_sha256": "96a8ad2037ec07953ee02ea7f9c56710e403d7d01be33500e9cd05d900998b7a",
+      "archive_path": "copyright/libmpg123-0t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmpg123-0t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmpg123-0t64/copyright"
+    },
+    {
+      "requested_package": "libmysofa1:amd64",
+      "binary_package": "libmysofa1:amd64",
+      "version": "1.3.3+dfsg-1ubuntu2",
+      "source_package": "libmysofa",
+      "source_version": "1.3.3+dfsg-1ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "99aab76301ca56da29c87971d0f57a41e11651c453a601b01d51baf0b81be39c",
+      "archive_path": "copyright/libmysofa1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libmysofa1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libmysofa1/copyright"
+    },
+    {
+      "requested_package": "libnettle8t64:amd64",
+      "binary_package": "libnettle8t64:amd64",
+      "version": "3.10.2-1",
+      "source_package": "nettle",
+      "source_version": "3.10.2-1",
+      "architecture": "amd64",
+      "copyright_sha256": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6",
+      "archive_path": "copyright/libnettle8t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libnettle8t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libnettle8t64/copyright"
+    },
+    {
+      "requested_package": "libnorm1t64:amd64",
+      "binary_package": "libnorm1t64:amd64",
+      "version": "1.5.9+dfsg-4",
+      "source_package": "norm",
+      "source_version": "1.5.9+dfsg-4",
+      "architecture": "amd64",
+      "copyright_sha256": "88c38443da2ea7d228b3d3e4e13138c02b41448e1210ad0e6277516c9ad493ef",
+      "archive_path": "copyright/libnorm1t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libnorm1t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libnorm1t64/copyright"
+    },
+    {
+      "requested_package": "libnuma1:amd64",
+      "binary_package": "libnuma1:amd64",
+      "version": "2.0.19-1build1",
+      "source_package": "numactl",
+      "source_version": "2.0.19-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "179c34f5e56cd0b6b73dd7970a97357ee784e2236e8293826656c7ebb3bface7",
+      "archive_path": "copyright/libnuma1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libnuma1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libnuma1/copyright"
+    },
+    {
+      "requested_package": "libogg0:amd64",
+      "binary_package": "libogg0:amd64",
+      "version": "1.3.6-2",
+      "source_package": "libogg",
+      "source_version": "1.3.6-2",
+      "architecture": "amd64",
+      "copyright_sha256": "e2436f126bda43a69b367287d9b3db08efd128f9a9576240bc9bbe0c86b031c8",
+      "archive_path": "copyright/libogg0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libogg0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libogg0/copyright"
+    },
+    {
+      "requested_package": "libopenal1:amd64",
+      "binary_package": "libopenal1:amd64",
+      "version": "1:1.25.1-2",
+      "source_package": "openal-soft",
+      "source_version": "1:1.25.1-2",
+      "architecture": "amd64",
+      "copyright_sha256": "de059bb3f2352a277766111a19497ecee39135a5c1db9a2a0d89965ec2b6c44f",
+      "archive_path": "copyright/libopenal1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libopenal1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libopenal1/copyright"
+    },
+    {
+      "requested_package": "libopenjp2-7:amd64",
+      "binary_package": "libopenjp2-7:amd64",
+      "version": "2.5.4-1ubuntu0.1",
+      "source_package": "openjpeg2",
+      "source_version": "2.5.4-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "5e73ad1e015c45c2c82a1f1c25cf9737230270f28f995806d7ab82ebfbc3cc01",
+      "archive_path": "copyright/libopenjp2-7:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libopenjp2-7/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libopenjp2-7/copyright"
+    },
+    {
+      "requested_package": "libopenmpt0t64:amd64",
+      "binary_package": "libopenmpt0t64:amd64",
+      "version": "0.8.4-1",
+      "source_package": "libopenmpt",
+      "source_version": "0.8.4-1",
+      "architecture": "amd64",
+      "copyright_sha256": "5998a8ed3e0b53886019f9cdb54a2048ee3c26308db7fc692585c9721fb42e6b",
+      "archive_path": "copyright/libopenmpt0t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libopenmpt0t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libopenmpt0t64/copyright"
+    },
+    {
+      "requested_package": "libopus0:amd64",
+      "binary_package": "libopus0:amd64",
+      "version": "1.6.1-1",
+      "source_package": "opus",
+      "source_version": "1.6.1-1",
+      "architecture": "amd64",
+      "copyright_sha256": "1580efdb9c8b11bc06510021d948c89dfee78c7eb9bd6d1ac5eb3ebdcbd82d29",
+      "archive_path": "copyright/libopus0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libopus0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libopus0/copyright"
+    },
+    {
+      "requested_package": "libp11-kit0:amd64",
+      "binary_package": "libp11-kit0:amd64",
+      "version": "0.26.2-2",
+      "source_package": "p11-kit",
+      "source_version": "0.26.2-2",
+      "architecture": "amd64",
+      "copyright_sha256": "a5611fbad151d1fa0aa484f6c393a5166af33ce9a9783dfb2712d6b87b462b37",
+      "archive_path": "copyright/libp11-kit0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libp11-kit0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libp11-kit0/copyright"
+    },
+    {
+      "requested_package": "libpango-1.0-0:amd64",
+      "binary_package": "libpango-1.0-0:amd64",
+      "version": "1.57.0-1",
+      "source_package": "pango1.0",
+      "source_version": "1.57.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+      "archive_path": "copyright/libpango-1.0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpango-1.0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpango-1.0-0/copyright"
+    },
+    {
+      "requested_package": "libpangocairo-1.0-0:amd64",
+      "binary_package": "libpangocairo-1.0-0:amd64",
+      "version": "1.57.0-1",
+      "source_package": "pango1.0",
+      "source_version": "1.57.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+      "archive_path": "copyright/libpangocairo-1.0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpangocairo-1.0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpangocairo-1.0-0/copyright"
+    },
+    {
+      "requested_package": "libpangoft2-1.0-0:amd64",
+      "binary_package": "libpangoft2-1.0-0:amd64",
+      "version": "1.57.0-1",
+      "source_package": "pango1.0",
+      "source_version": "1.57.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+      "archive_path": "copyright/libpangoft2-1.0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpangoft2-1.0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpangoft2-1.0-0/copyright"
+    },
+    {
+      "requested_package": "libpcre2-8-0:amd64",
+      "binary_package": "libpcre2-8-0:amd64",
+      "version": "10.46-1build1",
+      "source_package": "pcre2",
+      "source_version": "10.46-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "e915cde4251f96ec6af107ecd2e194440a4e69440893b0c982802f8a1e4ae40a",
+      "archive_path": "copyright/libpcre2-8-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpcre2-8-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpcre2-8-0/copyright"
+    },
+    {
+      "requested_package": "libpgm-5.3-0t64:amd64",
+      "binary_package": "libpgm-5.3-0t64:amd64",
+      "version": "5.3.128~dfsg-2.1build2",
+      "source_package": "libpgm",
+      "source_version": "5.3.128~dfsg-2.1build2",
+      "architecture": "amd64",
+      "copyright_sha256": "07836d892d92dcef15583e4e01569805498b95769f1c85d79bc996821dace2cf",
+      "archive_path": "copyright/libpgm-5.3-0t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpgm-5.3-0t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpgm-5.3-0t64/copyright"
+    },
+    {
+      "requested_package": "libpixman-1-0:amd64",
+      "binary_package": "libpixman-1-0:amd64",
+      "version": "0.46.4-1",
+      "source_package": "pixman",
+      "source_version": "0.46.4-1",
+      "architecture": "amd64",
+      "copyright_sha256": "fc01aa986f587d001f58acd312a4168bcc5e9f9ab6caccf3213f25133b0ffef5",
+      "archive_path": "copyright/libpixman-1-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpixman-1-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpixman-1-0/copyright"
+    },
+    {
+      "requested_package": "libplacebo360:amd64",
+      "binary_package": "libplacebo360:amd64",
+      "version": "7.360.0-3",
+      "source_package": "libplacebo",
+      "source_version": "7.360.0-3",
+      "architecture": "amd64",
+      "copyright_sha256": "2f21107885f2aacf42577624c94de149f16400b1e052bda8e87a85a050fa5cac",
+      "archive_path": "copyright/libplacebo360:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libplacebo360/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libplacebo360/copyright"
+    },
+    {
+      "requested_package": "libpng16-16t64:amd64",
+      "binary_package": "libpng16-16t64:amd64",
+      "version": "1.6.57-1ubuntu0.1",
+      "source_package": "libpng1.6",
+      "source_version": "1.6.57-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "55c6fc6ffe83143f360b83f26b3064fff499120eff31e4f14ebba6d667308352",
+      "archive_path": "copyright/libpng16-16t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpng16-16t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpng16-16t64/copyright"
+    },
+    {
+      "requested_package": "libpulse0:amd64",
+      "binary_package": "libpulse0:amd64",
+      "version": "1:17.0+dfsg1-2ubuntu4",
+      "source_package": "pulseaudio",
+      "source_version": "1:17.0+dfsg1-2ubuntu4",
+      "architecture": "amd64",
+      "copyright_sha256": "aff3f1d729168de06e34d940dc493cc305a6e4a6278f1ac38ee52ec0f69e342c",
+      "archive_path": "copyright/libpulse0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libpulse0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libpulse0/copyright"
+    },
+    {
+      "requested_package": "librabbitmq4:amd64",
+      "binary_package": "librabbitmq4:amd64",
+      "version": "0.15.0-1ubuntu0.26.04.2",
+      "source_package": "librabbitmq",
+      "source_version": "0.15.0-1ubuntu0.26.04.2",
+      "architecture": "amd64",
+      "copyright_sha256": "99f53e190f9ca2ec8a8cbd98f2ccd34f885e91e0e36bceacfa763582dfa2f8f7",
+      "archive_path": "copyright/librabbitmq4:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/librabbitmq4/copyright",
+      "resolved_copyright_path": "/usr/share/doc/librabbitmq4/copyright"
+    },
+    {
+      "requested_package": "librav1e0.8:amd64",
+      "binary_package": "librav1e0.8:amd64",
+      "version": "0.8.1-7",
+      "source_package": "rust-rav1e",
+      "source_version": "0.8.1-7",
+      "architecture": "amd64",
+      "copyright_sha256": "78924756e46ec5c762de1fd5ced1aa50aee171ac3608712b7481fe4e21a5fa62",
+      "archive_path": "copyright/librav1e0.8:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/librav1e0.8/copyright",
+      "resolved_copyright_path": "/usr/share/doc/librav1e0.8/copyright"
+    },
+    {
+      "requested_package": "libraw1394-11:amd64",
+      "binary_package": "libraw1394-11:amd64",
+      "version": "2.1.2-2build4",
+      "source_package": "libraw1394",
+      "source_version": "2.1.2-2build4",
+      "architecture": "amd64",
+      "copyright_sha256": "8179158680353631133a7339cdcd3637613cbc8f227b7681cdb1d9c1f874dad6",
+      "archive_path": "copyright/libraw1394-11:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libraw1394-11/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libraw1394-11/copyright"
+    },
+    {
+      "requested_package": "librist4:amd64",
+      "binary_package": "librist4:amd64",
+      "version": "0.2.11+dfsg-1build1",
+      "source_package": "librist",
+      "source_version": "0.2.11+dfsg-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "e67ffa708e79c29f03c5621e9feb89f4931c01ec5aaa361f11ac57bccfd476f2",
+      "archive_path": "copyright/librist4:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/librist4/copyright",
+      "resolved_copyright_path": "/usr/share/doc/librist4/copyright"
+    },
+    {
+      "requested_package": "librsvg2-2:amd64",
+      "binary_package": "librsvg2-2:amd64",
+      "version": "2.61.3+dfsg-3ubuntu0.1",
+      "source_package": "librsvg",
+      "source_version": "2.61.3+dfsg-3ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "a2421c782398378c7099731878bc789b0517f7cd9eab24f971074c979d3e372f",
+      "archive_path": "copyright/librsvg2-2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/librsvg2-2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/librsvg2-2/copyright"
+    },
+    {
+      "requested_package": "librubberband3:amd64",
+      "binary_package": "librubberband3:amd64",
+      "version": "4.0.0+dfsg-2ubuntu1",
+      "source_package": "rubberband",
+      "source_version": "4.0.0+dfsg-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "98f38598448d973d6f2ce5ce6ecb735c8c23c94086e0c73d16ea0f911f448272",
+      "archive_path": "copyright/librubberband3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/librubberband3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/librubberband3/copyright"
+    },
+    {
+      "requested_package": "libsamplerate0:amd64",
+      "binary_package": "libsamplerate0:amd64",
+      "version": "0.2.2-4build2",
+      "source_package": "libsamplerate",
+      "source_version": "0.2.2-4build2",
+      "architecture": "amd64",
+      "copyright_sha256": "870b641e1bbc7459889f632a691d410e8be634cdd1d33e187b27bcbb2290ea73",
+      "archive_path": "copyright/libsamplerate0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsamplerate0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsamplerate0/copyright"
+    },
+    {
+      "requested_package": "libseccomp2:amd64",
+      "binary_package": "libseccomp2:amd64",
+      "version": "2.6.0-2ubuntu5",
+      "source_package": "libseccomp",
+      "source_version": "2.6.0-2ubuntu5",
+      "architecture": "amd64",
+      "copyright_sha256": "6da0653a365b80ab31478dbfe9e7c358e80d58b6d2b52b4e16b4dbb42d7d9f5c",
+      "archive_path": "copyright/libseccomp2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libseccomp2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libseccomp2/copyright"
+    },
+    {
+      "requested_package": "libselinux1:amd64",
+      "binary_package": "libselinux1:amd64",
+      "version": "3.9-4build1",
+      "source_package": "libselinux",
+      "source_version": "3.9-4build1",
+      "architecture": "amd64",
+      "copyright_sha256": "864f1bb189f609075d580b8c4aada16d85a44546884f1687989e1cacc8c56751",
+      "archive_path": "copyright/libselinux1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libselinux1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libselinux1/copyright"
+    },
+    {
+      "requested_package": "libserd-0-0:amd64",
+      "binary_package": "libserd-0-0:amd64",
+      "version": "0.32.6-1",
+      "source_package": "serd",
+      "source_version": "0.32.6-1",
+      "architecture": "amd64",
+      "copyright_sha256": "4a42ae294f96da07eade9797d7fd0d7f5659c3a945e1ef4f7287eeb06d9398d9",
+      "archive_path": "copyright/libserd-0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libserd-0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libserd-0-0/copyright"
+    },
+    {
+      "requested_package": "libsharpyuv0:amd64",
+      "binary_package": "libsharpyuv0:amd64",
+      "version": "1.5.0-0.1build1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "archive_path": "copyright/libsharpyuv0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsharpyuv0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsharpyuv0/copyright"
+    },
+    {
+      "requested_package": "libshine3:amd64",
+      "binary_package": "libshine3:amd64",
+      "version": "3.1.1-3build1",
+      "source_package": "shine",
+      "source_version": "3.1.1-3build1",
+      "architecture": "amd64",
+      "copyright_sha256": "b631215db51471d41765f415b55a76fabc553f4a33760c7740c9e31d33a4aba8",
+      "archive_path": "copyright/libshine3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libshine3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libshine3/copyright"
+    },
+    {
+      "requested_package": "libsnappy1v5:amd64",
+      "binary_package": "libsnappy1v5:amd64",
+      "version": "1.2.2-2",
+      "source_package": "snappy",
+      "source_version": "1.2.2-2",
+      "architecture": "amd64",
+      "copyright_sha256": "6e3b7206a2a68d959274c289922e06bd19788a3d48d3bf74e92db43ee21593e6",
+      "archive_path": "copyright/libsnappy1v5:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsnappy1v5/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsnappy1v5/copyright"
+    },
+    {
+      "requested_package": "libsndfile1:amd64",
+      "binary_package": "libsndfile1:amd64",
+      "version": "1.2.2-4",
+      "source_package": "libsndfile",
+      "source_version": "1.2.2-4",
+      "architecture": "amd64",
+      "copyright_sha256": "66706015979e7ecb0ddfd155c00c5f70d0b69a5f7aa78481ee8ce31e3bf2139a",
+      "archive_path": "copyright/libsndfile1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsndfile1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsndfile1/copyright"
+    },
+    {
+      "requested_package": "libsodium23:amd64",
+      "binary_package": "libsodium23:amd64",
+      "version": "1.0.18-2",
+      "source_package": "libsodium",
+      "source_version": "1.0.18-2",
+      "architecture": "amd64",
+      "copyright_sha256": "10d3576a7a0af8afb5601f358c06eb8c24b02192bb71ed4fb9a328a0979ec74b",
+      "archive_path": "copyright/libsodium23:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsodium23/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsodium23/copyright"
+    },
+    {
+      "requested_package": "libsord-0-0:amd64",
+      "binary_package": "libsord-0-0:amd64",
+      "version": "0.16.20-1",
+      "source_package": "sord",
+      "source_version": "0.16.20-1",
+      "architecture": "amd64",
+      "copyright_sha256": "80b04cb1571245377a66951e3b2a339b7dbe7d844a096d0595483539059cfdaf",
+      "archive_path": "copyright/libsord-0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsord-0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsord-0-0/copyright"
+    },
+    {
+      "requested_package": "libsoxr0:amd64",
+      "binary_package": "libsoxr0:amd64",
+      "version": "0.1.3-4.1",
+      "source_package": "libsoxr",
+      "source_version": "0.1.3-4.1",
+      "architecture": "amd64",
+      "copyright_sha256": "a56a0046bfa8ae9907f9847d50158dadee4ae4884db2f3841a3184f5f627a729",
+      "archive_path": "copyright/libsoxr0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsoxr0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsoxr0/copyright"
+    },
+    {
+      "requested_package": "libspeex1:amd64",
+      "binary_package": "libspeex1:amd64",
+      "version": "1.2.1-3build1",
+      "source_package": "speex",
+      "source_version": "1.2.1-3build1",
+      "architecture": "amd64",
+      "copyright_sha256": "9bd13b2ec0f10da92819d14c44cf6ddca15a191a23ee360e665fa1f68a53d984",
+      "archive_path": "copyright/libspeex1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libspeex1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libspeex1/copyright"
+    },
+    {
+      "requested_package": "libsratom-0-0:amd64",
+      "binary_package": "libsratom-0-0:amd64",
+      "version": "0.6.20-1",
+      "source_package": "sratom",
+      "source_version": "0.6.20-1",
+      "architecture": "amd64",
+      "copyright_sha256": "892618b130b655368611eaad45c7458242a8fc37aa049da999793fa65c201d6b",
+      "archive_path": "copyright/libsratom-0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsratom-0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsratom-0-0/copyright"
+    },
+    {
+      "requested_package": "libsrt1.5-gnutls:amd64",
+      "binary_package": "libsrt1.5-gnutls:amd64",
+      "version": "1.5.4-3",
+      "source_package": "srt",
+      "source_version": "1.5.4-3",
+      "architecture": "amd64",
+      "copyright_sha256": "f546213b63d33dc480d3cd8fef2ce03fdc1eb2e2803b534a22ff558a6f4f7096",
+      "archive_path": "copyright/libsrt1.5-gnutls:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsrt1.5-gnutls/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsrt1.5-gnutls/copyright"
+    },
+    {
+      "requested_package": "libssh-4:amd64",
+      "binary_package": "libssh-4:amd64",
+      "version": "0.11.3-1ubuntu2.1",
+      "source_package": "libssh",
+      "source_version": "0.11.3-1ubuntu2.1",
+      "architecture": "amd64",
+      "copyright_sha256": "4cee4f0ea834fceb25e80a87cd685cdc2bab2d11d62ba0c1fe3fad24bfd0de9a",
+      "archive_path": "copyright/libssh-4:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libssh-4/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libssh-4/copyright"
+    },
+    {
+      "requested_package": "libssl3t64:amd64",
+      "binary_package": "libssl3t64:amd64",
+      "version": "3.5.5-1ubuntu3.7",
+      "source_package": "openssl",
+      "source_version": "3.5.5-1ubuntu3.7",
+      "architecture": "amd64",
+      "copyright_sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35",
+      "archive_path": "copyright/libssl3t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libssl3t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libssl3t64/copyright"
+    },
+    {
+      "requested_package": "libstdc++6:amd64",
+      "binary_package": "libstdc++6:amd64",
+      "version": "16-20260322-1ubuntu1",
+      "source_package": "gcc-16",
+      "source_version": "16-20260322-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+      "archive_path": "copyright/libstdc++6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libstdc++6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/gcc-16-base/copyright"
+    },
+    {
+      "requested_package": "libsvtav1enc2:amd64",
+      "binary_package": "libsvtav1enc2:amd64",
+      "version": "2.3.0+dfsg-1build1",
+      "source_package": "svt-av1",
+      "source_version": "2.3.0+dfsg-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "66433ce51ad1f83c561940a0af5f78e45a1beee67e5cc5087c1f0c5d2736e1e4",
+      "archive_path": "copyright/libsvtav1enc2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsvtav1enc2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsvtav1enc2/copyright"
+    },
+    {
+      "requested_package": "libswresample6:amd64",
+      "binary_package": "libswresample6:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libswresample6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libswresample6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libswresample6/copyright"
+    },
+    {
+      "requested_package": "libswscale9:amd64",
+      "binary_package": "libswscale9:amd64",
+      "version": "7:8.0.1-3ubuntu2",
+      "source_package": "ffmpeg",
+      "source_version": "7:8.0.1-3ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+      "archive_path": "copyright/libswscale9:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libswscale9/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libswscale9/copyright"
+    },
+    {
+      "requested_package": "libsystemd0:amd64",
+      "binary_package": "libsystemd0:amd64",
+      "version": "259.5-0ubuntu3.4",
+      "source_package": "systemd",
+      "source_version": "259.5-0ubuntu3.4",
+      "architecture": "amd64",
+      "copyright_sha256": "0fff813dc14e7c0a6d2bfba748ed17485fedb768b7fc9702b15261e81cfd357f",
+      "archive_path": "copyright/libsystemd0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libsystemd0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libsystemd0/copyright"
+    },
+    {
+      "requested_package": "libtasn1-6:amd64",
+      "binary_package": "libtasn1-6:amd64",
+      "version": "4.21.0-2",
+      "source_package": "libtasn1-6",
+      "source_version": "4.21.0-2",
+      "architecture": "amd64",
+      "copyright_sha256": "722a2780f3f3865c8bed997b8a6283eebf302c9fe4a5b2fb5fd221ea9a51a5a6",
+      "archive_path": "copyright/libtasn1-6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libtasn1-6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libtasn1-6/copyright"
+    },
+    {
+      "requested_package": "libthai0:amd64",
+      "binary_package": "libthai0:amd64",
+      "version": "0.1.30-1",
+      "source_package": "libthai",
+      "source_version": "0.1.30-1",
+      "architecture": "amd64",
+      "copyright_sha256": "75e7ba208ce2a5fed45e4948ca46d3ae93e82415c728c47d78bc7c85e4fd0539",
+      "archive_path": "copyright/libthai0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libthai0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libthai0/copyright"
+    },
+    {
+      "requested_package": "libtheoradec2:amd64",
+      "binary_package": "libtheoradec2:amd64",
+      "version": "1.2.0+dfsg-6",
+      "source_package": "libtheora",
+      "source_version": "1.2.0+dfsg-6",
+      "architecture": "amd64",
+      "copyright_sha256": "24efe62ae5dc5bf337c4ec146576366a15abcf63695e2d7866d946e8a9f4b799",
+      "archive_path": "copyright/libtheoradec2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libtheoradec2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libtheoradec2/copyright"
+    },
+    {
+      "requested_package": "libtheoraenc2:amd64",
+      "binary_package": "libtheoraenc2:amd64",
+      "version": "1.2.0+dfsg-6",
+      "source_package": "libtheora",
+      "source_version": "1.2.0+dfsg-6",
+      "architecture": "amd64",
+      "copyright_sha256": "24efe62ae5dc5bf337c4ec146576366a15abcf63695e2d7866d946e8a9f4b799",
+      "archive_path": "copyright/libtheoraenc2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libtheoraenc2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libtheoraenc2/copyright"
+    },
+    {
+      "requested_package": "libtinfo6:amd64",
+      "binary_package": "libtinfo6:amd64",
+      "version": "6.6+20251231-1",
+      "source_package": "ncurses",
+      "source_version": "6.6+20251231-1",
+      "architecture": "amd64",
+      "copyright_sha256": "f838d6048fbc59356b7e56c207a7cb32dc6bf4adea95514a002596bde8f6e1e7",
+      "archive_path": "copyright/libtinfo6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libtinfo6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libtinfo6/copyright"
+    },
+    {
+      "requested_package": "libtwolame0:amd64",
+      "binary_package": "libtwolame0:amd64",
+      "version": "0.4.0-2build4",
+      "source_package": "twolame",
+      "source_version": "0.4.0-2build4",
+      "architecture": "amd64",
+      "copyright_sha256": "147113a009ccf1c952c6903f248ac66581a3496aff7b5331fdec5e2c37f71f24",
+      "archive_path": "copyright/libtwolame0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libtwolame0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libtwolame0/copyright"
+    },
+    {
+      "requested_package": "libudev1:amd64",
+      "binary_package": "libudev1:amd64",
+      "version": "259.5-0ubuntu3.4",
+      "source_package": "systemd",
+      "source_version": "259.5-0ubuntu3.4",
+      "architecture": "amd64",
+      "copyright_sha256": "0fff813dc14e7c0a6d2bfba748ed17485fedb768b7fc9702b15261e81cfd357f",
+      "archive_path": "copyright/libudev1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libudev1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libudev1/copyright"
+    },
+    {
+      "requested_package": "libudfread3:amd64",
+      "binary_package": "libudfread3:amd64",
+      "version": "1.2.0-2",
+      "source_package": "libudfread",
+      "source_version": "1.2.0-2",
+      "architecture": "amd64",
+      "copyright_sha256": "7955da2d0f9acfc6ea12ebf25317e476cefff9ff7f5c970a25bbc3cb814533b6",
+      "archive_path": "copyright/libudfread3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libudfread3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libudfread3/copyright"
+    },
+    {
+      "requested_package": "libunibreak6:amd64",
+      "binary_package": "libunibreak6:amd64",
+      "version": "6.1-3build1",
+      "source_package": "libunibreak",
+      "source_version": "6.1-3build1",
+      "architecture": "amd64",
+      "copyright_sha256": "b3470fe912c697024754b5fd352d9f3b856b6696c4e7f85c34e91a044de276cd",
+      "archive_path": "copyright/libunibreak6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libunibreak6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libunibreak6/copyright"
+    },
+    {
+      "requested_package": "libunistring5:amd64",
+      "binary_package": "libunistring5:amd64",
+      "version": "1.3-2build1",
+      "source_package": "libunistring",
+      "source_version": "1.3-2build1",
+      "architecture": "amd64",
+      "copyright_sha256": "a585cd2cc2a5fcb8e58f12c7a710a35e06e5b897c59cd5ae4a7d835f0b49eae3",
+      "archive_path": "copyright/libunistring5:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libunistring5/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libunistring5/copyright"
+    },
+    {
+      "requested_package": "libusb-1.0-0:amd64",
+      "binary_package": "libusb-1.0-0:amd64",
+      "version": "2:1.0.29-2build1",
+      "source_package": "libusb-1.0",
+      "source_version": "2:1.0.29-2build1",
+      "architecture": "amd64",
+      "copyright_sha256": "a627862d217aed18b58086a8711ebf9a66b0e090fa16f64ef92b59e920921b15",
+      "archive_path": "copyright/libusb-1.0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libusb-1.0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libusb-1.0-0/copyright"
+    },
+    {
+      "requested_package": "libva-drm2:amd64",
+      "binary_package": "libva-drm2:amd64",
+      "version": "2.23.0-1ubuntu1",
+      "source_package": "libva",
+      "source_version": "2.23.0-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+      "archive_path": "copyright/libva-drm2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libva-drm2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libva-drm2/copyright"
+    },
+    {
+      "requested_package": "libva-x11-2:amd64",
+      "binary_package": "libva-x11-2:amd64",
+      "version": "2.23.0-1ubuntu1",
+      "source_package": "libva",
+      "source_version": "2.23.0-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+      "archive_path": "copyright/libva-x11-2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libva-x11-2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libva-x11-2/copyright"
+    },
+    {
+      "requested_package": "libva2:amd64",
+      "binary_package": "libva2:amd64",
+      "version": "2.23.0-1ubuntu1",
+      "source_package": "libva",
+      "source_version": "2.23.0-1ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+      "archive_path": "copyright/libva2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libva2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libva2/copyright"
+    },
+    {
+      "requested_package": "libvdpau1:amd64",
+      "binary_package": "libvdpau1:amd64",
+      "version": "1.5-4",
+      "source_package": "libvdpau",
+      "source_version": "1.5-4",
+      "architecture": "amd64",
+      "copyright_sha256": "95c50dc739326c6f8cdf1dd600ade987ba229c574858d3b225b16a9d859b32df",
+      "archive_path": "copyright/libvdpau1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvdpau1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvdpau1/copyright"
+    },
+    {
+      "requested_package": "libvidstab1.1:amd64",
+      "binary_package": "libvidstab1.1:amd64",
+      "version": "1.1.0-2.1",
+      "source_package": "libvidstab",
+      "source_version": "1.1.0-2.1",
+      "architecture": "amd64",
+      "copyright_sha256": "c784a3d8760a64cb193f13425f8d667a4a183ff678d7cf0c151bb1dd0e30f3cc",
+      "archive_path": "copyright/libvidstab1.1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvidstab1.1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvidstab1.1/copyright"
+    },
+    {
+      "requested_package": "libvorbis0a:amd64",
+      "binary_package": "libvorbis0a:amd64",
+      "version": "1.3.7-3build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-3build2",
+      "architecture": "amd64",
+      "copyright_sha256": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+      "archive_path": "copyright/libvorbis0a:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvorbis0a/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvorbis0a/copyright"
+    },
+    {
+      "requested_package": "libvorbisenc2:amd64",
+      "binary_package": "libvorbisenc2:amd64",
+      "version": "1.3.7-3build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-3build2",
+      "architecture": "amd64",
+      "copyright_sha256": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+      "archive_path": "copyright/libvorbisenc2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvorbisenc2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvorbisenc2/copyright"
+    },
+    {
+      "requested_package": "libvorbisfile3:amd64",
+      "binary_package": "libvorbisfile3:amd64",
+      "version": "1.3.7-3build2",
+      "source_package": "libvorbis",
+      "source_version": "1.3.7-3build2",
+      "architecture": "amd64",
+      "copyright_sha256": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+      "archive_path": "copyright/libvorbisfile3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvorbisfile3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvorbisfile3/copyright"
+    },
+    {
+      "requested_package": "libvpl2",
+      "binary_package": "libvpl2",
+      "version": "1:2.16.0-1",
+      "source_package": "libvpl",
+      "source_version": "1:2.16.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "81a668a0aef1bb4299dd552e97595d376bc0ca6cc32af14bc60bf893636f464f",
+      "archive_path": "copyright/libvpl2/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvpl2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvpl2/copyright"
+    },
+    {
+      "requested_package": "libvpx12:amd64",
+      "binary_package": "libvpx12:amd64",
+      "version": "1.16.0-3",
+      "source_package": "libvpx",
+      "source_version": "1.16.0-3",
+      "architecture": "amd64",
+      "copyright_sha256": "6e9e37e72e8e6b6fad3b53672b041f4ebee5c5d8db15048cbff9157fbb8deba5",
+      "archive_path": "copyright/libvpx12:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvpx12/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvpx12/copyright"
+    },
+    {
+      "requested_package": "libvulkan1:amd64",
+      "binary_package": "libvulkan1:amd64",
+      "version": "1.4.341.0-1",
+      "source_package": "vulkan-loader",
+      "source_version": "1.4.341.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "c579213e28f67944a7e407816b8a8e1d2d2406b3d820e420aa923807c450dc07",
+      "archive_path": "copyright/libvulkan1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libvulkan1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libvulkan1/copyright"
+    },
+    {
+      "requested_package": "libwayland-client0:amd64",
+      "binary_package": "libwayland-client0:amd64",
+      "version": "1.24.0-2",
+      "source_package": "wayland",
+      "source_version": "1.24.0-2",
+      "architecture": "amd64",
+      "copyright_sha256": "99ade79b69c41bfb14b8a0567e9c0acdd858d6d8ad7d3ca4f9da1cfd000954b1",
+      "archive_path": "copyright/libwayland-client0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libwayland-client0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libwayland-client0/copyright"
+    },
+    {
+      "requested_package": "libwebp7:amd64",
+      "binary_package": "libwebp7:amd64",
+      "version": "1.5.0-0.1build1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "archive_path": "copyright/libwebp7:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libwebp7/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libwebp7/copyright"
+    },
+    {
+      "requested_package": "libwebpmux3:amd64",
+      "binary_package": "libwebpmux3:amd64",
+      "version": "1.5.0-0.1build1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "archive_path": "copyright/libwebpmux3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libwebpmux3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libwebpmux3/copyright"
+    },
+    {
+      "requested_package": "libx11-6:amd64",
+      "binary_package": "libx11-6:amd64",
+      "version": "2:1.8.13-1ubuntu0.1",
+      "source_package": "libx11",
+      "source_version": "2:1.8.13-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "0b380a7fd5b2228f26e9585e56f14812efd3350f3df307507d2bc055dfd8de3e",
+      "archive_path": "copyright/libx11-6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libx11-6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libx11-6/copyright"
+    },
+    {
+      "requested_package": "libx11-xcb1:amd64",
+      "binary_package": "libx11-xcb1:amd64",
+      "version": "2:1.8.13-1ubuntu0.1",
+      "source_package": "libx11",
+      "source_version": "2:1.8.13-1ubuntu0.1",
+      "architecture": "amd64",
+      "copyright_sha256": "0b380a7fd5b2228f26e9585e56f14812efd3350f3df307507d2bc055dfd8de3e",
+      "archive_path": "copyright/libx11-xcb1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libx11-xcb1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libx11-xcb1/copyright"
+    },
+    {
+      "requested_package": "libx264-165:amd64",
+      "binary_package": "libx264-165:amd64",
+      "version": "2:0.165.3222+gitb35605ac-3build1",
+      "source_package": "x264",
+      "source_version": "2:0.165.3222+gitb35605ac-3build1",
+      "architecture": "amd64",
+      "copyright_sha256": "44fcb4f83c021376610b073f6e42716ead9869f67c2120b33b7bb14bf1fc25fc",
+      "archive_path": "copyright/libx264-165:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libx264-165/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libx264-165/copyright"
+    },
+    {
+      "requested_package": "libx265-215:amd64",
+      "binary_package": "libx265-215:amd64",
+      "version": "4.1-4",
+      "source_package": "x265",
+      "source_version": "4.1-4",
+      "architecture": "amd64",
+      "copyright_sha256": "ac2859168010138bce5a5a16a1c2442570ed236121352c34c1a710005b727eb5",
+      "archive_path": "copyright/libx265-215:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libx265-215/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libx265-215/copyright"
+    },
+    {
+      "requested_package": "libxau6:amd64",
+      "binary_package": "libxau6:amd64",
+      "version": "1:1.0.11-1build2",
+      "source_package": "libxau",
+      "source_version": "1:1.0.11-1build2",
+      "architecture": "amd64",
+      "copyright_sha256": "118dd263a7b91c8f21c489f949bf13281dff9e766deea92b829dac4dce66601a",
+      "archive_path": "copyright/libxau6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxau6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxau6/copyright"
+    },
+    {
+      "requested_package": "libxcb-dri3-0:amd64",
+      "binary_package": "libxcb-dri3-0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-dri3-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-dri3-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-dri3-0/copyright"
+    },
+    {
+      "requested_package": "libxcb-present0:amd64",
+      "binary_package": "libxcb-present0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-present0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-present0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-present0/copyright"
+    },
+    {
+      "requested_package": "libxcb-randr0:amd64",
+      "binary_package": "libxcb-randr0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-randr0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-randr0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-randr0/copyright"
+    },
+    {
+      "requested_package": "libxcb-render0:amd64",
+      "binary_package": "libxcb-render0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-render0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-render0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-render0/copyright"
+    },
+    {
+      "requested_package": "libxcb-shape0:amd64",
+      "binary_package": "libxcb-shape0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-shape0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-shape0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-shape0/copyright"
+    },
+    {
+      "requested_package": "libxcb-shm0:amd64",
+      "binary_package": "libxcb-shm0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-shm0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-shm0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-shm0/copyright"
+    },
+    {
+      "requested_package": "libxcb-sync1:amd64",
+      "binary_package": "libxcb-sync1:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-sync1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-sync1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-sync1/copyright"
+    },
+    {
+      "requested_package": "libxcb-xfixes0:amd64",
+      "binary_package": "libxcb-xfixes0:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb-xfixes0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb-xfixes0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb-xfixes0/copyright"
+    },
+    {
+      "requested_package": "libxcb1:amd64",
+      "binary_package": "libxcb1:amd64",
+      "version": "1.17.0-2ubuntu1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2ubuntu1",
+      "architecture": "amd64",
+      "copyright_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "archive_path": "copyright/libxcb1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxcb1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxcb1/copyright"
+    },
+    {
+      "requested_package": "libxdmcp6:amd64",
+      "binary_package": "libxdmcp6:amd64",
+      "version": "1:1.1.5-2",
+      "source_package": "libxdmcp",
+      "source_version": "1:1.1.5-2",
+      "architecture": "amd64",
+      "copyright_sha256": "aceaa93ea2bb08890d7f91987ecf6a03814309470c819c56fe79f7698e45ef53",
+      "archive_path": "copyright/libxdmcp6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxdmcp6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxdmcp6/copyright"
+    },
+    {
+      "requested_package": "libxext6:amd64",
+      "binary_package": "libxext6:amd64",
+      "version": "2:1.3.4-1build3",
+      "source_package": "libxext",
+      "source_version": "2:1.3.4-1build3",
+      "architecture": "amd64",
+      "copyright_sha256": "bc57e445ca1d9fe082c8d54189dd411ff26caa8552c9c63d44ea06a982f32124",
+      "archive_path": "copyright/libxext6:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxext6/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxext6/copyright"
+    },
+    {
+      "requested_package": "libxfixes3:amd64",
+      "binary_package": "libxfixes3:amd64",
+      "version": "1:6.0.0-2build2",
+      "source_package": "libxfixes",
+      "source_version": "1:6.0.0-2build2",
+      "architecture": "amd64",
+      "copyright_sha256": "051ffe073ab38244c504bb379903b4ecda6081fb3d97d0d3dce44bc11712eef2",
+      "archive_path": "copyright/libxfixes3:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxfixes3/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxfixes3/copyright"
+    },
+    {
+      "requested_package": "libxml2-16:amd64",
+      "binary_package": "libxml2-16:amd64",
+      "version": "2.15.2+dfsg-0.1ubuntu0.3",
+      "source_package": "libxml2",
+      "source_version": "2.15.2+dfsg-0.1ubuntu0.3",
+      "architecture": "amd64",
+      "copyright_sha256": "ee746b96cfa5be73c3ea3e4cfb1285e9b315d4c9267f99b2ee9c5d911d9fe3f4",
+      "archive_path": "copyright/libxml2-16:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxml2-16/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxml2-16/copyright"
+    },
+    {
+      "requested_package": "libxrender1:amd64",
+      "binary_package": "libxrender1:amd64",
+      "version": "1:0.9.12-1build1",
+      "source_package": "libxrender",
+      "source_version": "1:0.9.12-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "ed2a78123a5076b4f11da38cb1ffb85b5cb9fdc26b5746c517b1d7e7a9029704",
+      "archive_path": "copyright/libxrender1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxrender1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxrender1/copyright"
+    },
+    {
+      "requested_package": "libxshmfence1:amd64",
+      "binary_package": "libxshmfence1:amd64",
+      "version": "1.3.3-1build1",
+      "source_package": "libxshmfence",
+      "source_version": "1.3.3-1build1",
+      "architecture": "amd64",
+      "copyright_sha256": "6a76b32c9174c0cb9e3d94c323a14d33d6a42bd2a61579b189cbc5addeb94abe",
+      "archive_path": "copyright/libxshmfence1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxshmfence1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxshmfence1/copyright"
+    },
+    {
+      "requested_package": "libxv1:amd64",
+      "binary_package": "libxv1:amd64",
+      "version": "2:1.0.13-1",
+      "source_package": "libxv",
+      "source_version": "2:1.0.13-1",
+      "architecture": "amd64",
+      "copyright_sha256": "9d5d63398df74e4ed0e12e8c44ca4ced2607d669cc16748e9143fce591bc6b1e",
+      "archive_path": "copyright/libxv1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxv1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxv1/copyright"
+    },
+    {
+      "requested_package": "libxvidcore4:amd64",
+      "binary_package": "libxvidcore4:amd64",
+      "version": "2:1.3.7-3",
+      "source_package": "xvidcore",
+      "source_version": "2:1.3.7-3",
+      "architecture": "amd64",
+      "copyright_sha256": "3407665dbf5828ba9adcab357fe16e931dd20fd4a51053fa9529226fb6ed2123",
+      "archive_path": "copyright/libxvidcore4:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libxvidcore4/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libxvidcore4/copyright"
+    },
+    {
+      "requested_package": "libzimg2:amd64",
+      "binary_package": "libzimg2:amd64",
+      "version": "3.0.6+ds1-1",
+      "source_package": "zimg",
+      "source_version": "3.0.6+ds1-1",
+      "architecture": "amd64",
+      "copyright_sha256": "b302dc2568943b3326d3be15d03fe968888d1673962891ea93050a2f41e6e609",
+      "archive_path": "copyright/libzimg2:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libzimg2/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libzimg2/copyright"
+    },
+    {
+      "requested_package": "libzix-0-0:amd64",
+      "binary_package": "libzix-0-0:amd64",
+      "version": "0.8.0-1",
+      "source_package": "zix",
+      "source_version": "0.8.0-1",
+      "architecture": "amd64",
+      "copyright_sha256": "0460f90b9445d5f84bfb17bc0a4a6efced0bca86bfe46e3400770e5ba868d471",
+      "archive_path": "copyright/libzix-0-0:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libzix-0-0/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libzix-0-0/copyright"
+    },
+    {
+      "requested_package": "libzmq5:amd64",
+      "binary_package": "libzmq5:amd64",
+      "version": "4.3.5-1build3",
+      "source_package": "zeromq3",
+      "source_version": "4.3.5-1build3",
+      "architecture": "amd64",
+      "copyright_sha256": "78a1462a7c5ab0488ddacdde2fc1cdd10815f8139acac01dcab13f03dbef3a17",
+      "archive_path": "copyright/libzmq5:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libzmq5/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libzmq5/copyright"
+    },
+    {
+      "requested_package": "libzstd1:amd64",
+      "binary_package": "libzstd1:amd64",
+      "version": "1.5.7+dfsg-3",
+      "source_package": "libzstd",
+      "source_version": "1.5.7+dfsg-3",
+      "architecture": "amd64",
+      "copyright_sha256": "2efe51c80ddc473bc2c91faec49dae645bf7f5a04824528fec816320432da2ae",
+      "archive_path": "copyright/libzstd1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libzstd1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libzstd1/copyright"
+    },
+    {
+      "requested_package": "libzvbi0t64:amd64",
+      "binary_package": "libzvbi0t64:amd64",
+      "version": "0.2.44-1ubuntu2",
+      "source_package": "zvbi",
+      "source_version": "0.2.44-1ubuntu2",
+      "architecture": "amd64",
+      "copyright_sha256": "e25dd401f7454b6d4b631e53e2f69d42d5bc132038c467d8d492da5952a2d6a5",
+      "archive_path": "copyright/libzvbi0t64:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/libzvbi0t64/copyright",
+      "resolved_copyright_path": "/usr/share/doc/libzvbi0t64/copyright"
+    },
+    {
+      "requested_package": "mesa-vulkan-drivers:amd64",
+      "binary_package": "mesa-vulkan-drivers:amd64",
+      "version": "26.0.8-1ubuntu0.3",
+      "source_package": "mesa",
+      "source_version": "26.0.8-1ubuntu0.3",
+      "architecture": "amd64",
+      "copyright_sha256": "6814e1f8e3f030aa74ee8cb9f357fad706631d68d59adcd7192bc96e05199688",
+      "archive_path": "copyright/mesa-vulkan-drivers:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/mesa-vulkan-drivers/copyright",
+      "resolved_copyright_path": "/usr/share/doc/mesa-vulkan-drivers/copyright"
+    },
+    {
+      "requested_package": "ocl-icd-libopencl1:amd64",
+      "binary_package": "ocl-icd-libopencl1:amd64",
+      "version": "2.3.4-1",
+      "source_package": "ocl-icd",
+      "source_version": "2.3.4-1",
+      "architecture": "amd64",
+      "copyright_sha256": "69b388028066ab453fa7ad403530f7b8aafe753f9c0818653692438329d9aa07",
+      "archive_path": "copyright/ocl-icd-libopencl1:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/ocl-icd-libopencl1/copyright",
+      "resolved_copyright_path": "/usr/share/doc/ocl-icd-libopencl1/copyright"
+    },
+    {
+      "requested_package": "zlib1g:amd64",
+      "binary_package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1",
+      "architecture": "amd64",
+      "copyright_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+      "archive_path": "copyright/zlib1g:amd64/copyright",
+      "installed_copyright_path": "/usr/share/doc/zlib1g/copyright",
+      "resolved_copyright_path": "/usr/share/doc/zlib1g/copyright"
+    }
+  ],
+  "notice_member_hashes": {
+    "copyright/fonts-dejavu-core/copyright": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+    "copyright/fonts-dejavu-mono/copyright": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+    "copyright/libaom3:amd64/copyright": "42721127769a2518e2355d0634942a0c10d5c8b9b9c21218a93a3dc2087699c9",
+    "copyright/libapparmor1:amd64/copyright": "52b7cf37d674ca47296cf6270a95ecda0ecbef976cc090d702acbd741e36b3b4",
+    "copyright/libasound2t64:amd64/copyright": "28558a697dadb5fe41ac66c8c4818ebbb7041adaf034dbf1aed67d428dac921b",
+    "copyright/libass9:amd64/copyright": "c3eb686a3786caa0e3033ee78908b6996a60fe9d163ecf7dc1c61871e19f88b7",
+    "copyright/libasyncns0:amd64/copyright": "4c55303121812a3a9364b196eef70313e40235d2d1f590e93d45443dc73accf1",
+    "copyright/libatomic1:amd64/copyright": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+    "copyright/libavc1394-0:amd64/copyright": "969fc10f87167c30b27e73f3774347f362ad4cfbca4754d3b1b95c6f4b0a0250",
+    "copyright/libavcodec62:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libavdevice62:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libavfilter11:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libavformat62:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libavutil60:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libblkid1:amd64/copyright": "35a014187eb5d264405a91bda9ec782afdef9df148b657e67b38d07fabba2acf",
+    "copyright/libbluray3:amd64/copyright": "f3daaedc900d6de31d876c6f8f5a3458b58603091b8c69197fa40b5443989b78",
+    "copyright/libbrotli1:amd64/copyright": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1",
+    "copyright/libbs2b0:amd64/copyright": "4eae2784b24067760ee71be463d4db0dc17839c847f1bf66b2acee86cd417b6c",
+    "copyright/libbsd0:amd64/copyright": "47eaa031b1741a33a93e7cc8909bfe153acaec7ddff12e4dc7377d0e2ec10e91",
+    "copyright/libbz2-1.0:amd64/copyright": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2",
+    "copyright/libc6:amd64/copyright": "c31d10900fdb95d1889005145a2205bb75e3bc018d3ec8265b81364901748e09",
+    "copyright/libcairo-gobject2:amd64/copyright": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574",
+    "copyright/libcairo2:amd64/copyright": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574",
+    "copyright/libcdio-cdda2t64:amd64/copyright": "e63fbfa981093172cea38680a42b89c89395f75faaff3889fef0b9bd1a0b4e0b",
+    "copyright/libcdio-paranoia2t64:amd64/copyright": "e63fbfa981093172cea38680a42b89c89395f75faaff3889fef0b9bd1a0b4e0b",
+    "copyright/libcdio19t64:amd64/copyright": "69dfb63c2f5be3e7c93b3336f8be4d0814a15381b6c6296ccb874c0db1bfd470",
+    "copyright/libchromaprint1:amd64/copyright": "0f58bcde77c462f0833d92c3c1d67d79498e6a1b9789b1e1161909e10e61d0c7",
+    "copyright/libcjson1:amd64/copyright": "720c3c9cc0f8d29113ac4cc6de63c23118aaa9cc8e626b79401ccfd7ce905b1d",
+    "copyright/libcodec2-1.2:amd64/copyright": "fd07bd00dbf40eff6b292e2b6774cd2a01f3d839137c6a7622d6f088af220d97",
+    "copyright/libcom-err2:amd64/copyright": "2041b5febdc110151ca3372d01b16b85dda1888e33f3f60fce0f59940eed7d19",
+    "copyright/libdatrie1:amd64/copyright": "7b181788688d7ba3336782c18f3919a462503024d3e23b15ff0f52b2de994efc",
+    "copyright/libdav1d7:amd64/copyright": "46762239c3e3d58f8c8219a80e5ec3f15bee23081414750e1762829c12fb5df8",
+    "copyright/libdb5.3t64:amd64/copyright": "8b53da37d73289d9df7317b3a2dbe16491f1fa9fec8b77b86d69704b40ce2c26",
+    "copyright/libdbus-1-3:amd64/copyright": "f5fd0bfcceb21f4c23a517368abcbfe8a4c1cfb3b521757b50fae4898840fe35",
+    "copyright/libdc1394-25:amd64/copyright": "98b69ff6062d9332d0544af8992e90ec0177446af1e861ebe5fec00709ae10ee",
+    "copyright/libdisplay-info3:amd64/copyright": "930284fda1dc073a97421da7a6f92df5b6b05ce435707206eaf182aa51c4dae4",
+    "copyright/libdrm-amdgpu1:amd64/copyright": "90df8ca02b0e0f21eebd8e58585345a8a5cd97bd46ad6faa577dc8d07a67aeaa",
+    "copyright/libdrm2:amd64/copyright": "90df8ca02b0e0f21eebd8e58585345a8a5cd97bd46ad6faa577dc8d07a67aeaa",
+    "copyright/libdvdnav4:amd64/copyright": "e3fd6eed05e67c3c423109db3eebb71cd5e796b9452477c6f66f6e3cf596380a",
+    "copyright/libdvdread8t64:amd64/copyright": "afb374123ebbe902707de5a1a2004f7842728541686f8e92afd380ec48c4b8f3",
+    "copyright/libedit2:amd64/copyright": "2b53671050f6319be6fcdcafa434e8ccb8af629359b4afc83185867204f3927d",
+    "copyright/libelf1t64:amd64/copyright": "2409860c86675ab33f8ad22480608faf849cbc2559d6478f708c23c508a1dbf2",
+    "copyright/libexpat1:amd64/copyright": "60919fe1a156395ff14511bb6ff79756c50ade2fff59ac60c9bae1d8a7fe6292",
+    "copyright/libffi8:amd64/copyright": "25ee86cfccc2b7eb9a156a127f1e1b38c46c231f516ff201912223eaf62ee186",
+    "copyright/libfftw3-double3:amd64/copyright": "8da846cb9e375187ccee28953159c233ba788ec1e74b2089a63c27e75f5795d3",
+    "copyright/libflac14:amd64/copyright": "74f04017cc1845b98a2582f0b6a666524bcf7e61083f7c5e2f4298017ce875bc",
+    "copyright/libflite1:amd64/copyright": "77d13a5e6cbe7277b4721033f9ad15707241c2832baa8c74ec823c9ee5ebf71c",
+    "copyright/libfontconfig1:amd64/copyright": "b215a61cdd3e62b5b17cc28b1852c78acb3dd38be0fb30706f7efc050dba91db",
+    "copyright/libfreetype6:amd64/copyright": "8951319d2cbc54c13f091eaedff603f717026e5bf7788902ccd635a094d7a561",
+    "copyright/libfribidi0:amd64/copyright": "200d598cca867f58739101cce4dba4bb6083f1489b37784daee7dea88bd441d2",
+    "copyright/libgcc-s1:amd64/copyright": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+    "copyright/libgdk-pixbuf-2.0-0:amd64/copyright": "faf01d9afa1bc904c146e149c987fd5b37e8b53a5a3b1cc2353a43adee0353a5",
+    "copyright/libglib2.0-0t64:amd64/copyright": "498035c1e93c9d12306f4ba8f37686c2a527657f8b17969ec6d11c1af87e543d",
+    "copyright/libglycin-2-0:amd64/copyright": "1e3a7afedd39f8b7a28bfed173680ee252635eb385e5a18b33cb334b60df8899",
+    "copyright/libgme0:amd64/copyright": "3149eacfe1713987e951be1985cd515dd4eac26e84f83a278d8d1cded72dfc42",
+    "copyright/libgmp10:amd64/copyright": "7d366aef5ba325150246de1d7820c4c9926cd27ca61a69948492b26cd3b61601",
+    "copyright/libgnutls30t64:amd64/copyright": "b32655aad8bb1530de36933f8702af1e669fabb9bf3e712c533803c7092d77da",
+    "copyright/libgomp1:amd64/copyright": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+    "copyright/libgraphite2-3:amd64/copyright": "a33017ba0308c41bdbde4751bff349ab7b26af45fadbb1e3e7ac67c372985572",
+    "copyright/libgsm1:amd64/copyright": "d8f1dc05f9f636c41deec7f75ca11daa595f36e41c79aadac1f3aa017c4e17b8",
+    "copyright/libgssapi-krb5-2:amd64/copyright": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+    "copyright/libharfbuzz0b:amd64/copyright": "407e84e766824b0b8ee7e06da15dbf50e924f4adeec1e4748247a07b3dbc3208",
+    "copyright/libhogweed6t64:amd64/copyright": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6",
+    "copyright/libhwy1t64:amd64/copyright": "fd82ff294401d62244717374587aa9daa62934600096460a8565d215ff902f8c",
+    "copyright/libidn2-0:amd64/copyright": "a63ceb8fab281177da9a27403f0be7ae69aa6f33bf6f63c455ecc587ca131268",
+    "copyright/libiec61883-0:amd64/copyright": "b8b6e7a3bb8e11c2006578d8e2a8acc044dc212cc2d37110b5a0cbdd871b6b54",
+    "copyright/libjack-jackd2-0:amd64/copyright": "22431492e086539e9ed8373816901405d9dd3ff44351f99fff7e1d5ca267f0dd",
+    "copyright/libjxl0.11:amd64/copyright": "cf449aae49be7e62803ac2ee7f4bd63d1156c1ace680908d24a3856215cd3329",
+    "copyright/libk5crypto3:amd64/copyright": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+    "copyright/libkeyutils1:amd64/copyright": "73f5682b0466f41cea2b9b7f1ff8a8052464f6c09fb29eeac4490512af09bd50",
+    "copyright/libkrb5-3:amd64/copyright": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+    "copyright/libkrb5support0:amd64/copyright": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816",
+    "copyright/liblcms2-2:amd64/copyright": "420fd2c72204652c08a48548a0d1002edab3d9b180d3c416578c61f74092f460",
+    "copyright/liblilv-0-0:amd64/copyright": "96d6d24fc294b9b21982d012da3424136c967e6a3545d3123a4fc66f28424dc5",
+    "copyright/libllvm21:amd64/copyright": "b2ed2fd344e8ddbf2e0c83113bd40fa1853438be61a0ff20af5acd187c07cbf6",
+    "copyright/liblzma5:amd64/copyright": "a9c3f6e1bf373b54e29704e31afd99f5405a32cbc7897608b0f15e9d544882d4",
+    "copyright/libmbedcrypto16:amd64/copyright": "446042a6d62055e5617c220129b03063deff1a2b595ac29d9d10a9058cc10981",
+    "copyright/libmd0:amd64/copyright": "4365ef6255ad553fce69dd4bc0e093472c5d0e41b8ea493a545cc926ce171aa6",
+    "copyright/libmount1:amd64/copyright": "35a014187eb5d264405a91bda9ec782afdef9df148b657e67b38d07fabba2acf",
+    "copyright/libmp3lame0:amd64/copyright": "0e4b0e56bb8e5b72a5d3af0629b617c9d78c2c8fb42a722f4b0a0d9bb3cac202",
+    "copyright/libmpg123-0t64:amd64/copyright": "96a8ad2037ec07953ee02ea7f9c56710e403d7d01be33500e9cd05d900998b7a",
+    "copyright/libmysofa1:amd64/copyright": "99aab76301ca56da29c87971d0f57a41e11651c453a601b01d51baf0b81be39c",
+    "copyright/libnettle8t64:amd64/copyright": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6",
+    "copyright/libnorm1t64:amd64/copyright": "88c38443da2ea7d228b3d3e4e13138c02b41448e1210ad0e6277516c9ad493ef",
+    "copyright/libnuma1:amd64/copyright": "179c34f5e56cd0b6b73dd7970a97357ee784e2236e8293826656c7ebb3bface7",
+    "copyright/libogg0:amd64/copyright": "e2436f126bda43a69b367287d9b3db08efd128f9a9576240bc9bbe0c86b031c8",
+    "copyright/libopenal1:amd64/copyright": "de059bb3f2352a277766111a19497ecee39135a5c1db9a2a0d89965ec2b6c44f",
+    "copyright/libopenjp2-7:amd64/copyright": "5e73ad1e015c45c2c82a1f1c25cf9737230270f28f995806d7ab82ebfbc3cc01",
+    "copyright/libopenmpt0t64:amd64/copyright": "5998a8ed3e0b53886019f9cdb54a2048ee3c26308db7fc692585c9721fb42e6b",
+    "copyright/libopus0:amd64/copyright": "1580efdb9c8b11bc06510021d948c89dfee78c7eb9bd6d1ac5eb3ebdcbd82d29",
+    "copyright/libp11-kit0:amd64/copyright": "a5611fbad151d1fa0aa484f6c393a5166af33ce9a9783dfb2712d6b87b462b37",
+    "copyright/libpango-1.0-0:amd64/copyright": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+    "copyright/libpangocairo-1.0-0:amd64/copyright": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+    "copyright/libpangoft2-1.0-0:amd64/copyright": "8d9dd932bc836ab2ea02e0b13c7cc1e9e5472a71008f0caa2a8793eb5780ee94",
+    "copyright/libpcre2-8-0:amd64/copyright": "e915cde4251f96ec6af107ecd2e194440a4e69440893b0c982802f8a1e4ae40a",
+    "copyright/libpgm-5.3-0t64:amd64/copyright": "07836d892d92dcef15583e4e01569805498b95769f1c85d79bc996821dace2cf",
+    "copyright/libpixman-1-0:amd64/copyright": "fc01aa986f587d001f58acd312a4168bcc5e9f9ab6caccf3213f25133b0ffef5",
+    "copyright/libplacebo360:amd64/copyright": "2f21107885f2aacf42577624c94de149f16400b1e052bda8e87a85a050fa5cac",
+    "copyright/libpng16-16t64:amd64/copyright": "55c6fc6ffe83143f360b83f26b3064fff499120eff31e4f14ebba6d667308352",
+    "copyright/libpulse0:amd64/copyright": "aff3f1d729168de06e34d940dc493cc305a6e4a6278f1ac38ee52ec0f69e342c",
+    "copyright/librabbitmq4:amd64/copyright": "99f53e190f9ca2ec8a8cbd98f2ccd34f885e91e0e36bceacfa763582dfa2f8f7",
+    "copyright/librav1e0.8:amd64/copyright": "78924756e46ec5c762de1fd5ced1aa50aee171ac3608712b7481fe4e21a5fa62",
+    "copyright/libraw1394-11:amd64/copyright": "8179158680353631133a7339cdcd3637613cbc8f227b7681cdb1d9c1f874dad6",
+    "copyright/librist4:amd64/copyright": "e67ffa708e79c29f03c5621e9feb89f4931c01ec5aaa361f11ac57bccfd476f2",
+    "copyright/librsvg2-2:amd64/copyright": "a2421c782398378c7099731878bc789b0517f7cd9eab24f971074c979d3e372f",
+    "copyright/librubberband3:amd64/copyright": "98f38598448d973d6f2ce5ce6ecb735c8c23c94086e0c73d16ea0f911f448272",
+    "copyright/libsamplerate0:amd64/copyright": "870b641e1bbc7459889f632a691d410e8be634cdd1d33e187b27bcbb2290ea73",
+    "copyright/libseccomp2:amd64/copyright": "6da0653a365b80ab31478dbfe9e7c358e80d58b6d2b52b4e16b4dbb42d7d9f5c",
+    "copyright/libselinux1:amd64/copyright": "864f1bb189f609075d580b8c4aada16d85a44546884f1687989e1cacc8c56751",
+    "copyright/libserd-0-0:amd64/copyright": "4a42ae294f96da07eade9797d7fd0d7f5659c3a945e1ef4f7287eeb06d9398d9",
+    "copyright/libsharpyuv0:amd64/copyright": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+    "copyright/libshine3:amd64/copyright": "b631215db51471d41765f415b55a76fabc553f4a33760c7740c9e31d33a4aba8",
+    "copyright/libsnappy1v5:amd64/copyright": "6e3b7206a2a68d959274c289922e06bd19788a3d48d3bf74e92db43ee21593e6",
+    "copyright/libsndfile1:amd64/copyright": "66706015979e7ecb0ddfd155c00c5f70d0b69a5f7aa78481ee8ce31e3bf2139a",
+    "copyright/libsodium23:amd64/copyright": "10d3576a7a0af8afb5601f358c06eb8c24b02192bb71ed4fb9a328a0979ec74b",
+    "copyright/libsord-0-0:amd64/copyright": "80b04cb1571245377a66951e3b2a339b7dbe7d844a096d0595483539059cfdaf",
+    "copyright/libsoxr0:amd64/copyright": "a56a0046bfa8ae9907f9847d50158dadee4ae4884db2f3841a3184f5f627a729",
+    "copyright/libspeex1:amd64/copyright": "9bd13b2ec0f10da92819d14c44cf6ddca15a191a23ee360e665fa1f68a53d984",
+    "copyright/libsratom-0-0:amd64/copyright": "892618b130b655368611eaad45c7458242a8fc37aa049da999793fa65c201d6b",
+    "copyright/libsrt1.5-gnutls:amd64/copyright": "f546213b63d33dc480d3cd8fef2ce03fdc1eb2e2803b534a22ff558a6f4f7096",
+    "copyright/libssh-4:amd64/copyright": "4cee4f0ea834fceb25e80a87cd685cdc2bab2d11d62ba0c1fe3fad24bfd0de9a",
+    "copyright/libssl3t64:amd64/copyright": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35",
+    "copyright/libstdc++6:amd64/copyright": "d7815dd2364180835891947d96d808878204dea45b8597602a7952332195fbea",
+    "copyright/libsvtav1enc2:amd64/copyright": "66433ce51ad1f83c561940a0af5f78e45a1beee67e5cc5087c1f0c5d2736e1e4",
+    "copyright/libswresample6:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libswscale9:amd64/copyright": "3a48e975751c49cc38db6f7254afba9f1065062b12cf65941c400f1009012cf3",
+    "copyright/libsystemd0:amd64/copyright": "0fff813dc14e7c0a6d2bfba748ed17485fedb768b7fc9702b15261e81cfd357f",
+    "copyright/libtasn1-6:amd64/copyright": "722a2780f3f3865c8bed997b8a6283eebf302c9fe4a5b2fb5fd221ea9a51a5a6",
+    "copyright/libthai0:amd64/copyright": "75e7ba208ce2a5fed45e4948ca46d3ae93e82415c728c47d78bc7c85e4fd0539",
+    "copyright/libtheoradec2:amd64/copyright": "24efe62ae5dc5bf337c4ec146576366a15abcf63695e2d7866d946e8a9f4b799",
+    "copyright/libtheoraenc2:amd64/copyright": "24efe62ae5dc5bf337c4ec146576366a15abcf63695e2d7866d946e8a9f4b799",
+    "copyright/libtinfo6:amd64/copyright": "f838d6048fbc59356b7e56c207a7cb32dc6bf4adea95514a002596bde8f6e1e7",
+    "copyright/libtwolame0:amd64/copyright": "147113a009ccf1c952c6903f248ac66581a3496aff7b5331fdec5e2c37f71f24",
+    "copyright/libudev1:amd64/copyright": "0fff813dc14e7c0a6d2bfba748ed17485fedb768b7fc9702b15261e81cfd357f",
+    "copyright/libudfread3:amd64/copyright": "7955da2d0f9acfc6ea12ebf25317e476cefff9ff7f5c970a25bbc3cb814533b6",
+    "copyright/libunibreak6:amd64/copyright": "b3470fe912c697024754b5fd352d9f3b856b6696c4e7f85c34e91a044de276cd",
+    "copyright/libunistring5:amd64/copyright": "a585cd2cc2a5fcb8e58f12c7a710a35e06e5b897c59cd5ae4a7d835f0b49eae3",
+    "copyright/libusb-1.0-0:amd64/copyright": "a627862d217aed18b58086a8711ebf9a66b0e090fa16f64ef92b59e920921b15",
+    "copyright/libva-drm2:amd64/copyright": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+    "copyright/libva-x11-2:amd64/copyright": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+    "copyright/libva2:amd64/copyright": "6a4cf1933ded064a147b8cdfd63028ce0bd9a2a699e19f040c092cdf97c9143b",
+    "copyright/libvdpau1:amd64/copyright": "95c50dc739326c6f8cdf1dd600ade987ba229c574858d3b225b16a9d859b32df",
+    "copyright/libvidstab1.1:amd64/copyright": "c784a3d8760a64cb193f13425f8d667a4a183ff678d7cf0c151bb1dd0e30f3cc",
+    "copyright/libvorbis0a:amd64/copyright": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+    "copyright/libvorbisenc2:amd64/copyright": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+    "copyright/libvorbisfile3:amd64/copyright": "47badad9f7f750f92cd12f44db08b6937e5b4d47935ba1cc60de0ea3a2adff9b",
+    "copyright/libvpl2/copyright": "81a668a0aef1bb4299dd552e97595d376bc0ca6cc32af14bc60bf893636f464f",
+    "copyright/libvpx12:amd64/copyright": "6e9e37e72e8e6b6fad3b53672b041f4ebee5c5d8db15048cbff9157fbb8deba5",
+    "copyright/libvulkan1:amd64/copyright": "c579213e28f67944a7e407816b8a8e1d2d2406b3d820e420aa923807c450dc07",
+    "copyright/libwayland-client0:amd64/copyright": "99ade79b69c41bfb14b8a0567e9c0acdd858d6d8ad7d3ca4f9da1cfd000954b1",
+    "copyright/libwebp7:amd64/copyright": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+    "copyright/libwebpmux3:amd64/copyright": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+    "copyright/libx11-6:amd64/copyright": "0b380a7fd5b2228f26e9585e56f14812efd3350f3df307507d2bc055dfd8de3e",
+    "copyright/libx11-xcb1:amd64/copyright": "0b380a7fd5b2228f26e9585e56f14812efd3350f3df307507d2bc055dfd8de3e",
+    "copyright/libx264-165:amd64/copyright": "44fcb4f83c021376610b073f6e42716ead9869f67c2120b33b7bb14bf1fc25fc",
+    "copyright/libx265-215:amd64/copyright": "ac2859168010138bce5a5a16a1c2442570ed236121352c34c1a710005b727eb5",
+    "copyright/libxau6:amd64/copyright": "118dd263a7b91c8f21c489f949bf13281dff9e766deea92b829dac4dce66601a",
+    "copyright/libxcb-dri3-0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-present0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-randr0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-render0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-shape0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-shm0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-sync1:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb-xfixes0:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxcb1:amd64/copyright": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+    "copyright/libxdmcp6:amd64/copyright": "aceaa93ea2bb08890d7f91987ecf6a03814309470c819c56fe79f7698e45ef53",
+    "copyright/libxext6:amd64/copyright": "bc57e445ca1d9fe082c8d54189dd411ff26caa8552c9c63d44ea06a982f32124",
+    "copyright/libxfixes3:amd64/copyright": "051ffe073ab38244c504bb379903b4ecda6081fb3d97d0d3dce44bc11712eef2",
+    "copyright/libxml2-16:amd64/copyright": "ee746b96cfa5be73c3ea3e4cfb1285e9b315d4c9267f99b2ee9c5d911d9fe3f4",
+    "copyright/libxrender1:amd64/copyright": "ed2a78123a5076b4f11da38cb1ffb85b5cb9fdc26b5746c517b1d7e7a9029704",
+    "copyright/libxshmfence1:amd64/copyright": "6a76b32c9174c0cb9e3d94c323a14d33d6a42bd2a61579b189cbc5addeb94abe",
+    "copyright/libxv1:amd64/copyright": "9d5d63398df74e4ed0e12e8c44ca4ced2607d669cc16748e9143fce591bc6b1e",
+    "copyright/libxvidcore4:amd64/copyright": "3407665dbf5828ba9adcab357fe16e931dd20fd4a51053fa9529226fb6ed2123",
+    "copyright/libzimg2:amd64/copyright": "b302dc2568943b3326d3be15d03fe968888d1673962891ea93050a2f41e6e609",
+    "copyright/libzix-0-0:amd64/copyright": "0460f90b9445d5f84bfb17bc0a4a6efced0bca86bfe46e3400770e5ba868d471",
+    "copyright/libzmq5:amd64/copyright": "78a1462a7c5ab0488ddacdde2fc1cdd10815f8139acac01dcab13f03dbef3a17",
+    "copyright/libzstd1:amd64/copyright": "2efe51c80ddc473bc2c91faec49dae645bf7f5a04824528fec816320432da2ae",
+    "copyright/libzvbi0t64:amd64/copyright": "e25dd401f7454b6d4b631e53e2f69d42d5bc132038c467d8d492da5952a2d6a5",
+    "copyright/mesa-vulkan-drivers:amd64/copyright": "6814e1f8e3f030aa74ee8cb9f357fad706631d68d59adcd7192bc96e05199688",
+    "copyright/ocl-icd-libopencl1:amd64/copyright": "69b388028066ab453fa7ad403530f7b8aafe753f9c0818653692438329d9aa07",
+    "copyright/zlib1g:amd64/copyright": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+    "common-licenses/Apache-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "common-licenses/Artistic": "b7fd9b73ea99602016a326e0b62e6646060d18febdd065ceca8bb482208c3d88",
+    "common-licenses/BSD": "5d588eb3b157d52112afea935c88a7ff9efddc1e2d95a42c25d3b96ad9055008",
+    "common-licenses/CC0-1.0": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+    "common-licenses/GFDL": "110535522396708cea37c72a802c5e7e81391139f5f7985631c93ef242b206a4",
+    "common-licenses/GFDL-1.2": "2652c22ba086f92e55ae4a9f9c890ad4766ffd7814a73d318e22a597edf857a4",
+    "common-licenses/GFDL-1.3": "110535522396708cea37c72a802c5e7e81391139f5f7985631c93ef242b206a4",
+    "common-licenses/GPL": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "common-licenses/GPL-1": "49c007bafb5ad6dd9f9d4dae4d3ac0461975498150c05d684c551f0914ab486c",
+    "common-licenses/GPL-2": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+    "common-licenses/GPL-3": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "common-licenses/LGPL": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+    "common-licenses/LGPL-2": "cc535c21133c895b56b374c8a1dc1eb948d99003ed2b47372069456b62f42b24",
+    "common-licenses/LGPL-2.1": "20e50fe7aae3e56378ebf0417d9de904f55a0e61e4df315333e632a4d3555d95",
+    "common-licenses/LGPL-3": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+    "common-licenses/MPL-1.1": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469",
+    "common-licenses/MPL-2.0": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+  },
+  "installed_fonts": [
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+      "packages": [
+        "fonts-dejavu-core"
+      ],
+      "sha256": "e1d733afbbfce842a1b43dced0c9885a76a4e67290dc7e690c4e9b76ebfc7d23",
+      "bytes": 708920
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "packages": [
+        "fonts-dejavu-core"
+      ],
+      "sha256": "b4c632e3cdf9acc7f28758fb5a323c8524d7fc6660d46904d9b6cbe2809c419c",
+      "bytes": 759720
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+      "packages": [
+        "fonts-dejavu-mono"
+      ],
+      "sha256": "2d67eed9b325ee2e69f906ce4f3f6264d5105230a13352c8494daad4f17b12c8",
+      "bytes": 334268
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf",
+      "packages": [
+        "fonts-dejavu-mono"
+      ],
+      "sha256": "3e19ce950e77f59d5d3607c4a4ed6a5152933f88937a4e0e7586ee5d5319aa5c",
+      "bytes": 254960
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf",
+      "packages": [
+        "fonts-dejavu-mono"
+      ],
+      "sha256": "a033f17e7e42934146337ab2858f7bae5e10c59708d810f1fca0bc81dd543cae",
+      "bytes": 253448
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+      "packages": [
+        "fonts-dejavu-mono"
+      ],
+      "sha256": "a54dca07c76d6289e717e75e0a58c0128f6d7269ef3faf76417c9d7d3bba37ab",
+      "bytes": 343140
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+      "packages": [
+        "fonts-dejavu-core"
+      ],
+      "sha256": "3f704f75238454f68a8202e5098cb0687887480dd63d3dc20b34bdbdfa9d9f3f",
+      "bytes": 356668
+    },
+    {
+      "path": "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+      "packages": [
+        "fonts-dejavu-core"
+      ],
+      "sha256": "a52c2a69dfc93d0b511b98c1019a57eb3d6a62d328bdf1387f00851b02e3a315",
+      "bytes": 380660
+    }
+  ],
+  "configured_vulkan": {
+    "config": "/usr/share/vulkan/icd.d/radeon_icd.json",
+    "driver": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+    "config_value": {
+      "ICD": {
+        "api_version": "1.4.335",
+        "library_path": "libvulkan_radeon.so"
+      },
+      "file_format_version": "1.0.1"
+    },
+    "config_packages": [
+      "mesa-vulkan-drivers:amd64"
+    ],
+    "driver_packages": [
+      "mesa-vulkan-drivers:amd64"
+    ],
+    "dependency_inventory": {
+      "ldd": "\tlinux-vdso.so.1 (0x000075f5979f7000)\n\tlibLLVM.so.21.1 => /usr/lib/x86_64-linux-gnu/libLLVM.so.21.1 (0x000075f58e200000)\n\tlibdrm_amdgpu.so.1 => /usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1 (0x000075f5979d6000)\n\tlibelf.so.1 => /usr/lib/x86_64-linux-gnu/libelf.so.1 (0x000075f5979b5000)\n\tlibxcb-dri3.so.0 => /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0 (0x000075f5979ae000)\n\tlibwayland-client.so.0 => /usr/lib/x86_64-linux-gnu/libwayland-client.so.0 (0x000075f59799b000)\n\tlibz.so.1 => /usr/lib/x86_64-linux-gnu/libz.so.1 (0x000075f59797b000)\n\tlibzstd.so.1 => /usr/lib/x86_64-linux-gnu/libzstd.so.1 (0x000075f59673d000)\n\tlibdrm.so.2 => /usr/lib/x86_64-linux-gnu/libdrm.so.2 (0x000075f597964000)\n\tlibxcb.so.1 => /usr/lib/x86_64-linux-gnu/libxcb.so.1 (0x000075f596712000)\n\tlibX11-xcb.so.1 => /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1 (0x000075f59795f000)\n\tlibxcb-present.so.0 => /usr/lib/x86_64-linux-gnu/libxcb-present.so.0 (0x000075f59795a000)\n\tlibxcb-xfixes.so.0 => /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0 (0x000075f596706000)\n\tlibxcb-sync.so.1 => /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1 (0x000075f5966fd000)\n\tlibxcb-randr.so.0 => /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0 (0x000075f5966ec000)\n\tlibxcb-shm.so.0 => /usr/lib/x86_64-linux-gnu/libxcb-shm.so.0 (0x000075f5966e7000)\n\tlibxshmfence.so.1 => /usr/lib/x86_64-linux-gnu/libxshmfence.so.1 (0x000075f5966e2000)\n\tlibdisplay-info.so.3 => /usr/lib/x86_64-linux-gnu/libdisplay-info.so.3 (0x000075f58e1c7000)\n\tlibexpat.so.1 => /usr/lib/x86_64-linux-gnu/libexpat.so.1 (0x000075f58e199000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x000075f58de00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x000075f58dcda000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000075f58e16b000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x000075f58da00000)\n\tlibffi.so.8 => /usr/lib/x86_64-linux-gnu/libffi.so.8 (0x000075f58e15a000)\n\tlibedit.so.2 => /usr/lib/x86_64-linux-gnu/libedit.so.2 (0x000075f58e120000)\n\tlibxml2.so.16 => /usr/lib/x86_64-linux-gnu/libxml2.so.16 (0x000075f58d89d000)\n\t/lib64/ld-linux-x86-64.so.2 (0x000075f5979f9000)\n\tlibXau.so.6 => /usr/lib/x86_64-linux-gnu/libXau.so.6 (0x000075f5966d8000)\n\tlibXdmcp.so.6 => /usr/lib/x86_64-linux-gnu/libXdmcp.so.6 (0x000075f58e118000)\n\tlibtinfo.so.6 => /usr/lib/x86_64-linux-gnu/libtinfo.so.6 (0x000075f58e0e3000)\n\tlibbsd.so.0 => /usr/lib/x86_64-linux-gnu/libbsd.so.0 (0x000075f58e0cd000)\n\tlibmd.so.0 => /usr/lib/x86_64-linux-gnu/libmd.so.0 (0x000075f58e0be000)\n",
+      "libraries": [
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libLLVM.so.21.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libLLVM.so.21.1",
+          "packages": [
+            "libllvm21:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1.131.0",
+          "packages": [
+            "libdrm-amdgpu1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libelf.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libelf-0.194.so",
+          "packages": [
+            "libelf1t64:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0",
+          "packages": [
+            "libxcb-dri3-0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libwayland-client.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libwayland-client.so.0.24.0",
+          "packages": [
+            "libwayland-client0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+          "packages": [
+            "zlib1g:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7",
+          "packages": [
+            "libzstd1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libdrm.so.2",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libdrm.so.2.131.0",
+          "packages": [
+            "libdrm2:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
+          "packages": [
+            "libxcb1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0",
+          "packages": [
+            "libx11-xcb1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-present.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0",
+          "packages": [
+            "libxcb-present0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0",
+          "packages": [
+            "libxcb-xfixes0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-sync.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0",
+          "packages": [
+            "libxcb-sync1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0",
+          "packages": [
+            "libxcb-randr0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0",
+          "packages": [
+            "libxcb-shm0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxshmfence.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0",
+          "packages": [
+            "libxshmfence1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libdisplay-info.so.3",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libdisplay-info.so.0.3.0",
+          "packages": [
+            "libdisplay-info3:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.11.2",
+          "packages": [
+            "libexpat1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35",
+          "packages": [
+            "libstdc++6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "packages": [
+            "libc6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "packages": [
+            "libgcc-s1:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "packages": [
+            "libc6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libffi.so.8.2.0",
+          "packages": [
+            "libffi8:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libedit.so.2",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libedit.so.2.0.76",
+          "packages": [
+            "libedit2:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libxml2.so.16",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libxml2.so.16.1.2",
+          "packages": [
+            "libxml2-16:amd64"
+          ]
+        },
+        {
+          "path": "/lib64/ld-linux-x86-64.so.2",
+          "resolved": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "packages": [
+            "libc6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0",
+          "packages": [
+            "libxau6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0",
+          "packages": [
+            "libxdmcp6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libtinfo.so.6",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libtinfo.so.6.6",
+          "packages": [
+            "libtinfo6:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libbsd.so.0.12.2",
+          "packages": [
+            "libbsd0:amd64"
+          ]
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0",
+          "resolved": "/usr/lib/x86_64-linux-gnu/libmd.so.0.1.0",
+          "packages": [
+            "libmd0:amd64"
+          ]
+        }
+      ]
+    },
+    "config_sha256": "ea05ad7109cee152ef4e801a022dfa40b655dc06a08da7d0d7b042f619a0947c"
+  },
+  "loader_inventory_reuse": "The189 original loader hashes remain bound to f7-current-prebuilt-workflow.json/runtime59b6. Next package assembly must compare every fresh77d7 loader path/resolved/SHA against this recorded list before including the host companion. This collection does not itself relabel those DSO hashes as newly measured.",
+  "validation": "Exact dpkg path ownership, installed binary/source package versions before/after collection, verbatim copyright/common files and all archive member/index readback checked. Fonts SHA256 and configured ICD JSON checked. No library/font binary is copied. No build/render/editor operation or restart.",
+  "remaining": [
+    "Bind companion to fresh current executable loader inventory during assembly",
+    "Arbitrary optional/plugin/device paths beyond configured host are outside this evidence scope",
+    "Physical input/DPI/audio, real long footage, dense timeline,9 native clock cases and editing soak remain open"
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2
+  }
+}

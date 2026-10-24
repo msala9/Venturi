@@ -33,8 +33,10 @@ binary to unchanged Cargo manifests/lock/build inputs and the exact archive hash
 The eight originally missing packages now have a separately-provenanced
 14-file supplement; see NOTICES.md and
 `evidence/f7-notice-supplement-workflow.json`. It is not retroactively part of
-this archive. Include both immutable companions in the next assembly. The
-system/font/optional/borrowed-code attribution and distribution scope remain.
+this archive. NOTICES.md also identifies the configured-host companion containing199 installed
+copyright/common-license files. Include all three immutable companions in the
+next assembly and compare the fresh loader inventory. Arbitrary optional paths
+and broader borrowed-code/public redistribution are outside this host scope.
 
 The actual packaged executable starts through its launcher on isolated 8856,
 automatically reopens the owned Saved 48-frame 4K fixture and renders frame 24 at

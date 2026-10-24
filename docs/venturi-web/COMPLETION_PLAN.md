@@ -1,5 +1,29 @@
 # Active completion plan — full Venturi Web scope
 
+## Configured-host runtime and font notices — 2026-10-24
+
+A separate immutable host companion now supplies 199 copyright/common-license
+files for 182 installed packages: all 189 recorded executable-loader DSOs, the
+configured Radeon ICD and its 31 loader dependencies, and 8 DejaVu font files.
+No copyright file is missing. Installed binary/source package versions match
+before/after collection; copied bytes and every archive member/index are verified.
+Library/font binaries remain external and are not copied. The next assembly
+must compare fresh current-binary loader paths/hashes with the recorded list.
+Arbitrary optional/device/plugin paths beyond this configured host are not claimed.
+
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-host-notices-bf0b322.tar`
+is 3,747,840 B, SHA256
+`5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c`,
+with a companion `.sha256`. The 1 CPU/256 MiB/no-swap job terminates MainPID0,
+peak 29,052,928 B and zero memory-limit/OOM/kill events. No application edit,
+compilation, rendering, package/driver installation or editor restart is performed.
+See NOTICES.md and `evidence/f7-host-notices-workflow.json`. Current code remains
+bf0b322/77d7; the package assembly will include this and both Rust companions.
+The full 90-capability F1-F7/M7 goal remains active, ledger 61 done/29 partial/
+2 excluded. Physical/long-media/dense/native-clock/editing-soak gates remain open.
+
+
+
 ## Eight-package notice supplement — 2026-10-24
 
 The missing-notice acquisition gap is closed with a separate immutable halo1

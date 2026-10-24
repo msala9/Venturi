@@ -27,8 +27,8 @@ The immutable prior source `5959f90` and binary `vv-web-59b6a3cc0114` are retain
 for guarded runback; the full path/hash and verification steps are in RUNNING.md.
 Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
 the final integrated, physical and editing-soak acceptance remain open. Isolated
-packaged59b6/prior67ef/forward59b6 runback passes in
-`evidence/f7-current-prebuilt-workflow.json`; that proof is version-bound.
+packaged77d7/prior59b6/forward77d7 runback passes in
+`evidence/f7-current-prebuilt-r2-workflow.json`; earlier proof stays version-bound.
 
 Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
 
@@ -36,9 +36,11 @@ Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow
 
 Current A/B quality and guarded live upgrade: `evidence/f6-review-quality-workflow.json`.
 
-BINARY_DELIVERY.md retains the previously packaged5959f90/59b6 snapshot.
-NOTICES.md identifies all three immutable Rust/host notice companions for the
-next current-binary assembly. Full M7 acceptance remains open.
+BINARY_DELIVERY.md identifies the current verified77d7 package with4231ecf
+documentation; NOTICES.md describes its three immutable Rust/host companions.
+All189 fresh loader identities match the host notice index. Earlier packages
+remain unchanged. Physical/long-media/dense/native-clock/editing-soak M7
+acceptance remains open.
 
 ## Historical workflow deliveries
 

@@ -3,8 +3,8 @@
 The selected Linux normal dependency graph contains 265 third-party packages.
 The following immutable companions supply original package texts and additional
 notice material separately. Existing binary archives retain their recorded
-contents; the next assembled delivery must include all three companions and their
-checksums. The current live bf0b322/77d7 executable is described in RUNNING.md.
+contents; the current77d7 assembly includes all three companions and their
+checksums, as recorded in BINARY_DELIVERY.md. The current live bf0b322/77d7 executable is described in RUNNING.md.
 
 | Companion on halo1 | Bytes | SHA256 |
 |---|---|---|
@@ -43,9 +43,8 @@ files for 182 packages owning the 189 recorded loader libraries, the configured
 Radeon ICD with its 31 loader dependencies, and eight DejaVu font files. No
 copyright file is missing. Installed binary/source package versions are checked
 before and after collection. All members and the full index are re-read and
-hashed. Fonts and shared libraries remain external prerequisites. The next
-binary assembly must compare fresh loader paths/hashes before reusing this
-host companion. Arbitrary optional/device/plugin/font paths on other hosts are
+hashed. Fonts and shared libraries remain external prerequisites. The current assembly compares all189 fresh loader name/path/resolved/size/SHA
+tuples with the host index exactly; see `evidence/f7-current-prebuilt-r2-workflow.json`. Arbitrary optional/device/plugin/font paths on other hosts are
 outside this configured-host evidence.
 
 These materials cover the selected normal Rust graph and the configured host's

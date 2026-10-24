@@ -115,10 +115,10 @@ project, backups, receipts or caches. Validate reopening on a preserved project
 copy in a separate approved candidate before allowing writes from an older
 binary. If current edits/history/drafts/jobs exist, leave the live service
 untouched. Restoring a binary does not restore an earlier unsaved session.
-The earlier isolated packaged59b6 ->67ef ->59b6 runback is qualified in
-`evidence/f7-current-prebuilt-workflow.json`; it preserves the working editor.
-The current77d7 client increment has not repeated that packaging/runback check;
-its focused build and actual guarded upgrade are qualified separately.
+The current isolated packaged77d7 -> immediate-prior59b6 -> packaged77d7
+runback is qualified in `evidence/f7-current-prebuilt-r2-workflow.json`. It
+reopens the owned Saved4K fixture with identical timeline/frame PNG, stops all
+three children and preserves the live editor. Older runbacks stay version-bound.
 M7 requires reload/recovery and documented operation, not a whole-host reboot.
 
 After the gate, the following bounded system-unit template selects that prior
@@ -158,12 +158,12 @@ Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow
 
 Current A/B quality qualification: `evidence/f6-review-quality-workflow.json`.
 
-The latest packaged snapshot and its isolated prior/forward startup are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. That archive remains bound to5959f90/59b6 and excludes the current A/B quality increment; use the live immutable executable above for this increment. Full M7 acceptance remains open.
+The current prebuilt77d7 package and actual prior/forward startup are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-r2-workflow.json`. Its manifest binds binary sourcebf0b322 and documentation4231ecf separately. It includes all three immutable Rust/host notice companions and fresh189-library identity comparison. Full M7 acceptance remains open.
 
 Current notice companions: NOTICES.md and `evidence/f7-notice-supplement-workflow.json`.
 The original488-text archive,14-file Rust supplement and199-file configured-host
-companion retain distinct provenance and must accompany the next assembled
-delivery. They change no executable, editor configuration or existing package bytes.
+companion retain distinct provenance and are included in the current assembled
+delivery. They change no executable, editor configuration or earlier package bytes.
 
 ## Historical deliveries and workflow notes
 

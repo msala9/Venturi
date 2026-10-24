@@ -1,6 +1,53 @@
 # Prebuilt Linux development candidate
 
-## Latest verified packaged snapshot — 2026-10-24
+## Current verified package — 2026-10-24
+
+The current package contains the same bf0b322/77d7 executable as live port8855,
+including selectable native A/B source quality, plus the committed4231ecf
+runbook/handover and all three immutable notice companions. Full F1-F7/M7
+acceptance remains open; this is an internal configured-halo1 development delivery.
+
+| Item | Verified value |
+|---|---|
+| Persistent halo1 archive | `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-77d7f5fe4452-b2d26efd2ed5.tar` |
+| Archive bytes | `89128960` |
+| Archive SHA256 | `b2d26efd2ed515048183d9cbe01c10825dfa508e975869a1d68387bf5ccc3f82` |
+| Companion checksum | Archive path followed by `.sha256` |
+| Binary source | `bf0b322f15bd86660701308b9ce3713e40502e24` |
+| Packaged documentation source | `4231ecf17a1bcbcc2d366a5b75c57939acc31592` |
+| Binary SHA256 | `77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81` |
+
+Verify the checksum on halo1, extract into a new owned directory, then verify
+`SHA256SUMS`. The prebuilt-only launcher never runs Cargo or installs anything.
+No archive was downloaded to Windows. Host libraries, fonts, Vulkan userspace,
+project/NAS data and ds4 remain external; the archive is not self-contained.
+
+`third-party/companions.json` and the manifest bind these exact archives:
+`rust-notices.tar` (488 original crate texts), `notice-supplement.tar` (14
+separately-provenanced texts for the other eight packages) and `host-notices.tar`
+(199 copyright/common-license files for182 installed packages). Original archive
+bytes and historical index remain unchanged. Fresh189 executable-loader
+name/path/resolved/size/SHA tuples match the host companion exactly. The configured
+Radeon ICD/31 dependencies and eight DejaVu font files are recorded separately.
+See NOTICES.md for the published dirty-Tract markers, explicit SPDX reference
+and optional-path/public-redistribution scope.
+
+All archive members are re-read and hashed; packaged `--help` passes under
+1 CPU/512 MiB/no swap, peak212,430,848 B. An actual isolated8856 run starts
+packaged77d7 -> immediate prior59b6 -> packaged77d7. Each fresh process reopens the
+owned Saved48-frame4K project with empty history and returns the identical native
+timeline and960x540 frame24 PNG. Each child terminates,8856 closes and the shared
+GPU lock releases. This serial8CPU/4GiB/no-swap check peaks512,241,664 B; both units
+finish MainPID0 with zero memory-limit/OOM/kill events.
+
+Live8855,39 foreign Sessions/40 PIDs,12 Saved files,5 local media,4 NAS files and
+the shared proxy remain unchanged. See
+[current package/runback evidence](evidence/f7-current-prebuilt-r2-workflow.json).
+The synthetic48-frame startup fixture does not qualify representative long
+footage, sustained A/B throughput, physical input/audio/DPI, dense editing or the
+two-hour typical-editing soak. Those remain explicit goal requirements.
+
+## Previous packaged snapshot — 59b6a3cc0114
 
 The latest packaged snapshot binds5959f90/59b6, including original-audio/Voiceover
 and continuous numeric-scrub changes. Live8855 now runsbf0b322/77d7f5fe4452

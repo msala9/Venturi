@@ -1,5 +1,38 @@
 # Implementation status
 
+## Current package with all notice companions and actual runback — 2026-10-24
+
+The current bf0b322/77d7 executable and committed4231ecf documentation are now
+assembled with all three immutable Rust/host notice companions. Persistent halo1:
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-77d7f5fe4452-b2d26efd2ed5.tar`,
+89,128,960 B, SHA256
+`b2d26efd2ed515048183d9cbe01c10825dfa508e975869a1d68387bf5ccc3f82`,
+with companion `.sha256`. Original488 Rust texts,14 supplemental texts and199
+host copyright/common-license files retain separate provenance. Every fresh
+loader name/path/resolved/size/SHA tuple matches the host companion's189 entries.
+Archive members and packaged prebuilt-only launcher `--help` pass. Libraries,
+fonts, Vulkan userspace, NAS/media/ds4 remain external; none is installed/copied.
+
+The actual packaged77d7 -> immediate-prior59b6 -> packaged77d7 runback uses fresh
+processes on isolated8856 and the owned Saved48-frame4K fixture. All three reopen
+Saved with empty history and identical timeline/frame24 PNG at960x540,
+SHA256 `b1969e67bac366a6409bff9ead82f675cb2613516007eb16b48da8e406871290`.
+All children terminate,8856 closes and the GPU lock releases. Live8855 is never
+restarted. Packaging uses1CPU/512MiB/noSwap, peak212,430,848B; the serial runback
+uses8CPU/4GiB/noSwap, peak512,241,664B. Both finish MainPID0 with zero memory-limit/
+OOM/kill events. All39 foreign Sessions/40 PIDs,12 Saved files,5 local media,
+4 fixed NAS files and the shared proxy are unchanged. See BINARY_DELIVERY.md,
+NOTICES.md and `evidence/f7-current-prebuilt-r2-workflow.json`.
+
+This closes the current-version archive/notice-integration/runback gap without
+rebuilding or repeating the native export matrix. The full90/M7 goal remains
+active, ledger61 done/29 partial/2 excluded. Physical pointer/DPI/audio/device,
+representative long footage, dense timeline,9 native clock cases and2-hour
+actual editing soak remain unqualified. No broad throughput or full release
+acceptance is inferred from the48-frame fixture.
+
+
+
 ## Configured-host runtime and font notices — 2026-10-24
 
 A separate immutable host companion now supplies 199 copyright/common-license

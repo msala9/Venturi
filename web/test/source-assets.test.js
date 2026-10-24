@@ -335,6 +335,55 @@ function nativeItem(meta={}){
   return nativeThumbnailItem({id:'library-shot',name:'Library shot',revision:'a'.repeat(64),missing_count:0,presentation:{kind:'video',duration_frames:24_000,fps:{num:24,den:1},has_video:true,has_audio:true,is_image:false,audio_streams:1,...meta}},{project_epoch:'epoch',generation:'7'});
 }
 
+test('verified Library audio prepares each raw stream in its captured namespace without resolving or importing again',async()=>{
+  const item={...nativeItem({kind:'audio',has_video:false,audio_streams:2}),content_hash:'native-hash'};
+  item.native_asset.source_version='fd-version';
+  const h=harness({isNativeCurrent:()=>true,api:(_path,body,_fetcher,job)=>({...job(),source_assets:{...job().source_assets,has_video:false,audio_stream_index:body.audio_stream_index,thumbnail_width:96}})});
+  h.setState({project_epoch:'epoch',generation:'9',media:[]});
+  try{
+    for(const index of [0,1]){
+      const result=await h.loader.load(item,'epoch',{sourceVersion:'fd-version',audioStreamIndex:index,includeWaveform:true});
+      assert.equal(result.audioStreamIndex,index);assert.equal(result.waveform.scope,'full_source');assert.equal(result.thumbnail,null);
+    }
+    assert.equal(h.errors.length,0);assert.equal(h.calls.filter(call=>call.kind==='api').length,2);
+    for(const call of h.calls.filter(call=>call.kind==='api')){
+      assert.equal(call.path,'/native-assets/items/library-shot/source/assets/prepare');
+      assert.equal(call.body.if_generation,'7');assert.equal(call.body.source_version,'fd-version');assert.equal(call.body.include_waveform,true);
+    }
+    for(const call of h.calls.filter(call=>call.kind==='fetch')){
+      const url=new URL(call.path,'http://fixture');assert.match(url.pathname,/\/source\/jobs\/job\/waveform.json$/);assert.equal(url.searchParams.get('if_generation'),'7');assert.equal(url.searchParams.get('source_version'),'fd-version');
+    }
+    assert(h.calls.every(call=>!call.path.includes('/media/') && !call.path.includes('.mp4') && !call.path.includes('thumb.png')));
+  }finally{h.loader.dispose();}
+});
+
+test('Library waveform requires a verified descriptor and refuses changed versions or unavailable stream indices',async()=>{
+  const item=nativeItem({kind:'audio',has_video:false,audio_streams:2}),h=harness({isNativeCurrent:()=>true,
+    api:(_path,_body,_fetcher,job)=>({...job(),source_assets:{...job().source_assets,has_video:false,source_version:'changed',thumbnail_width:96}})});
+  try{
+    assert.equal(await h.loader.load(item,'epoch',{includeWaveform:true}),null);assert.equal(h.calls.length,0);
+    item.native_asset.source_version='fd-version';
+    assert.equal(await h.loader.load(item,'epoch',{includeWaveform:true,audioStreamIndex:2}),null);assert.equal(h.calls.length,0);
+    assert.equal(await h.loader.load(item,'epoch',{includeWaveform:true,sourceVersion:'fd-version'}),null);
+    assert.equal(h.ready.length,0);assert.equal(h.errors.length,1);assert.equal(h.calls.filter(call=>call.kind==='fetch').length,0);
+  }finally{h.loader.dispose();}
+});
+
+test('Library waveform streams share the existing priority queue across unrelated project generations',async()=>{
+  const item=nativeItem({kind:'audio',has_video:false,audio_streams:2});item.native_asset.source_version='original-fd';
+  const h=queueHarness({complete:false,isNativeCurrent:()=>true});
+  try{
+    h.setState({project_epoch:'epoch',generation:'9',media:h.items});
+    h.queue.demand('pool',[h.entry(0)]);
+    h.queue.demand('source_waveform',[0,1].map(audioStreamIndex=>({item,audioStreamIndex,includeWaveform:true,sourceVersion:'original-fd'})));
+    h.tick();await flush();assert.equal(h.calls.length,1);assert.equal(h.calls[0].item.id,item.id);assert.equal(h.calls[0].options.audioStreamIndex,0);
+    h.pending[0].resolve({item});await flush();h.tick();await flush();assert.equal(h.calls[1].options.audioStreamIndex,1);assert.equal(h.calls[1].options.sourceVersion,'original-fd');
+    h.queue.cancelSource();assert.equal(h.cancels,1);h.pending[1].resolve(null);await flush();
+    h.setState({project_epoch:'other',generation:'0',media:[]});
+    h.queue.demand('source_waveform',[{item,includeWaveform:true}],'epoch');if(h.timers.size){h.tick();await flush();}assert.equal(h.calls.length,2);
+  }finally{h.queue.dispose();}
+});
+
 test('Library thumbnails resolve one version-bound Source descriptor then fetch only native PNG assets',async()=>{
   const item=nativeItem(),resolved={...item,content_hash:'native-hash',native_asset:{...item.native_asset,source_version:'fd-version'}},h=harness({isNativeCurrent:()=>true,
     api:(path,_body,_fetcher,job)=>path.endsWith('/source')?{project_epoch:'epoch',generation:'7',item:resolved}:{...job('queued'),source_assets:{...job().source_assets,include_waveform:false,thumbnail_width:96}},

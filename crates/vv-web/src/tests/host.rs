@@ -1,6 +1,176 @@
 use super::*;
 
 #[test]
+fn native_library_source_marked_placement_imports_and_inserts_one_undo_reuses_and_replays() {
+    use vv_core::{ClipSource, Id};
+    let (root, mut owner, media) = native_asset_fixture("marked-library");
+    let revision = native_publish(&mut owner, media, "marked-library");
+    let destination = root.join("destination");
+    let mut editor = Editor::with_libraries(&destination, &destination.join(".presets"), &root.join(".assets")).unwrap();
+    let create = request(&editor, Operation::NewProject { name: "marked".into() }, "marked-project", None);
+    editor.mutation(None, create).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let query = crate::source::NativeSourceQuery {
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(), revision: revision.clone(), source_version: None,
+    };
+    let snapshot = crate::source::native_asset_snapshot(&editor.assets, "marked-library", &query, false).unwrap();
+    let version = crate::source::source_version(&snapshot.spec.file).unwrap();
+    let mut bound = query.clone();
+    bound.source_version = Some(version.clone());
+    let sources = crate::source::MediaJobs::start().unwrap();
+    let source = sources.prepare_audio(snapshot.spec, "low", None, crate::source_audio::AudioMode::All, 0).unwrap();
+    let source_job = source["id"].as_str().unwrap().to_owned();
+    let deadline = Instant::now() + Duration::from_secs(20);
+    loop {
+        let snapshot = crate::source::native_asset_snapshot(&editor.assets, "marked-library", &bound, true).unwrap();
+        let state = sources.status(&source_job, &snapshot.spec, false).unwrap();
+        if state["state"] == "ready" { break; }
+        assert!(matches!(state["state"].as_str(), Some("queued" | "running")), "{state}");
+        assert!(Instant::now() < deadline, "{state}");
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let rename_media = editor.session.project.media_pool.iter().find(|(_, item)| item.compound == Some(timeline)).unwrap().0;
+    editor.session.apply(Box::new(vv_core::RenameTimeline::new(rename_media, "Unrelated edit".into())));
+    assert_ne!(bound.if_generation, editor.session.history.generation().to_string());
+    let job = native_prepare(&mut editor, NativeAssetAction::Import { asset_id: "marked-library".into(), revision: revision.clone() });
+    native_wait(&mut editor, &job);
+    let operation = Operation::PlaceNativeSource {
+        job_id: job["id"].as_str().unwrap().into(), asset_id: "marked-library".into(), revision: revision.clone(),
+        source_generation: bound.if_generation.clone(), source_job_id: source_job.clone(), source_version: version.clone(),
+        source_in: 1, source_out: 2, start_frame: 96,
+        target: commands::AssetDropTarget::NewAudioTrack {}, streams: commands::SourceStreams::All, overwrite: false,
+    };
+    let baseline = json!(editor.session.project);
+    let position = editor.session.history.position();
+    for (index, code) in [(0, "SOURCE_CHANGED"), (1, "NOT_FOUND"), (2, "INVALID_OPERATION"), (3, "INVALID_OPERATION"), (4, "ASSET_CHANGED")] {
+        let mut bad = operation.clone();
+        if let Operation::PlaceNativeSource { source_version, source_job_id, source_generation, source_out, revision, .. } = &mut bad {
+            match index {
+                0 => *source_version = "old".into(),
+                1 => *source_job_id = "missing".into(),
+                2 => *source_generation = "invalid".into(),
+                3 => *source_out = 1000,
+                _ => *revision = "0".repeat(64),
+            }
+        }
+        let request = request(&editor, bad, &format!("marked-invalid-{index}"), Some(timeline));
+        assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), request, sources.clone())).unwrap_err().1, code);
+        assert_eq!(json!(editor.session.project), baseline);
+        assert_eq!(editor.session.history.position(), position);
+    }
+    let bypass = request(&editor, operation.clone(), "marked-bypass", Some(timeline));
+    assert_eq!(editor.mutation(Some(timeline.raw().to_string()), bypass).unwrap_err().1, "SOURCE_PREPARATION_REQUIRED");
+    editor.lease = Some(("foreign-writer".into(), Instant::now()));
+    let readonly = request(&editor, operation.clone(), "marked-readonly", Some(timeline));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), readonly, sources.clone())).unwrap_err().1, "READ_ONLY");
+    editor.lease = None;
+    editor.session.project.timelines[timeline].tracks[0].locked = true;
+    let locked_before = json!(editor.session.project);
+    let mut locked_operation = operation.clone();
+    if let Operation::PlaceNativeSource { target, .. } = &mut locked_operation {
+        *target = commands::AssetDropTarget::Track { track_id: "0".into() };
+    }
+    let locked = request(&editor, locked_operation, "marked-locked", Some(timeline));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), locked, sources.clone())).unwrap_err().1, "TRACK_LOCKED");
+    assert_eq!(json!(editor.session.project), locked_before);
+    editor.session.project.timelines[timeline].tracks[0].locked = false;
+    let mut stale = request(&editor, operation.clone(), "marked-stale", Some(timeline));
+    stale.if_generation = query.if_generation;
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), stale, sources.clone())).unwrap_err().1, "REVISION_CONFLICT");
+    let before_timeline = json!(editor.session.project.timelines[timeline]);
+    let before_media = editor.session.project.media_pool.len();
+    let mutation = request(&editor, operation.clone(), "marked-place", Some(timeline));
+    let ack = editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), mutation.clone(), sources.clone())).unwrap();
+    assert_eq!(ack["timeline_id"], timeline.raw().to_string());
+    assert_eq!(ack["changed"], true);
+    assert_eq!(ack["new_count"], 1);
+    assert_eq!(ack["reused_count"], 0);
+    assert_eq!(ack["clip_ids"].as_array().unwrap().len(), 1);
+    assert_native_asset_job_released(&editor, &job);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let resolved = vv_core::MediaId::from_raw(ack["media_ids"][0].as_str().unwrap().parse().unwrap());
+    let clip = editor.session.project.timelines[timeline].tracks.iter().flat_map(|track| &track.clips).find(|clip| clip.id.0.to_string() == ack["clip_ids"][0].as_str().unwrap()).unwrap();
+    assert!(matches!(clip.source, ClipSource::Media(id) if id == resolved));
+    let after_timeline = json!(editor.session.project.timelines[timeline]);
+    let undo = request(&editor, Operation::Undo, "marked-undo", Some(timeline));
+    editor.mutation(Some(timeline.raw().to_string()), undo).unwrap();
+    assert_eq!(json!(editor.session.project.timelines[timeline]), before_timeline);
+    assert_eq!(editor.session.project.media_pool.len(), before_media);
+    let redo = request(&editor, Operation::Redo, "marked-redo", Some(timeline));
+    editor.mutation(Some(timeline.raw().to_string()), redo).unwrap();
+    assert_eq!(json!(editor.session.project.timelines[timeline]), after_timeline);
+    assert!(editor.session.project.media_pool.contains_key(resolved));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), mutation.clone(), sources.clone())).unwrap(), ack);
+    let second = native_prepare(&mut editor, NativeAssetAction::Import { asset_id: "marked-library".into(), revision });
+    native_wait(&mut editor, &second);
+    let mut reused = operation.clone();
+    if let Operation::PlaceNativeSource { job_id, start_frame, .. } = &mut reused {
+        *job_id = second["id"].as_str().unwrap().into(); *start_frame = 120;
+    }
+    let before = editor.session.history.position();
+    let command = request(&editor, reused, "marked-reuse", Some(timeline));
+    let repeated = editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), command, sources.clone())).unwrap();
+    assert_eq!(repeated["media_ids"], ack["media_ids"]);
+    assert_eq!(repeated["new_count"], 0);
+    assert_eq!(repeated["reused_count"], 1);
+    assert_eq!(editor.session.history.position(), before + 1);
+    assert_native_asset_job_released(&editor, &second);
+    let third = native_prepare(&mut editor, NativeAssetAction::Import { asset_id: "marked-library".into(), revision: bound.revision.clone() });
+    native_wait(&mut editor, &third);
+    let mut rejected = operation.clone();
+    if let Operation::PlaceNativeSource { job_id, start_frame, .. } = &mut rejected {
+        *job_id = third["id"].as_str().unwrap().into(); *start_frame = 144;
+    }
+    let track = editor.session.project.timelines[timeline].tracks.iter().position(|track| {
+        track.clips.iter().any(|clip| clip.id.0.to_string() == ack["clip_ids"][0].as_str().unwrap())
+    }).unwrap();
+    let mut overlap = rejected.clone();
+    if let Operation::PlaceNativeSource { start_frame, target, .. } = &mut overlap {
+        *start_frame = 96;
+        *target = commands::AssetDropTarget::Track { track_id: track.to_string() };
+    }
+    let locks: Vec<_> = editor.session.project.timelines[timeline].tracks.iter().map(|track| track.locked).collect();
+    for (index, lane) in editor.session.project.timelines[timeline].tracks.iter_mut().enumerate() {
+        if lane.kind == TrackKind::Audio { lane.locked = index != track; }
+    }
+    let unchanged = json!(editor.session.project);
+    let command = request(&editor, overlap, "marked-overlap", Some(timeline));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), command, sources.clone())).unwrap_err().1, "OVERLAP");
+    assert_eq!(json!(editor.session.project), unchanged);
+    for (lane, locked) in editor.session.project.timelines[timeline].tracks.iter_mut().zip(locks) { lane.locked = locked; }
+    for (index, changed_hash) in [false, true].into_iter().enumerate() {
+        let original = editor.session.project.media_pool[resolved].clone();
+        if changed_hash {
+            editor.session.project.media_pool[resolved].content_hash ^= 1;
+        } else {
+            editor.session.project.media_pool[resolved].meta.duration_frames += 1;
+        }
+        let unchanged = json!(editor.session.project);
+        let position = editor.session.history.position();
+        let command = request(&editor, rejected.clone(), &format!("marked-cache-changed-{index}"), Some(timeline));
+        assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), command, sources.clone())).unwrap_err().1, "SOURCE_CHANGED");
+        assert_eq!(json!(editor.session.project), unchanged);
+        assert_eq!(editor.session.history.position(), position);
+        editor.session.project.media_pool[resolved] = original;
+    }
+    let canceled = editor.asset_jobs.status(third["id"].as_str().unwrap(), &bound.project_epoch, true).unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    let unchanged = json!(editor.session.project);
+    let command = request(&editor, rejected, "marked-canceled-import", Some(timeline));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), command, sources.clone())).unwrap_err().1, "ASSET_NOT_READY");
+    assert_eq!(json!(editor.session.project), unchanged);
+    let payload = crate::asset_payload::decode(&owner.assets.load("marked-library", &bound.revision).unwrap()).unwrap();
+    std::fs::write(&payload.media_items().next().unwrap().path, b"changed after applied ACK").unwrap();
+    let changed = request(&editor, operation, "marked-source-changed", Some(timeline));
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), changed, sources.clone())).unwrap_err().1, "SOURCE_CHANGED");
+    assert_eq!(json!(editor.session.project), unchanged);
+    assert_eq!(editor.handle(Action::SourcePlacementMutation(timeline.raw().to_string(), mutation, sources.clone())).unwrap(), ack);
+    drop((sources, editor, owner));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_library_audio_refresh_ignores_attribute_lock_and_foreign_recovery_but_checks_its_own_catalog()
  {
     use vv_core::Id;

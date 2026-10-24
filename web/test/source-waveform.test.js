@@ -79,6 +79,22 @@ test('cached peaks require verified opaque FD identity and survive preparation o
   }finally{h.component.dispose();}
 });
 
+test('Library audio lanes demand their native Source descriptor and never display another revision under matching cache IDs',()=>{
+  const h=harness({count:2});
+  try{
+    h.item.native_asset={id:'library-audio',revision:'a'.repeat(64),if_generation:'3',source_version:'fd:one'};
+    h.addAsset(0);h.addAsset(1);
+    for(const asset of h.assets.values()){asset.epoch='epoch';asset.nativeAsset={...h.item.native_asset};}
+    h.refresh();assert.equal(h.root.dataset.loadedStreams,'2');assert.equal(h.root.dataset.state,'ready');
+    assert.deepEqual(h.demands.at(-1).entries.map(entry=>entry.audioStreamIndex),[0,1]);
+    assert(h.demands.at(-1).entries.every(entry=>entry.item.native_asset.id==='library-audio' && entry.item.native_asset.if_generation==='3' && entry.sourceVersion==='fd:one'));
+    h.assets.get(sourceAssetKey(h.item.id,1)).epoch='other-epoch';h.refresh();assert.equal(h.root.dataset.loadedStreams,'1');
+    h.assets.get(sourceAssetKey(h.item.id,1)).epoch='epoch';h.assets.get(sourceAssetKey(h.item.id,1)).nativeAsset.revision='b'.repeat(64);h.refresh();assert.equal(h.root.dataset.loadedStreams,'1');
+    h.item.native_asset={...h.item.native_asset,source_version:'fd:two'};h.context.sourceVersion='fd:two';h.refresh();assert.equal(h.root.dataset.loadedStreams,'0');
+    h.context.sourceVersion='fd:one';h.refresh();assert.equal(h.root.hidden,true,'mismatched verified Source and native descriptor cannot retain an old waveform');assert.deepEqual(h.demands.at(-1).entries,[]);
+  }finally{h.component.dispose();}
+});
+
 test('a waveform seeks on click release while real HTML5 Source All drag and changed owners never seek',()=>{
   const h=harness();try{
     h.paint();const down=h.root.emit('pointerdown');assert.equal(down.defaultPrevented,undefined);assert.deepEqual(h.seeks,[]);

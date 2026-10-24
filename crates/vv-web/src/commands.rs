@@ -177,6 +177,21 @@ pub enum Operation {
         #[serde(default, skip_serializing_if = "is_false")]
         overwrite: bool,
     },
+    PlaceNativeSource {
+        job_id: String,
+        asset_id: String,
+        revision: String,
+        source_generation: String,
+        source_job_id: String,
+        source_version: String,
+        source_in: FrameIdx,
+        source_out: FrameIdx,
+        start_frame: FrameIdx,
+        target: AssetDropTarget,
+        streams: SourceStreams,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
+    },
     PlaceProjectMedia {
         media_ids: Vec<String>,
         start_frame: FrameIdx,
@@ -636,7 +651,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 "Verify the selected project sources before placing them",
             ));
         }
-        Operation::PlaceSource { .. } => {
+        Operation::PlaceSource { .. } | Operation::PlaceNativeSource { .. } => {
             return Err(ApiError::conflict(
                 "SOURCE_PREPARATION_REQUIRED",
                 "Place only the currently verified Source viewer media",
@@ -1948,6 +1963,29 @@ pub(crate) fn prepare_whole_media_placement(
     };
     validate_native_placement(project, &plan, overwrite)?;
     Ok(plan)
+}
+pub(crate) fn prepare_native_source_placement(
+    project: &core::Project,
+    id: TimelineId,
+    media: core::MediaId,
+    operation: &Operation,
+) -> Result<NativeAssetPlacement> {
+    let Operation::PlaceNativeSource {
+        source_in, source_out, start_frame, target, streams, overwrite, ..
+    } = operation else {
+        return Err(ApiError::invalid("Choose a Library Source placement"));
+    };
+    prepare_source_placement(project, id, &Operation::PlaceSource {
+        media_id: media.raw().to_string(),
+        job_id: String::new(),
+        source_version: String::new(),
+        source_in: *source_in,
+        source_out: *source_out,
+        start_frame: *start_frame,
+        target: target.clone(),
+        streams: *streams,
+        overwrite: *overwrite,
+    })
 }
 pub(crate) fn prepare_source_placement(
     project: &core::Project,

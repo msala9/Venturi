@@ -319,7 +319,7 @@ enum Work {
     SourceAll(Box<SourceSpec>, (ProxyQuality, u32), Option<SourceWindow>),
     Program(Box<ProgramTask>),
     Assets(Box<SourceSpec>, u32, bool),
-    LibraryThumbnail(Box<SourceSpec>),
+    LibraryAssets(Box<SourceSpec>, u32, bool),
 }
 impl MediaJobs {
     pub fn software_lock_path(&self) -> PathBuf {
@@ -493,8 +493,8 @@ impl MediaJobs {
                         Work::Assets(spec, index, waveform) => {
                             generate_assets(&spec, &directory, &cancel, index, waveform)
                         }
-                        Work::LibraryThumbnail(spec) => {
-                            generate_assets_profile(&spec, &directory, &cancel, 0, false, true)
+                        Work::LibraryAssets(spec, index, waveform) => {
+                            generate_assets_profile(&spec, &directory, &cancel, index, waveform, true)
                         }
                         Work::Program(task) => {
                             task.generate(
@@ -774,6 +774,16 @@ impl MediaJobs {
         }
         self.prepare_assets_profile(spec, 0, false, true)
     }
+    pub(crate) fn prepare_library_waveform(
+        &self,
+        spec: SourceSpec,
+        audio_stream_index: u32,
+    ) -> Result<Value> {
+        if !spec.meta.has_audio {
+            return Err(ApiError::invalid("Library waveforms require an audio stream"));
+        }
+        self.prepare_assets_profile(spec, audio_stream_index, true, true)
+    }
     fn prepare_assets_profile(
         &self,
         spec: SourceSpec,
@@ -838,7 +848,7 @@ impl MediaJobs {
             jobs.back_mut().unwrap().source_assets.as_mut().unwrap()["thumbnail_width"] = json!(96);
         }
         let work = if library_thumbnail {
-            Work::LibraryThumbnail(Box::new(spec))
+            Work::LibraryAssets(Box::new(spec), audio_stream_index, include_waveform)
         } else {
             Work::Assets(Box::new(spec), audio_stream_index, include_waveform)
         };

@@ -1,6 +1,38 @@
 use super::*;
 use serde_json::json;
 
+#[test]
+fn native_library_source_placement_uses_real_media_and_existing_native_range_stream_policy() {
+    for streams in [SourceStreams::All, SourceStreams::VideoOnly, SourceStreams::AudioOnly] {
+        let (mut session, timeline, _) = fixture();
+        let media = source_drop_media(&mut session);
+        let mut oracle = Session::default();
+        oracle.project = session.project.clone();
+        let operation = Operation::PlaceNativeSource {
+            job_id: "prepared-import".into(), asset_id: "library-asset".into(), revision: "revision".into(),
+            source_generation: "0".into(), source_job_id: "ready-source".into(), source_version: "version".into(),
+            source_in: 2, source_out: 4, start_frame: 96,
+            target: AssetDropTarget::NewAudioTrack {}, streams, overwrite: false,
+        };
+        let plan = prepare_native_source_placement(&session.project, timeline, media, &operation).unwrap();
+        let native = source_drop_operation(media, streams, AssetDropTarget::NewAudioTrack {});
+        let expected = prepare_source_placement(&oracle.project, timeline, &native).unwrap().apply(&mut oracle);
+        let actual = plan.apply(&mut session);
+        assert_eq!(actual, expected);
+        assert_eq!(json!(session.project.timelines[timeline]), json!(oracle.project.timelines[timeline]));
+        assert_eq!(apply(&mut session, timeline, &operation).unwrap_err().1, "SOURCE_PREPARATION_REQUIRED");
+        let mut invalid = operation.clone();
+        if let Operation::PlaceNativeSource { source_out, .. } = &mut invalid { *source_out = 31; }
+        assert!(prepare_native_source_placement(&session.project, timeline, media, &invalid).is_err());
+        let value = serde_json::to_value(&operation).unwrap();
+        assert!(value.get("media_id").is_none());
+        assert!(value.get("overwrite").is_none());
+        let mut unknown = value;
+        unknown["media_id"] = json!("invented-project-id");
+        assert!(serde_json::from_value::<Operation>(unknown).is_err());
+    }
+}
+
 fn source_drop_operation(
     media: core::MediaId,
     streams: SourceStreams,

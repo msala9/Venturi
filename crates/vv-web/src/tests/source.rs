@@ -1,6 +1,70 @@
 use super::*;
 
 #[test]
+fn native_library_source_waveform_is_full_source_read_only_deduplicated_and_version_bound() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("library-audio.wav");
+    let samples: Vec<f32> = (0..4_800).map(|i| (i as f32 * 0.2).sin() * 0.5).collect();
+    vv_media::audio_file::write_audio_file(
+        &path, vv_media::audio_file::AudioFileFormat::Wav, &samples, 48_000, 1,
+    ).unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(), epoch: "library:1".into(),
+        media_id: "native-asset:first:revision:0".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    spec.meta.audio_streams = 0;
+    let metadata = json!(spec.meta);
+    assert!(service.prepare_library_waveform(cloned_source(&spec), 1).is_err());
+    let pending = service.prepare_library_waveform(cloned_source(&spec), 0).unwrap();
+    let id = pending["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, id);
+    assert_eq!(ready["source_assets"]["thumbnail_width"], 96);
+    assert_eq!(ready["source_assets"]["include_waveform"], true);
+    assert_eq!(ready["source_assets"]["has_video"], false);
+    assert_eq!(ready["source_assets"]["source_version"], spec.identity().unwrap());
+    let waveform: Value = serde_json::from_reader(service.asset(id, &spec, "waveform.json").unwrap()).unwrap();
+    assert_eq!(waveform["scope"], "full_source");
+    assert!((waveform["duration_seconds"].as_f64().unwrap() - 0.1).abs() < 0.001);
+    assert!(waveform["peaks"].as_array().unwrap().iter().any(|p| p.as_f64().unwrap() > 0.1));
+    assert_eq!(std::fs::read_dir(service.root.join(id)).unwrap().count(), 1);
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+    assert_eq!(service.prepare_library_waveform(cloned_source(&spec), 0).unwrap()["id"], pending["id"]);
+    assert!(service.verify_placement(id, &spec.identity().unwrap(), cloned_source(&spec)).is_err());
+    let mut project = cloned_source(&spec);
+    project.media_id = "1".into();
+    assert!(service.asset(id, &project, "waveform.json").is_err());
+    assert_eq!(json!(spec.meta), metadata);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    File::options().append(true).open(&path).unwrap().write_all(b"changed").unwrap();
+    assert!(service.asset(id, &spec, "waveform.json").is_err());
+}
+
+#[test]
+fn native_library_source_waveform_refuses_metadata_mismatch_and_cancellation_before_output() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("waveform.wav");
+    vv_media::audio_file::write_audio_file(
+        &path, vv_media::audio_file::AudioFileFormat::Wav, &[0.25; 4_800], 48_000, 1,
+    ).unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(), epoch: "library:1".into(),
+        media_id: "native-asset:first:revision:0".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    let canceled = service.root.join("canceled-waveform");
+    std::fs::create_dir(&canceled).unwrap();
+    assert!(generate_assets_profile(&spec, &canceled, &AtomicBool::new(true), 0, true, true).is_err());
+    assert_eq!(std::fs::read_dir(&canceled).unwrap().count(), 0);
+    spec.meta.sample_rate = 44_100;
+    let mismatched = service.root.join("mismatched-waveform");
+    std::fs::create_dir(&mismatched).unwrap();
+    assert_eq!(generate_assets_profile(&spec, &mismatched, &AtomicBool::new(false), 0, true, true).unwrap_err().1, "SOURCE_CHANGED");
+    assert_eq!(std::fs::read_dir(&mismatched).unwrap().count(), 0);
+}
+
+#[test]
 fn native_library_thumbnail_video_is_96_pixel_only_deduplicated_and_source_bound() {
     let service = MediaJobs::start().unwrap();
     let path = service.root.join("library-video.mp4");

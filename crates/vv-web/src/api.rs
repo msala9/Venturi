@@ -1862,9 +1862,9 @@ async fn prepare_native_source_assets(
     >,
 ) -> Result<Json<Value>> {
     let payload = payload
-        .map_err(|_| ApiError::invalid("Invalid library thumbnail request"))?
+        .map_err(|_| ApiError::invalid("Invalid library Source asset request"))?
         .0;
-    if payload.audio_stream_index != 0 || payload.include_waveform {
+    if payload.audio_stream_index != 0 && !payload.include_waveform {
         return Err(ApiError::invalid("Library thumbnails do not analyze audio"));
     }
     let spec = state
@@ -1881,7 +1881,11 @@ async fn prepare_native_source_assets(
         )
         .await?
         .spec;
-    state.source.prepare_library_thumbnail(spec).map(Json)
+    if payload.include_waveform {
+        state.source.prepare_library_waveform(spec, payload.audio_stream_index).map(Json)
+    } else {
+        state.source.prepare_library_thumbnail(spec).map(Json)
+    }
 }
 async fn native_source_status(
     State(state): State<AppState>,
@@ -1942,6 +1946,7 @@ async fn native_source_asset(
         "source.png" | "thumb.png" => "image/png",
         "source.jpg" => "image/jpeg",
         "source.webp" => "image/webp",
+        "waveform.json" => "application/json",
         _ => return Err(ApiError::missing()),
     };
     crate::source::stream_file(file, mime, &job, &headers).await
@@ -2688,6 +2693,7 @@ async fn timeline_command(
     if matches!(
         request.operation,
         crate::commands::Operation::PlaceSource { .. }
+            | crate::commands::Operation::PlaceNativeSource { .. }
     ) {
         return state
             .host

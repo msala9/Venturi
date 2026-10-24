@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_DRAG_TYPE,sourceDragItems,sourcePlacementItem,sourcePlacementOperation,sourceRangePlacement} from '../js/source-placement.js';
+import {SOURCE_DRAG_TYPE,sourceDragItems,sourcePlacementItem,sourcePlacementOperation,sourceRangePlacement,createNativeSourceInsertion} from '../js/source-placement.js';
 import {nativeAssetDragItems} from '../js/timeline/asset-drop.js';
 import {createInput} from '../js/timeline/input.js';
 import {frameToX,timelineLayout} from '../js/timeline/geometry.js';
@@ -9,6 +9,9 @@ const context=()=>({project_epoch:'epoch',generation:'7',timeline_id:'1',timelin
 const media=streams=>sourcePlacementItem(context(),streams);
 const timeline=()=>({id:'1',revision:'r1',fps:{num:24000,den:1001},tracks:[{id:'0',kind:'video',locked:false,clips:[]},{id:'1',kind:'audio',locked:false,clips:[]},{id:'2',kind:'audio',locked:false,clips:[]}]});
 const view=()=>({scale:120,origin:0,playhead:0,selection:[],tool:'select',snap:false,retimeVisible:new Set(),viewportHeight:400});
+function libraryContext(){
+  const c=context();c.item={...c.item,id:'native-asset:library-audio',has_video:false,native_asset:{id:'library-audio',revision:'a'.repeat(64),if_generation:'3',source_version:c.verified.source_version}};c.verified.media_id=c.item.id;return c;
+}
 function harness(){
   const tl=timeline(),state=view(),handlers=new Map(),windowHandlers=new Map(),documentHandlers=new Map(),drops=[],commands=[];
   let source=media('all'),allowed=true,modal=false;
@@ -29,6 +32,45 @@ test('Source placement requires verified original identity and valid marked role
   for(const change of [c=>c.verified=null,c=>c.verified.epoch='foreign',c=>c.verified.media_id='3',c=>c.source_in=-1,c=>c.source_out=101,c=>c.source_out=10001,c=>c.item.audio_stream_count=129]){const c=context();change(c);assert.equal(sourcePlacementItem(c),null);}
   const silent=context();silent.item.has_audio=false;silent.item.audio_stream_count=0;assert.equal(sourcePlacementItem(silent,'audio_only'),null);assert.ok(sourcePlacementItem(silent,'video_only'));
   assert.equal(nativeAssetDragItems([{id:'a',revision:'r',name:'Marked',placement:{items:[item]}}]),null,'Source ranges never bypass native Library validation');
+});
+
+test('Library marked ranges keep native UUID and captured Source generation separate from project IDs and current generation',()=>{
+  const c=libraryContext(),item=sourcePlacementItem(c,'audio_only');
+  assert.equal(item.source_kind,'native_asset');assert.equal(item.asset_id,'library-audio');assert.equal(item.source_generation,'3');assert.equal(item.generation,'7');assert.equal(Object.hasOwn(item,'media_id'),false);assert.equal(item.audio_streams,2);
+  const operation=sourcePlacementOperation(item,30,{kind:'new_audio_track'});
+  assert.deepEqual(operation,{kind:'place_native_source',asset_id:'library-audio',revision:'a'.repeat(64),source_generation:'3',source_job_id:'9',source_version:c.verified.source_version,source_in:101,source_out:248,streams:'audio_only',start_frame:30,target:{kind:'new_audio_track'},overwrite:false});
+  const tl=timeline(),state=view(),draft=sourceRangePlacement(tl,state,[frameToX(30,state,tl.fps),timelineLayout(tl,state,400).trackTop(1)+25],1200,400,[item]);
+  assert.equal(draft.length_frames,117);assert.deepEqual(draft.outlines.map(row=>row.track_id),['1','2']);assert.equal(draft.error,null);
+  for(const invalid of [{...item,media_id:'2'},{...item,source_kind:undefined},{...item,revision:'changed'},{...item,asset_id:'../asset'},{...item,source_generation:'-1'}])assert.equal(sourceDragItems([invalid]),null);
+  c.item.native_asset.source_version='different';assert.equal(sourcePlacementItem(c),null);
+});
+
+test('Library insertion prepares once then sends one atomic marked placement with the ready playback job, not the analysis job',async()=>{
+  const c=libraryContext(),operation=sourcePlacementOperation(sourcePlacementItem(c),40,{kind:'new_audio_track'}),calls=[],commands=[],statuses=[];
+  let finish;const ready=new Promise(resolve=>finish=resolve),state={project_name:'Owned project',project_epoch:'epoch',generation:'7'};
+  const insertion=createNativeSourceInsertion({getContext:()=>state,canCommit:()=>true,onStatus:text=>statuses.push(text),
+    api:async(path,body)=>{calls.push({path,body});return ready;},commit:async value=>{commands.push(value);return {changed:true,clip_ids:['30','31']};}});
+  const pending=insertion.run(operation,()=>true);
+  assert.equal(await insertion.run(operation,()=>true),null);assert.equal(calls.length,1);assert.deepEqual(commands,[]);
+  assert.deepEqual(calls[0],{path:'/native-assets/prepare',body:{project_epoch:'epoch',if_generation:'7',action:{kind:'import',asset_id:'library-audio',revision:'a'.repeat(64)}}});
+  finish({id:'41',project_epoch:'epoch',generation:'7',kind:'import',state:'ready',result:{asset_id:'library-audio',revision:'a'.repeat(64)}});
+  const receipt=await pending;assert.deepEqual(receipt.clip_ids,['30','31']);assert.deepEqual(commands,[{...operation,job_id:'41'}]);assert.equal(commands[0].source_job_id,'9');assert.equal(Object.hasOwn(commands[0],'media_id'),false);assert.match(statuses.at(-1),/marked Library Source inserted/i);
+});
+
+test('Library preparation cancels changed marks, contexts or explicit cancellation before dispatch; unknown writes never replay',async()=>{
+  for(const change of ['marks','epoch','cancel','unknown']){
+    const c=libraryContext(),operation=sourcePlacementOperation(sourcePlacementItem(c),0,{kind:'new_audio_track'}),calls=[],commands=[];
+    let finish,current=true;const ready=new Promise(resolve=>finish=resolve),state={project_name:'Owned',project_epoch:'epoch',generation:'7'};
+    const insertion=createNativeSourceInsertion({getContext:()=>state,canCommit:()=>true,
+      api:async(path,body,options)=>{calls.push({path,body,options});return path==='/native-assets/prepare'?ready:{};},
+      commit:async value=>{commands.push(value);throw Error('outcome unknown');}});
+    const pending=insertion.run(operation,()=>current);
+    if(change==='marks')current=false;else if(change==='epoch')state.project_epoch='other';else if(change==='cancel')insertion.cancel();
+    finish({id:'41',project_epoch:'epoch',generation:'7',kind:'import',state:'ready',result:{asset_id:'library-audio',revision:'a'.repeat(64)}});
+    if(change==='unknown')await assert.rejects(pending,/outcome unknown/);else assert.equal(await pending,null);
+    assert.equal(commands.length,change==='unknown'?1:0);assert.equal(calls.filter(call=>call.path==='/native-assets/prepare').length,1);
+    assert.equal(calls.filter(call=>call.options?.method==='DELETE').length,change==='unknown'?0:1);
+  }
 });
 
 test('Source ghosts conform marked endpoints and filter video/audio roles before native target and stream resolution',()=>{
@@ -60,6 +102,17 @@ test('Source drop uses an opaque local token and release coordinates, with one c
   const h=harness();try{
     const payload=h.start();assert.ok(payload);assert.equal(payload.includes('native-fd'),false);const over=h.event(payload,20);h.handlers.get('dragover')(over);assert.equal(over.prevented,true);assert.equal(h.state.draft.kind,'source_media_placement');assert.deepEqual(h.drops,[]);assert.deepEqual(h.commands,[]);
     await h.handlers.get('drop')(h.event(payload,90));assert.equal(h.drops.length,1);assert.equal(h.drops[0].start_frame,90);assert.equal(h.drops[0].source.source_in,101);assert.equal(h.input.navigationIdle(),true);
+    await h.handlers.get('drop')(h.event(payload,100));assert.equal(h.drops.length,1);
+  }finally{h.destroy();}
+});
+
+test('Library Source range drags use the same guarded local ghost without masquerading as project Media or whole-asset placement',async()=>{
+  const h=harness();
+  try{
+    const source=sourcePlacementItem(libraryContext(),'audio_only');h.setSource(source);
+    const payload=h.start();h.handlers.get('dragover')(h.event(payload,20));
+    assert.equal(h.state.draft.kind,'source_media_placement');assert.equal(h.state.draft.source.source_kind,'native_asset');assert.equal(h.state.draft.length_frames,117);assert.deepEqual(h.commands,[]);
+    await h.handlers.get('drop')(h.event(payload,90));assert.equal(h.drops.length,1);assert.equal(h.drops[0].source.asset_id,'library-audio');assert.equal(h.drops[0].source.source_in,101);assert.equal(h.drops[0].source.source_out,248);
     await h.handlers.get('drop')(h.event(payload,100));assert.equal(h.drops.length,1);
   }finally{h.destroy();}
 });

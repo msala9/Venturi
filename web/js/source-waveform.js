@@ -1,4 +1,4 @@
-import {sourceAssetKey} from './source-assets.js';
+import {sourceAssetKey,nativeSourceIdentity} from './source-assets.js';
 
 const GAP=6,MIN_LANE=44,MAX_STREAMS=128,MAX_PIXELS=16*1024*1024/4;
 const integer=value=>Number.isSafeInteger(value) && value>=0;
@@ -31,7 +31,9 @@ function contextValue(value){
   const item=value?.item,count=item?.audio_stream_count ?? 1;
   if(!item || item.has_video!==false || item.has_audio!==true || item.compound_timeline_id || typeof item.id!=='string' || !item.id || !integer(item.duration_frames) || item.duration_frames<1 || !Number.isSafeInteger(item.fps?.num) || item.fps.num<=0 || !Number.isSafeInteger(item.fps?.den) || item.fps.den<=0 || !integer(count) || count>MAX_STREAMS || typeof value.epoch!=='string' || !value.epoch || !integer(value.frame))return null;
   const sourceVersion=typeof value.sourceVersion==='string' && value.sourceVersion.length>0 && value.sourceVersion.length<=512?value.sourceVersion:null;
-  const identity=JSON.stringify([value.epoch,item.id,item.content_hash,item.duration_frames,item.fps.num,item.fps.den,Math.max(1,count),sourceVersion]);
+  const nativeIdentity=nativeSourceIdentity(item);
+  if(item.native_asset && (!nativeIdentity || item.native_asset.source_version!==sourceVersion))return null;
+  const identity=JSON.stringify([value.epoch,item.id,item.content_hash,item.duration_frames,item.fps.num,item.fps.den,Math.max(1,count),sourceVersion,nativeIdentity]);
   const marks=integer(value.marks?.source_in) && integer(value.marks?.source_out) && value.marks.source_out>value.marks.source_in && value.marks.source_out<=item.duration_frames?value.marks:{source_in:0,source_out:item.duration_frames};
   return {...value,marks,sourceVersion,count:Math.max(1,count),identity};
 }
@@ -97,7 +99,7 @@ export function createSourceWaveform({root,canvas,content,getContext,getAssets,o
     let loaded=0;
     for(const lane of layout.lanes){
       const asset=verified?assets?.get(sourceAssetKey(value.item.id,lane.index)):null,wave=asset?.waveform;
-      const valid=asset?.mediaId===value.item.id && asset.contentHash===value.item.content_hash && asset.sourceVersion===value.sourceVersion && wave?.scope==='full_source' && Array.isArray(wave.peaks) && wave.peaks.length>0 && wave.peaks.length<=65_536 && Number.isFinite(wave.duration_seconds) && wave.duration_seconds>0;
+      const valid=asset?.mediaId===value.item.id && asset.contentHash===value.item.content_hash && asset.sourceVersion===value.sourceVersion && (!value.item.native_asset || asset.epoch===value.epoch && nativeSourceIdentity({native_asset:asset.nativeAsset})===nativeSourceIdentity(value.item)) && wave?.scope==='full_source' && Array.isArray(wave.peaks) && wave.peaks.length>0 && wave.peaks.length<=65_536 && Number.isFinite(wave.duration_seconds) && wave.duration_seconds>0;
       if(valid){
         loaded++;
         ctx.strokeStyle='rgba(255,255,255,0.54902)';ctx.beginPath();

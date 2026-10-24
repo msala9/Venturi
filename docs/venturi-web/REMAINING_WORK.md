@@ -13,6 +13,14 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
 
 ## Concrete production work
 
+- **Independent Mixer navigation corrected:** source d49ed8c preserves scroll
+  across native refresh and applies EQ/compressor knob styles to the tool window,
+  preventing oversized indicators from covering other controls. Actual EQ graph
+  drag/wheel, compressor addition/crossover/makeup, five Undo/Redo and edited
+  Save/reopen pass in evidence/f4-chrome-mixer-graph-scroll-workflow.json on
+  current26b6bf6f5059. Existing masks/title/keys,14 other Saved and NAS are exact.
+  Required Shift/held/cancel/scaling/device acceptance remains FINAL_CHECKS.
+
 - **Inspector viewport after native edits corrected:** source39b3ae3 retains the
   scroll/control anchor through the temporary empty-selection refresh; genuine
   context switches and user input still cancel restoration. Actual curved Path,
@@ -137,7 +145,7 @@ feature passes every requirement or cannot contain defects.
 | smooth_cut_optical_flow | Actual Chrome explicit SmoothCut replacement, Canvas selection/duration and full Undo/Redo/Save/reopen pass in evidence/f3-chrome-transition-input-workflow.json. Qualify held transition-copy/HTML drop, window blur and required100%/150% mapping; retain existing moving native render/export evidence. |
 | clip_fades | Qualification: fade-handle mapping at100%/150%; existing125% physical handles and native video/PCM/AAC/MP4 proof remain accepted. |
 | shared_presets | Unavailable-root startup/retry and independent audio Refresh delivered; qualify remaining physical/GUI lifecycle; reuse accepted cross-project Apply, native shortcuts, CAS/recovery and Delete evidence. |
-| audio_mixer_track_master | Qualification: physical fader/Shift/graph/wheel/DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
+| audio_mixer_track_master | Actual fader, EQ graph XY/wheel and compressor crossover/makeup pass; Mixer scroll and detached knob interception are corrected in d49ed8c, with full Undo/Redo/Save/reopen proof. Qualify remaining Shift/held/cancel/required DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
 | voiceover_record | Qualification: actual microphone/disconnect/latency/output and retained-take browser download completion. Retain intentional5min/64MiB limits and synthetic-controller proof. |
 | compare_take_AB | Qualification: sustained representative full-resolution comparison and physical audio; source quality/clock/stream/replace controls are delivered. |
 | clip_move_safe | Ordinary linked move, Snap on/off, overlap refusal, locked-peer refusal and exact Undo/persistence pass in actual Chrome; qualify Alt-copy, cancellation, required DPI and dense timeline. |

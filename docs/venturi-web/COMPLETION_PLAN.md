@@ -1,5 +1,22 @@
 # Active completion plan — full Venturi Web scope
 
+## Mixer graph navigation and detached controls corrected - 2026-10-24
+
+Source d49ed8c fixes two actual Chrome defects: native EQ edits lost169.6px of
+Mixer scroll, and Inspector-only knob CSS let indicators cover unrelated Mixer
+buttons. The shared viewport keeper now retains Mixer context through refresh;
+EQ/compressor styles also apply to their independent window. Current26b6bf6f5059
+is deployed on8855/PID515140 with15 Saved, Recovery and foreign editors exact.
+The128 affected client cases pass; R2 reuses those exact R1 results after a
+receipt-parser failure, then completes one incremental build at1462415360B peak
+and zero memory events. Actual EQ XY/wheel and compressor addition/crossover/
+makeup pass with stable scroll, five Undo/Redo and exact edited Save/reopen.
+Previous full Solid/Title content and14 other Saved/NAS metadata remain exact.
+See evidence/f4-chrome-mixer-graph-scroll-workflow.json. No new playback, render,
+export or soak; stopped-edit V1 remains. Immutable R6 retains its earlier source;
+an additive current package is reserved for final delivery. Remaining required
+input/scaling/device/M7 checks stay FINAL_CHECKS; ledger62/28/2 remains unchanged.
+
 ## Actual Chrome transition workflow - 2026-10-24
 
 Currentadc69/source39b3ae3 passes explicit Push creation, closed direction/ease

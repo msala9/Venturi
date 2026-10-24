@@ -1,5 +1,18 @@
 # Running the implemented host
 
+## Current owned Mixer runtime - 2026-10-24
+
+The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.
+Unit `venturi-web-halo1-mixer-scroll.service`, captured PID515140, executes
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-26b6bf6f5059`,80391744bytes,
+SHA256 `26b6bf6f50594e2401905f35f4efbac4ce7ac04720b28675b2a09f1c6237f62b`,
+source d49ed8c. Root, arguments and8CPU/4GiB/noSwap/low-priority limits remain.
+All15 Saved, Recovery and40 foreign PIDs/39 Sessions are exact across deployment.
+Actual Chrome EQ/compressor graph editing and edited Save/reopen pass; see
+evidence/f4-chrome-mixer-graph-scroll-workflow.json. Earlier R6 remains immutable;
+the additive current package is reserved for final delivery. Records below are
+historical; do not start a duplicate on occupied8855.
+
 ## Current owned Inspector-scroll runtime - 2026-10-24
 
 The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.

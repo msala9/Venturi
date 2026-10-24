@@ -1,5 +1,19 @@
 # Implementation status
 
+## Mixer graph viewport and detached knob correction - 2026-10-24
+
+Source d49ed8c repairs demonstrated169.6px scroll loss after native EQ edits and
+Inspector-only CSS that let knob indicators cover unrelated Mixer commands.
+Current26b6bf6f5059/PID515140 is deployed, preserving15 Saved/Recovery/foreign
+editors.128 affected client cases pass; after a receipt-parser failure, R2 reuses
+those exact results and builds once at1462415360B peak with zero memory events.
+Actual EQ graph XY/wheel and compressor add/crossover/makeup retain scroll;
+five Undo/Redo and exact edited Save/reopen preserve previous Solid/Title and
+14 other Saved/NAS metadata. See evidence/f4-chrome-mixer-graph-scroll-workflow.json.
+No new playback/render/export/soak; stopped-edit V1 retained. Immutable R6 remains
+version-bound; additive current delivery pending. FINAL_CHECKS/ledger62/28/2 stay.
+
+
 ## Actual Chrome transition input - 2026-10-24
 
 Currentadc69/source39b3ae3 passes explicit Push/CrossDissolve/SmoothCut creation

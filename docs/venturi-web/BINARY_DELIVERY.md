@@ -1,5 +1,13 @@
 # Prebuilt Linux development candidate
 
+## Current live Mixer correction - 2026-10-24
+
+Live26b6bf6f5059/source d49ed8c/PID515140 fixes Mixer scroll and detached audio
+knob hit interception. See evidence/f4-chrome-mixer-graph-scroll-workflow.json and
+RUNNING.md. The earlier R6 archive below remains immutable and version-bound;
+an additive current package is queued for final delivery, without a new build.
+
+
 ## Current adc69 Inspector correction package - 2026-10-24
 
 The additive immutable archive is

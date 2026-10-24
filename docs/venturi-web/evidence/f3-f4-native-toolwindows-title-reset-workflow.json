@@ -1,0 +1,799 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "5567359d14ac2a1539e05ff2750e413a20146f1e",
+  "scope": "Independent native Mixer/Color windows and title Background reset; bounded F3/F4/F7 increment, no whole-row promotion",
+  "runtime": {
+    "new_unit": "venturi-web-halo1-native-toolwindows-layout.service",
+    "pid": "457797",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-87bc10633ec7",
+    "sha256": "87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff",
+    "args": [
+      "/home/halo/.local/share/venturi-web/.runtime/vv-web-87bc10633ec7",
+      "--listen",
+      "127.0.0.1:8855",
+      "--projects-root",
+      "/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "--assets-root",
+      "/mnt/madrock-share/madrock-library",
+      "--presets-root",
+      "/mnt/madrock-share/madrock-library/presets",
+      "--library-url",
+      "http://127.0.0.1:8787",
+      "--gpu-device",
+      "0x7551",
+      "--gpu-lock",
+      "/tmp/HALO_BENCHMARK.lock"
+    ],
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "Restart=no",
+      "TimeoutStopSec=30",
+      "KillMode=control-group",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-color-audio-controls-20261023/.xdg",
+      "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+      "Environment=WGPU_BACKEND=vulkan",
+      "Environment=TOKIO_WORKER_THREADS=4",
+      "StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log",
+      "StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log"
+    ],
+    "root": "/home/halo/VenturiWeb-color-audio-controls-20261023"
+  },
+  "runtime_bytes": 80367424,
+  "url": "http://127.0.0.1:8855/",
+  "native_reference": {
+    "tool_windows": "crates/vv-app/src/main.rs toolbar independent mixer_open/color_window_open; mixer_panel.rs show_mixer; color_window.rs760x640, scopes above grading,240px scope height",
+    "title_reset": "crates/vv-app/src/properties_panel.rs457-461 preserves background.enabled; apply_title_edit583-637 applies only changed fields to selected peers"
+  },
+  "implementation": {
+    "windows": "Singleton independent Mixer/Color regions reuse the small Curves host without its command ownership. Per-tool geometry, keyboard move/resize, focus and drafts preserved; toolbar toggles coexist with Curves and retain editor/viewer allocation.",
+    "mixer": "Existing one native Mixer/DSP/controller mounted outside Inspector; close cancels owned gestures, preserves typed fields and refuses hidden delayed commands. Reopen resynchronizes insert drag state, graphs and custom presets.",
+    "color_resize": "Explicit host geometry notifications invoke scopes layout without a new native frame request; single-slot/narrow layout does not depend solely on ResizeObserver delivery.",
+    "color": "Existing ColorCorrection card docks into Color with a restoration placeholder; actual closed-details ancestry determines scalar interaction, moved AutoBalance retains delegation. Existing scopes controller/DOM reused above grading and stops while hidden/fullscreen/Source/Slip. Missing grade offers native Add.",
+    "title": "Background group reset restores native defaults while preserving enabled per target through the native field-diff. Explicit Enabled reset and explicit patches retain their separate behavior."
+  },
+  "gate": {
+    "unit": "venturi-halo1-native-toolwindows-r3-20261024.service",
+    "phase": "passed",
+    "terminal_main_pid": "0",
+    "client_pass": 187,
+    "native_pass": 4,
+    "attempts": 3,
+    "client_reuse": {
+      "unit": "venturi-halo1-native-toolwindows-r1-20261024.service",
+      "pass": 184,
+      "step": {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/curve-window.test.js",
+          "test/tool-panels.test.js",
+          "test/visual.test.js",
+          "test/mixer.test.js",
+          "test/mixer-controls.test.js",
+          "test/mixer-inserts.test.js",
+          "test/eq-controls.test.js",
+          "test/compressor-controls.test.js",
+          "test/audio-graphs.test.js",
+          "test/audio-meters.test.js",
+          "test/scopes.test.js",
+          "test/command-ownership.test.js",
+          "test/ui.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 1.003,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r1/focused-client.log",
+        "log_bytes": 19796,
+        "failure": null
+      },
+      "input_hashes": {
+        "web/js/curve-window.js": "73be8ea313579b600575947cdf59bd656fdd08998bb5dcbb711b19581398ee94",
+        "web/js/main.js": "d879be066e928af760aa26110383c09d44ddcbdf1f837cc402cb7320a79505b0",
+        "web/js/mixer.js": "093bd1bd50491bdff9c9c8bd81f4d207bc38e426b7858abcda7684bd1a87beec",
+        "web/js/tool-panels.js": "cdb4a6391ea5f599e26d167064a4f49f0e3abbd719efc9fe522e37c442ed0a67",
+        "web/js/visual.js": "ec5d23fd88ac9ede11561e4c3f5e10a49dc2396091b8f74a755ada029be5e662",
+        "web/style/native-inspector.css": "ac2dc86ee97554f9ab9d48cb211ed1f011a988eaab4744094fb4f8fbf510ac6a",
+        "web/test/curve-window.test.js": "97450637a0ca908cf148d5109d97196655795fca875e0691327749b5d025a97c",
+        "web/test/mixer.test.js": "adf0e2bf4319d3cf3755654536a29ab0bf655b072ac12800b7f41e9fe2196e6f",
+        "web/test/tool-panels.test.js": "933e46efc4612d5e042f5ffa6a83e80410cc57cdc47c0174d28f86b2a3c20a3b",
+        "web/test/visual.test.js": "98fb6941ff1811f7ba7e799db99dc5685602329f1975dce4cdc9dfd4c780bf79"
+      }
+    },
+    "native_reuse": {
+      "unit": "venturi-halo1-native-toolwindows-r2-20261024.service",
+      "steps": [
+        {
+          "label": "format-rust",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+            "--edition",
+            "2024",
+            "--config",
+            "skip_children=true",
+            "crates/vv-web/src/api.rs",
+            "crates/vv-web/src/inspector.rs",
+            "crates/vv-web/src/tests/api.rs",
+            "crates/vv-web/src/tests/inspector.rs"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.252,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/format-rust.log",
+          "log_bytes": 0,
+          "failure": null
+        },
+        {
+          "label": "native-title-background",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--bin",
+            "vv-web",
+            "inspector::tests::title_background_",
+            "--",
+            "--test-threads=1"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 107.151,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/native-title-background.log",
+          "log_bytes": 736,
+          "failure": null
+        },
+        {
+          "label": "native-embedded-routes",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--bin",
+            "vv-web",
+            "api::tests::health_assets_snapshot_and_host_boundary",
+            "--",
+            "--test-threads=1"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/native-embedded-routes.log",
+          "log_bytes": 361,
+          "failure": null
+        },
+        {
+          "label": "web-clippy",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "clippy",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--all-targets",
+            "--no-deps",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 13.27,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/web-clippy.log",
+          "log_bytes": 153,
+          "failure": null
+        },
+        {
+          "label": "web-build",
+          "args": [
+            "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+            "build",
+            "--locked",
+            "--offline",
+            "-p",
+            "vv-web",
+            "--bin",
+            "vv-web"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 70.601,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/web-build.log",
+          "log_bytes": 153,
+          "failure": null
+        },
+        {
+          "label": "strip",
+          "args": [
+            "/usr/bin/strip",
+            "--strip-debug",
+            "/home/halo/.local/share/venturi-web/.runtime/.native-toolwindows-r2-9137236be4b941f4aa2994a8e9ea470c"
+          ],
+          "cwd": "/home/halo/.cache/venturi-build/source",
+          "exit_code": 0,
+          "elapsed_seconds": 0.251,
+          "log": "/home/halo/.cache/venturi-build/native-toolwindows-r2/strip.log",
+          "log_bytes": 0,
+          "failure": null
+        }
+      ],
+      "source_hashes": {
+        "crates/vv-web/src/api.rs": "fb7c940927168e680bdeae75a101b9e1e88f673a3f8ab5fb3ff563e79e40ae70",
+        "crates/vv-web/src/inspector.rs": "aec76d6aef18dac7b25f1953fdb0bd6107ae93207782c1a01514c62b8983376a",
+        "crates/vv-web/src/tests/api.rs": "03a82e34c746fdfc14c7dfcba13575166b440dca38919e900bbb08b57953d778",
+        "crates/vv-web/src/tests/inspector.rs": "35e08f2c4a5464c8b0b2e8896e4b36c01a2c9ad521e03b38094c6783d2cfb60c",
+        "web/js/curve-window.js": "73be8ea313579b600575947cdf59bd656fdd08998bb5dcbb711b19581398ee94",
+        "web/js/main.js": "d879be066e928af760aa26110383c09d44ddcbdf1f837cc402cb7320a79505b0",
+        "web/js/mixer.js": "093bd1bd50491bdff9c9c8bd81f4d207bc38e426b7858abcda7684bd1a87beec",
+        "web/js/tool-panels.js": "cdb4a6391ea5f599e26d167064a4f49f0e3abbd719efc9fe522e37c442ed0a67",
+        "web/js/visual.js": "ec5d23fd88ac9ede11561e4c3f5e10a49dc2396091b8f74a755ada029be5e662",
+        "web/style/native-inspector.css": "ac2dc86ee97554f9ab9d48cb211ed1f011a988eaab4744094fb4f8fbf510ac6a",
+        "web/test/curve-window.test.js": "97450637a0ca908cf148d5109d97196655795fca875e0691327749b5d025a97c",
+        "web/test/mixer.test.js": "adf0e2bf4319d3cf3755654536a29ab0bf655b072ac12800b7f41e9fe2196e6f",
+        "web/test/tool-panels.test.js": "933e46efc4612d5e042f5ffa6a83e80410cc57cdc47c0174d28f86b2a3c20a3b",
+        "web/test/visual.test.js": "98fb6941ff1811f7ba7e799db99dc5685602329f1975dce4cdc9dfd4c780bf79"
+      }
+    },
+    "initial_native_fixture_failure": "R1 passed184client but2new native reference tests omitted compound media metadata synchronization; test oracle corrected to use native composite command and sync, production unchanged. R1 memory peak2085101568B with zero memory events.",
+    "steps": [
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/curve-window.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/main.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/scopes.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-3",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/curve-window.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/syntax-3.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-4",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/scopes.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/syntax-4.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/curve-window.test.js",
+          "test/scopes.test.js",
+          "test/tool-panels.test.js",
+          "test/ui.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/focused-client.log",
+        "log_bytes": 4310,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.599,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.native-toolwindows-r3-2c41dcd2ed0c4b20bb47cc4dc30c7a77"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/native-toolwindows-r3/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "test_counts": {
+      "native-toolwindows-r1/focused-client": [
+        "tests 184",
+        "pass 184",
+        "fail 0"
+      ],
+      "native-toolwindows-r2/native-title-background": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 716 filtered out; finished in 0.00s"
+      ],
+      "native-toolwindows-r2/native-embedded-routes": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 718 filtered out; finished in 0.04s"
+      ],
+      "native-toolwindows-r3/focused-client": [
+        "tests 36",
+        "pass 36",
+        "fail 0"
+      ]
+    },
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "fb7c940927168e680bdeae75a101b9e1e88f673a3f8ab5fb3ff563e79e40ae70",
+      "crates/vv-web/src/inspector.rs": "aec76d6aef18dac7b25f1953fdb0bd6107ae93207782c1a01514c62b8983376a",
+      "crates/vv-web/src/tests/api.rs": "03a82e34c746fdfc14c7dfcba13575166b440dca38919e900bbb08b57953d778",
+      "crates/vv-web/src/tests/inspector.rs": "35e08f2c4a5464c8b0b2e8896e4b36c01a2c9ad521e03b38094c6783d2cfb60c",
+      "web/js/curve-window.js": "e2ce87cface6a23744937d7438b071605ef2ebab972a0eca45f978da4360509b",
+      "web/js/main.js": "d8ef663303a4a687ff5fc5d8d12e0cf28e001d1e481c66c03f51fcd11e3ef3db",
+      "web/js/mixer.js": "093bd1bd50491bdff9c9c8bd81f4d207bc38e426b7858abcda7684bd1a87beec",
+      "web/js/tool-panels.js": "cdb4a6391ea5f599e26d167064a4f49f0e3abbd719efc9fe522e37c442ed0a67",
+      "web/js/visual.js": "ec5d23fd88ac9ede11561e4c3f5e10a49dc2396091b8f74a755ada029be5e662",
+      "web/style/native-inspector.css": "ac2dc86ee97554f9ab9d48cb211ed1f011a988eaab4744094fb4f8fbf510ac6a",
+      "web/test/curve-window.test.js": "2b57a93c5c24360f65f54220f782b2d08c4f4c1ba84bf23496388ebb1879f841",
+      "web/test/mixer.test.js": "adf0e2bf4319d3cf3755654536a29ab0bf655b072ac12800b7f41e9fe2196e6f",
+      "web/test/tool-panels.test.js": "933e46efc4612d5e042f5ffa6a83e80410cc57cdc47c0174d28f86b2a3c20a3b",
+      "web/test/visual.test.js": "98fb6941ff1811f7ba7e799db99dc5685602329f1975dce4cdc9dfd4c780bf79",
+      "web/js/scopes.js": "bd770a40e5f7b30c3b080da5847dacb16666eb0097a5fd148aea90852c8b29fc",
+      "web/test/scopes.test.js": "f0d3d64b3e6cb29b37dd29d0353455788c0b6e0b68a0fa89c5e94055f44ee473"
+    },
+    "inputs": {
+      "web/js/curve-window.js": {
+        "previous_sha256": "73be8ea313579b600575947cdf59bd656fdd08998bb5dcbb711b19581398ee94",
+        "input_sha256": "e2ce87cface6a23744937d7438b071605ef2ebab972a0eca45f978da4360509b",
+        "bytes": 9767
+      },
+      "web/js/main.js": {
+        "previous_sha256": "d879be066e928af760aa26110383c09d44ddcbdf1f837cc402cb7320a79505b0",
+        "input_sha256": "d8ef663303a4a687ff5fc5d8d12e0cf28e001d1e481c66c03f51fcd11e3ef3db",
+        "bytes": 209104
+      },
+      "web/js/scopes.js": {
+        "previous_sha256": "89dd6a864d5d8026a1f032539adeb924fc5514b2da4c83828e1f204b736cd9b3",
+        "input_sha256": "bd770a40e5f7b30c3b080da5847dacb16666eb0097a5fd148aea90852c8b29fc",
+        "bytes": 9763
+      },
+      "web/test/curve-window.test.js": {
+        "previous_sha256": "97450637a0ca908cf148d5109d97196655795fca875e0691327749b5d025a97c",
+        "input_sha256": "2b57a93c5c24360f65f54220f782b2d08c4f4c1ba84bf23496388ebb1879f841",
+        "bytes": 19205
+      },
+      "web/test/scopes.test.js": {
+        "previous_sha256": "4b629316fd16042532bcc21a0e586651b83ac84d693902dfc93833182b5828cd",
+        "input_sha256": "f0d3d64b3e6cb29b37dd29d0353455788c0b6e0b68a0fa89c5e94055f44ee473",
+        "bytes": 17058
+      }
+    },
+    "memory_peak_bytes": 2085101568,
+    "stage_memory_peak_bytes": {
+      "r1": 2085101568,
+      "r2": 2063970304,
+      "r3": 1469104128
+    },
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "resources": {
+      "host": "halo1",
+      "max_cpus": 8,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "nice": 19,
+      "io_weight": 10,
+      "oom_score_adjust": 1000,
+      "tasks_max": 128,
+      "serial": true,
+      "shared_nonblocking_lock": "/tmp/HALO_BENCHMARK.lock",
+      "browser_playback_during_gate": false
+    },
+    "reuse": "Unchanged renderer/DSP/export, transport/catalog and unrelated integrated qualification retained by exact source hashes. No repeated export or broad regression matrix.",
+    "client_case_union": "184 initial cases;36 affected cases after explicit layout follow-up include3new cases;151 unaffected cases retained by exact-source reuse,187unique qualified cases.",
+    "client_followup_pass": 36
+  },
+  "actual_browser": {
+    "initial": {
+      "pausedMedia": 8,
+      "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "saved": "Saved",
+      "screen": {
+        "height": 206.1999969482422,
+        "width": 486,
+        "x": 214,
+        "y": 76.80000305175781
+      },
+      "time": "00:00:02:00",
+      "tools": [
+        {
+          "hidden": true,
+          "name": "mixer"
+        },
+        {
+          "hidden": true,
+          "name": "color"
+        }
+      ],
+      "viewer": {
+        "height": 278,
+        "width": 486,
+        "x": 214,
+        "y": 50
+      },
+      "workspace": "Edit"
+    },
+    "mixerClosedDraft": {
+      "draft": "-3.25",
+      "hidden": true,
+      "saved": "Saved"
+    },
+    "coexistAndGeometry": {
+      "buttons": [
+        {
+          "name": "Mixer",
+          "pressed": "true"
+        },
+        {
+          "name": "Color",
+          "pressed": "true"
+        }
+      ],
+      "mixerRoots": 1,
+      "saved": "Saved",
+      "scopesRoots": 1,
+      "screen": {
+        "height": 206.1999969482422,
+        "width": 486,
+        "x": 214,
+        "y": 76.80000305175781
+      },
+      "tools": [
+        {
+          "hidden": false,
+          "name": "mixer",
+          "rect": {
+            "height": 370,
+            "width": 420,
+            "x": 312,
+            "y": 140
+          }
+        },
+        {
+          "hidden": false,
+          "name": "color",
+          "rect": {
+            "height": 624,
+            "width": 760,
+            "x": 132,
+            "y": 8
+          }
+        }
+      ],
+      "viewer": {
+        "height": 278,
+        "width": 486,
+        "x": 214,
+        "y": 50
+      }
+    },
+    "noGrade": {
+      "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "clip": "River_AV_11s.mp4",
+      "nativeAddAvailable": true,
+      "scopesStatus": "CURRENT"
+    },
+    "narrowColor": {
+      "mixerOpen": true,
+      "rightScopeHidden": true,
+      "saved": "Saved",
+      "scopeSlots": "1",
+      "viewer": {
+        "height": 278,
+        "width": 486
+      },
+      "width": 470
+    },
+    "threeWindows": {
+      "open": [
+        {
+          "hidden": false,
+          "name": "Curves editor window"
+        },
+        {
+          "hidden": false,
+          "name": "Mixer window"
+        },
+        {
+          "hidden": false,
+          "name": "Color window"
+        }
+      ],
+      "saved": "Saved"
+    },
+    "colorDocked": {
+      "gradeCards": 1,
+      "gradeTop": 395.8000183105469,
+      "inputs": [
+        {
+          "disabled": false,
+          "label": "ShadowsLuma",
+          "value": "0.10000000149011612"
+        },
+        {
+          "disabled": false,
+          "label": "ShadowsSat",
+          "value": "1.2000000476837158"
+        },
+        {
+          "disabled": false,
+          "label": "MidtonesLuma",
+          "value": "0"
+        }
+      ],
+      "oldFiltersOpen": false,
+      "project": "Venturi_Color_Native_V1.vvproj",
+      "saved": "Saved",
+      "scopeTop": 72.80000305175781,
+      "wheels": 4
+    },
+    "colorReturned": {
+      "colorHidden": true,
+      "gradeCount": 1,
+      "mixerOpen": true,
+      "parentPath": "selected-filters",
+      "saved": "Saved",
+      "scopeHidden": true
+    },
+    "mixerInserts": {
+      "project": "Venturi_EQ_Normalize_V1.vvproj",
+      "rows": [
+        {
+          "draggable": "true",
+          "text": "Mono"
+        },
+        {
+          "draggable": "true",
+          "text": "MultibandCompressor"
+        },
+        {
+          "draggable": "true",
+          "text": "Equalizer"
+        },
+        {
+          "draggable": "true",
+          "text": "Normalize"
+        }
+      ],
+      "saved": "Saved",
+      "equalizerOpened": true,
+      "parametersEdited": false
+    },
+    "wideColor": {
+      "rightScopeHidden": false,
+      "scopeSlots": "2",
+      "width": 760
+    },
+    "finalDraft": {
+      "reopened_value": "-3.25",
+      "restored_value": "0",
+      "saved": true
+    },
+    "restored": {
+      "dialogs": 0,
+      "inspector": "video",
+      "open_tools": 0,
+      "paused_media": 8,
+      "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "rate": "1",
+      "saved": true,
+      "scope_hidden": true,
+      "time": "00:00:02:00",
+      "total_media": 8,
+      "workspace": "Edit",
+      "zoom": "fit"
+    },
+    "console_warn_error": [],
+    "sourcePhases": {
+      "beforeLayout": {
+        "source": "14d2cc3",
+        "runtime": "c79f0d21520a"
+      },
+      "finalResizeAndDraft": {
+        "source": "5567359",
+        "runtime": "87bc10633ec7"
+      }
+    },
+    "existing_tab": "55",
+    "viewport_css": [
+      1024,
+      640
+    ],
+    "observation_limits": "Keyboard and read-only DOM geometry, no screenshot or physical pointer/DPI qualification. Initial background ResizeObserver delivery did not update scope slots; explicit layout notification fixes the witnessed470px case. Loader/menu races were inspected before retrying activation; no model edit or uncertain mutation was replayed. Grade/docking/insert behavior was observed on the c79 runtime; the final87bc runtime adds only layout notification and independently requalifies coexistence, draft reopen and responsive scope slots."
+  },
+  "final_capture": {
+    "at_unix": 1792833886.5447378,
+    "unit": {
+      "ActiveState": "active",
+      "MainPID": "457797",
+      "ControlGroup": "/system.slice/venturi-web-halo1-native-toolwindows-layout.service",
+      "MemoryCurrent": "127483904",
+      "MemoryPeak": "176586752"
+    },
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "protected": {
+      "foreign_sessions": 39,
+      "foreign_pids_checked": 40,
+      "foreign_pids_equal_checkpoint": 40,
+      "observed_foreign_pid_changes": {},
+      "original_saved_files": 13,
+      "local_media": 5,
+      "nas_files": 4,
+      "nas_fresh_identity_and_bytes_unchanged": true,
+      "shared_proxy_bytes_unchanged": true
+    },
+    "session": {
+      "project_epoch": "1792833755265190132:1",
+      "project_name": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 48,
+          "2": 199
+        }
+      },
+      "native_libraries": {
+        "assets_available": true,
+        "audio_presets_available": true,
+        "presets_available": true
+      },
+      "capabilities": {
+        "editing": true,
+        "export": true,
+        "media_imports": true,
+        "native_assets": true,
+        "playback": true,
+        "preview": true,
+        "scopes": true,
+        "software_preview": false,
+        "source_playback": true
+      }
+    },
+    "served_module_hashes": {
+      "web/js/main.js": "d8ef663303a4a687ff5fc5d8d12e0cf28e001d1e481c66c03f51fcd11e3ef3db",
+      "web/js/program.js": "3e0698e1839431a3de93a8a20dad5db362e6be8a60de312170e269e0db44cae6",
+      "web/js/program-seek.js": "c8d249f0760197406fe52e9976bb042de3de65d2c19c8ba6855095ad667a96d5",
+      "web/js/viewer-zoom.js": "356f3f41dd179d624929dab61aaa5d5f4acd3f35e8a5df69793d43f598f2beb5",
+      "web/js/native-assets.js": "a9f3a26e406968f2fef9e13a8e5f2fe1b3f4fc7ad57875f75cb7d29efe4fec62",
+      "web/js/presets.js": "092efa0eb03b0814548e77d15a93fe4fe2f48aeeac2b725c8c0f4752d94b3128",
+      "web/js/audio-presets.js": "48de4ceca952af1650b8a37686271f90ad23d9463d786cd2f024e81db805faf4",
+      "web/js/source.js": "26e77ba179d7690d2140b96d7416f1388851a4a0db3f29e5ba2627cd5dee4b5d",
+      "web/js/program-range.js": "7381d4af6003ba82b5bf29c05b71e2ea0712ea3fa43dd461f3faebe5f35dff18",
+      "web/js/project-view.js": "c6ac279ebee4efc2ac171364a90cf901c40c2dba0a35c67f6f2f747bf67eba57",
+      "web/js/curve-window.js": "e2ce87cface6a23744937d7438b071605ef2ebab972a0eca45f978da4360509b",
+      "web/js/tool-panels.js": "cdb4a6391ea5f599e26d167064a4f49f0e3abbd719efc9fe522e37c442ed0a67",
+      "web/js/mixer.js": "093bd1bd50491bdff9c9c8bd81f4d207bc38e426b7858abcda7684bd1a87beec",
+      "web/style/native-inspector.css": "ac2dc86ee97554f9ab9d48cb211ed1f011a988eaab4744094fb4f8fbf510ac6a",
+      "web/js/scopes.js": "bd770a40e5f7b30c3b080da5847dacb16666eb0097a5fd148aea90852c8b29fc"
+    },
+    "saved_project_hashes": {
+      "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+      "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+      "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+      "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+      "Venturi_Keyframe_Replacement_V1.vvproj": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72",
+      "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+      "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+      "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+      "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+      "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+      "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+      "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2",
+      "Venturi_Seek_Playback_V1.vvproj": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7"
+    }
+  },
+  "limitations": [
+    "Existing Windows IAB keyboard and DOM geometry only; no new screenshot, physical mouse/pointerlock or100%/150%DPI acceptance.",
+    "Title reset verified against native Project commands, Undo/Redo and atomic guard fixtures; no title edit made to a Saved user project.",
+    "No physical microphone/output, representative long real footage,500clip60fps, uncached sustained Slip/Compare or two-hour browser-memory editing qualification.",
+    "Current runtime is newer than the immutable77d7 package; archives are not rewritten."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "not_planned": 2,
+    "goal": "active"
+  }
+}

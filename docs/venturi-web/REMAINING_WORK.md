@@ -44,6 +44,14 @@ These were newly demonstrated source gaps in the earlier bounded review; the
 qualification map below is not proof that undiscovered production defects cannot
 exist or grounds to stop safe implementation when a concrete defect is found.
 
+## Independent native tool windows and title reset delivered
+
+Mixer/Color now coexist as independent windows, reuse one grade/scopes/Mixer
+controller and preserve drafts/viewport allocation. Title Background group Reset
+preserves enabled per target. See evidence/f3-f4-native-toolwindows-title-reset-workflow.json.
+The187-client/4-native bounded gate and Windows keyboard/DOM workflow do not
+replace physical input/DPI/audio or the other row-specific acceptance below.
+
 ## Row-specific residuals
 
 "Qualification" means no additional missing native production workflow was

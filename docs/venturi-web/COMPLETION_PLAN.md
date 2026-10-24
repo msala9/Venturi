@@ -1,5 +1,33 @@
 # Active completion plan — full Venturi Web scope
 
+## Independent Mixer/Color windows and native title reset â€” 2026-10-24
+
+Source5567359/runtime87bc10633ec7 is active at http://127.0.0.1:8855/,
+unit `venturi-web-halo1-native-toolwindows-layout.service`, captured PID457797.
+Mixer and Color are independent movable/resizable windows, like the native GUI.
+They reuse existing controls and preserve the Program viewport allocation, typed
+mix drafts and per-tool geometry. Reopening restores insert interaction and
+native graph/preset reads. Closing cancels owned gestures and hidden delayed
+commands; Color retains Auto Balance, native Add, scopes above grading and the
+same single selected grade card. Curves ownership and geometry remain separate.
+Title Background group Reset now preserves each selected title's enabled state,
+matching native field-diff semantics; explicit Enabled reset remains distinct.
+
+Serial bounded halo1 stages qualify187 client and4 native cases by exact-source
+reuse and a targeted native follow-up; formatting, all-target Clippy and embedded
+build pass. Peak2085101568B,
+8CPU/4GiB/noSwap, zero memory-limit/OOM/kill events. Actual existing Windows
+keyboard/DOM workflow and preservation witnesses are recorded in
+`evidence/f3-f4-native-toolwindows-title-reset-workflow.json`.
+
+Original Saved project restored frame48/1x/Fit/Edit/Video/empty history, media
+paused and console clean. All13 Saved files,5 media,4 NAS identities/bytes and
+shared proxy match;39 foreign Sessions/40 PIDs match the fresh checkpoint.
+Keep the complete90/F1-F7/M7 goal active,61done/29partial/2excluded. Physical
+input/DPI/device, representative long footage, dense editing and two-hour
+browser-memory acceptance remain required. No whole row is promoted here.
+
+
 ## Native Pause, terminal cursor and independent audio Refresh — 2026-10-24
 
 Source14d4753/runtime8b413c047e1e is active at http://127.0.0.1:8855/,

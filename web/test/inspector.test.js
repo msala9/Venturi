@@ -162,7 +162,7 @@ test('canceling an already dispatched edit retains its pending and unknown-outco
   reject(Object.assign(Error('Confirm the native write outcome before editing'),{code:'OUTCOME_UNKNOWN'}));await settleInspector();h.controls.cancel();h.apply(6);await settleInspector();assert.equal(h.commands.length,1);assert.equal(h.controls.available(),false);assert.match(h.notices.at(-1),/outcome/);
 });
 
-function viewportHarness(){
+function viewportHarness({getContext}={}){
   class Surface extends EventTarget{
     constructor(){super();this.handlers=new Map();}
     addEventListener(key,handler,options){super.addEventListener(key,handler,options);if(!this.handlers.has(key))this.handlers.set(key,new Set());this.handlers.get(key).add(handler);}
@@ -177,7 +177,7 @@ function viewportHarness(){
   }
   function fire(target,type,properties={}){const event=new Event(type,{cancelable:true});for(const [name,value] of Object.entries(properties))Object.defineProperty(event,name,{value});target.dispatchEvent(event);}
   function node(label,at,{disabled=false}={}){return {tagName:'INPUT',type:'number',id:'',label,at,disabled,focuses:0,get isConnected(){return root.contains(this);},getAttribute(name){return name==='aria-label'?this.label:null;},getClientRects(){return this.isConnected?[this.getBoundingClientRect()]:[];},getBoundingClientRect(){const top=100+this.at-root.scrollTop;return {top,bottom:top+24,height:24};},focus(options){this.focuses++;this.focusOptions=options;doc.activeElement=this;fire(doc,'focusin',{target:this});},closest(){return null;}};}
-  const keeper=createInspectorViewportKeeper(root,{getContext:()=>context,documentRef:doc,windowRef:view,Observer,requestFrame:callback=>{const id=++frameId;frames.set(id,callback);return id;},cancelFrame:id=>frames.delete(id)});
+  const keeper=createInspectorViewportKeeper(root,{getContext:()=>getContext?getContext():context,documentRef:doc,windowRef:view,Observer,requestFrame:callback=>{const id=++frameId;frames.set(id,callback);return id;},cancelFrame:id=>frames.delete(id)});
   const flush=()=>{const pending=[...frames.values()];frames.clear();for(const callback of pending)callback();};
   keeper.contextChanged();
   return {root,doc,view,keeper,frames,fire,node,flush,get observer(){return observer;},mutate:()=>observer.emit(),replace(nodes,height){if(root.contains(doc.activeElement))doc.activeElement=doc.body;root.children=nodes;root.scrollHeight=height;root.scrollTop=root.scrollTop;observer.emit();},focus(target){doc.activeElement=target;fire(doc,'focusin',{target});},context(value){context=value;},dispose(){keeper.dispose();}};
@@ -199,6 +199,28 @@ test('Inspector viewport uses remembered scroll when the anchor is not yet prese
     h.root.scrollHeight=2200;h.mutate();h.flush();assert.equal(h.root.scrollTop,1200);
     h.context('epoch/timeline/video/Color/clip10');h.mutate();h.flush();assert.equal(h.root.scrollTop,0);assert.equal(h.observer.connected,false);assert.equal(h.frames.size,0);
     h.root.scrollTop=400;h.keeper.capture();h.root.scrollHeight=2500;h.mutate();h.flush();assert.equal(h.root.scrollTop,400);
+  }finally{h.dispose();}
+});
+
+test('Mixer viewport preserves scroll through native refresh and lazy hydration when an EQ node label changes',()=>{
+  const state={project_epoch:'epoch1',timeline:'1',generation:0,revision:'before',selection:['12']};
+  const h=viewportHarness({getContext:()=>JSON.stringify([state.project_epoch,state.timeline])});try{
+    const old=h.node('A1 insert 1 EQ band 3: 500 Hz, 0 dB, Q 0.71',600);h.replace([old],1600);h.root.scrollTop=455.67999267578125;h.focus(old);h.keeper.capture();
+    state.generation++;state.revision='after';state.selection=[];
+    h.replace([],200);h.flush();assert.equal(h.root.scrollTop,0);
+    h.keeper.capture();state.selection=['14'];h.replace([],200);h.flush();
+    const fresh=h.node('A1 insert 1 EQ band 3: 672 Hz, 6.3 dB, Q 0.71',580);h.replace([fresh],1700);h.flush();
+    assert.equal(h.root.scrollTop,455.67999267578125);assert.equal(fresh.focuses,0);assert.equal(h.doc.activeElement,h.doc.body);
+    state.timeline='2';h.keeper.capture();h.replace([fresh],1700);h.flush();assert.equal(h.root.scrollTop,0);
+    h.root.scrollTop=400;state.project_epoch='epoch2';h.keeper.capture();h.replace([fresh],1700);h.flush();assert.equal(h.root.scrollTop,0);
+  }finally{h.dispose();}
+});
+
+test('Mixer viewport yields to explicit user scrolling while rebuilt insert controls are still hydrating',()=>{
+  const h=viewportHarness({getContext:()=>JSON.stringify(['epoch1','1'])});try{
+    const old=h.node('A1 insert 1 EQ band 3: 500 Hz, 0 dB, Q 0.71',600);h.replace([old],1600);h.root.scrollTop=450;h.focus(old);h.keeper.capture();h.replace([],200);h.flush();
+    h.fire(h.doc,'wheel');const fresh=h.node('A1 insert 1 EQ band 3: 672 Hz, 6.3 dB, Q 0.71',580);h.replace([fresh],1700);h.root.scrollTop=150;h.flush();
+    assert.equal(h.root.scrollTop,150);assert.equal(fresh.focuses,0);assert.equal(h.observer.connected,false);assert.equal(h.frames.size,0);
   }finally{h.dispose();}
 });
 

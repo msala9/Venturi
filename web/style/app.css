@@ -650,15 +650,15 @@ label {
 .compressor-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; margin: 8px 0; }
 .compressor-band-controls { min-width: 0; padding: 4px; border: 1px solid var(--border); }
 .compressor-band-controls > strong { font-size: 11px; }
-#inspector .compressor-band-controls > button { float: right; font-size: 10px; padding: 1px 3px; min-height: 22px; margin: 0; }
+:is(#inspector,[data-tool-window="mixer"]) .compressor-band-controls > button { float: right; font-size: 10px; padding: 1px 3px; min-height: 22px; margin: 0; }
 .compressor-band-panel { display: grid; grid-template-columns: 24px repeat(2,minmax(0,1fr)); gap: 3px; margin-top: 6px; }
 .compressor-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; min-width: 0; }
 .compressor-threshold-cell { grid-row: span 2; }
 .compressor-cell output { font-variant-numeric: tabular-nums; font-size: 9px; text-align: center; }
-#inspector .compressor-threshold { position: relative; width: 24px; height: 120px; min-height: 120px; padding: 0; touch-action: none; cursor: ns-resize; }
+:is(#inspector,[data-tool-window="mixer"]) .compressor-threshold { position: relative; width: 24px; height: 120px; min-height: 120px; padding: 0; touch-action: none; cursor: ns-resize; }
 .compressor-fader-rail { position: absolute; inset: 7px 3px; background: var(--bg); }
 .compressor-fader-rail .compressor-control-mark { position: absolute; left: 0; width: 5px; height: 10px; top: var(--compressor-top,50%); transform: translateY(-50%); background: var(--primary); }
-#inspector .compressor-knob { position: relative; width: min(34px,100%); height: auto; aspect-ratio: 1; min-height: 26px; padding: 0; margin: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
+:is(#inspector,[data-tool-window="mixer"]) .compressor-knob { position: relative; width: min(34px,100%); height: auto; aspect-ratio: 1; min-height: 26px; padding: 0; margin: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
 .compressor-knob .compressor-control-mark { position: absolute; inset: 5px; transform: rotate(var(--compressor-angle,0deg)); }
 .compressor-knob .compressor-control-mark::before { content: ''; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 9px; background: var(--primary); }
 .compressor-controls button[aria-busy="true"] { cursor: progress; }
@@ -672,11 +672,11 @@ label {
 .eq-band-controls > strong { grid-column: 1; grid-row: 1; align-self: center; color: var(--eq-band-color); font-size: 11px; }
 .eq-band-controls > label { grid-column: 2; grid-row: 1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin: 0; font-size: 9px; }
 .eq-band-controls > label input { width: 13px; height: 13px; margin: 0; }
-#inspector .eq-band-controls > .eq-band-reset { grid-column: 3; grid-row: 1; justify-self: end; width: 22px; min-height: 22px; padding: 1px 2px; margin: 0; font-size: 10px; }
+:is(#inspector,[data-tool-window="mixer"]) .eq-band-controls > .eq-band-reset { grid-column: 3; grid-row: 1; justify-self: end; width: 22px; min-height: 22px; padding: 1px 2px; margin: 0; font-size: 10px; }
 .eq-band-controls > select { grid-column: 1 / -1; min-width: 0; width: 100%; min-height: 22px; padding: 1px 2px; font-size: 10px; }
 .eq-control-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; font-size: 9px; }
 .eq-control-cell output { max-width: 100%; overflow: hidden; font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; text-overflow: ellipsis; }
-#inspector .eq-knob { position: relative; width: min(30px,100%); min-height: 26px; aspect-ratio: 1; margin: 0; padding: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
+:is(#inspector,[data-tool-window="mixer"]) .eq-knob { position: relative; width: min(30px,100%); min-height: 26px; aspect-ratio: 1; margin: 0; padding: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
 .eq-knob-mark { position: absolute; inset: 5px; transform: rotate(var(--eq-angle,0deg)); }
 .eq-knob-mark::before { content: ''; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 8px; background: var(--eq-band-color); }
 .normalization-presets { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0; }

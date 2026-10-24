@@ -121,7 +121,7 @@ let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));audioMeters?.sync();}
 function updateBrowserToggle(){for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));}
-let inspectorSelectionRead=null,inspectorViewport=null;
+let inspectorSelectionRead=null,inspectorViewport=null,mixerViewport=null;
 function setInspectorTab(tab){
   if(!['video','audio','selection'].includes(tab))return;
   if($('inspector').dataset.inspectorTab!==tab)cancelInspectorDraft();
@@ -688,10 +688,12 @@ const curveWindow=createCurveWindow({notice,onChange:open=>{
 }});
 function openCurveWindow(){curveWindow.open();}
 const toolChanged=name=>open=>{
+  if(name==='mixer' && !open)mixerViewport?.cancel();
   for(const button of document.querySelectorAll(`[data-workspace="${name==='mixer'?'Audio':'Color'}"]`))button.setAttribute('aria-pressed',String(open));
   syncNativeTools();
 };
 const mixerWindow=createToolWindow({name:'Mixer',notice,onChange:toolChanged('mixer')});
+mixerViewport=createInspectorViewportKeeper(mixerWindow.content,{getContext:()=>documentState && timeline?JSON.stringify([documentState.project_epoch,timeline.id]):null});
 const colorWindow=createToolWindow({name:'Color',notice,onChange:toolChanged('color'),onLayout:()=>scopes?.layout?.()});
 const colorToolbar=document.createElement('div'),colorGradeHost=document.createElement('div');colorToolbar.className='native-color-toolbar';colorGradeHost.dataset.colorGrade='true';
 function colorAction(label,action){const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',action);colorToolbar.append(button);return button;}
@@ -768,6 +770,7 @@ function mountTimelineMixer(){
 }
 function selected() {
   inspectorViewport?.capture();
+  mixerViewport?.capture();
   cancelInspectorDraft();
   timelineContextMenu?.invalidate();
   inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
@@ -2325,7 +2328,7 @@ sourceWaveform=createSourceWaveform({root:$('source-waveform'),canvas:$('source-
   onSeek:seekSourceFrame,onError:error=>notice(error.message || String(error))});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>{sourceAssets.refresh();timelineWaveforms?.refresh();});
 document.addEventListener('visibilitychange',()=>{void proxyControls?.visible(!document.hidden);sourceAssets.refresh();timelineWaveforms?.refresh();sourcePlayer?.invalidatePrefetch();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>{void proxyControls?.refresh();sourceAssets.refresh();timelineWaveforms?.refresh();sourcePlayer?.invalidatePrefetch();},true);
-window.addEventListener('pagehide',()=>{inspectorViewport?.cancel();fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
+window.addEventListener('pagehide',()=>{inspectorViewport?.cancel();mixerViewport?.cancel();fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);
   if(item && !item.has_video && sourceWaveformDemand.entries.length){sourceAssets.demand('source_waveform',sourceWaveformDemand.entries.map(entry=>({...entry,force:true})),sourceWaveformDemand.epoch);return;}

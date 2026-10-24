@@ -1,5 +1,23 @@
 # Prebuilt Linux development candidate
 
+## Current immutable R9 delivery - 2026-10-24
+
+The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.
+Size: 91637760 bytes. SHA256:
+`015c0363dcf1e6a2a100ecfc45c67fd484524baefab06efb7cc0a74bdd3a79cf`.
+It binds binary source `0667653` separately from documentation `ba72e70`.
+All 54 recorded members, launcher help, three original notice companions,
+189 loader dependencies and 199 host notice texts pass verification.
+Assembly used one CPU and 512 MiB with no swap: peak 239247360 bytes,
+zero memory events. The full live Session, all 16 Saved files, Recovery
+and immutable R8 remain exact. Package assembly is complete; no new runback,
+reboot, sustained-playback or M7 acceptance is inferred.
+See `evidence/f7-current-prebuilt-r9-workflow.json`. This publication postdates
+the frozen archive: its earlier package-pending wording remains unchanged.
+Older runtime/package headers below are historical; FINAL_CHECKS and the
+62 done / 28 partial / 2 excluded ledger remain unchanged.
+
+
 ## Current short-start playback delivered - 2026-10-24
 
 Source0667653 requests15s for opening/manual preparation and60s for adjacent

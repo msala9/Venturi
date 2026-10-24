@@ -1,5 +1,23 @@
 # Checks reserved for final acceptance
 
+## Current immutable R9 delivery - 2026-10-24
+
+The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.
+Size: 91637760 bytes. SHA256:
+`015c0363dcf1e6a2a100ecfc45c67fd484524baefab06efb7cc0a74bdd3a79cf`.
+It binds binary source `0667653` separately from documentation `ba72e70`.
+All 54 recorded members, launcher help, three original notice companions,
+189 loader dependencies and 199 host notice texts pass verification.
+Assembly used one CPU and 512 MiB with no swap: peak 239247360 bytes,
+zero memory events. The full live Session, all 16 Saved files, Recovery
+and immutable R8 remain exact. Package assembly is complete; no new runback,
+reboot, sustained-playback or M7 acceptance is inferred.
+See `evidence/f7-current-prebuilt-r9-workflow.json`. This publication postdates
+the frozen archive: its earlier package-pending wording remains unchanged.
+Older runtime/package headers below are historical; FINAL_CHECKS and the
+62 done / 28 partial / 2 excluded ledger remain unchanged.
+
+
 ## Current short-start playback delivered - 2026-10-24
 
 Source0667653 requests15s for opening/manual preparation and60s for adjacent
@@ -81,7 +99,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Current718 short-start Source/Program/A-B450-to2250 rollover also passes in evidence/f2-playback-short-start-workflow.json;782 late5s A/B/five-frame Program EOF is separately bound in evidence/f2-real-public-ab-program-tail-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. The older5002-key/4clip fixture is separate. | Qualify cold visible thumbnail/waveform demand,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Current782eb350d0d0/source dea7f17 is packaged in verified R8, with docs9c9c487 separately bound; see evidence/f7-current-prebuilt-r8-workflow.json. All members, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R7 remain exact. | Current package assembly is complete. Retain sustained Source/Program/A-B and remaining functional/physical/soak gates; historical77d7/59b6 runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
+| Final delivery and regression receipt | Current718850754776/source0667653 is packaged in verified R9 with docsba72e70 separately bound; see evidence/f7-current-prebuilt-r9-workflow.json. All54 members, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/16 Saved/Recovery and R8 remain exact. | Current package assembly is complete. Retain sustained Source/Program/A-B and remaining functional/physical/soak gates; historical77d7/59b6 runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

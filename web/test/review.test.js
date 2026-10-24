@@ -26,7 +26,7 @@ class Control extends EventTarget {
   advance(seconds){this.currentTime=seconds;this.dispatchEvent(new Event('timeupdate'));}
   finish(){this.currentTime=this.duration;this.ended=true;this.pause();this.dispatchEvent(new Event('ended'));}
 }
-function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,resetRate=false,endedAtWindowTail=()=>false}={}){
+function harness(api,{deferSources=false,windowSeconds=15,continuationSeconds=windowSeconds===15?60:windowSeconds,deferSeek=()=>null,resetRate=false,endedAtWindowTail=()=>false}={}){
   globalThis.Option=class{constructor(label,value){this.label=label;this.value=value;}};globalThis.document={createElement:()=>new Control()};
   const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]','[data-review-frozen-policy]','[data-review-source-in-label]','[data-review-quality]'];
   const nodes=Object.fromEntries(selectors.map(selector=>[selector,new Control()])),root=new Control(),panes=[];root.querySelector=selector=>nodes[selector];root.showModal=()=>{root.open=true;};root.close=()=>{root.open=false;};
@@ -41,10 +41,10 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
     video.addEventListener('pause',event=>{if(internal)internalEvents.add(event);});
     const notify=(state,reason,frame)=>onStateChange({state,reason,frame,item,epoch,sequence,audio_stream_index:audioStreamIndex});
     const hold=()=>{internal=true;try{video.pause();}finally{internal=false;}};
-    const publish=(frame,token,reason)=>{
+    const publish=(frame,token,reason,seconds=windowSeconds)=>{
       if(token!==sequence)return;
       const inside=range && frame>=range.start_frame && frame<range.end_frame;
-      if(!inside)range={start_frame:frame,end_frame:Math.min(item.duration_frames,frame+Math.max(1,Math.floor(windowSeconds*item.fps.num/item.fps.den))),source_version:`version-${item.id}`,audio_stream_index:audioStreamIndex,job:`job-${pane}-${++job}`};
+      if(!inside)range={start_frame:frame,end_frame:Math.min(item.duration_frames,frame+Math.max(1,Math.floor(seconds*item.fps.num/item.fps.den))),source_version:`version-${item.id}`,audio_stream_index:audioStreamIndex,job:`job-${pane}-${++job}`};
       video.duration=(range.end_frame-range.start_frame)*item.fps.den/item.fps.num;video.currentTime=(frame-range.start_frame)*item.fps.den/item.fps.num;video.ended=frame===range.end_frame-1 && endedAtWindowTail(pane,frame);
       if(resetRate){video.playbackRate=1;video.dispatchEvent(new Event('ratechange'));}
       preparing=false;notify('ready',reason,frame);if(reason==='open')onReady();
@@ -58,7 +58,7 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
       async open(media,value,quality,startFrame,options){assert.ok(Number.isSafeInteger(startFrame) && startFrame>=0);assert.ok(['low','medium','high','original'].includes(quality));audioStreamIndex=options.audioStreamIndex;item=media;epoch=value;range=null;loaded.push(item.id);const token=++sequence;preparing=true;notify('preparing','open',startFrame);hold();cancel.disabled=true;preparations.push({pane,type:'open',frame:startFrame,quality,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);
         const finish=()=>{active--;if(token!==sequence)return;[video.videoWidth,video.videoHeight]=quality==='original'?[media.width || 1920,media.height || 1080]:{low:[320,180],medium:[640,360],high:[1280,720]}[quality];if(item.is_image){preparing=false;notify('ready','open',0);onReady();}else publish(startFrame,token,'open');};if(deferSources)await new Promise(resolve=>{ready.set(video,()=>{finish();resolve();});});else{ready.set(video,finish);finish();}
       },
-      async seekFrame(frame,options){assert.equal(options?.retain,true);const token=++sequence;preparing=true;notify('preparing','seek',frame);hold();preparations.push({pane,type:'seek',frame,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);try{const wait=deferSeek(pane,frame);if(wait)await wait;if(token!==sequence)return;if(player.failNext){player.failNext=false;preparing=false;range=null;return;}publish(frame,token,'seek');}finally{active--;}}
+      async seekFrame(frame,options){assert.equal(options?.retain,true);const advance=options?.advance===true,seconds=advance && range && frame===range.end_frame?continuationSeconds:windowSeconds;const token=++sequence;preparing=true;notify('preparing','seek',frame);hold();preparations.push({pane,type:'seek',frame,audio_stream_index:audioStreamIndex,advance,window_seconds:seconds});active++;peak=Math.max(peak,active);try{const wait=deferSeek(pane,frame);if(wait)await wait;if(token!==sequence)return;if(player.failNext){player.failNext=false;preparing=false;range=null;return;}publish(frame,token,'seek',seconds);}finally{active--;}}
       ,nativeSeek(frame){const token=++sequence;preparing=true;notify('preparing','native_seek',frame);hold();return ()=>publish(frame,token,'native_seek');}
     };players.push(player);return player;
   };
@@ -309,7 +309,7 @@ test('full-source absolute seeks beyond 600 seconds use verified window clocks a
   h.seek(0,14_401);await settle();
   assert.equal(h.players[0].current().frame,14_401);assert.equal(h.players[1].current().frame,17_983);
   assert.equal(h.players[0].current().start_frame,14_401);assert.equal(h.players[1].current().start_frame,17_983);
-  assert.match(h.panes[0]['[data-review-clock]'].textContent,/frame 14401.*24\/1 fps.*window \[14401, 15841\)/);
+  assert.match(h.panes[0]['[data-review-clock]'].textContent,/frame 14401.*24\/1 fps.*window \[14401, 14761\)/);
   assert.match(h.panes[1]['[data-review-clock]'].textContent,/frame 17983.*30000\/1001 fps/);
   assert.equal(h.peak(),1);assert(h.panes.every(pane=>pane.video.paused));assert(h.panes.every(pane=>pane.video.playCount===0));h.button('close').click();
 });
@@ -499,4 +499,18 @@ test('compound targets show an explicit empty A choice and cannot replace an unr
 
 test('an unannounced compound conversion invalidates confirmation even when the target ID and revision stay unchanged',async()=>{
   const h=harness(async()=>planned);await h.review.open();h.submit();await settle();assert.equal(h.button('apply').disabled,false);h.context.document.media[0].compound_timeline_id='nested';h.button('apply').click();await settle();assert.equal(h.commits.length,0);assert.equal(h.button('apply').disabled,true);h.button('close').click();
+});
+
+
+test('A/B manual seeks remain fifteen-second requests and only a natural EOF advances both panes with sixty-second windows',async()=>{
+  const h=harness(async()=>planned);for(const media of h.context.document.media)media.duration_frames=5000;
+  try{
+    await h.review.open();assert.deepEqual(h.players.map(player=>[player.current().start_frame,player.current().end_frame]),[[0,360],[0,360]]);
+    h.seek(0,360);await settle();assert.deepEqual(h.players.map(player=>[player.current().start_frame,player.current().end_frame]),[[360,720],[360,720]]);
+    const manual=h.preparations.filter(value=>value.type==='seek');assert.equal(manual.length,2);assert(manual.every(value=>value.advance===false && value.window_seconds===15));
+    const before=h.preparations.length;h.button('play').click();await settle();h.panes[0].video.finish();await settle();
+    assert.deepEqual(h.players.map(player=>[player.current().start_frame,player.current().end_frame]),[[720,2160],[720,2160]]);
+    const natural=h.preparations.slice(before).filter(value=>value.type==='seek');assert.equal(natural.length,2);assert(natural.every(value=>value.advance===true && value.window_seconds===60));
+    assert(h.panes.every(pane=>!pane.video.paused));assert.equal(h.peak(),1);assert.deepEqual(h.commits,[]);
+  }finally{if(h.root.open)h.button('close').click();}
 });

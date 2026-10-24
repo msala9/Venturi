@@ -140,22 +140,22 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   function enqueue(valid,operation){
     const pending=preparation.catch(()=>{}).then(async()=>{if(!valid())return null;return operation();});preparation=pending.catch(()=>{});return pending;
   }
-  async function seek(pane,frame,valid,force=true){
+  async function seek(pane,frame,valid,force=true,advance=false){
     pane.nativeSeek=false;
     const existing=position(pane),tolerance=Math.max(1,Math.floor(.08*pane.media.fps.num/pane.media.fps.den));
     if(existing && existing.frame===frame && !pane.video.ended)return existing;
     if(!force && existing && !pane.video.ended && frame>=existing.start_frame && frame<existing.end_frame && frame!==pane.media.duration_frames-1 && Math.abs(existing.frame-frame)<=tolerance)return existing;
     const task={frame,generation:pane.generation};pane.seeking=task;pane.queued=true;hold(pane);controls();
     try{return await enqueue(valid,async()=>{
-      if(!valid() || task.generation!==pane.generation)return null;pane.queued=false;pane.video.defaultPlaybackRate=pane.rate;await pane.player.seekFrame(frame,{retain:true});
+      if(!valid() || task.generation!==pane.generation)return null;pane.queued=false;pane.video.defaultPlaybackRate=pane.rate;await pane.player.seekFrame(frame,{retain:true,advance});
       if(!valid() || task.generation!==pane.generation)return null;
       const value=position(pane);if(!value || value.frame!==frame)throw Error(`${pane.name} Source did not verify the requested absolute frame`);pane.ready=true;return value;
     });}finally{if(pane.seeking===task){pane.seeking=null;pane.queued=false;}controls();}
   }
   function anchor(pane,frame){const value=position(pane);return value?{pane,frame:frame??value.frame,fps:{...value.fps},version:value.source_version}:null;}
-  async function alignAt(clock,valid,force=true,targets=panes.filter(playable)){
+  async function alignAt(clock,valid,force=true,targets=panes.filter(playable),advance=false){
     if(!clock)throw Error('Comparison absolute source clock is unavailable');
-    for(const pane of targets){if(!valid())return false;const frame=intent && pane.exhausted?pane.media.duration_frames-1:comparisonFrame(clock.frame,clock.fps,pane.media);await seek(pane,frame,valid,force);if(!valid())return false;}
+    for(const pane of targets){if(!valid())return false;const frame=intent && pane.exhausted?pane.media.duration_frames-1:comparisonFrame(clock.frame,clock.fps,pane.media);await seek(pane,frame,valid,force,advance);if(!valid())return false;}
     return true;
   }
   function release(value){
@@ -167,7 +167,7 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
       const at=position(pane);if(!value.playing.has(pane) || !at || (value.sync && pane!==value.leader && at.frame===pane.media.duration_frames-1)){hold(pane);continue;}
       if(pane.video.ended && at.frame===at.end_frame-1 && at.end_frame<pane.media.duration_frames){
         hold(pane);if(value.sync && pane!==value.leader)continue;
-        void coordinate({pane,frame:at.end_frame,fps:{...at.fps},version:at.source_version},{targets:value.sync?undefined:[pane]});return;
+        void coordinate({pane,frame:at.end_frame,fps:{...at.fps},version:at.source_version},{targets:value.sync?undefined:[pane],advance:true});return;
       }
       if(!pane.video.paused)continue;
       pane.internalPlays++;try{await pane.video.play();}catch(error){if(pane.internalPlays)pane.internalPlays--;if(barrier?.intent===value && barrier.next){hold(pane);return;}throw error;}
@@ -177,16 +177,16 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     }
     if(owned(value)){transportStatus.textContent='Playing full-source windows · pauses between prepared windows';schedule();controls();}
   }
-  function coordinate(clock,{force=true,targets}={}){
+  function coordinate(clock,{force=true,targets,advance=false}={}){
     const value=intent;if(!value)return Promise.resolve();
-    if(barrier?.intent===value){if(clock)barrier.next={clock,force,targets};for(const pane of value.sync?panes:targets || [...value.playing])hold(pane);return barrier.promise;}
-    const ticket={intent:value,next:{clock,force,targets},promise:null};barrier=ticket;cancelFrame();
+    if(barrier?.intent===value){if(clock)barrier.next={clock,force,targets,advance};for(const pane of value.sync?panes:targets || [...value.playing])hold(pane);return barrier.promise;}
+    const ticket={intent:value,next:{clock,force,targets,advance},promise:null};barrier=ticket;cancelFrame();
     const affected=value.sync?panes:targets || [...value.playing];for(const pane of affected)hold(pane);
     ticket.promise=Promise.resolve().then(async()=>{
       while(owned(value)){
         while(owned(value) && ticket.next){const next=ticket.next;ticket.next=null;const target=next.targets || (value.sync?panes.filter(playable):[...value.playing]);
-          if(value.sync){if(!await alignAt(next.clock,()=>owned(value),next.force,target))return;}
-          else for(const pane of target){if(!owned(value))return;const frame=next.clock?.pane===pane?next.clock.frame:position(pane)?.frame;if(frame==null)throw Error('Independent comparison clock is unavailable');await seek(pane,frame,()=>owned(value),next.force);}
+          if(value.sync){if(!await alignAt(next.clock,()=>owned(value),next.force,target,next.advance))return;}
+          else for(const pane of target){if(!owned(value))return;const frame=next.clock?.pane===pane?next.clock.frame:position(pane)?.frame;if(frame==null)throw Error('Independent comparison clock is unavailable');await seek(pane,frame,()=>owned(value),next.force,next.advance);}
           if(!owned(value))return;
         }
         if(owned(value))await release(value);
@@ -243,7 +243,7 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
       if(!intent.playing.size){stopTransport('End of comparison',{cancel:false});return;}
       const leaderClock=intent.sync?anchor(intent.leader):clock;void coordinate(leaderClock || clock,{targets:intent.sync?undefined:[pane]});return;
     }
-    clock.frame=pane.player.current().end_frame;transportStatus.textContent='Comparison paused · preparing the next source window';void coordinate(clock,{targets:intent.sync?undefined:[pane]});
+    clock.frame=pane.player.current().end_frame;transportStatus.textContent='Comparison paused · preparing the next source window';void coordinate(clock,{targets:intent.sync?undefined:[pane],advance:true});
   }
   function cancelFrame(){const old=frameTicket;frameTicket=null;if(old?.id!=null)old.owner.cancelVideoFrameCallback?.(old.id);}
   function align(){

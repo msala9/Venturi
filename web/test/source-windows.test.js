@@ -37,7 +37,7 @@ test('hold preserves an EOF preparation and publishes a verified paused window w
     await h.open();await h.player.toggle();h.finish();assert.equal(h.player.preparing(),true);assert.equal(h.states.at(-1).reason,'window');
     h.player.hold();assert.equal(h.player.preparing(),true);
     ack.resolve(h.ready(h.requests[1],'next'));await settle();
-    assert.equal(h.player.preparing(),false);assert.equal(h.player.current().frame,1440);assert.equal(h.video.paused,true);assert.equal(h.video.plays,1);
+    assert.equal(h.player.preparing(),false);assert.equal(h.player.current().frame,360);assert.equal(h.video.paused,true);assert.equal(h.video.plays,1);
     assert.equal(h.states.at(-1).state,'ready');assert.equal(h.states.at(-1).reason,'window');
     await h.player.toggle();assert.equal(h.video.plays,2);
   }finally{h.player.dispose();}
@@ -115,7 +115,7 @@ test('quality reopen retains the displayed source, absolute frame and verified i
     try{
       await h.open(137);await h.player.seekFrame(161);await h.player.toggle();const source=h.player.current();
       await h.player.reopen('high');assert.equal(h.player.current().media_id,source.media_id);assert.equal(h.player.current().epoch,source.epoch);assert.equal(h.player.current().frame,161);assert.equal(h.player.current().source_version,source.source_version);
-      assert.equal(h.requests.at(-1).quality,'high');assert.equal(h.requests.at(-1).window.start_frame,161);assert.equal(h.video.paused,false);assert.equal(h.video.plays,2);
+      assert.equal(h.requests.at(-1).quality,'high');assert.deepEqual(h.requests.at(-1).window,{start_frame:161,end_frame:521});assert.equal(h.video.paused,false);assert.equal(h.video.plays,2);
       if(library){assert.equal(h.requests.at(-1).revision,'a'.repeat(64));assert.equal(h.requests.at(-1).if_generation,'7');assert.equal(h.requests.at(-1).source_version,'file-version');assert.match(h.video.src,/native-assets\/items\/asset-a\/source\/jobs/);}
     }finally{h.player.dispose();}
   }
@@ -221,4 +221,19 @@ test('retained cross-window seeks hold the old verified picture until paused pub
       ack.resolve(h.ready(h.requests[1]));await seeking;assert.equal(h.player.current().frame,3000);assert.equal(h.video.plays,0);
     }finally{h.player.dispose();}
   });
+});
+
+
+test('retained manual boundary seeks keep the old picture but use fifteen seconds, unlike an owned natural advance',async()=>{
+  for(const advance of [false,true]){
+    const ack=deferred();let h;h=harness({api:(body,ready)=>h.requests.length===2?ack.promise:ready(body)});
+    try{
+      await h.open();assert.deepEqual(h.requests[0].window,{start_frame:0,end_frame:360});const url=h.video.src,old=h.player.current();
+      const moving=h.player.seekFrame(360,{retain:true,...(advance?{advance:true}:{})});await settle();
+      assert.equal(h.video.src,url);assert.equal(h.player.current().job,old.job);assert.equal(h.player.current().source_version,old.source_version);assert.equal(h.video.paused,true);
+      assert.deepEqual(h.requests[1].window,{start_frame:360,end_frame:advance?1800:720});
+      ack.resolve(h.ready(h.requests[1],'boundary-next'));await moving;
+      assert.equal(h.player.current().frame,360);assert.equal(h.player.current().source_version,old.source_version);assert.equal(h.video.paused,true);assert.equal(h.video.plays,0);
+    }finally{h.player.dispose();}
+  }
 });

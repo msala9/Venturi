@@ -339,6 +339,14 @@ leave the current movie playing; failure at the boundary requires manual Play.
 User pause, seek, Stop or hidden/modal policy detach the local future observer
 without canceling a shared native job. Fast audio retains foreground rollover.
 
+Source, A/B and Program request 15 seconds for a new playback origin or a
+manual seek that needs preparation, then 60 seconds for adjacent continuation.
+Already verified containing windows remain reusable. Very low native FPS keeps
+one frame within the unchanged backend limits (Source 60s, Program 300s).
+Program continuations retain the first audio origin to reconstruct DSP history.
+This bounds startup work; it does not guarantee gapless playback or preparation
+faster than real time. A/B still pauses while preparing its next windows.
+
 ## 5. Timeline spec
 
 Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high

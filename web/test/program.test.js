@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createProgramPlayer, sameComposition, containsProgramRange } from "../js/program.js";
 import {createFastTransport} from '../js/fast-transport.js';
+import {buildProgramWindow} from '../js/program-range.js';
 
 function fakeTimers(){
   let next=0;const jobs=new Map();
@@ -161,7 +162,7 @@ test("status failure, nonready result and media error release all ready-cache mo
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
-function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false,strictOrigin=false,canPrefetch,onPrefetch}={}){
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false,strictOrigin=false,canPrefetch,onPrefetch,productionRanges=false}={}){
   class Video extends EventTarget {
     movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
     callbacks=new Map();canceled=[];nextCallback=0;
@@ -182,6 +183,10 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
   let playhead=origin,document={project_epoch:"epoch",if_generation:"1",timeline_id:"timeline",revision:"revision",width:960};
   const getState=(start,audioOrigin)=>{
     if(!document)return null;
+    if(productionRanges)return buildProgramWindow(
+      {project_epoch:document.project_epoch,generation:document.if_generation,capabilities:{playback:true}},
+      {id:document.timeline_id,revision:document.revision,fps,tracks:[{clips:[{start_frame:0,length_frames:total}]}]},
+      playhead,start,audioOrigin);
     const frame=start===undefined?playhead:start;
     if(strictOrigin && audioOrigin!==undefined && audioOrigin>frame)return null;
     return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
@@ -190,6 +195,43 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
   const player=createProgramPlayer({video,status,timers,cancel,getState,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState,canPrefetch,onPrefetch,onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});if(fetcher)return fetcher(url,options);const parsed=new URL(url,'http://host'),params=parsed.searchParams,range={start_frame:Number(params.get('start_frame')),end_frame:Number(params.get('end_frame')),...(lineage?{audio_origin_frame:Number(params.get('audio_origin_frame'))}:{})};return Response.json(ready(range,decodeURIComponent(parsed.pathname.split('/').at(-1))));}});
   return {video,status,timers,cancel,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;},setPlayhead:value=>{playhead=value;}};
 }
+
+test('production Program ranges play a short startup then adjacent 60-second windows to the exact fractional EOF',async()=>{
+  const origin=137,total=2395,fps={num:30_000,den:1001};
+  const f=windowFixture({origin,total,fps,lineage:true,productionRanges:true});
+  try{
+    await f.player.toggle();
+    assert.deepEqual([f.player.range().start_frame,f.player.range().end_frame],[137,586]);
+    for(const [start,end] of [[586,2384],[2384,2395]]){
+      f.video.finish(f.player.range());await settle();
+      assert.equal(f.player.state(),'ready');assert.equal(f.video.paused,false);
+      assert.deepEqual([f.player.range().start_frame,f.player.range().end_frame],[start,end]);
+      assert.equal(f.player.range().audio_origin_frame,origin);assert.equal(f.video.currentTime,0);
+      assert.equal(f.player.telemetryTarget().sample,Math.round(start*48000*fps.den/fps.num));
+    }
+    f.video.finish(f.player.range());await settle();
+    assert.equal(f.requests.length,3);assert.equal(f.player.playing(),false);assert.equal(f.status.textContent,'End of timeline');
+    assert.deepEqual(f.requests.map(range=>[range.start_frame,range.end_frame,range.audio_origin_frame]),[[137,586,137],[586,2384,137],[2384,2395,137]]);
+    f.video.dispatchEvent(new Event('ended'));await settle();assert.equal(f.requests.length,3);
+  }finally{f.player.stop();}
+});
+
+test('production short-startup prefetch is promoted once and manual seek starts a fresh short DSP lineage',async()=>{
+  const f=windowFixture({origin:137,total:6000,fps:{num:30,den:1},lineage:true,productionRanges:true,canPrefetch:()=>true});
+  try{
+    await f.player.toggle();await settle();
+    assert.deepEqual(f.requests.map(range=>[range.start_frame,range.end_frame,range.audio_origin_frame]),[[137,587,137],[587,2387,137]]);
+    assert.equal(f.player.prefetchState().state,'ready');
+    f.video.finish(f.player.range());await settle();
+    assert.deepEqual([f.player.range().start_frame,f.player.range().end_frame],[587,2387]);
+    assert.equal(f.video.plays,2);assert.equal(f.requests.filter(range=>range.start_frame===587).length,1);
+    assert.equal(await f.player.seekFrame(1000,{resume:false}),true);
+    assert.deepEqual([f.player.range().start_frame,f.player.range().end_frame,f.player.range().audio_origin_frame],[1000,1450,1000]);
+    assert.equal(f.video.paused,true);assert.equal(f.player.prefetchState().state,'idle');
+    assert.equal(f.requests.filter(range=>range.start_frame===1000).length,1);
+    assert.ok(f.fetches.every(call=>call.options?.method!=='DELETE'));
+  }finally{f.player.stop();}
+});
 
 test('toolbar pause, native pause and Stop report the exact owned frame once without replaying presentation callbacks',async()=>{
   for(const action of ['toolbar','native','stop']){

@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "scope": "Actual Chrome A/B late 5-second comparison and Program five-frame terminal playback; bounded acceptance only",
+  "source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+  "binary_sha256": "782eb350d0d0f25ba31a6ece94d79d47ead0b57ca8472f3505bf1efca97d2aa9",
+  "runtime": {
+    "unit": "venturi-web-halo1-public-playback-r1.service",
+    "pid": 541992,
+    "port": 8856,
+    "stopped_normally": true
+  },
+  "private_inputs_sha256": {
+    "halo1-public-playback-r1-start.json": "08a2a2b0e9e77d5f9fa32e3868809023a1ac0d4486b551bfe2036670436af9e4",
+    "halo1-public-playback-r1-capture-1792868627837689400.json": "59cc66e2e05bcb7b6294ec9f94b77eb86703286bc07bdc7f3aeaeb5f171a536d",
+    "halo1-public-playback-r1-capture-1792868649223899800.json": "142f0f69d83f0df06be240bf201cae0948523b2dec9a0e78ecf1001e1a36ef86",
+    "halo1-public-playback-r1-capture-1792868795051363000.json": "3819b63ac9f2fe50a18667590953feb3f32765b38d73debe7165c79958d33494",
+    "halo1-public-playback-r1-capture-1792868981056460200.json": "30dffa7d70cd01d5ed0aae4e1aeff6943ef2074822fee722fb57a2e662461021",
+    "halo1-public-playback-r1-program-tail.json": "aead0bd50f1d7c0cd99c077c9fa4d75a3349a09edddf0b55e5dec469c3b9fb2a",
+    "halo1-public-playback-r1-final-idle.json": "e603ac89822656a0aae0b40cdcbed1f67b0315f0ba1d51507009eff16533cfbb",
+    "halo1-public-playback-r1-stopped.json": "e5f5dcc83608abea7e772d7c127be29a4ec054914f618994aea04ceed9c78578",
+    "halo1-public-playback-r1-start-1792868479210989600.stderr.bin": "e4b68d116be31a300090cba88a293b1349bdd34cc8530de60220fb60b6eaa2ed"
+  },
+  "native_preparation": {
+    "ab_ranges": [
+      [
+        18888,
+        19038
+      ],
+      [
+        18888,
+        19038
+      ]
+    ],
+    "source_total_frames": 19038,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "audition_stream": 0,
+    "program": {
+      "range": [
+        19033,
+        19038
+      ],
+      "frames_ready": 5,
+      "frames_total": 5,
+      "audio_origin_frame": 19033,
+      "prepared_dimensions": [
+        960,
+        540
+      ],
+      "video_sources": "originals"
+    }
+  },
+  "resources": {
+    "memory_peak_bytes": 759713792,
+    "all_recorded_memory_events_zero": true,
+    "cpu_quota": "800%",
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0
+  },
+  "preservation": {
+    "protected_main_pid": 540668,
+    "protected_main_session_sha256": "79fea3f492ee65cc2f157396da55f30fd353191bd10d2a3df0d9ced650aa254d",
+    "protected16_saved_count": 16,
+    "protected_recovery_sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+    "all_captures_protected_identity_exact": true,
+    "public_model_generation_history_media_timelines_folders_exact": true,
+    "public_saved_changes": {
+      "Venturi_Public_Real_Media_V2.vvproj": {
+        "before": "9342b242c31bd362a21a3e5b972ef28cd50a298ad7b54e5242645e3b2e92c37a",
+        "after": "91c17085e86e6845ab60e8be93486a10935c85faafb01d22c028fc728f479add",
+        "only_root_view": true
+      }
+    },
+    "public_recovery_sha256": "0fbf896900bc4d1fac25041bdf3bc0a0bdd10e7b2fbe4d241eeb55540e04f24b",
+    "movies": {
+      "bbb_sunflower_1080p_30fps_normal.mp4": {
+        "bytes": 276134947,
+        "ino": 4222597,
+        "mtime_ns": 1792834711517657171,
+        "recorded_sha256_not_reread": "ae51005850b0ff757fe60c3dd7a12d754d3cd2397d87d939b55235e457f97658"
+      },
+      "bbb_sunflower_2160p_30fps_normal.mp4": {
+        "bytes": 633016449,
+        "ino": 4222600,
+        "mtime_ns": 1792834772728272612,
+        "recorded_sha256_not_reread": "37f0ff251a606c2dcfa26c19fe6bf843234b4e7a8889cfab50bc26f644e55520"
+      },
+      "tears_of_steel_1080p.mov": {
+        "bytes": 583774083,
+        "ino": 4222602,
+        "mtime_ns": 1792834845320374371,
+        "recorded_sha256_not_reread": "99486359be7e3681168a0fe94e1cbb0284c48b57b2a3ce7df4fa75e185987a15"
+      }
+    },
+    "movie_hash_note": "Previously recorded SHA values; this workflow checked file identity/stat without rereading all movie bytes.",
+    "cache_retained_no_deletion": true
+  },
+  "browser_observations": {
+    "provenance": "Actual CUA observations recorded by root in the existing Chrome tab; native preparation/state is independently bound by the hashed private receipts.",
+    "ab": {
+      "quality": "low",
+      "original_media": [
+        {
+          "name": "bbb_sunflower_1080p_30fps_normal.mp4",
+          "dimensions": [
+            1920,
+            1080
+          ]
+        },
+        {
+          "name": "bbb_sunflower_2160p_30fps_normal.mp4",
+          "dimensions": [
+            3840,
+            2160
+          ]
+        }
+      ],
+      "ready_at_utc": "2026-10-24T19:06:25.850Z",
+      "ready_absolute_frames": [
+        18888,
+        18888
+      ],
+      "display_last_frame": 19037,
+      "ranges_exclusive_end": [
+        [
+          18888,
+          19038
+        ],
+        [
+          18888,
+          19038
+        ]
+      ],
+      "one_play_at_utc": "2026-10-24T19:06:30.180Z",
+      "observed_terminal_at_utc": "2026-10-24T19:06:40.164Z",
+      "terminal_hud_frames": [
+        19037,
+        19037
+      ],
+      "prepared_video_dimensions": [
+        [
+          640,
+          360
+        ],
+        [
+          640,
+          360
+        ]
+      ],
+      "paused": [
+        true,
+        true
+      ],
+      "rates": [
+        1,
+        1
+      ],
+      "pane_A": {
+        "ended": true,
+        "current_time_seconds": 5.013,
+        "duration_seconds": 5.013
+      },
+      "pane_B": {
+        "ended": false,
+        "current_time_seconds": 4.966666,
+        "duration_seconds": 5.013
+      },
+      "interpretation": "Leader EOF coordinates both panes to the displayed terminal frame and pauses B; B did not independently fire ended. This is a 5-second tail comparison, not sustained or original-resolution playback."
+    },
+    "program": {
+      "timeline_id": "2",
+      "positioning": "Native range End followed by five ArrowLeft presses",
+      "start_frame": 19033,
+      "start_clock": "00:10:34:13",
+      "play_at_utc": "2026-10-24T19:07:17.179Z",
+      "terminal_observed_at_utc": "2026-10-24T19:08:26.536Z",
+      "terminal_exclusive_frame": 19038,
+      "terminal_clock": "00:10:34:18",
+      "status": "CURRENT",
+      "terminal_image": "opaque black",
+      "terminal_image_dimensions": [
+        960,
+        540
+      ],
+      "interpretation": "The prepared/played interval is five frames at 30fps, not five seconds. The observation timestamps include preparation/wait and do not establish playback duration, throughput or sustained operation."
+    }
+  },
+  "retained_failed_attempt": {
+    "phase": "prelaunch instrumentation",
+    "error": "ARG_MAX: Argument list too long while spawning sudo",
+    "effect": "No playback service launched by that failed attempt. Root subsequently used bounded staging; original failure bytes remain hashed in private_inputs_sha256.",
+    "qualification_credit": false
+  },
+  "limitations": [
+    "Sustained Source/Program/A-B browser playback remains open.",
+    "A/B low quality prepared 640x360 is not original-resolution comparison or a quality-matrix proof.",
+    "Program five-frame terminal proof is not a five-second or long-playback proof.",
+    "No new full render/export, physical acoustic continuity/device, OS scaling, held/cancel, browser memory-soak or M7 acceptance claim.",
+    "No ledger status promotion, new source/build/package or workload launched by this evidence recorder."
+  ],
+  "related_evidence": [
+    "f2-real-public-source-clock-workflow.json",
+    "f7-current-prebuilt-r8-workflow.json"
+  ]
+}

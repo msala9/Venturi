@@ -902,7 +902,12 @@ demand. Cancel preparation stops its background job. Program returns to exact
 composed stills; source playback does not display timeline effects.
 
 Main Source prepares at most 60 seconds at a time from regular media, including
-files longer than ten minutes. Use the full-file position slider, absolute
+files longer than ten minutes. New openings and manual seeks request 15 seconds;
+adjacent continuation requests 60 seconds. Program uses the same short-startup
+policy while retaining its original audio origin across continuation windows.
+Already prepared containing windows can be reused. Low native FPS may require
+one frame longer than the startup target, within the unchanged backend limit.
+Use the full-file position slider, absolute
 frame field or frame steps to reach another window; natural playback EOF
 prepares the following window with a visible pause. In/Out remains absolute
 within the original file, independent of the current preview window. Existing

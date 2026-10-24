@@ -170,10 +170,11 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   const descriptorMode=value=>value?.audio_mode===undefined?'selected':value.audio_mode;
   const descriptorAudio=(value,audio)=>value?.audio_stream_index===undefined && !audio.explicit && audio.mode!=='all'?0:value?.audio_stream_index;
   const sameWindow=(a,b,audio)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den && descriptorMode(b)===a.audio_mode && a.audio_stream_index===descriptorAudio(b,audio);
-  function requestedWindow(item,start){
+  function requestedWindow(item,start,advance=false){
     if(!validFPS(item.fps) || !Number.isSafeInteger(item.duration_frames) || item.duration_frames<=0 || !Number.isSafeInteger(start) || start<0 || start>=item.duration_frames)throw Error('Source frame must be inside the media');
-    const span=Number(60n*BigInt(item.fps.num)/BigInt(item.fps.den));
-    if(!Number.isSafeInteger(span) || span<1)throw Error('Source frame rate cannot form a bounded window');
+    const maximum=Number(60n*BigInt(item.fps.num)/BigInt(item.fps.den));
+    if(!Number.isSafeInteger(maximum) || maximum<1)throw Error('Source frame rate cannot form a bounded window');
+    const span=Math.max(1,Number((advance?60n:15n)*BigInt(item.fps.num)/BigInt(item.fps.den)));
     return {start_frame:start,end_frame:start+Math.min(span,item.duration_frames-start)};
   }
   function checkedWindow(value,item,requested,version,audio){
@@ -241,7 +242,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     invalidatePrefetch();
     const value=binding;
     if(future || !windowed || !canPrefetch() || !playbackIntent || video.paused || !ready || preparing || nativeSeeking || !value?.window || !value.verified || !attached(value) || value.window.end_frame===value.window.total_frames)return;
-    const ticket={from:value,item:structuredClone(value.item),audioSelection:{...value.audioSelection},request:requestedWindow(value.item,value.window.end_frame),controller:new AbortController(),timer:null,state:'preparing',id:null,path:null,error:null,range:null,job:null,promoted:false,owner:null};
+    const ticket={from:value,item:structuredClone(value.item),audioSelection:{...value.audioSelection},request:requestedWindow(value.item,value.window.end_frame,true),controller:new AbortController(),timer:null,state:'preparing',id:null,path:null,error:null,range:null,job:null,promoted:false,owner:null};
     future=ticket;ticket.promise=prepareFuture(ticket);announcePrefetch();
   }
   function pauseVideo(){if(video.paused===false)ignoredPauses++;internalPause=true;try{video.pause();}finally{internalPause=false;}}
@@ -305,10 +306,10 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     startingPlayback=true;queueMicrotask(()=>{if(binding===value)startingPlayback=false;});
     try{await video.play();if(attached(value))startPrefetch();}catch(error){if(attached(value) && error.name!=='AbortError'){playbackIntent=false;clearFuture();status.textContent+=' · press Play';}}
   }
-  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,autoplay=false,version,audioSelection={index:0,explicit:false,mode:'selected'},reason=continuation?'window':'open',candidate=null}={}){
+  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,advance=false,autoplay=false,version,audioSelection={index:0,explicit:false,mode:'selected'},reason=continuation?'window':'open',candidate=null}={}){
     if(disposed)return;
     let requested;
-    try{requested=requestedWindow(item,startFrame);}catch(error){status.textContent=error.message;return;}
+    try{requested=requestedWindow(item,startFrame,advance);}catch(error){status.textContent=error.message;return;}
     const previous=binding;
     if(!continuation){const resetSequence=sequence+1;reset();if(sequence!==resetSequence)return;}
     if(disposed)return;
@@ -378,11 +379,11 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(!windowed || item.is_image)return openLegacy(item,context.epoch,quality,audioSelection,context.version);
     return prepareWindow(item,context.epoch,quality,frame,{version:context.version,audioSelection,autoplay:resume,reason:'quality'});
   }
-  async function seekFrame(frame,{retain=false,resume=false}={}){
+  async function seekFrame(frame,{retain=false,resume=false,advance=false}={}){
     const value=binding,context=value?.window?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window.source_version,audioSelection:value.audioSelection}:windowContext;
     if(!windowed || !context || disposed)return;
     requestedWindow(context.item,frame);const autoplay=resume===true && playing();playbackIntent=autoplay;clearFuture();
-    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,audioSelection:context.audioSelection,autoplay,reason:'seek',continuation:retain===true && !!value?.window && attached(value)});
+    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,audioSelection:context.audioSelection,autoplay,reason:'seek',advance:advance===true && !!value?.window && attached(value) && frame===value.window.end_frame,continuation:retain===true && !!value?.window && attached(value)});
     const seq=++sequence;controller?.abort();stopHeartbeat();controller=new AbortController();const signal=controller.signal;
     binding={...value,sequence:seq,signal,verified:false};ready=false;preparing=true;nativeSeeking=false;seekingTarget=null;startingPlayback=false;
     try{
@@ -446,7 +447,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(!video.ended || !playbackIntent || preparing || !value?.window || !ready || !attached(value) || !value.verified)return;
     if(value.window.end_frame===value.window.total_frames){playbackIntent=false;clearFuture();status.textContent=`${value.item.name} · End of Source`;reportUserPause('ended');return;}
     invalidatePrefetch();const candidate=future?.from===value?future:null;
-    void prepareWindow(value.item,value.epoch,value.quality,value.window.end_frame,{continuation:true,autoplay:true,version:value.window.source_version,audioSelection:value.audioSelection,candidate});
+    void prepareWindow(value.item,value.epoch,value.quality,value.window.end_frame,{continuation:true,advance:true,autoplay:true,version:value.window.source_version,audioSelection:value.audioSelection,candidate});
   };
   cancel.addEventListener('click',cancelPreparation);video.addEventListener('error',videoError);image?.addEventListener?.('error',imageError);
   const events=[['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended],['timeupdate',startPrefetch],['ratechange',invalidatePrefetch]];

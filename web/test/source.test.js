@@ -263,10 +263,10 @@ test('opening a Library still uses ordinary Source preparation and heartbeat wit
 test('Library Source windows retain raw-file authority across seek and EOF while stale preparation cannot attach another asset',async()=>{
   const h=windowHarness({fps:{num:24,den:1},total:1450});h.item.native_asset=libraryItem(h.version).native_asset;
   try{
-    await h.open();assert.deepEqual(h.requests[0],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:0,end_frame:1440}});
+    await h.open();assert.deepEqual(h.requests[0],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:0,end_frame:360}});
     assert.ok(h.video.src.startsWith('/api/v1/native-assets/items/asset-a/source/jobs/'));
     await h.player.toggle();h.finish();await settle();
-    assert.equal(h.player.current().frame,1440);assert.equal(h.requests.length,2);assert.deepEqual(h.requests[1],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:1440,end_frame:1450}});
+    assert.equal(h.player.current().frame,360);assert.equal(h.requests.length,2);assert.deepEqual(h.requests[1],{...sourceMediaQuery(h.item,'epoch'),quality:'medium',window:{start_frame:360,end_frame:1450}});
     await h.player.seekFrame(17);assert.equal(h.player.current().frame,17);assert.equal(h.requests[2].source_version,h.version);
   }finally{h.player.dispose();}
   const ack=deferred(),old=libraryItem(),next=libraryItem('new-file'),still=sourceHarness({asset:'source.png',api:(_path,body)=>body.source_version===old.native_asset.source_version?ack.promise:{id:'new',state:'ready',source_asset:'source.png',source_version:'new-file'}});
@@ -279,7 +279,7 @@ test('Library Source windows retain raw-file authority across seek and EOF while
 
 test('windowed Source opens paused at an absolute fractional-fps origin and seeks/steps across exclusive boundaries',async()=>{
   const h=windowHarness();try{
-    assert.equal(h.player.current(),null);await h.open(137);const span=Math.floor(60*30_000/1001);
+    assert.equal(h.player.current(),null);await h.open(137);const span=Math.floor(15*30_000/1001);
     assert.deepEqual(h.requests[0],{project_epoch:'epoch',quality:'medium',window:{start_frame:137,end_frame:137+span}});
     assert.deepEqual(h.player.current(),{epoch:'epoch',media_id:'m',job:'job1',fps:h.item.fps,start_frame:137,end_frame:137+span,frame:137,source_version:h.version,audio_mode:'selected',audio_stream_index:0});assert.equal(h.video.plays,0);
     await h.player.seekFrame(147);assert.equal(h.requests.length,1);assert.equal(h.player.current().frame,147);assert.equal(h.video.currentTime,10*1001/30_000);
@@ -291,14 +291,14 @@ test('windowed Source opens paused at an absolute fractional-fps origin and seek
 });
 
 test('Source EOF continues three bounded foreground windows with a final short tail and no prefetch',async()=>{
-  const span=Math.floor(60*30_000/1001),h=windowHarness({total:2*span+17});try{
+  const firstSpan=Math.floor(15*30_000/1001),span=Math.floor(60*30_000/1001),h=windowHarness({total:firstSpan+span+17});try{
     await h.open();assert.equal(h.requests.length,1);await h.player.toggle();
-    for(const start of [span,2*span]){
+    for(const start of [firstSpan,firstSpan+span]){
       h.finish();assert.match(h.status.textContent,/Paused.*next/);h.video.dispatchEvent(new Event('ended'));await settle();
       assert.equal(h.player.current().frame,start);assert.equal(h.requests.at(-1).window.start_frame,start);assert.equal(h.video.paused,false);
-      h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,start===span?2:3);
+      h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,start===firstSpan?2:3);
     }
-    h.finish();await settle();assert.equal(h.requests.length,3);assert.equal(h.player.current().frame,2*span+16);assert.match(h.status.textContent,/End of Source/);
+    h.finish();await settle();assert.equal(h.requests.length,3);assert.equal(h.player.current().frame,firstSpan+span+16);assert.match(h.status.textContent,/End of Source/);
     h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,3);
   }finally{h.player.dispose();}
 });
@@ -321,7 +321,7 @@ test('Source normal-speed authority excludes holds, seeks and window boundaries 
     await h.open();h.video.playbackRate=2;await h.player.toggle();h.player.hold();assert.equal(pauses.length,0);
     await h.player.toggle();await h.player.seekFrame(10);assert.equal(pauses.length,0);assert.equal(h.video.playbackRate,2);
     await h.player.toggle();h.player.pause();assert.equal(pauses.length,0);
-    await h.player.toggle();h.finish();await settle();assert.equal(h.player.current().start_frame,1800);assert.equal(pauses.length,0);assert.equal(h.video.playbackRate,2);
+    await h.player.toggle();h.finish();await settle();assert.equal(h.player.current().start_frame,450);assert.equal(pauses.length,0);assert.equal(h.video.playbackRate,2);
     h.finish();await settle();assert.equal(pauses.length,1);assert.equal(pauses[0].reason,'ended');assert.equal(pauses[0].isCurrent(),true);assert.equal(h.player.current().frame,1809);
     h.video.dispatchEvent(new Event('ended'));assert.equal(pauses.length,1);
     await h.player.toggle();assert.equal(pauses[0].isCurrent(),false,'a late tail completion cannot normalize replacement playback');
@@ -358,7 +358,7 @@ test('Source keeps the old absolute clock through fast-tail drain then waits for
 
 test('windowed Source rejects malformed or changed authoritative metadata instead of deriving a proxy origin',async t=>{
   for(const key of ['missing','start','end','total','fps','version','long'])await t.test(key,async()=>{
-    const h=windowHarness({api:(body,ready)=>{const job=ready(body),w=job.source_window;if(key==='missing')delete job.source_window;if(key==='start')w.start_frame++;if(key==='end')w.end_frame--;if(key==='total')w.total_frames++;if(key==='fps')w.fps.den=0;if(key==='version')w.source_version='';if(key==='long')w.end_frame+=100;return job;}});
+    const h=windowHarness({api:(body,ready)=>{const job=ready(body),w=job.source_window;if(key==='missing')delete job.source_window;if(key==='start')w.start_frame++;if(key==='end')w.end_frame--;if(key==='total')w.total_frames++;if(key==='fps')w.fps.den=0;if(key==='version')w.source_version='';if(key==='long')w.end_frame=w.start_frame+Math.floor(60*w.fps.num/w.fps.den)+1;return job;}});
     try{await h.open(137);assert.equal(h.player.current(),null);assert.equal(h.video.src,'');assert.equal(h.video.plays,0);assert.match(h.status.textContent,/invalid|changed/);}finally{h.player.dispose();}
   });
   let count=0;const h=windowHarness({api:(body,ready)=>{const job=ready(body);if(++count>1)job.source_window.source_version='different';return job;}});
@@ -382,7 +382,7 @@ test('Source window heartbeat verifies exact range/version and obsolete heartbea
     await h.open();const timer=[...h.timers.entries()].find(([,v])=>v.delay===10_000);h.timers.delete(timer[0]);timer[1].callback();await settle();
     await h.player.seekFrame(3000);const url=h.video.src;response.resolve(Response.json({id:'wrong',state:'failed'}));await settle();assert.equal(h.video.src,url);assert.equal(h.player.current().frame,3000);assert.equal(h.timers.size,1);
   }finally{h.player.dispose();}
-  const changed=windowHarness({fetcher:()=>Response.json({id:'job1',state:'ready',source_asset:'source.mp4',source_window:{start_frame:0,end_frame:1798,total_frames:10_000,fps:{num:30_000,den:1001},source_version:'changed'}})});
+  const changed=windowHarness({fetcher:()=>Response.json({id:'job1',state:'ready',source_asset:'source.mp4',source_window:{start_frame:0,end_frame:449,total_frames:10_000,fps:{num:30_000,den:1001},source_version:'changed'}})});
   try{await changed.open();const timer=[...changed.timers.entries()][0];changed.timers.delete(timer[0]);timer[1].callback();await settle();assert.equal(changed.player.current(),null);assert.match(changed.status.textContent,/changed/);}finally{changed.player.dispose();}
 });
 
@@ -439,7 +439,7 @@ test('Source refuses a browser-clamped seek rather than publishing a verified wr
 
 
 test('AAC container padding at Source EOF retains the final native frame and continues at its exclusive boundary',async()=>{
-  const h=windowHarness({fps:{num:120,den:1}});try{
+  const h=windowHarness({fps:{num:120,den:1},total:2000});try{
     await h.open(137);await h.player.toggle();const first=h.player.current();
     h.video.position=(first.end_frame-first.start_frame)/120+0.02;h.video.ended=true;h.video.pause();
     assert.equal(h.player.current().frame,first.end_frame-1);
@@ -451,7 +451,7 @@ test('AAC container padding at Source EOF retains the final native frame and con
   }finally{h.player.dispose();}
 });
 
-function lookaheadHarness({api,fetcher,total=3000,beforeWindowChange}={}){
+function lookaheadHarness({api,fetcher,total=1800,beforeWindowChange}={}){
   const jobs=new Map(),announcements=[];let allowed=true;
   const h=windowHarness({fps:{num:24,den:1},total,beforeWindowChange,canPrefetch:()=>allowed,onPrefetch:value=>announcements.push(value),
     api:(body,ready)=>{const job=ready(body);jobs.set(job.id,job);return api?api(body,job,jobs):job;},
@@ -466,26 +466,26 @@ test('Source prepares only one adjacent window while current video, absolute clo
   const h=lookaheadHarness();try{
     await h.open(137);assert.equal(h.requests.length,1);const source=h.video.src,identity=h.player.verifiedSource(),position=h.player.current();
     await h.player.toggle();await settle();assert.equal(h.requests.length,2);assert.equal(h.player.prefetchState().state,'ready');
-    assert.deepEqual(h.requests[1],{project_epoch:'epoch',quality:'medium',window:{start_frame:1577,end_frame:3000}});
+    assert.deepEqual(h.requests[1],{project_epoch:'epoch',quality:'medium',window:{start_frame:497,end_frame:1800}});
     assert.equal(h.video.src,source);assert.deepEqual(h.player.verifiedSource(),identity);assert.deepEqual(h.player.current(),position);assert.equal(h.video.paused,false);assert.equal(h.player.preparing(),false);assert.equal(h.notifications.length,1);
     for(let n=0;n<10;n++)h.video.dispatchEvent(new Event('timeupdate'));await settle();assert.equal(h.requests.length,2);
     h.finish();h.video.dispatchEvent(new Event('ended'));await settle();
-    assert.equal(h.requests.length,2,'promotion reuses the prepared job');assert.equal(h.player.current().frame,1577);assert.equal(h.player.current().job,'job2');assert.equal(h.video.plays,2);assert.equal(h.player.prefetchState().state,'idle');
+    assert.equal(h.requests.length,2,'promotion reuses the prepared job');assert.equal(h.player.current().frame,497);assert.equal(h.player.current().job,'job2');assert.equal(h.video.plays,2);assert.equal(h.player.prefetchState().state,'idle');
     h.finish();await settle();assert.match(h.status.textContent,/End of Source/);assert.equal(h.requests.length,2);
   }finally{h.player.dispose();}assert.equal(h.timers.size,0);
 });
 
 test('pending Source lookahead promotes its existing observer, waits honestly at EOF and starts no duplicate job',async()=>{
-  const h=lookaheadHarness({api:(body,job)=>{if(body.window.start_frame>0)job.state='queued';return job;}});try{
+  const h=lookaheadHarness({total:1900,api:(body,job)=>{if(body.window.start_frame>0)job.state='queued';return job;}});try{
     await h.open();await h.player.toggle();await settle();assert.equal(h.player.prefetchState().state,'queued');const source=h.video.src;
     h.finish();await settle();assert.match(h.status.textContent,/Paused.*next/);assert.equal(h.video.src,source);assert.equal(h.video.paused,true);assert.equal(h.player.preparing(),true);assert.equal(h.requests.length,2);
-    h.jobs.get('job2').state='ready';await h.tick(1_000);await settle();assert.equal(h.player.current().frame,1440);assert.equal(h.video.plays,2);assert.equal(h.requests.length,3,'only the next adjacent tail is now prepared');
+    h.jobs.get('job2').state='ready';await h.tick(1_000);await settle();assert.equal(h.player.current().frame,360);assert.equal(h.video.plays,2);assert.equal(h.requests.length,3,'only the next adjacent tail is now prepared');
   }finally{h.player.dispose();}
 });
 
 test('Source lookahead preserves explicit selected or all stream identity across final verification and promotion',async()=>{
   for(const mode of ['selected','all']){
-    const h=lookaheadHarness({total:2880,api:(body,job)=>{job.source_window.audio_mode=body.audio_mode;job.source_window.audio_stream_index=body.audio_mode==='all'?null:body.audio_stream_index;return job;}});
+    const h=lookaheadHarness({total:1800,api:(body,job)=>{job.source_window.audio_mode=body.audio_mode;job.source_window.audio_stream_index=body.audio_mode==='all'?null:body.audio_stream_index;return job;}});
     h.item.has_audio=true;h.item.audio_stream_count=2;try{
       await h.player.open(h.item,'epoch','high',0,mode==='all'?{audioMode:'all'}:{audioMode:'selected',audioStreamIndex:1});
       await h.player.toggle();await settle();assert.equal(h.requests[1].audio_mode,mode);assert.equal(h.requests[1].quality,'high');if(mode==='selected')assert.equal(h.requests[1].audio_stream_index,1);
@@ -496,7 +496,7 @@ test('Source lookahead preserves explicit selected or all stream identity across
 
 test('Source ready lookahead keeps its TTL alive and rechecks exact native identity immediately before attachment',async()=>{
   for(const change of ['version','audio','job','range','state','missing']){
-    const h=lookaheadHarness({total:2880});try{
+    const h=lookaheadHarness({total:1800});try{
       await h.open();await h.player.toggle();await settle();const source=h.video.src;
       await h.tick(10_000);await h.tick(10_000);assert.equal(h.player.prefetchState().state,'ready');assert.equal(h.video.src,source);
       const job=h.jobs.get('job2');if(change==='version')job.source_window.source_version='replaced';if(change==='audio')job.source_window.audio_stream_index=1;if(change==='job')job.id='different';if(change==='range')job.source_window.start_frame--;if(change==='state')job.state='failed';if(change==='missing')h.jobs.delete('job2');
@@ -506,11 +506,11 @@ test('Source ready lookahead keeps its TTL alive and rechecks exact native ident
 });
 
 test('failed speculative Source work leaves the current movie playing without retries; failure at EOF requires one manual Play',async()=>{
-  const h=lookaheadHarness({total:2880,api:(body,job)=>{if(body.window.start_frame>0 && job.id==='job2')throw Error('CACHE_FULL');return job;}});try{
+  const h=lookaheadHarness({total:1800,api:(body,job)=>{if(body.window.start_frame>0 && job.id==='job2')throw Error('CACHE_FULL');return job;}});try{
     await h.open();await h.player.toggle();await settle();assert.equal(h.player.prefetchState().state,'failed');assert.equal(h.video.paused,false);assert.equal(h.player.current().frame,0);
     for(let n=0;n<10;n++)h.video.dispatchEvent(new Event('timeupdate'));assert.equal(h.requests.length,2);
     h.finish();await settle();assert.equal(h.video.paused,true);assert.match(h.status.textContent,/CACHE_FULL/);assert.equal(h.video.plays,1);
-    await h.player.toggle();assert.equal(h.requests.length,3);assert.equal(h.player.current().frame,1440);assert.equal(h.video.plays,2);
+    await h.player.toggle();assert.equal(h.requests.length,4);assert.deepEqual(h.requests[2].window,{start_frame:360,end_frame:720});assert.deepEqual(h.requests[3].window,{start_frame:720,end_frame:1800});assert.equal(h.player.current().frame,360);assert.equal(h.video.plays,2);
   }finally{h.player.dispose();}
 });
 
@@ -527,9 +527,31 @@ test('pause, seek, hold, reset, hidden policy and disposal revoke Source specula
 
 test('Source promotion retains the old window through fast-tail drain and rejects late handoff after user pause',async()=>{
   for(const cancel of [false,true]){
-    const tail=deferred(),h=lookaheadHarness({total:2880,beforeWindowChange:()=>tail.promise});try{
+    const tail=deferred(),h=lookaheadHarness({total:1800,beforeWindowChange:()=>tail.promise});try{
       await h.open();await h.player.toggle();await settle();const source=h.video.src,position=h.player.current();h.finish();await settle();assert.equal(h.video.src,source);assert.equal(h.player.current().end_frame,position.end_frame);
-      if(cancel)h.player.pause();tail.resolve();await settle();assert.equal(h.video.plays,cancel?1:2);assert.equal(h.player.current()?.frame,cancel?undefined:1440);assert.ok(h.fetches.every(call=>call.options.method!=='DELETE'));
+      if(cancel)h.player.pause();tail.resolve();await settle();assert.equal(h.video.plays,cancel?1:2);assert.equal(h.player.current()?.frame,cancel?undefined:360);assert.ok(h.fetches.every(call=>call.options.method!=='DELETE'));
     }finally{h.player.dispose();}
   }
+});
+
+
+test('Source initial, manual and quality windows use fifteen seconds while only exact attached-end advance requests sixty',async()=>{
+  const h=windowHarness({fps:{num:24,den:1},total:10_000});
+  try{
+    await h.open(100);assert.deepEqual(h.requests[0].window,{start_frame:100,end_frame:460});
+    await h.player.seekFrame(460,{retain:true});assert.deepEqual(h.requests.at(-1).window,{start_frame:460,end_frame:820});
+    await h.player.seekFrame(900,{retain:true,advance:true});assert.deepEqual(h.requests.at(-1).window,{start_frame:900,end_frame:1260},'advance cannot enlarge an arbitrary manual jump');
+    await h.player.seekFrame(1260,{retain:true,advance:true});assert.deepEqual(h.requests.at(-1).window,{start_frame:1260,end_frame:2700});
+    assert.equal(h.player.current().frame,1260);assert.equal(h.video.paused,true);
+    await h.player.reopen('high');assert.deepEqual(h.requests.at(-1).window,{start_frame:1260,end_frame:1620});assert.equal(h.requests.at(-1).quality,'high');
+  }finally{h.player.dispose();}
+});
+
+test('a one-frame Source window is admitted only when the native rational frame fits the sixty-second ceiling',async()=>{
+  const slow=windowHarness({fps:{num:1,den:60},total:2});
+  try{await slow.open();assert.deepEqual(slow.requests[0].window,{start_frame:0,end_frame:1});assert.equal(slow.player.current().frame,0);await slow.player.toggle();slow.finish();await settle();assert.deepEqual(slow.requests[1].window,{start_frame:1,end_frame:2});assert.equal(slow.player.current().frame,1);}
+  finally{slow.player.dispose();}
+  const invalid=windowHarness({fps:{num:1,den:61},total:2});
+  try{await invalid.open();assert.equal(invalid.requests.length,0);assert.equal(invalid.player.current(),null);assert.notEqual(invalid.status.textContent,'');assert.equal(invalid.video.plays,0);}
+  finally{invalid.player.dispose();}
 });

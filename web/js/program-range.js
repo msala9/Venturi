@@ -1,7 +1,7 @@
 const MAX_FRAME=1_000_000_000;
 const I32_MAX=2_147_483_647;
 
-// Omitted explicitStart is a manual play request; supplied starts are continuation boundaries.
+// A new audio origin starts playback; continuations retain that origin for DSP history.
 export function buildProgramWindow(documentState,timeline,playhead,explicitStart,audioOrigin){
   if(documentState?.capabilities?.playback!==true || !timeline || !Array.isArray(timeline.tracks))return null;
   if(![documentState.project_epoch,documentState.generation,timeline.id,timeline.revision].every(value=>typeof value==='string' && value.length>0))return null;
@@ -27,5 +27,7 @@ export function buildProgramWindow(documentState,timeline,playhead,explicitStart
   const start=explicitStart===undefined?Math.max(0,requested):requested;
   const origin=audioOrigin===undefined?start:audioOrigin;
   if(!Number.isSafeInteger(origin) || origin<0 || origin>start)return null;
+  const seconds=origin<start?60n:15n;
+  capacity=Math.min(capacity,Math.max(1,Number(seconds*BigInt(fps.num)/BigInt(fps.den))));
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:start,end_frame:Math.min(total,start+capacity),width:960,audio_origin_frame:origin};
 }

@@ -497,11 +497,12 @@ impl Editor {
                 "Command ID was already used for another media import",
             ));
         }
-        let prepared_edit = matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation());
+        let prepared_edit = matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation() || matches!(edit, crate::asset_store::Edit::RestorePrevious { .. }));
         let preset_delete = matches!(
             &request.operation,
             Operation::EditPresetLibrary {
                 edit: crate::preset_store::Edit::Delete { .. }
+                    | crate::preset_store::Edit::RestorePrevious { .. }
             }
         );
         if preset_delete
@@ -510,7 +511,7 @@ impl Editor {
                 .map_err(|_| {
                     ApiError::conflict(
                         "OUTCOME_UNKNOWN",
-                        "Preset deletion requires recovery; resolve its command before retrying",
+                        "Preset library command requires recovery; resolve its command before retrying",
                     )
                 })?
         {
@@ -586,7 +587,7 @@ impl Editor {
                 Ok(None) => Err(error.clone()),
                 Err(_) => Err(ApiError::conflict(
                     "OUTCOME_UNKNOWN",
-                    "Preset deletion requires recovery; resolve its command before retrying",
+                    "Preset library command requires recovery; resolve its command before retrying",
                 )),
             };
         }
@@ -615,6 +616,14 @@ impl Editor {
                 value["library_durable"] = json!(true);
                 value["preset_library_durable"] = json!(true);
                 value["deleted_preset"] = json!({"id":id,"revision":revision,"archived":archived});
+            }
+            if let Operation::EditPresetLibrary { edit: crate::preset_store::Edit::RestorePrevious { id, revision } } = &request.operation {
+                value["library_durable"] = json!(true);
+                value["preset_library_durable"] = json!(true);
+                value["restored_preset"] = json!({"id":id,"revision":revision});
+            }
+            if let Operation::EditNativeAssetLibrary { edit: crate::asset_store::Edit::RestorePrevious { id, revision } } = &request.operation {
+                value["restored_native_asset"] = json!({"id":id,"revision":revision});
             }
             if let Some(report)=native_asset_receipt {
                 for field in ["missing_count","relinked_files","replace_content","replaced_files","replacement_digest","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders","deleted_assets","deleted_ids"] {
@@ -706,7 +715,7 @@ impl Editor {
                     .is_err()
             {
                 self.persistence_notice.get_or_insert(
-                    "Preset deletion applied durably; completion cleanup will be retried.",
+                    "Preset library command applied durably; completion cleanup will be retried.",
                 );
             }
         }
@@ -991,7 +1000,15 @@ impl Editor {
                 &request.if_generation,
             )?,
             Operation::EditNativeAssetLibrary { edit } => {
-                if edit.requires_preparation() {
+                if let crate::asset_store::Edit::RestorePrevious { id, revision } = edit {
+                    self.assets.restore_previous(edit, crate::asset_journal::Completion {
+                        version: 1,
+                        command_id: request.command_id.clone(),
+                        fingerprint: Sha256::digest(serde_json::to_vec(&(None::<String>, request)).map_err(|_| ApiError::invalid("Invalid native library command"))?).into(),
+                        project_root_binding: self.asset_binding.clone(),
+                        receipt: json!({"command_id":request.command_id,"status":"applied","project_epoch":request.project_epoch,"generation":request.if_generation,"command_epoch":self.command_epoch.to_string(),"library_durable":true,"restored_native_asset":{"id":id,"revision":revision},"durability":{"state":"volatile","recovery_revision":null}}),
+                    })?;
+                } else if edit.requires_preparation() {
                     let fingerprint = Sha256::digest(
                         serde_json::to_vec(&(None::<String>, request))
                             .map_err(|_| ApiError::invalid("Invalid native library command"))?,
@@ -1043,6 +1060,14 @@ impl Editor {
                         fingerprint,
                         project_root_binding: self.asset_binding.clone(),
                         receipt: json!({"command_id":request.command_id,"status":"applied","project_epoch":request.project_epoch,"generation":request.if_generation,"command_epoch":self.command_epoch.to_string(),"library_durable":true,"preset_library_durable":true,"deleted_preset":{"id":id,"revision":revision,"archived":archived},"durability":{"state":"volatile","recovery_revision":null}}),
+                    })?;
+                } else if let crate::preset_store::Edit::RestorePrevious { id, revision } = edit {
+                    self.presets.restore_previous(edit, crate::asset_journal::Completion {
+                        version: 1,
+                        command_id: request.command_id.clone(),
+                        fingerprint: Sha256::digest(serde_json::to_vec(&(None::<String>, request)).map_err(|_| ApiError::invalid("Invalid preset library command"))?).into(),
+                        project_root_binding: self.asset_binding.clone(),
+                        receipt: json!({"command_id":request.command_id,"status":"applied","project_epoch":request.project_epoch,"generation":request.if_generation,"command_epoch":self.command_epoch.to_string(),"library_durable":true,"preset_library_durable":true,"restored_preset":{"id":id,"revision":revision},"durability":{"state":"volatile","recovery_revision":null}}),
                     })?;
                 } else {
                     self.presets.edit(&request.command_id, edit)?;

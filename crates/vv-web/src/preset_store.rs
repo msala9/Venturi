@@ -19,6 +19,7 @@ const MAX_BYTES: u64 = 4 * 1024 * 1024;
 const DELETE_PENDING: &str = ".venturi-native-presets-pending.json";
 const DELETE_OWNER: &str = "vv-web-preset-delete";
 const COMPLETIONS: &str = ".venturi-preset-completions";
+const SWAPS: &str = ".venturi-preset-swaps";
 const MAX_INTENT: u64 = 16 * 1024;
 pub struct Store {
     root: PathBuf,
@@ -241,6 +242,26 @@ fn validate_completion(completion: &Completion) -> Result<()> {
     }
     Ok(())
 }
+fn validate_swap_completion(completion: &Completion) -> Result<()> {
+    crate::asset_journal::validate_completion(completion)?;
+    let restored = &completion.receipt["restored_preset"];
+    if completion.receipt["library_durable"] != true
+        || completion.receipt["preset_library_durable"] != true
+        || restored.as_object().is_none_or(|object| object.len() != 2)
+        || restored["id"]
+            .as_str()
+            .is_none_or(|id| !crate::asset_journal::safe_id(id))
+        || restored["revision"].as_str().is_none_or(|revision| {
+            revision.len() != 64
+                || !revision
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+    {
+        return Err(journal_changed());
+    }
+    Ok(())
+}
 fn validate_intent(intent: &DeleteIntent) -> Result<()> {
     validate_completion(&intent.completion)?;
     name(&intent.id, intent.archived)?;
@@ -325,6 +346,21 @@ impl Store {
     fn directory(&self) -> Result<&File> {
         self.dir.get().ok_or_else(crate::media_roots::unavailable)
     }
+    fn swap_directory(&self, create: bool) -> Result<Option<File>> {
+        match openat(
+            self.directory()?,
+            SWAPS,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) {
+            Ok(fd) => Ok(Some(File::from(fd))),
+            Err(rustix::io::Errno::NOENT) if create => {
+                crate::asset_store::directory(self.directory()?, SWAPS).map(Some)
+            }
+            Err(rustix::io::Errno::NOENT) => Ok(None),
+            Err(_) => Err(journal_changed()),
+        }
+    }
     fn lock(&self) -> Result<File> {
         self.catalog_lock(true)
     }
@@ -378,6 +414,15 @@ impl Store {
             }
             Err(_) => return Err(ApiError::io()),
         }
+        if let Some(swaps) = self.swap_directory(false)?
+            && crate::asset_journal::pending(&swaps)?
+        {
+            if !exclusive {
+                drop(file);
+                return self.catalog_lock(true);
+            }
+            crate::asset_journal::recover(&swaps, self.directory()?)?;
+        }
         Ok(file)
     }
     fn completion_catalog(&self) -> Result<CompletionCatalog> {
@@ -428,12 +473,37 @@ impl Store {
             bytes,
         })
     }
+    fn completion_state(&self) -> Result<CompletionCatalog> {
+        let mut catalog = self.completion_catalog()?;
+        if let Some(swaps) = self.swap_directory(false)? {
+            let (records, entries, bytes) = crate::asset_journal::completion_catalog(&swaps)?;
+            catalog.entries += entries;
+            catalog.bytes = catalog.bytes.saturating_add(bytes);
+            for completion in records {
+                validate_swap_completion(&completion)?;
+                if catalog
+                    .records
+                    .iter()
+                    .any(|old| old.command_id == completion.command_id)
+                {
+                    return Err(journal_changed());
+                }
+                catalog.records.push(completion);
+            }
+        }
+        if catalog.entries > 4096 || catalog.bytes > 8 * 1024 * 1024 {
+            return Err(ApiError::invalid(
+                "Unconfirmed preset receipts exceed their combined 4096-entry or 8 MiB budget",
+            ));
+        }
+        Ok(catalog)
+    }
     fn completion_records(&self) -> Result<Vec<Completion>> {
-        Ok(self.completion_catalog()?.records)
+        Ok(self.completion_state()?.records)
     }
     fn receipt_capacity(&self, completion: &Completion) -> Result<()> {
         validate_completion(completion)?;
-        let catalog = self.completion_catalog()?;
+        let catalog = self.completion_state()?;
         if let Some(existing) = catalog
             .records
             .iter()
@@ -595,6 +665,12 @@ impl Store {
             return Err(ApiError::invalid("Invalid native preset command ID"));
         }
         let _guard = self.lock()?;
+        if let Some(swaps) = self.swap_directory(false)?
+            && let Some(completion) = crate::asset_journal::completion_for(&swaps, id, binding)?
+        {
+            validate_swap_completion(&completion)?;
+            return crate::asset_journal::acknowledge(&swaps, id, fingerprint, binding);
+        }
         if let Some(record) = self
             .completion_records()?
             .into_iter()
@@ -988,32 +1064,86 @@ impl Store {
                 self.directory()?.sync_all().map_err(|_| ApiError::io())?;
                 Ok(())
             }
-            Edit::RestorePrevious { id, revision } => {
-                let file_name = name(id, false)?;
-                let raw = self.checked(&file_name, revision)?;
-                let backup_name = format!("{file_name}.bak");
-                let previous = self.raw(&backup_name)?.ok_or_else(ApiError::missing)?;
-                parse(&previous.bytes)?;
-                let current = self.checked(&file_name, revision)?;
-                let backup = self.checked(&backup_name, &previous.revision)?;
-                if current.identity != raw.identity || backup.identity != previous.identity {
-                    return Err(ApiError::conflict(
-                        "PRESET_CHANGED",
-                        "Preset changed before restoring; refresh the library",
-                    ));
-                }
-                renameat_with(
-                    self.directory()?,
-                    file_name.as_str(),
-                    self.directory()?,
-                    backup_name.as_str(),
-                    RenameFlags::EXCHANGE,
-                )
-                .map_err(|_| ApiError::io())?;
-                self.directory()?.sync_all().map_err(|_| ApiError::io())
-            }
+            Edit::RestorePrevious { .. } => Err(ApiError::conflict(
+                "PRESET_COMPLETION_REQUIRED",
+                "Restore previous settings requires its bound durable command",
+            )),
             Edit::Import { .. } | Edit::Delete { .. } => unreachable!(),
         }
+    }
+    pub fn restore_previous(&self, edit: &Edit, completion: Completion) -> Result<()> {
+        validate_swap_completion(&completion)?;
+        let Edit::RestorePrevious { id, revision } = edit else {
+            return Err(ApiError::invalid(
+                "Expected restore previous preset settings",
+            ));
+        };
+        if completion.receipt["restored_preset"] != json!({"id":id,"revision":revision}) {
+            return Err(journal_changed());
+        }
+        let _lock = self.lock()?;
+        if let Some(existing) = self
+            .completion_records()?
+            .into_iter()
+            .find(|old| old.command_id == completion.command_id)
+        {
+            if existing.fingerprint != completion.fingerprint
+                || existing.project_root_binding != completion.project_root_binding
+                || existing.receipt != completion.receipt
+            {
+                return Err(journal_changed());
+            }
+            return Ok(());
+        }
+        let catalog = self.completion_state()?;
+        if catalog.entries >= 4096 || catalog.bytes.saturating_add(4096) > 8 * 1024 * 1024 {
+            return Err(ApiError::invalid(
+                "Unconfirmed preset receipts exceed their combined 4096-entry or 8 MiB budget",
+            ));
+        }
+        let swaps = self.swap_directory(true)?.ok_or_else(journal_changed)?;
+        let mut prepared = self.prepare_restore_previous(edit, completion, &swaps)?;
+        prepared.commit(
+            &swaps,
+            self.directory()?,
+            &std::sync::atomic::AtomicBool::new(false),
+        )
+    }
+    fn prepare_restore_previous(
+        &self,
+        edit: &Edit,
+        completion: Completion,
+        swaps: &File,
+    ) -> Result<crate::asset_journal::PreparedEdit> {
+        let Edit::RestorePrevious { id, revision } = edit else {
+            return Err(ApiError::invalid(
+                "Expected restore previous preset settings",
+            ));
+        };
+        if completion.receipt["restored_preset"] != json!({"id":id,"revision":revision}) {
+            return Err(journal_changed());
+        }
+        let file_name = name(id, false)?;
+        let backup_name = format!("{file_name}.bak");
+        let current = self.checked(&file_name, revision)?;
+        let previous = self.raw(&backup_name)?.ok_or_else(ApiError::missing)?;
+        parse(&previous.bytes)?;
+        let current_before = crate::asset_journal::before_image(
+            self.directory()?,
+            &file_name,
+            &current.bytes,
+            &current.identity,
+        )?;
+        let previous_before = crate::asset_journal::before_image(
+            self.directory()?,
+            &backup_name,
+            &previous.bytes,
+            &previous.identity,
+        )?;
+        let mut prepared = crate::asset_journal::PreparedEdit::new(swaps, completion, json!({}))?;
+        prepared.add(true, file_name, Some(current_before), &previous.bytes)?;
+        prepared.add(true, backup_name, Some(previous_before), &current.bytes)?;
+        Ok(prepared)
     }
 }
 

@@ -1069,32 +1069,76 @@ impl Store {
                     .sync_all()
                     .map_err(|_| ApiError::io())
             }
-            Edit::RestorePrevious { id, revision } => {
-                let file_name = name(id, false)?;
-                let raw = self.checked(&file_name, revision)?;
-                let backup_name = format!("{file_name}.bak");
-                let previous = self.raw(&backup_name)?.ok_or_else(ApiError::missing)?;
-                asset_payload::parse(&previous.bytes)?;
-                if self.checked(&file_name, revision)?.identity != raw.identity
-                    || self.checked(&backup_name, &previous.revision)?.identity != previous.identity
-                {
-                    return Err(changed());
-                }
-                renameat_with(
-                    &self.directories()?.assets,
-                    file_name.as_str(),
-                    &self.directories()?.assets,
-                    backup_name.as_str(),
-                    RenameFlags::EXCHANGE,
-                )
-                .map_err(|_| ApiError::io())?;
-                self.directories()?
-                    .assets
-                    .sync_all()
-                    .map_err(|_| ApiError::io())
-            }
+            Edit::RestorePrevious { .. } => Err(ApiError::conflict(
+                "ASSET_COMPLETION_REQUIRED",
+                "Restore previous settings requires its bound durable command",
+            )),
             _ => unreachable!("Prepared folder edits are handled separately"),
         }
+    }
+    pub fn restore_previous(&self, edit: &Edit, completion: Completion) -> Result<()> {
+        Self::validate_restore_completion(edit, &completion)?;
+        let _global = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
+        let root = &self.directories()?.directory;
+        if let Some(existing) = asset_journal::completion_for(
+            root,
+            &completion.command_id,
+            &completion.project_root_binding,
+        )? {
+            if existing.fingerprint != completion.fingerprint
+                || existing.receipt != completion.receipt
+            {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Restore command ID was already used",
+                ));
+            }
+            return Ok(());
+        }
+        let mut prepared = self.prepare_restore_previous(edit, completion)?;
+        prepared.commit(root, &self.directories()?.assets, &AtomicBool::new(false))
+    }
+    fn prepare_restore_previous(
+        &self,
+        edit: &Edit,
+        completion: Completion,
+    ) -> Result<PreparedEdit> {
+        Self::validate_restore_completion(edit, &completion)?;
+        let Edit::RestorePrevious { id, revision } = edit else {
+            return Err(ApiError::invalid(
+                "Expected restore previous native asset settings",
+            ));
+        };
+        let file_name = name(id, false)?;
+        let backup_name = format!("{file_name}.bak");
+        let current = self.checked(&file_name, revision)?;
+        let previous = self.raw(&backup_name)?.ok_or_else(ApiError::missing)?;
+        asset_payload::parse(&previous.bytes)?;
+        let assets = &self.directories()?.assets;
+        let current_before =
+            asset_journal::before_image(assets, &file_name, &current.bytes, &current.identity)?;
+        let previous_before =
+            asset_journal::before_image(assets, &backup_name, &previous.bytes, &previous.identity)?;
+        let mut prepared =
+            PreparedEdit::new(&self.directories()?.directory, completion, json!({}))?;
+        prepared.add(true, file_name, Some(current_before), &previous.bytes)?;
+        prepared.add(true, backup_name, Some(previous_before), &current.bytes)?;
+        Ok(prepared)
+    }
+    fn validate_restore_completion(edit: &Edit, completion: &Completion) -> Result<()> {
+        asset_journal::validate_completion(completion)?;
+        let Edit::RestorePrevious { id, revision } = edit else {
+            return Err(ApiError::invalid(
+                "Expected restore previous native asset settings",
+            ));
+        };
+        if completion.receipt["library_durable"] != true
+            || completion.receipt["restored_native_asset"] != json!({"id":id,"revision":revision})
+        {
+            return Err(changed());
+        }
+        Ok(())
     }
     pub(crate) fn prepare_edit(
         &self,

@@ -1,5 +1,184 @@
 use super::*;
 
+impl Store {
+    fn restore_for_test(&self, command: &str, edit: &Edit) -> Result<()> {
+        self.restore_previous(edit, swap_completion(self, command, edit))
+    }
+}
+fn swap_completion(store: &Store, command: &str, edit: &Edit) -> Completion {
+    let Edit::RestorePrevious { id, revision } = edit else {
+        panic!("Expected RestorePrevious")
+    };
+    let mut completion = deletion_completion(store, command);
+    completion.receipt["restored_preset"] = json!({"id":id,"revision":revision});
+    completion
+}
+
+#[test]
+fn restore_previous_recovers_each_published_target_and_replays_its_bound_receipt() {
+    for cut in [1, 2] {
+        let (root, store, preset) = fixture();
+        store.create("swap-restart", &preset).unwrap();
+        let original = store.export("swap-restart").unwrap();
+        let mut options = shortcut_options(&preset, None);
+        options.name = "Updated for restart".into();
+        store
+            .edit(
+                "update",
+                &Edit::Update {
+                    id: "swap-restart".into(),
+                    revision: revision(&store, "swap-restart", false),
+                    options,
+                },
+            )
+            .unwrap();
+        let changed = store.export("swap-restart").unwrap();
+        let edit = Edit::RestorePrevious {
+            id: "swap-restart".into(),
+            revision: revision(&store, "swap-restart", false),
+        };
+        let completion = swap_completion(&store, "restore-restart", &edit);
+        assert!(
+            validate_completion(&completion).is_err(),
+            "Delete receipt validation remains strict"
+        );
+        std::fs::write(root.join("unrelated.json.deleted"), b"preserve archived").unwrap();
+        {
+            let _lock = store.lock().unwrap();
+            let swaps = store.swap_directory(true).unwrap().unwrap();
+            let mut prepared = store
+                .prepare_restore_previous(&edit, completion.clone(), &swaps)
+                .unwrap();
+            prepared.stop_after_targets_for_test(cut);
+            assert_eq!(
+                prepared
+                    .commit(
+                        &swaps,
+                        store.directory().unwrap(),
+                        &std::sync::atomic::AtomicBool::new(false)
+                    )
+                    .unwrap_err()
+                    .1,
+                "ASSET_TEST_INTERRUPTED"
+            );
+            assert!(crate::asset_journal::pending(&swaps).unwrap());
+        }
+        drop(store);
+        let store = Store::new(&root).unwrap();
+        assert_eq!(store.export("swap-restart").unwrap(), original);
+        assert_eq!(
+            std::fs::read(root.join("swap-restart.json.bak")).unwrap(),
+            changed
+        );
+        assert_eq!(
+            store
+                .completion(&completion.command_id, &completion.project_root_binding)
+                .unwrap()
+                .unwrap(),
+            (completion.fingerprint, completion.receipt.clone())
+        );
+        store.restore_previous(&edit, completion.clone()).unwrap();
+        assert_eq!(store.export("swap-restart").unwrap(), original);
+        assert_eq!(
+            std::fs::read(root.join("swap-restart.json.bak")).unwrap(),
+            changed
+        );
+        let mut other = completion.clone();
+        other.fingerprint = [9; 32];
+        assert!(store.restore_previous(&edit, other).is_err());
+        store
+            .acknowledge(
+                &completion.command_id,
+                completion.fingerprint,
+                &completion.project_root_binding,
+            )
+            .unwrap();
+        assert!(
+            store
+                .completions(&completion.project_root_binding)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            std::fs::read(root.join("unrelated.json.deleted")).unwrap(),
+            b"preserve archived"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn restore_previous_pending_conflict_preserves_foreign_backup_and_both_recovery_images() {
+    use std::os::unix::fs::symlink;
+    for link in [false, true] {
+        let (root, store, preset) = fixture();
+        store.create("conflict", &preset).unwrap();
+        let mut options = shortcut_options(&preset, None);
+        options.name = "Changed".into();
+        store
+            .edit(
+                "update",
+                &Edit::Update {
+                    id: "conflict".into(),
+                    revision: revision(&store, "conflict", false),
+                    options,
+                },
+            )
+            .unwrap();
+        let edit = Edit::RestorePrevious {
+            id: "conflict".into(),
+            revision: revision(&store, "conflict", false),
+        };
+        {
+            let _lock = store.lock().unwrap();
+            let swaps = store.swap_directory(true).unwrap().unwrap();
+            let mut prepared = store
+                .prepare_restore_previous(
+                    &edit,
+                    swap_completion(&store, "conflicted-restore", &edit),
+                    &swaps,
+                )
+                .unwrap();
+            prepared.stop_after_targets_for_test(1);
+            assert!(
+                prepared
+                    .commit(
+                        &swaps,
+                        store.directory().unwrap(),
+                        &std::sync::atomic::AtomicBool::new(false)
+                    )
+                    .is_err()
+            );
+        }
+        let backup = root.join("conflict.json.bak");
+        std::fs::remove_file(&backup).unwrap();
+        let outside = root.with_extension("foreign");
+        std::fs::write(&outside, b"foreign backup").unwrap();
+        if link {
+            symlink(&outside, &backup).unwrap();
+        } else {
+            std::fs::write(&backup, b"foreign backup").unwrap();
+        }
+        let active = std::fs::read(root.join("conflict.json")).unwrap();
+        drop(store);
+        let store = Store::new(&root).unwrap();
+        assert_eq!(
+            store.export("conflict").unwrap_err().1,
+            "ASSET_JOURNAL_CONFLICT"
+        );
+        assert_eq!(std::fs::read(&backup).unwrap(), b"foreign backup");
+        assert_eq!(std::fs::read(&outside).unwrap(), b"foreign backup");
+        assert_eq!(std::fs::read(root.join("conflict.json")).unwrap(), active);
+        assert!(
+            root.join(SWAPS)
+                .join(".venturi-assets-pending.json")
+                .is_file()
+        );
+        std::fs::remove_dir_all(root).unwrap();
+        std::fs::remove_file(outside).unwrap();
+    }
+}
+
 #[test]
 fn unavailable_preset_store_requires_explicit_retry_and_preserves_the_original_directory() {
     let root = std::env::temp_dir().join(format!(
@@ -664,7 +843,7 @@ fn native_library_create_export_update_backup_archive_and_restore_preserve_sourc
     );
     assert_eq!(revision(&store, "native-1", false), changed);
     store
-        .edit(
+        .restore_for_test(
             "previous",
             &Edit::RestorePrevious {
                 id: "native-1".into(),
@@ -939,7 +1118,7 @@ fn restoring_previous_atomically_exchanges_both_native_versions_repeatedly() {
     assert_eq!(std::fs::read(&backup_path).unwrap(), original);
     assert_eq!(
         store
-            .edit(
+            .restore_for_test(
                 "stale-restore",
                 &Edit::RestorePrevious {
                     id: "swap".into(),
@@ -954,7 +1133,7 @@ fn restoring_previous_atomically_exchanges_both_native_versions_repeatedly() {
     assert_eq!(std::fs::read(&backup_path).unwrap(), original);
     for turn in 0..4 {
         store
-            .edit(
+            .restore_for_test(
                 &format!("restore-{turn}"),
                 &Edit::RestorePrevious {
                     id: "swap".into(),
@@ -993,14 +1172,14 @@ fn restoring_missing_or_corrupt_previous_settings_preserves_all_existing_bytes()
     };
     let backup_path = root.join("preserve.json.bak");
     assert_eq!(
-        store.edit("missing", &operation).unwrap_err().1,
+        store.restore_for_test("missing", &operation).unwrap_err().1,
         "NOT_FOUND"
     );
     assert_eq!(store.export("preserve").unwrap(), original);
     assert!(!backup_path.exists());
     let corrupt = b"not a native preset";
     std::fs::write(&backup_path, corrupt).unwrap();
-    assert!(store.edit("corrupt", &operation).is_err());
+    assert!(store.restore_for_test("corrupt", &operation).is_err());
     assert_eq!(store.export("preserve").unwrap(), original);
     assert_eq!(std::fs::read(&backup_path).unwrap(), corrupt);
     std::fs::remove_dir_all(root).unwrap();
@@ -1102,7 +1281,7 @@ fn shortcut_update_clear_restore_and_restart_keep_native_payload_and_unrelated_b
     expected["shortcut"] = Value::Null;
     assert_eq!(serde_json::from_slice::<Value>(&cleared).unwrap(), expected);
     store
-        .edit(
+        .restore_for_test(
             "restore",
             &Edit::RestorePrevious {
                 id: "look".into(),
@@ -1120,7 +1299,7 @@ fn shortcut_update_clear_restore_and_restart_keep_native_payload_and_unrelated_b
         "Ctrl+Shift+Alt+P"
     );
     store
-        .edit(
+        .restore_for_test(
             "restore-clear",
             &Edit::RestorePrevious {
                 id: "look".into(),

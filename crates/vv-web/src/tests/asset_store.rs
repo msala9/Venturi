@@ -1,4 +1,102 @@
 use super::*;
+
+impl Store {
+    fn restore_for_test(&self, command: &str, edit: &Edit) -> Result<()> {
+        self.restore_previous(edit, restore_receipt(self, command, edit))
+    }
+}
+fn restore_receipt(store: &Store, command: &str, edit: &Edit) -> Completion {
+    let Edit::RestorePrevious { id, revision } = edit else {
+        panic!("Expected RestorePrevious")
+    };
+    let mut completion = receipt(store, command);
+    completion.receipt["restored_native_asset"] = json!({"id":id,"revision":revision});
+    completion
+}
+
+#[test]
+fn asset_restore_previous_recovers_pair_and_keeps_receipt_until_acknowledged() {
+    for cut in [1, 2] {
+        let (root, store, asset) = fixture();
+        store.create("swap-restart", &asset).unwrap();
+        let original = store.export("swap-restart").unwrap();
+        store
+            .edit(
+                "update",
+                &Edit::Update {
+                    id: "swap-restart".into(),
+                    revision: revision(&store, "swap-restart", false),
+                    name: "Changed".into(),
+                },
+            )
+            .unwrap();
+        let changed = store.export("swap-restart").unwrap();
+        let edit = Edit::RestorePrevious {
+            id: "swap-restart".into(),
+            revision: revision(&store, "swap-restart", false),
+        };
+        let completion = restore_receipt(&store, "restore-restart", &edit);
+        let mut invalid = completion.clone();
+        invalid.receipt["restored_native_asset"]["id"] = json!("another");
+        assert!(store.restore_previous(&edit, invalid).is_err());
+        assert_eq!(store.export("swap-restart").unwrap(), changed);
+        {
+            let _global = store.lock().unwrap();
+            let _catalog = store.catalog_lock(true).unwrap();
+            let mut prepared = store
+                .prepare_restore_previous(&edit, completion.clone())
+                .unwrap();
+            prepared.stop_after_targets_for_test(cut);
+            assert_eq!(
+                prepared
+                    .commit(
+                        &store.directories().unwrap().directory,
+                        &store.directories().unwrap().assets,
+                        &AtomicBool::new(false)
+                    )
+                    .unwrap_err()
+                    .1,
+                "ASSET_TEST_INTERRUPTED"
+            );
+        }
+        drop(store);
+        let store = Store::new(&root).unwrap();
+        assert_eq!(store.export("swap-restart").unwrap(), original);
+        assert_eq!(
+            std::fs::read(root.join("assets/swap-restart.json.bak")).unwrap(),
+            changed
+        );
+        assert_eq!(
+            store
+                .completion(&completion.command_id, &completion.project_root_binding)
+                .unwrap()
+                .unwrap(),
+            (completion.fingerprint, completion.receipt.clone())
+        );
+        store.restore_previous(&edit, completion.clone()).unwrap();
+        assert_eq!(store.export("swap-restart").unwrap(), original);
+        let mut conflict = completion.clone();
+        conflict.fingerprint = [8; 32];
+        assert_eq!(
+            store.restore_previous(&edit, conflict).unwrap_err().1,
+            "COMMAND_ID_REUSED"
+        );
+        store
+            .acknowledge_completion(
+                &completion.command_id,
+                completion.fingerprint,
+                &completion.project_root_binding,
+            )
+            .unwrap();
+        assert!(
+            store
+                .completions(&completion.project_root_binding)
+                .unwrap()
+                .is_empty()
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
 use vv_core::{
     Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind, clipboard::ClipboardOrigin,
 };
@@ -987,7 +1085,7 @@ fn native_json_capture_update_backup_archive_restore_and_restart_preserve_payloa
     assert_eq!(loaded.folder, asset.folder);
     assert!(store.load("native-1", &first).is_err());
     store
-        .edit(
+        .restore_for_test(
             "previous",
             &Edit::RestorePrevious {
                 id: "native-1".into(),

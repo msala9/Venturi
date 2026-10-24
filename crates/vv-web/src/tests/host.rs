@@ -2436,6 +2436,194 @@ fn saved_preset_delete_preserves_project_history_and_recovers_a_lost_receipt_wit
 }
 
 #[test]
+fn library_restore_previous_survives_lost_receipt_and_restart_without_swapping_twice() {
+    use vv_core::{
+        Clip, ClipId, ClipSource, Rational,
+        attributes::{Attribute, KeyframeAnchor},
+    };
+    for preset in [false, true] {
+        let root = std::env::temp_dir().join(format!(
+            "vv-library-restore-host-{}",
+            crate::asset_jobs::nonce()
+        ));
+        let mut editor = Editor::new(&root).unwrap();
+        let create = request(
+            &editor,
+            Operation::NewProject {
+                name: "Restore_metadata".into(),
+            },
+            "restore-project",
+            None,
+        );
+        editor.mutation(None, create).unwrap();
+        let timeline = editor.session.project.timelines.keys().next().unwrap();
+        let media = editor
+            .session
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(timeline))
+            .unwrap()
+            .0;
+        if preset {
+            editor
+                .presets
+                .create(
+                    "owned",
+                    &crate::presets::Preset {
+                        version: 1,
+                        name: "Original".into(),
+                        attributes: vec![Attribute::Zoom],
+                        anchor: KeyframeAnchor::Start,
+                        append_filters: false,
+                        shortcut: None,
+                        fps: Rational::new(24, 1),
+                        resolution: (640, 360),
+                        audio: None,
+                        video: Some(Box::new(Clip::from_source_range(
+                            ClipId(1),
+                            ClipSource::SolidColor,
+                            0,
+                            48,
+                            0,
+                            Rational::one(),
+                        ))),
+                    },
+                )
+                .unwrap();
+        } else {
+            let asset = crate::asset_payload::capture(
+                &editor.session,
+                media,
+                "Original",
+                vv_core::clipboard::ClipboardOrigin {
+                    instance: 1,
+                    epoch: 2,
+                },
+            )
+            .unwrap();
+            editor.assets.create("owned", &asset).unwrap();
+        }
+        let save = request(&editor, Operation::Save, "restore-save", None);
+        editor.mutation(None, save).unwrap();
+        let saved_path = editor.session.path().unwrap().to_path_buf();
+        let saved = std::fs::read(&saved_path).unwrap();
+        let model = ron::to_string(&editor.session.project).unwrap();
+        let generation = editor.session.history.generation();
+        let position = editor.session.history.position();
+        let item = if preset {
+            editor.presets.item("owned", false).unwrap()
+        } else {
+            editor.assets.item("owned", false).unwrap()
+        };
+        let original = if preset {
+            editor.presets.export("owned").unwrap()
+        } else {
+            editor.assets.export("owned").unwrap()
+        };
+        let revision = item["revision"].as_str().unwrap().to_owned();
+        let update = if preset {
+            Operation::EditPresetLibrary {
+                edit: crate::preset_store::Edit::Update {
+                    id: "owned".into(),
+                    revision,
+                    options: crate::presets::Options {
+                        name: "Changed".into(),
+                        attributes: vec![Attribute::Zoom],
+                        anchor: KeyframeAnchor::Start,
+                        append_filters: false,
+                        shortcut: None,
+                    },
+                },
+            }
+        } else {
+            Operation::EditNativeAssetLibrary {
+                edit: crate::asset_store::Edit::Update {
+                    id: "owned".into(),
+                    revision,
+                    name: "Changed".into(),
+                },
+            }
+        };
+        let update = request(&editor, update, "restore-update", None);
+        editor.mutation(None, update).unwrap();
+        let item = if preset {
+            editor.presets.item("owned", false).unwrap()
+        } else {
+            editor.assets.item("owned", false).unwrap()
+        };
+        let revision = item["revision"].as_str().unwrap().to_owned();
+        let changed = if preset {
+            editor.presets.export("owned").unwrap()
+        } else {
+            editor.assets.export("owned").unwrap()
+        };
+        let operation = if preset {
+            Operation::EditPresetLibrary {
+                edit: crate::preset_store::Edit::RestorePrevious {
+                    id: "owned".into(),
+                    revision,
+                },
+            }
+        } else {
+            Operation::EditNativeAssetLibrary {
+                edit: crate::asset_store::Edit::RestorePrevious {
+                    id: "owned".into(),
+                    revision,
+                },
+            }
+        };
+        let command = request(&editor, operation, "restore-owned", None);
+        editor.receipts = None;
+        let receipt = editor.mutation(None, command.clone()).unwrap();
+        assert_eq!(receipt["library_durable"], true);
+        assert_eq!(receipt["receipt_persisted"], false);
+        if preset {
+            assert_eq!(receipt["preset_library_durable"], true);
+        }
+        let export = if preset {
+            editor.presets.export("owned").unwrap()
+        } else {
+            editor.assets.export("owned").unwrap()
+        };
+        assert_eq!(export, original);
+        assert_eq!(editor.mutation(None, command.clone()).unwrap(), receipt);
+        assert_eq!(ron::to_string(&editor.session.project).unwrap(), model);
+        assert_eq!(editor.session.history.generation(), generation);
+        assert_eq!(editor.session.history.position(), position);
+        assert!(!editor.session.has_unsaved_changes());
+        assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+        drop(editor);
+        let mut editor = Editor::new(&root).unwrap();
+        let recovered = editor.lookup("restore-owned").unwrap();
+        assert_eq!(recovered["server_restarted"], true);
+        assert_eq!(recovered["receipt_persisted"], true);
+        assert_eq!(editor.mutation(None, command.clone()).unwrap(), recovered);
+        let export = if preset {
+            editor.presets.export("owned").unwrap()
+        } else {
+            editor.assets.export("owned").unwrap()
+        };
+        assert_eq!(export, original);
+        let backup = root.join(if preset {
+            ".presets/owned.json.bak"
+        } else {
+            ".assets/assets/owned.json.bak"
+        });
+        assert_eq!(std::fs::read(backup).unwrap(), changed);
+        let mut conflicting = command;
+        conflicting.if_generation = "999".into();
+        assert_eq!(
+            editor.mutation(None, conflicting).unwrap_err().1,
+            "COMMAND_ID_REUSED"
+        );
+        assert_eq!(std::fs::read(saved_path).unwrap(), saved);
+        drop(editor);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
 fn saved_audio_presets_are_library_only_retry_safe_and_apply_with_one_native_undo() {
     use crate::audio_presets::{Edit, Kind};
     use vv_core::{AudioEffect, AudioEffectKind, Equalizer, Id};

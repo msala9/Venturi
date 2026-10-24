@@ -109,6 +109,8 @@ pub struct PreparedEdit {
     durable: bool,
     summary: Value,
     cleanup: Vec<(PathBuf, String)>,
+    #[cfg(test)]
+    stop_after_targets: Option<usize>,
 }
 impl PreparedEdit {
     pub(crate) fn new(root: &File, completion: Completion, summary: Value) -> Result<Self> {
@@ -156,6 +158,8 @@ impl PreparedEdit {
             durable: false,
             summary,
             cleanup: Vec::new(),
+            #[cfg(test)]
+            stop_after_targets: None,
         })
     }
     pub fn summary(&self) -> Value {
@@ -284,6 +288,8 @@ impl PreparedEdit {
             return Err(error);
         }
         let identity = stable_identity(&regular(root, PENDING)?)?;
+        #[cfg(test)]
+        let mut published = 0;
         for target in &self.manifest.targets {
             let directory = if target.asset { assets } else { root };
             if stable_identity(&regular(&self.stage, &target.stage)?)? != target.stage_identity {
@@ -311,6 +317,16 @@ impl PreparedEdit {
                 .map_err(|_| changed())?;
             }
             directory.sync_all().map_err(|_| ApiError::io())?;
+            #[cfg(test)]
+            {
+                published += 1;
+                if self.stop_after_targets == Some(published) {
+                    return Err(ApiError::conflict(
+                        "ASSET_TEST_INTERRUPTED",
+                        "Interrupted after a durable target (test)",
+                    ));
+                }
+            }
         }
         for removal in &self.manifest.removals {
             if removal_state(assets, removal)? {
@@ -322,6 +338,27 @@ impl PreparedEdit {
         }
         finish(root, &self.stage, &self.manifest, &identity)
     }
+    #[cfg(test)]
+    pub(crate) fn stop_after_targets_for_test(&mut self, count: usize) {
+        self.stop_after_targets = Some(count);
+    }
+}
+pub(crate) fn before_image(
+    directory: &File,
+    name: &str,
+    bytes: &[u8],
+    identity: &str,
+) -> Result<Before> {
+    let (file, current) = read(directory, name, asset_store::MAX_JSON)?.ok_or_else(changed)?;
+    if current != bytes
+        || (stable_identity(&file)? != identity && crate::source::file_identity(&file)? != identity)
+    {
+        return Err(changed());
+    }
+    Ok(Before {
+        identity: stable_identity(&file)?,
+        sha256: digest(bytes),
+    })
 }
 fn pin_written_stage(
     file: File,
@@ -386,7 +423,7 @@ impl Drop for PreparedEdit {
         );
     }
 }
-fn validate_completion(completion: &Completion) -> Result<()> {
+pub(crate) fn validate_completion(completion: &Completion) -> Result<()> {
     if completion.version != 1
         || !safe_id(&completion.command_id)
         || completion.project_root_binding.is_empty()
@@ -904,6 +941,9 @@ fn persist_completion(root: &File, completion: &Completion) -> Result<()> {
     )
 }
 pub(crate) fn completion_for(root: &File, id: &str, binding: &str) -> Result<Option<Completion>> {
+    Ok(read_completion(root, id)?.filter(|completion| completion.project_root_binding == binding))
+}
+fn read_completion(root: &File, id: &str) -> Result<Option<Completion>> {
     if !safe_id(id) {
         return Err(ApiError::invalid("Invalid native asset command ID"));
     }
@@ -916,12 +956,22 @@ pub(crate) fn completion_for(root: &File, id: &str, binding: &str) -> Result<Opt
     if completion.command_id != id {
         return Err(changed());
     }
-    Ok((completion.project_root_binding == binding).then_some(completion))
+    Ok(Some(completion))
 }
 pub(crate) fn completions(root: &File, binding: &str) -> Result<Vec<Completion>> {
+    Ok(completions_all(root)?
+        .into_iter()
+        .filter(|completion| completion.project_root_binding == binding)
+        .collect())
+}
+pub(crate) fn completions_all(root: &File) -> Result<Vec<Completion>> {
+    Ok(completion_catalog(root)?.0)
+}
+pub(crate) fn completion_catalog(root: &File) -> Result<(Vec<Completion>, usize, u64)> {
     let directory = asset_store::directory(root, RECEIPTS)?;
     let mut result = Vec::new();
     let mut total = 0_u64;
+    let mut entries = 0;
     for (index, entry) in std::fs::read_dir(format!("/proc/self/fd/{}", directory.as_raw_fd()))
         .map_err(|_| ApiError::io())?
         .enumerate()
@@ -929,6 +979,7 @@ pub(crate) fn completions(root: &File, binding: &str) -> Result<Vec<Completion>>
         if index >= 4096 {
             return Err(changed());
         }
+        entries += 1;
         let name = entry
             .map_err(|_| ApiError::io())?
             .file_name()
@@ -946,11 +997,11 @@ pub(crate) fn completions(root: &File, binding: &str) -> Result<Vec<Completion>>
             .strip_suffix(".json")
             .filter(|id| safe_id(id))
             .ok_or_else(changed)?;
-        if let Some(completion) = completion_for(root, id, binding)? {
+        if let Some(completion) = read_completion(root, id)? {
             result.push(completion);
         }
     }
-    Ok(result)
+    Ok((result, entries, total))
 }
 pub(crate) fn acknowledge(
     root: &File,

@@ -8,7 +8,7 @@ import {renderColorPicker} from './color-picker.js';
 import {createTransitionChoice,renderTransitionControls} from './transition-controls.js';
 
 export function createInspectorViewportKeeper(root,{getContext,documentRef=root.ownerDocument ?? globalThis.document,windowRef=documentRef?.defaultView ?? globalThis.window,Observer=windowRef?.MutationObserver ?? globalThis.MutationObserver,requestFrame=callback=>windowRef.requestAnimationFrame(callback),cancelFrame=id=>windowRef.cancelAnimationFrame(id)}={}){
-  let context=null,pending=null,frame=null,disposed=false,lastFocus=null,restoring=false;const listeners=[];
+  let context=null,pending=null,frame=null,disposed=false,lastFocus=null,restoring=false,returnPoint=null;const listeners=[];
   const listen=(node,key,handler,options)=>{node?.addEventListener?.(key,handler,options);listeners.push(()=>node?.removeEventListener?.(key,handler,options));};
   const key=()=>{const value=getContext();return value==null?null:typeof value==='string'?value:JSON.stringify(value);};
   const nodes=()=>[...root.querySelectorAll('[aria-label],[id]')];
@@ -18,21 +18,29 @@ export function createInspectorViewportKeeper(root,{getContext,documentRef=root.
   const find=value=>value?nodes().filter(node=>matches(node,value))[value.index]:null;
   const visible=node=>!!node && node.isConnected!==false && (node.getClientRects?.().length ?? 1)>0 && !node.closest?.('[hidden],[inert],details:not([open])') && (node.getBoundingClientRect?.().height ?? 0)>0;
   const observer=typeof Observer==='function'?new Observer(()=>schedule()):null;
-  function stop(){pending=null;if(frame!==null){cancelFrame(frame);frame=null;}observer?.disconnect();}
+  function stop(){pending=null;returnPoint=null;if(frame!==null){cancelFrame(frame);frame=null;}observer?.disconnect();}
   function cancel(){stop();lastFocus=null;}
   function contextChanged(){const next=key();if(next===context)return false;cancel();context=next;root.scrollTop=0;return true;}
   function remember(node){if(!root.contains(node))return;const value=describe(node);if(value)lastFocus={node,context:key()};}
-  function capture(){
-    if(disposed)return;const changed=contextChanged();if(context===null)return;
-    if(pending?.context===context){pending.focused=false;schedule();return;}
+  function snapshot(changed){
     const bounds=root.getBoundingClientRect(),active=documentRef.activeElement,blank=!active || active===documentRef.body || active===root || active.isConnected===false;
     const focused=!changed && root.contains(active)?active:!changed && blank && lastFocus?.context===context && root.contains(lastFocus.node)?lastFocus.node:null;
     let anchor=visible(focused) && describe(focused)?focused:null;
     if(!changed && !anchor)anchor=nodes().filter(node=>visible(node)).map(node=>({node,rect:node.getBoundingClientRect()})).filter(({rect})=>rect.bottom>bounds.top && rect.top<bounds.bottom).sort((a,b)=>Math.abs(a.rect.top-bounds.top)-Math.abs(b.rect.top-bounds.top))[0]?.node ?? null;
-    const snapshot={top:changed?0:root.scrollTop,anchor:anchor?describe(anchor):null,offset:anchor?anchor.getBoundingClientRect().top-bounds.top:0,focus:focused?describe(focused):null,oldFocus:focused,selection:focused?{start:focused.selectionStart,end:focused.selectionEnd,direction:focused.selectionDirection}:null};
-    pending={context,snapshot,focused:false};observer?.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','open','hidden','inert']});schedule();
+    return {top:changed?0:root.scrollTop,anchor:anchor?describe(anchor):null,offset:anchor?anchor.getBoundingClientRect().top-bounds.top:0,focus:focused?describe(focused):null,oldFocus:focused,selection:focused?{start:focused.selectionStart,end:focused.selectionEnd,direction:focused.selectionDirection}:null};
+  }
+  function capture(){
+    if(disposed)return;
+    const next=key(),returning=next!==context && returnPoint?.context===next?returnPoint:null;
+    // Timeline refresh briefly clears selection before reinstalling the same native target.
+    const previous=next!==context && context!==null && !returning?{context,snapshot:pending?.context===context?pending.snapshot:snapshot(false)}:null;
+    const changed=contextChanged();if(context===null)return;
+    if(previous)returnPoint=previous;
+    if(!returning && pending?.context===context){pending.focused=false;schedule();return;}
+    pending={context,snapshot:returning?.snapshot ?? snapshot(changed),focused:false};observer?.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','open','hidden','inert']});schedule();
   }
   function restore(){
+    returnPoint=null;
     if(!pending || disposed)return;if(key()!==pending.context){contextChanged();return;}
     if(root.isConnected===false || documentRef.hidden || documentRef.querySelector?.('dialog[open]')){cancel();return;}
     const owner=pending,snapshot=owner.snapshot,bounds=root.getBoundingClientRect();if(bounds.height<=0)return;

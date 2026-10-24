@@ -202,6 +202,30 @@ test('Inspector viewport uses remembered scroll when the anchor is not yet prese
   }finally{h.dispose();}
 });
 
+test('Inspector viewport preserves the original mask control across the synchronous empty-selection refresh and delayed hydration',()=>{
+  const h=viewportHarness();try{
+    const original='epoch/timeline/video/Edit/clip12',empty='epoch/timeline/video/Edit/none';h.context(original);h.keeper.contextChanged();
+    const old=h.node('Mask 3 FeatherX',1600);h.replace([old],2400);h.root.scrollTop=1500;h.focus(old);
+    h.context(empty);h.keeper.capture();h.replace([],200);assert.equal(h.root.scrollTop,0);
+    h.context(original);h.keeper.capture();h.replace([],200);h.flush();assert.equal(h.root.scrollTop,0);
+    h.keeper.capture();const fresh=h.node('Mask 3 FeatherX',1800);h.replace([fresh],2600);h.flush();
+    assert.equal(h.root.scrollTop,1700);assert.equal(fresh.getBoundingClientRect().top-h.root.getBoundingClientRect().top,100);assert.equal(h.doc.activeElement,fresh);assert.deepEqual(fresh.focusOptions,{preventScroll:true});
+  }finally{h.dispose();}
+});
+
+test('Inspector context round-trip memory expires at the next frame or an explicit user interruption',()=>{
+  for(const interrupt of [h=>h.flush(),h=>h.fire(h.doc,'wheel'),h=>h.fire(h.doc,'pointerdown',{target:h.doc.body}),h=>{h.context('epoch/timeline/video/Edit/clip99');h.keeper.contextChanged();}]){
+    const h=viewportHarness();try{
+      const original='epoch/timeline/video/Edit/clip12',empty='epoch/timeline/video/Edit/none';h.context(original);h.keeper.contextChanged();
+      const old=h.node('Mask 3 FeatherX',1600);h.replace([old],2400);h.root.scrollTop=1500;h.focus(old);
+      h.context(empty);h.keeper.capture();h.replace([],200);
+      interrupt(h);
+      h.context(original);h.keeper.capture();const fresh=h.node('Mask 3 FeatherX',1800);h.replace([fresh],2600);h.flush();
+      assert.equal(h.root.scrollTop,0);assert.equal(fresh.focuses,0);
+    }finally{h.dispose();}
+  }
+});
+
 test('Inspector restoration yields to user wheel, pointer or keyboard navigation and never steals outside or dialog focus',()=>{
   for(const interrupt of [h=>h.fire(h.doc,'wheel'),h=>h.fire(h.doc,'pointerdown',{target:h.doc.body}),h=>h.fire(h.doc,'keydown',{key:'Tab'}),h=>h.focus({isConnected:true}),h=>{h.doc.dialog=true;}]){
     const h=viewportHarness();try{

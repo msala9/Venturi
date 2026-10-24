@@ -177,6 +177,9 @@ pub fn generate_proxy_at_width(
         let mut frames = 0u64;
         let mut next = Some((first_index, first_frame));
         while let Some((index, frame)) = next {
+            if !on_frame(frames) {
+                return Err(crate::MediaError::Cancelled);
+            }
             // Preserve the source clock when its first picture starts after zero.
             while i128::from(frames) <= i128::from(index) {
                 enc.write_frame(&frame)?;

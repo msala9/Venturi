@@ -52,7 +52,7 @@ export function bindMixerControl(element,{kind,value,canInteract=()=>true,getCon
   listen(element,'pointerdown',event=>{
     if(event.button!==0 || event.isPrimary===false || gesture || !live())return;
     const rect=element.getBoundingClientRect();if(!Number.isFinite(rect.height) || rect.height<=18)return;
-    event.preventDefault();element.focus();onStart();
+    event.preventDefault();element.focus({preventScroll:true});onStart();
     gesture={id:event.pointerId,x:event.clientX,y:event.clientY,value:current,context:getContext(),rect:rectKey(rect),travel:rect.height-18};
     try{element.setPointerCapture(event.pointerId);}catch{cancel();}
   });

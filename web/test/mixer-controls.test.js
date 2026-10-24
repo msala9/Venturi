@@ -36,8 +36,21 @@ test('gain drag remains local, keeps pointer ownership and commits the final rel
   }finally{f.control.dispose();}
 });
 
-test('no motion, Escape, capture loss, stale context, readonly, resize and hidden state cancel without writes',async t=>{
-  for(const action of ['none','escape','capture','stale','readonly','resize','hidden'])await t.test(action,()=>{
+test('a partially clipped mixer control keeps its scroll position when pointer focus starts a drag',async()=>{
+  for(const kind of ['gain_db','pan']){
+    const f=fixture(kind);let focused=false;
+    try{
+      f.element.focus=options=>{focused=true;if(!options?.preventScroll)f.element.rect.top-=100;};
+      f.send('pointerdown');f.send('pointerup',{clientY:100});await settle();
+      assert.equal(focused,true);assert.equal(f.element.rect.top,20);
+      assert.equal(f.writes.length,1);assert.ok(f.writes[0]>0);
+      assert.equal(f.element.captured.size,0);
+    }finally{f.control.dispose();}
+  }
+});
+
+test('no motion, Escape, capture loss, stale context, readonly, resize, scroll and hidden state cancel without writes',async t=>{
+  for(const action of ['none','escape','capture','stale','readonly','resize','scroll','hidden'])await t.test(action,()=>{
     const f=fixture();try{
       f.send('pointerdown');if(action!=='none')f.send('pointermove',{clientY:100});
       if(action==='escape')assert.equal(f.send('keydown',{key:'Escape'}).defaultPrevented,true);
@@ -45,6 +58,7 @@ test('no motion, Escape, capture loss, stale context, readonly, resize and hidde
       if(action==='stale')f.setContext('changed');
       if(action==='readonly')f.setAllowed(false);
       if(action==='resize')f.windowRef.dispatchEvent(new Event('resize'));
+      if(action==='scroll')f.windowRef.dispatchEvent(new Event('scroll'));
       if(action==='hidden'){f.documentRef.hidden=true;f.documentRef.dispatchEvent(new Event('visibilitychange'));}
       f.send('pointerup');assert.deepEqual(f.writes,[]);assert.equal(f.element.captured.size,0);assert.equal(Number(f.element.attributes['aria-valuenow']),0);
     }finally{f.control.dispose();}

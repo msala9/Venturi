@@ -35,7 +35,9 @@ and fullscreen/Library recovery evidence remains in
 `evidence/f2-f5-native-transport-audio-refresh-workflow.json` and
 `evidence/f2-f5-fullscreen-library-recovery-workflow.json`.
 
-This live executable is newer than the immutable 77d7 package. Full F1-F7/M7
+The immutable87bc archive now matches this live executable; see BINARY_DELIVERY.md
+and `evidence/f7-current-prebuilt-r4-workflow.json`. The earlier77d7 archive
+remains unchanged. Full F1-F7/M7
 acceptance remains open for physical pointer/DPI/audio-device, long Source/Program
 browser playback, 500-clip/60fps, sustained uncached Slip/Compare and two-hour
 editing. Native real-media export now passes a complete634.6s FullHD film and

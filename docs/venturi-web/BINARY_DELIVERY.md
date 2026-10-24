@@ -1,6 +1,31 @@
 # Prebuilt Linux development candidate
 
-## Newer live executable — 2026-10-24
+## Current verified87bc package - 2026-10-24
+
+The current internal Linux x86_64 package is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar`.
+It is 89907200bytes, SHA256
+`9647db624e70680745d256e1b9c1b762a27b1196f97f7085e23739e057dafb0b`;
+the companion checksum is the same path plus `.sha256`.
+
+The manifest binds executable source5567359 (binary87bc10633ec7) and committed
+documentation b81de4e separately. It includes the current parity ledger, plan,
+real-media/tool-window evidence and all three immutable notice companions.
+The original host index stays unchanged:188 loader tuples remain identical,
+and `third-party/host-notice-delta.json` binds the exact zlib patch and identical
+archived copyright text. Both package metadata and library/notice identity are
+checked before and after assembly. Every member hash and packaged --help pass;
+no archive was copied to Windows. See
+`evidence/f7-current-prebuilt-r4-workflow.json`.
+
+This publication receipt was written after archive assembly; the archive's own
+documentation snapshot is b81de4e. It starts no service and does not install
+dependencies. Dynamic libraries, fonts, Vulkan userspace, media and NAS/ds4
+remain external. `release_ready` is false while fullF1-F7/M7 remains open.
+Existing77d7/prior59b6 runback proof is historical, not an87bc downgrade proof.
+
+
+## Runtime increment retained in the current87bc package
 
 Current source5567359/runtime87bc10633ec7 supplies independent Mixer/Color
 windows, responsive scope layout and native title Background reset, qualified in
@@ -9,11 +34,10 @@ playback and independent audio preset Refresh remain qualified in
 `evidence/f2-f5-native-transport-audio-refresh-workflow.json`. The previous
 full-area viewer/unavailable Library and Program seek evidence remains accepted.
 RUNNING.md identifies the live unit and guarded configuration. Existing77d7
-archives/notices remain immutable, version-bound prior snapshots. No new archive
-is assembled for this increment; full release acceptance remains open.
+archives/notices remain immutable, version-bound prior snapshots. The87bc archive above now includes this increment; full release acceptance remains open.
 
 
-## Current verified package — 2026-10-24
+## Previous verified77d7 package — 2026-10-24
 
 This immutable package contains the older bf0b322/77d7 executable,
 including selectable native A/B source quality, plus the committed4231ecf

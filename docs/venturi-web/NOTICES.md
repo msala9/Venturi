@@ -6,7 +6,9 @@ notice material separately. Existing binary archives retain their recorded
 contents; the prior77d7 assembly includes all three companions and their
 checksums, as recorded in BINARY_DELIVERY.md. The newer live5567359/87bc executable
 is described in RUNNING.md; the immutable77d7 package and its notices retain
-their original version bindings.
+their original version bindings. The current87bc package also retains all three
+verbatim companions, with its separately recorded zlib delta; see
+`evidence/f7-current-prebuilt-r4-workflow.json`.
 
 | Companion on halo1 | Bytes | SHA256 |
 |---|---|---|

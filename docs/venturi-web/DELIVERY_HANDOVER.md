@@ -52,9 +52,12 @@ Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow
 
 Current A/B quality and guarded live upgrade: `evidence/f6-review-quality-workflow.json`.
 
-BINARY_DELIVERY.md identifies the immutable 77d7 package with4231ecf
-documentation, not the newer live 87bc binary; the archive is unchanged.
-NOTICES.md describes its three immutable Rust/host companions.
+BINARY_DELIVERY.md identifies the current immutable87bc package withb81de4e
+documentation,89907200bytes and SHA256 prefix9647db624e70. Its manifest binds
+the live executable and three verbatim notice companions with the explicit
+current zlib binding. See `evidence/f7-current-prebuilt-r4-workflow.json`.
+The earlier77d7 archive and4231ecf documentation remain unchanged.
+NOTICES.md describes the companions and version-bound delta.
 The prior77d7 package matched all189 loader identities to its host notice index.
 Current87bc binding needs188 unchanged identities plus the reviewed zlib patch
 with identical copyright in `evidence/f7-host-zlib-notice-delta.json`. Earlier

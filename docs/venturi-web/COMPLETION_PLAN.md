@@ -1,5 +1,25 @@
 # Active completion plan — full Venturi Web scope
 
+## Current87bc internal prebuilt package - 2026-10-24
+
+The immutable archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar`,
+89907200bytes, SHA256
+`9647db624e70680745d256e1b9c1b762a27b1196f97f7085e23739e057dafb0b`.
+Binary source5567359/runtime87bc10633ec7 and documentation sourceb81de4e are
+bound separately in the manifest. All members are hashed, packaged launcher
+--help passes, and the three original notice companions/indices stay verbatim.
+Fresh loader binding is188 original-identical DSOs plus the pinned zlib patch
+with byte-identical archived copyright, checked before/after assembly.
+One1CPU/512MiB/noSwap low-priority stage passes, peak227729408B,
+zero memory-limit/OOM/kill events; no build/render/server or Windows copy.
+See evidence/f7-current-prebuilt-r4-workflow.json and BINARY_DELIVERY.md.
+
+Existing77d7/59b6 runback proof stays version-bound. No current packaged-binary
+downgrade or whole-host reboot is claimed. Release-ready remains false;62done/
+28partial/2excluded and the full90/F1-F7/M7 goal stay active. Physical/DPI/device,
+long browser playback, dense editing and two-hour memory acceptance remain open.
+
+
 ## Representative real-media H.264/AAC export accepted - 2026-10-24
 
 Runtime source5567359/binary87bc10633ec7 (not the later documentation HEAD)

@@ -1,5 +1,27 @@
 # Implementation status
 
+## Library Source waveform and marked insertion delivered - 2026-10-24
+
+Current source `c2b49b0` / runtime `8f549e225421` is active on halo1/8855.
+Raw Library audio now has full-source waveform lanes before import, verified
+click seeking and marked In/Out placement through existing Source controls.
+One native operation validates and imports/reuses the asset, then inserts the
+range with one Undo; separate ready Source/import jobs preserve their authority.
+All262 focused client cases,21 native cases, fresh Clippy and incremental build
+pass at2082152448B peak with zero memory events. R1's three fixture failures
+are retained honestly; the production guards were unchanged by their repair.
+Actual Chrome displays both streams and seeks to45/91. Enter inserts15..45
+at621 as two linked24-frame clips in a24fps timeline from30fps Source. One
+Undo/Redo, edited Save and fresh Saved reopen pass in the retained owned copy
+Venturi_Library_Source_V1.vvproj. All16 prior Saved, original Session, Recovery,
+five NAS assets/two presets and40foreign PIDs/39 Sessions remain exact.
+See `evidence/f5-library-source-waveform-range-workflow.json`. Undo's monotonic
+compound hash invalidations and Unsaved badge are recorded, not called byte
+identity. Physical/OS/held/HTML-drag/device/long/response/M7 checks remain in
+FINAL_CHECKS.md; ledger stays62 done/28 partial/2 excluded. R10 remains an
+immutable older development archive; no newer package or release is claimed.
+
+
 ## Mixer continuity and reachable tool headers delivered - 2026-10-24
 
 Current runtime source `3605c17` on halo1/8855 retains Mixer drafts and

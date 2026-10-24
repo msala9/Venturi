@@ -1,0 +1,733 @@
+{
+  "schema": "venturi-library-source-workflow-v1",
+  "date": "2026-10-24",
+  "source_commit": "c2b49b0dd0850c2e24bacf4c3d5d9bd1fb36b5ec",
+  "source_manifest_count": 621,
+  "source_manifest_sha256": "548b6f063831599c6b12af22982e3f752fc5e0399c2ae62251303cfae6107b11",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "5903e2f23c4a11905d988914f2ef52889454cbac049ba50ffbad76f05636eea4",
+    "crates/vv-web/src/commands.rs": "0999577401805db92c92ebc37c138d017b563e6bc3188e7e338570eccb54433f",
+    "crates/vv-web/src/host.rs": "2464be78abea69934025a14c876af1ef4f96dc23ae4896442f7805054a646769",
+    "crates/vv-web/src/source.rs": "cae14f3c700a9446df68a9f15b0fae66c5849c2335af9b7263738abceb1bb495",
+    "crates/vv-web/src/tests/api.rs": "afc329092964fab84e112b7c0ad1e658c13a0fbab2d408c8d6f765371ac1259b",
+    "crates/vv-web/src/tests/commands.rs": "d01b2bf24a8b2e3268a45cc93261d86bb50f24f0314d928b3b799de46f3c1fce",
+    "crates/vv-web/src/tests/host.rs": "7179faad1708ab414ccd866adb53fe2bb1487bc0fdae94d293de55f751032704",
+    "crates/vv-web/src/tests/source.rs": "9b4cfacfae75792671f7d3c77c162c98b533871b21a73e8d60171b25bef22c5c",
+    "web/js/main.js": "5465dcdfb5024d6890f0f15ddbe26bab673779b56092375c2604e88656146f3b",
+    "web/js/source-assets.js": "fa09ca8baf7ef1f5fd0ff5d3b4c4a4cdd66640b5410ceaa7072c8f6a4cb17a24",
+    "web/js/source-placement.js": "6dced8d5c4884f56f286dfefac06b723a5d804986f9004698f94c8595c68706d",
+    "web/js/source-waveform.js": "f6b6c1251fb8d4f3b341a7b380c8807796b507d6fbbcb0a17b42eafe01a34338",
+    "web/test/source-assets.test.js": "0f794de3ecbe7cf16438b708a91aff5d9b10e08bf2c3a4de41452955521a8b20",
+    "web/test/source-placement.test.js": "0bca4e1e34e541e520496398b95783f7b5d8d653644b152b38dec1fcc83128dc",
+    "web/test/source-waveform.test.js": "56ef366acd54ebe7ef7c3d201a63cf1f48ddbedd0c616770eb37b62ed2c01def"
+  },
+  "implementation": {
+    "waveform": "Native Source asset preparation accepts verified audio-stream waveform requests through the existing bounded worker/profile96 and priority queue/cache. Read-only strong Source identity is retained across unrelated project generations; no project UUID routing or redundant descriptor resolution.",
+    "placement": "Discriminated raw Library range retains asset UUID/revision, captured Source generation/playback job/version, marks and stream choice. Existing single native-import preparation supplies a separate import job. One place_native_source validates trial merge/reuse, ready Source/CAS/file witnesses and target before native allocation, then groups import+placement into one InsertClips Undo.",
+    "ui": "Existing Source options, waveform click seek, Insert at playhead keyboard button and authenticated Source-range drag controller; no new global shortcut, producer or polling engine."
+  },
+  "qualification": {
+    "client_counts": {
+      "tests": 262,
+      "pass": 262,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "native_counts": {
+      "native_library_source_": {
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0
+      },
+      "marked_source_placement": {
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0
+      },
+      "native_asset_set_placement": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "native_asset_import": {
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0
+      },
+      "native_library_thumbnail": {
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0
+      },
+      "native_full_source_assets": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "native_audio_only_assets": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "steps": [
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/main.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/source-assets.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/source-waveform.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-3",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/source-placement.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-3.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-4",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/source-assets.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-4.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-5",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/source-waveform.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-5.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-6",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/source-placement.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/syntax-6.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "--test-reporter=tap",
+          "web/test/source-assets.test.js",
+          "web/test/source-waveform.test.js",
+          "web/test/source-placement.test.js",
+          "web/test/native-assets.test.js",
+          "web/test/timeline-asset-drop.test.js",
+          "web/test/source.test.js",
+          "web/test/source-windows.test.js",
+          "web/test/source-seek.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.752,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/focused-client.log",
+        "log_bytes": 57577,
+        "failure": null
+      },
+      {
+        "label": "native-native_library_source",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_library_source_",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 109.155,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_library_source.log",
+        "log_bytes": 1173,
+        "failure": null
+      },
+      {
+        "label": "native-marked_source_placement",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "marked_source_placement",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-marked_source_placement.log",
+        "log_bytes": 662,
+        "failure": null
+      },
+      {
+        "label": "native-native_asset_set_placement",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_asset_set_placement",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_asset_set_placement.log",
+        "log_bytes": 403,
+        "failure": null
+      },
+      {
+        "label": "native-native_asset_import",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_asset_import",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 1.253,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_asset_import.log",
+        "log_bytes": 523,
+        "failure": null
+      },
+      {
+        "label": "native-native_library_thumbnail",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_library_thumbnail",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_library_thumbnail.log",
+        "log_bytes": 943,
+        "failure": null
+      },
+      {
+        "label": "native-native_full_source_assets",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_full_source_assets",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_full_source_assets.log",
+        "log_bytes": 416,
+        "failure": null
+      },
+      {
+        "label": "native-native_audio_only_assets",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_audio_only_assets",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/native-native_audio_only_assets.log",
+        "log_bytes": 421,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "clippy",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--all-targets",
+          "--no-deps",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 13.27,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/web-clippy.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "-j",
+          "1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.852,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.library-source-r2-aa53ba1bb9264a0080b5ddea2d3ba225"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/library-source-r2/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "memory_peak_bytes": 2082152448,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "prior_proofs": [
+      {
+        "observation": "halo1-tool-window-inset-r1-observed.json",
+        "observation_sha256": "dc2ef81df3770d28386da250592567664f627b42a0be0f49d4f1d1e7c3860b8b",
+        "root": "tool-window-inset-r1",
+        "unit": "venturi-halo1-tool-window-inset-r1-20261024.service",
+        "source_commit": "3605c174b328d22b6f7cb43d106546b90d341de5",
+        "state_sha256": "fae8d87bd2f3fff4f354cb3b9be5e8cdf394502104b3e0fb3f2537cccb7b6373",
+        "scope": "Exact previously passed source baseline; prior nested history remains in the hash-bound observation, without being reclassified as new qualification."
+      },
+      {
+        "observation": "halo1-source-zero-r4-observed.json",
+        "observation_sha256": "1a1e1c923f811b82af341c3f1fd7e1f726a49ca099dbec6c36aeb24f54fd69cb",
+        "root": "source-zero-r4",
+        "unit": "venturi-halo1-source-zero-r4-20261024.service",
+        "source_commit": "dea7f17daa526b19b581aae6947981d6be4aabd0",
+        "state_sha256": "a5a498c6a27defb2c6146bdbf7bc58c0ce73261fdc8c8bb41d6470d7dfe1a478",
+        "unchanged_source_hashes": {
+          "crates/vv-media/src/proxy.rs": "936b0b24f6fe5b9dd1cc6c36575bf7ba7cff1b57f371262ad3669b98ab5ed1c4",
+          "crates/vv-media/src/tests/proxy.rs": "b1a9afe9122b9b012925014b63644fe043a040de1888ba254615a4b0bd331038"
+        },
+        "counts": {
+          "proxy::tests": {
+            "passed": 13,
+            "failed": 0,
+            "ignored": 0
+          },
+          "browser_proxy::tests": {
+            "passed": 11,
+            "failed": 0,
+            "ignored": 0
+          }
+        },
+        "scope": "Historical qualification retained only for these exact unchanged module/test bytes; not counted as newly executed tests."
+      },
+      {
+        "observation": "halo1-playback-start-r1-observed.json",
+        "observation_sha256": "969606976945896a09d10c4b40fb31acaa8e6dfeec03b38b8d8c14f3220a7b0a",
+        "root": "playback-start-r1",
+        "unit": "venturi-halo1-playback-start-r1-20261024.service",
+        "source_commit": "0667653e905dbb414828abfce52a69990c18cb4e",
+        "state_sha256": "bdcb1c0085e0513e64468ffb5e8811294836db5534e5c6d8f0b36e10dd8f8acd",
+        "unchanged_source_hashes": {
+          "web/js/program-range.js": "7f71d371e5e3a100846c8f818ab3bf700f95c27f00a5849a250905598e519b79",
+          "web/js/review.js": "b8832c128f9dc2fe62d34dcaea5d4f15e8dec3d57e255a2a6683b6506a927a7a",
+          "web/js/source.js": "6230e5ff1a1eb9cf339934d7d2dfa4c0a7637c740f4952c358e8ce0d05abacfb",
+          "web/test/program-range.test.js": "f5db4ce656700aacefec2d6e2f1778a8c6778e979f3b798b81c79b58512c2ff4",
+          "web/test/program.test.js": "2d113fdfc47a1a3fee96082fde804719fd960900159dbd351ce738e94888de91",
+          "web/test/review.test.js": "eb40227669772849a39578a7026b26f0736133e055e10d7d4f11341ebde9c67f",
+          "web/test/source-windows.test.js": "a1409d184124ec4ad2f5a65c35b49229c7c0efa2e5731b446470c8efbb710ced",
+          "web/test/source.test.js": "51eba3e763f613fafe80a10c71491591a7308993e5a3c7c1b05f1feccf736297",
+          "web/test/program-seek.test.js": "ed3ff964d4f92b100beb16990ff13bbdbf55a922ac3634915146a684784e78bc",
+          "web/test/source-seek.test.js": "a043c7cc6d401840a573a026d7a241a78eecc904376bc26b53f302d5ea766ae1"
+        },
+        "counts": {
+          "tests": 277,
+          "pass": 277,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "scope": "Historical qualification retained only for these exact unchanged module/test bytes; not counted as newly executed tests."
+      }
+    ],
+    "failed_r1": "Three newly authored fixtures incorrectly used the video-only thumbnail factory for audio. R1 passes259/262, then stops before native/Clippy/build; peak75939840B/events0. R2 changes only the test fixture descriptor, reruns262 clients and freshly executes21 native cases, Clippy and build. No production guard weakened."
+  },
+  "runtime": {
+    "unit": "venturi-web-halo1-library-source.service",
+    "pid": "557906",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-8f549e225421",
+    "sha256": "8f549e225421b2d1f8f8b93338fe5214a704bc17cbbc32a1cbd4b6fe4ecc66b3",
+    "bytes": 80523776,
+    "port": 8855,
+    "memory_peak_after_gui": 138686464
+  },
+  "chrome": {
+    "browser": "Existing Windows Chrome tab2032848735 at http://127.0.0.1:8855/",
+    "fixture": {
+      "asset_id": "9925b020-2255-4200-9f12-97c3545a3df7",
+      "revision": "d2791c59a49da09ef558afee22ed3828957d3f91421c479b95ce902377c1c66b",
+      "name": "River_Two_Streams_3s.mkv",
+      "bytes": 98711,
+      "origin": "Existing Project media8 explicitly captured through Add to Library, additive fifth asset; no download or existing NAS edit."
+    },
+    "waveform": {
+      "preimport_native_state_exact": true,
+      "loaded_streams": 2,
+      "visible_streams": 2,
+      "state": "ready",
+      "total_frames": 91,
+      "source_fps": {
+        "num": 30,
+        "den": 1
+      },
+      "ordinary_canvas_click_frame": 45,
+      "live_source_slider_value": "45"
+    },
+    "insertion": {
+      "action": "Enter on Insert at playhead",
+      "source_in": 15,
+      "source_out": 45,
+      "target": "new_audio_track",
+      "streams": "all",
+      "timeline_fps": {
+        "num": 24,
+        "den": 1
+      },
+      "clips": [
+        {
+          "track_id": "1",
+          "audio_stream_index": 1,
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "gain_bounds": [
+            -100.0,
+            30.0
+          ],
+          "gain_constant": true,
+          "gain_db": 0.0,
+          "id": "28",
+          "kind": "media",
+          "length_frames": 24,
+          "linked_group": "11",
+          "media_id": "18",
+          "name": "River_Two_Streams_3s.mkv",
+          "retime": {
+            "max_length": 2400,
+            "min_length": 1,
+            "pitch_correction": true,
+            "source_span": 24,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -12,
+            37
+          ],
+          "source_in_frames": 15,
+          "source_out_frames": 45,
+          "speed_percent": 100.0,
+          "start_frame": 621,
+          "transition_in": null,
+          "transition_out": null,
+          "trim_limits": {
+            "end": [
+              622,
+              682
+            ],
+            "start": [
+              609,
+              644
+            ]
+          }
+        },
+        {
+          "track_id": "5",
+          "audio_stream_index": 0,
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "gain_bounds": [
+            -100.0,
+            30.0
+          ],
+          "gain_constant": true,
+          "gain_db": 0.0,
+          "id": "27",
+          "kind": "media",
+          "length_frames": 24,
+          "linked_group": "11",
+          "media_id": "18",
+          "name": "River_Two_Streams_3s.mkv",
+          "retime": {
+            "max_length": 2400,
+            "min_length": 1,
+            "pitch_correction": true,
+            "source_span": 24,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -12,
+            37
+          ],
+          "source_in_frames": 15,
+          "source_out_frames": 45,
+          "speed_percent": 100.0,
+          "start_frame": 621,
+          "transition_in": null,
+          "transition_out": null,
+          "trim_limits": {
+            "end": [
+              622,
+              682
+            ],
+            "start": [
+              609,
+              644
+            ]
+          }
+        }
+      ],
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "new_media_id": "18"
+    },
+    "undo": {
+      "single_command": true,
+      "history_position": 0,
+      "timelines_folders_view_restored": true,
+      "media_restored_except_monotonic_compound_hash_invalidation": true,
+      "unsaved_badge_retained": true
+    },
+    "redo": {
+      "single_command": true,
+      "timelines_exact": true
+    },
+    "persistence": {
+      "project": "Venturi_Library_Source_V1.vvproj",
+      "saved_sha256": "4629ffbe3948b8667886adec3a7e6200c399c379412f0de6ca90a552b6293446",
+      "reopened_timelines_and_media_exact_except_compound_hashes": true,
+      "fresh_history": true
+    },
+    "screenshot": "Waveform, two streams, frame45, range15..45 and new-audio-track destination emitted inline; no filesystem screenshot artifact claimed.",
+    "final": "Original Keyframe project reopened Saved/gen0/history0, Project tab, paused videos, no dialogs/tool windows."
+  },
+  "preservation": {
+    "all16_prior_saved_exact": true,
+    "new_owned_saved_copies": 1,
+    "original_session_exact_except_restart_reopen_epoch": true,
+    "recovery_exact": true,
+    "all5_assets_and2_presets_exact_except_ephemeral_epoch_generation": true,
+    "owned_nas_previous_versions_exact": true,
+    "foreign_pids": 40,
+    "foreign_sessions": 39,
+    "foreign_pid_changes": {},
+    "foreign_session_changes": {}
+  },
+  "private_receipts": {
+    "halo1-library-source-r1-observed.json": {
+      "bytes": 14602,
+      "sha256": "7c2be9b0985366050557783d65f95ff1c8e17afcb5f95b3f25f82b717a60853b"
+    },
+    "halo1-library-source-r2-observed.json": {
+      "bytes": 24207,
+      "sha256": "8aa7c7a9014af1388f6c667f05eeba8fd66915f4db5ef0320d748d787c7ebf3a"
+    },
+    "halo1-library-source-r2-deployed.json": {
+      "bytes": 170647,
+      "sha256": "f917a880fdad965d1563e19328a6e55272333d4faa25fd9e65e377ae85d45b27"
+    },
+    "halo1-final-gui-library_audio_capture.json": {
+      "bytes": 89139,
+      "sha256": "cf1f40a3fa9f5f9b4445904be5c263698d0aba6799668b0b6e2a7babecc268f7"
+    },
+    "halo1-final-gui-library_source_before.json": {
+      "bytes": 89479,
+      "sha256": "ed15a5036da5311c52c1451f0349108da00522344515148406103ec1ce861047"
+    },
+    "halo1-final-gui-library_source_copy_before.json": {
+      "bytes": 89236,
+      "sha256": "79635010231dcb72b90b1e9e4e913851a09b4b4eaca2a020579dd65078913907"
+    },
+    "halo1-final-gui-library_source_waveform.json": {
+      "bytes": 89239,
+      "sha256": "834265cd2ed2e8735ef06005e564880facd4c161d82468c6d57b811bdb73ed4a"
+    },
+    "halo1-final-gui-library_source_inserted.json": {
+      "bytes": 93579,
+      "sha256": "ae050015cb3c3d487b50c3dfa5717b57ed3d16ed26b4ae19b1513b62ffa43393"
+    },
+    "halo1-final-gui-library_source_undo.json": {
+      "bytes": 89268,
+      "sha256": "ddb5495f5defebbe3d7d0ead05c8727c0c5f8cd98bbd595caa1cad7733a23300"
+    },
+    "halo1-final-gui-library_source_redo.json": {
+      "bytes": 93580,
+      "sha256": "7030d14979b47b9adb6339b638fcbed8ac9259c9a7169529a0c62506042b25a2"
+    },
+    "halo1-final-gui-library_source_saved.json": {
+      "bytes": 93581,
+      "sha256": "ff151f3472ddcc880db2c2a6c7b0c49fbb2b831e743164af8c77c62ade4b4b48"
+    },
+    "halo1-final-gui-library_source_reopened.json": {
+      "bytes": 93550,
+      "sha256": "74fda7b0172b7745a1d3648248ebb13348c33d475be1a04fb9d97a3bb3602bf6"
+    },
+    "halo1-final-gui-library_source_after.json": {
+      "bytes": 89244,
+      "sha256": "5243d5a87b7f6cb4db2ff1843c7fb3ccbaf7989c9692a43e7e8603388f425260"
+    }
+  },
+  "limitations": [
+    "No native HTML drag/drop, held/cancel physical gestures, required OS scaling, microphone/audible-output, native fullscreen, sustained playback, response/FPS or M7 criterion promoted.",
+    "R10 remains immutable, bound separately to older source229aabd/docsc46252b; latest runtime is newer and no new archive is claimed."
+  ]
+}

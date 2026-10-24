@@ -28,7 +28,7 @@ class Control extends EventTarget {
 }
 function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,resetRate=false,endedAtWindowTail=()=>false}={}){
   globalThis.Option=class{constructor(label,value){this.label=label;this.value=value;}};globalThis.document={createElement:()=>new Control()};
-  const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]','[data-review-frozen-policy]','[data-review-source-in-label]'];
+  const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]','[data-review-frozen-policy]','[data-review-source-in-label]','[data-review-quality]'];
   const nodes=Object.fromEntries(selectors.map(selector=>[selector,new Control()])),root=new Control(),panes=[];root.querySelector=selector=>nodes[selector];root.showModal=()=>{root.open=true;};root.close=()=>{root.open=false;};
   nodes['[data-review-replacement]']=nodes.form;
   for(const name of ["A","B"]){const parts=Object.fromEntries(["select","video","img","output","button","pre",'[data-review-seek]','[data-review-frame]','[data-review-seek-submit]','[data-review-clock]','[data-review-audition-stream]'].map(selector=>[selector,new Control()]));parts[`[name="take${name}"]`]=parts.select;parts['[data-review-source-status]']=parts.output;parts['[data-review-cancel-source]']=parts.button;const pane={querySelector:selector=>parts[selector]};nodes[`[data-review-pane="${name}"]`]=pane;panes.push(parts);}
@@ -55,8 +55,8 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
       current(){if(!range || !item || item.is_image)return null;const local=video.ended?range.end_frame-range.start_frame-1:Math.max(0,Math.floor((video.currentTime+1e-6)*item.fps.num/item.fps.den));return {...range,epoch,media_id:item.id,fps:{...item.fps},frame:Math.min(range.end_frame-1,range.start_frame+local)};},
       reset(){sequence++;hold();preparing=false;range=null;if(item)notify('canceled','reset',0);},
       pause(){hold();if(preparing){sequence++;preparing=false;range=null;notify('canceled','pause',0);}},
-      async open(media,value,quality,startFrame,options){assert.equal(startFrame,0);assert.equal(quality,'low');audioStreamIndex=options.audioStreamIndex;item=media;epoch=value;range=null;loaded.push(item.id);const token=++sequence;preparing=true;notify('preparing','open',0);hold();cancel.disabled=true;preparations.push({pane,type:'open',frame:0,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);
-        const finish=()=>{active--;if(item.is_image){if(token!==sequence)return;preparing=false;notify('ready','open',0);onReady();}else publish(0,token,'open');};if(deferSources)await new Promise(resolve=>{ready.set(video,()=>{finish();resolve();});});else{ready.set(video,finish);finish();}
+      async open(media,value,quality,startFrame,options){assert.ok(Number.isSafeInteger(startFrame) && startFrame>=0);assert.ok(['low','medium','high','original'].includes(quality));audioStreamIndex=options.audioStreamIndex;item=media;epoch=value;range=null;loaded.push(item.id);const token=++sequence;preparing=true;notify('preparing','open',startFrame);hold();cancel.disabled=true;preparations.push({pane,type:'open',frame:startFrame,quality,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);
+        const finish=()=>{active--;if(token!==sequence)return;[video.videoWidth,video.videoHeight]=quality==='original'?[media.width || 1920,media.height || 1080]:{low:[320,180],medium:[640,360],high:[1280,720]}[quality];if(item.is_image){preparing=false;notify('ready','open',0);onReady();}else publish(startFrame,token,'open');};if(deferSources)await new Promise(resolve=>{ready.set(video,()=>{finish();resolve();});});else{ready.set(video,finish);finish();}
       },
       async seekFrame(frame,options){assert.equal(options?.retain,true);const token=++sequence;preparing=true;notify('preparing','seek',frame);hold();preparations.push({pane,type:'seek',frame,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);try{const wait=deferSeek(pane,frame);if(wait)await wait;if(token!==sequence)return;if(player.failNext){player.failNext=false;preparing=false;range=null;return;}publish(frame,token,'seek');}finally{active--;}}
       ,nativeSeek(frame){const token=++sequence;preparing=true;notify('preparing','native_seek',frame);hold();return ()=>publish(frame,token,'native_seek');}
@@ -67,6 +67,44 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
 }
 async function settle(){for(let n=0;n<4;n++)await new Promise(resolve=>setImmediate(resolve));}
 const planned={source_version:"version-3",removed_crossings:0,audio_stream_count:2,changes:[{track:"0",clip_id:"1",start_frame:12,previous_length:72,length:60,source_in:0,source_out:75,previous_audio_stream_index:null,audio_stream_index:null}]};
+
+function chooseQuality(h,value){const control=h.nodes['[data-review-quality]'];control.value=value;control.dispatchEvent(new Event('change'));}
+
+test('A/B quality reopens serial native windows at independent absolute clocks and audition streams without changing replacement policies',async()=>{
+  const h=harness(async()=>planned);for(const media of h.context.document.media)Object.assign(media,{duration_frames:10000,width:3840,height:2160});await h.review.open();
+  assert.equal(h.nodes['[data-review-quality]'].value,'low');assert.match(h.panes[0]['[data-review-clock]'].textContent,/Prepared 320 × 180 \(low\).*Original 3840 × 2160/);
+  h.nodes['[name="sync"]'].checked=false;audition(h,0,1);await settle();audition(h,1,1);await settle();h.seek(0,1511);await settle();h.seek(1,2041);await settle();
+  const fields=h.nodes.form.elements;fields.audio_streams.value='select';fields.audio_stream_index.value='1';fields.attributes.value='reset';fields.frozen.value='unfreeze';h.nodes.form.dispatchEvent(new Event('change'));const settings=Object.fromEntries(Object.entries(fields).map(([key,field])=>[key,field.value])),pair=h.panes.map(pane=>pane.select.value),before=h.preparations.length;
+  chooseQuality(h,'original');assert.equal(h.button('apply').disabled,true);assert.ok(h.panes.every(pane=>pane.video.paused));await settle();
+  assert.deepEqual(h.preparations.slice(before).map(({pane,quality,frame,audio_stream_index})=>({pane,quality,frame,audio_stream_index})),[{pane:0,quality:'original',frame:1511,audio_stream_index:1},{pane:1,quality:'original',frame:2041,audio_stream_index:1}]);
+  assert.deepEqual(h.players.map(player=>player.current().frame),[1511,2041]);assert.deepEqual(h.panes.map(pane=>pane.select.value),pair);assert.deepEqual(Object.fromEntries(Object.entries(fields).map(([key,field])=>[key,field.value])),settings);assert.equal(h.peak(),1);assert.match(h.panes[1]['[data-review-clock]'].textContent,/Prepared 3840 × 2160 \(original\).*Original 3840 × 2160/);assert.deepEqual(h.commits,[]);
+  h.button('swap').click();await settle();assert.ok(h.preparations.slice(-2).every(value=>value.quality==='original'));h.button('close').click();await h.review.open();assert.equal(h.nodes['[data-review-quality]'].value,'original');assert.ok(h.preparations.slice(-2).every(value=>value.quality==='original'));h.button('close').click();
+});
+
+test('quality changes supersede queued preparations and retain the latest requested absolute frames without overlapping workers',async()=>{
+  let defer=false,release;const h=harness(async()=>planned,{deferSources:true,deferSeek:()=>defer?new Promise(resolve=>{release=resolve;}):null}),opening=h.review.open();await settle();const obsolete=h.ready.get(h.panes[0].video);
+  chooseQuality(h,'medium');chooseQuality(h,'high');assert.equal(h.button('plan').disabled,true);obsolete();await settle();
+  assert.deepEqual(h.preparations.map(value=>[value.pane,value.quality]),[[0,'low'],[0,'high']]);h.ready.get(h.panes[0].video)();await settle();h.ready.get(h.panes[1].video)();await opening;await settle();
+  assert.deepEqual(h.preparations.map(value=>[value.pane,value.quality]),[[0,'low'],[0,'high'],[1,'high']]);assert.equal(h.peak(),1);
+  defer=true;h.nodes['[name="sync"]'].checked=false;h.seek(0,31);await settle();chooseQuality(h,'original');release();await settle();
+  assert.equal(h.preparations.at(-1).quality,'original');assert.equal(h.preparations.at(-1).frame,31);h.ready.get(h.panes[0].video)();await settle();h.ready.get(h.panes[1].video)();await settle();assert.equal(h.players[0].current().frame,31);assert.equal(h.peak(),1);h.button('close').click();
+});
+
+test('quality changes invalidate late replacement plans and close owns pending quality results',async()=>{
+  let resolve;const h=harness(()=>new Promise(done=>{resolve=done;}));await h.review.open();h.submit();await settle();chooseQuality(h,'high');await settle();resolve(planned);await settle();assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);assert.deepEqual(h.commits,[]);h.button('close').click();
+  const pending=harness(async()=>planned,{deferSources:true}),opening=pending.review.open();await settle();const obsolete=pending.ready.get(pending.panes[0].video);chooseQuality(pending,'original');pending.button('close').click();obsolete();await opening;await settle();assert.equal(pending.root.open,false);assert.ok(pending.players.every(player=>player.current()===null));assert.equal(pending.preparations.length,1);
+});
+
+test('failed quality preparation needs explicit retry and never presents stale decoded dimensions as current',async()=>{
+  const h=harness(async()=>planned);await h.review.open();let attempts=0;const open=h.players[0].open;h.players[0].open=async(...args)=>{attempts++;if(attempts===1)throw Error('Native quality admission refused');return open(...args);};
+  chooseQuality(h,'original');await settle();assert.equal(attempts,1);assert.match(h.panes[0].output.textContent,/Native quality admission refused.*retry/);assert.doesNotMatch(h.panes[0]['[data-review-clock]'].textContent,/Prepared 320/);assert.equal(h.button('play').disabled,true);await settle();assert.equal(attempts,1);
+  chooseQuality(h,'invalid');assert.equal(h.nodes['[data-review-quality]'].value,'original');assert.equal(attempts,1);h.context.query.revision='changed';h.review.invalidate();chooseQuality(h,'low');assert.equal(h.nodes['[data-review-quality]'].value,'original');assert.equal(attempts,1);h.button('close').click();
+});
+
+test('A/B dimensions distinguish original stills and audio-only sources from prepared video pixels',async()=>{
+  const h=harness(async()=>planned);Object.assign(h.context.document.media[0],{is_image:true,width:32,height:18});h.panes[0].img.naturalWidth=32;h.panes[0].img.naturalHeight=18;h.panes[0].video.stillLoaded=true;h.context.document.media[1].has_video=false;
+  await h.review.open();chooseQuality(h,'high');await settle();assert.match(h.panes[0]['[data-review-clock]'].textContent,/Original still · 32 × 18/);assert.doesNotMatch(h.panes[0]['[data-review-clock]'].textContent,/Prepared|high/);assert.match(h.panes[1]['[data-review-clock]'].textContent,/Audio-only source/);assert.doesNotMatch(h.panes[1]['[data-review-clock]'].textContent,/Prepared|1280/);h.button('close').click();
+});
 
 test('replacement plans and confirmation use the exact B source version displayed by the native window',async()=>{
   const calls=[],h=harness(async(_path,body)=>{calls.push(body);return planned;});await h.review.open();

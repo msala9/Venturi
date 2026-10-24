@@ -1832,7 +1832,18 @@ control with text, modal and composition guards.
   A source. Open the child timeline and select its ordinary media clip to replace
   a take inside a compound through the same guarded command. Review offers two independent bounded
   source players with equal-elapsed-time comparison and exclusive audio
-  audition. The longest ready playable native duration leads comparison, with
+  audition. One A/B quality selector uses the existing native Source qualities
+  `low` (initial), `medium`, `high` and `original` for both panes. Original
+  requests source-size prepared H264/AAC under the existing native limits. Changing it
+  pauses comparison, invalidates the replacement preview and serially prepares
+  both panes at their retained absolute source frames and audition stream indices.
+  Take selections and replacement policies remain unchanged. The selected quality
+  survives dialog reopen and swapping takes in the current controller; no browser
+  reload persistence is promised. Verified clocks report actual prepared video
+  dimensions separately from original media dimensions; choosing Original does
+  not itself prove sustained full-resolution playback performance. Native source
+  admission, changed-source refusal and explicit retry behavior remain unchanged.
+  The longest ready playable native duration leads comparison, with
   A winning equal-duration ties; a shorter pane cannot stop the longer one at
   its end. Playback rate and encoded proxy duration do not select the leader.
   Invalid native timing is excluded from playback. Replacement always requires a visible native preview followed by

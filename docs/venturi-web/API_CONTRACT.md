@@ -96,11 +96,15 @@ The existing Apply and Remove controls remain available.
 `POST /api/v1/preview/inspector-choice` accepts a strict `{query, clip_ids,
 choice}` body. `query` is the full current FrameQuery. The allowed choices are
 `{kind:"mask_mode", index, mode}`, `{kind:"blur_direction", filter, direction}`
-and `{kind:"title_case", case}`. Mask modes are Add/Subtract/Intersect and require
+`{kind:"title_case", case}`, `{kind:"blend_mode", blend}` and
+`{kind:"track_matte", matte}`. Mask modes are Add/Subtract/Intersect and require
 one clip with the existing mask index. Blur filters are BoxBlur/GaussianBlur,
 with native Both/Horizontal/Vertical directions. Title case is
-Mixed/Upper/Lower/Title. Existing native validation and selected-field difference
-semantics preserve peers, bypass state, animation and each clip's source clock.
+Mixed/Upper/Lower/Title. Blend uses the native BlendMode enum; matte is the strict
+string enum None/Alpha/AlphaInverted/Luma/LumaInverted, never JSON null. Blend and
+matte reuse native batch properties to broadcast to all captured video targets.
+Other selected fields retain native field-difference semantics. Existing
+validation preserves peers, bypass state, animation and each clip's source clock.
 
 The adapter applies only these native edits to an owned snapshot. It shares
 the existing bounded draft renderer, source resolver, proxy selection and
@@ -109,7 +113,7 @@ a no-store PNG with `x-venturi-preview-draft: 1`; the body limit is 256 KiB.
 Origin restrictions apply, and no live project, writer lease, revision or Undo
 changes. Its cache tag is separate from confirmed frames and other draft kinds.
 
-The three Inspector comboboxes reuse the transition choice popup. Stable hover
+The five Inspector comboboxes reuse the transition choice popup. Stable hover
 and keyboard choices preview after 130 ms; confirmation uses the existing native
 editing command once. Escape, Tab, outside focus/click, parent collapse,
 visibility or stale-context changes cancel the draft. Closed wheel bursts

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {videoPropertySelection,audioPropertySelection,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects,titleSelectionPatch,renderProperties} from '../js/inspector.js';
+import {videoPropertySelection,audioPropertySelection,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects,titleSelectionPatch,renderProperties,renderBlendMatte} from '../js/inspector.js';
 
 test('selected title color pickers retain native linear precision and existing background patch ownership',async t=>{
   const rgba={r:0.1234567890123,g:0.402391823472,b:0.918273645546,a:0.456789012345};
@@ -358,6 +358,52 @@ test('Inspector choice confirmation refuses stale frame, selection, readonly and
     if(mode==='cancel')h.control.at(-1).cancel();if(mode==='dispose')for(const control of h.control)control.dispose?.();
     await settle();assert.deepEqual(h.commands,[],mode);assert.equal(h.field('Title case').value,'Mixed');for(const control of h.control)control.dispose?.();
   });
+});
+
+function compositingDetail(native){Object.assign(native,{blend:'Normal',blends:['Normal','Multiply','Screen'],matte:'None',mattes:['None','Alpha','AlphaInverted','Luma','LumaInverted']});}
+function compositingController(h){h.visualState.set('selected-compositing',true);return renderBlendMatte(h.root,h.native,h.options);}
+function choiceTimers(t){const timers=new Map();let id=0;t.mock.method(globalThis,'setTimeout',callback=>{timers.set(++id,callback);return id;});t.mock.method(globalThis,'clearTimeout',key=>timers.delete(key));return {timers,run(){for(const [key,callback] of [...timers]){if(timers.has(key)){timers.delete(key);callback();}}}};}
+
+test('selected Blend and Matte preview native choices, restore on Escape and confirm one exact batch',async t=>{
+  const clock=choiceTimers(t),previews=[],h=harness(t,{editDetail:compositingDetail,previewInspectorChoice:value=>previews.push(value)}),controller=compositingController(h);
+  try{
+    h.click('Blend mode');h.popup().children[1].dispatchEvent(new Event('pointerenter'));clock.run();assert.deepEqual(previews.at(-1),{kind:'blend_mode',blend:'Multiply'});assert.deepEqual(h.commands,[]);
+    scalarEvent(h.field('Blend mode'),'keydown',{key:'Escape'});assert.equal(previews.at(-1),null);assert.equal(h.field('Blend mode').value,'Normal');assert.equal(Boolean(h.popup()),false);
+    h.choose('Blend mode','Screen');await settle();assert.deepEqual(h.commands[0],{kind:'set_properties_batch',clip_ids:['9','2'],patch:{blend:'Screen'}});
+    h.click('Track matte');scalarEvent(h.field('Track matte'),'keydown',{key:'ArrowDown'});clock.run();assert.deepEqual(previews.at(-1),{kind:'track_matte',matte:'Alpha'});assert.equal(h.commands.length,1);
+    scalarEvent(h.field('Track matte'),'keydown',{key:'Enter'});scalarEvent(h.field('Track matte'),'keydown',{key:'Enter'});await settle();assert.deepEqual(h.commands[1],{kind:'set_properties_batch',clip_ids:['9','2'],patch:{matte:'Alpha'}});assert.equal(previews.at(-1),null);
+  }finally{controller.dispose();h.control.dispose();}assert.equal(clock.timers.size,0);
+});
+
+test('compositing cancel remains reusable and stale, hidden or disposed owners cannot dispatch queued choices',async t=>{
+  for(const reason of ['cancel','frame','selection','detail','readonly','hidden','modal','dispose'])await t.test(reason,async child=>{
+    const h=harness(child,{editDetail:compositingDetail}),controller=compositingController(h);h.choose('Blend mode','Multiply');
+    if(reason==='cancel')controller.cancel();if(reason==='frame')h.setFrame(21);if(reason==='selection')h.state.generation='changed';if(reason==='detail')h.native.source_frame++;
+    if(reason==='readonly')h.allow(false);if(reason==='hidden')document.hidden=true;if(reason==='modal')document.querySelector=()=>({});if(reason==='dispose')controller.dispose();
+    await settle();assert.deepEqual(h.commands,[],reason);assert.equal(h.field('Blend mode').value,'Normal');
+    if(reason==='cancel'){h.choose('Track matte','Luma');await settle();assert.deepEqual(h.commands,[{kind:'set_properties_batch',clip_ids:['9','2'],patch:{matte:'Luma'}}]);}
+    controller.dispose();h.control.dispose();h.click('Blend mode');assert.equal(Boolean(h.popup()),false);
+  });
+});
+
+test('closed compositing wheel commits once and unknown outcomes stay blocked without replay',async t=>{
+  const clock=choiceTimers(t);let reject;const h=harness(t,{editDetail:compositingDetail,commit:()=>new Promise((_,fail)=>{reject=fail;})}),controller=compositingController(h);
+  try{
+    scalarEvent(h.field('Track matte'),'wheel',{deltaY:1});scalarEvent(h.field('Track matte'),'wheel',{deltaY:1});assert.deepEqual(h.commands,[]);clock.run();await settle();assert.deepEqual(h.commands,[{kind:'set_properties_batch',clip_ids:['9','2'],patch:{matte:'AlphaInverted'}}]);
+    h.click('Blend mode');assert.equal(Boolean(h.popup()),false);reject(Object.assign(Error('Compositing outcome is unknown'),{code:'OUTCOME_UNKNOWN'}));await settle();clock.run();
+    assert.equal(h.field('Track matte').value,'None');assert.equal(h.field('Track matte').disabled,true);controller.cancel();h.click('Track matte');assert.equal(Boolean(h.popup()),false);assert.equal(h.commands.length,1);assert.match(h.notices.at(-1),/unknown/);
+  }finally{controller.dispose();h.control.dispose();}assert.equal(clock.timers.size,0);
+});
+
+test('legacy compositing uses the same preview popup and retains single-clip native operations and teardown',async t=>{
+  const clock=choiceTimers(t),previews=[],h=harness(t,{editDetail:compositingDetail}),root=new h.Element('div');document.body.append(root);
+  const controls=renderProperties(root,h.native,{writable:true,getFrame:h.options.getFrame,canInteract:h.options.canInteract,commit:h.options.commit,reload(){},notice:h.options.notice,visualState:new Map([['clip-properties',true]]),keyEditorRoot:null,transformControls:false,gainControls:false,titleControls:false,colorControls:false,filterControls:false,retimeControls:false,previewInspectorChoice:value=>previews.push(value)});
+  const field=label=>h.all(root).find(node=>node.getAttribute('aria-label')===label),choose=(label,index)=>{field(label).dispatchEvent(new Event('click'));h.popup().children[index].dispatchEvent(new Event('click',{cancelable:true}));};
+  try{
+    field('Track matte').dispatchEvent(new Event('click'));h.popup().children[4].dispatchEvent(new Event('pointerenter'));clock.run();assert.deepEqual(previews.at(-1),{kind:'track_matte',matte:'LumaInverted'});scalarEvent(field('Track matte'),'keydown',{key:'Tab'});assert.equal(previews.at(-1),null);assert.deepEqual(h.commands,[]);
+    choose('Blend mode',1);await settle();assert.deepEqual(h.commands,[{kind:'set_properties',clip_id:'9',patch:{blend:'Multiply'}}]);
+    choose('Track matte',1);for(const control of controls)control.cancel?.();await settle();assert.equal(h.commands.length,1);assert.equal(field('Track matte').value,'None');
+  }finally{for(const control of controls)control.dispose?.();h.control.dispose();}field('Blend mode').dispatchEvent(new Event('click'));assert.equal(Boolean(h.popup()),false);assert.equal(clock.timers.size,0);
 });
 
 test('selected Title includes native missing placement/case/background controls and emits changed fields only',async t=>{

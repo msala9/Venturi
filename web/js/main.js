@@ -836,7 +836,7 @@ function selected() {
           });
         },
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();void projectView?.update();}};
-      if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
+      if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);const compositing=renderBlendMatte(target,detail,{...options,disabled:!writable || busy || Boolean(unresolved)});if(compositing)visualControls.push(compositing);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
       else if(role==='audio'){const gain=renderSelectedAudioGain(target,detail,options);if(gain)visualControls.push(gain);}
       else {const retime=renderRetime(target,detail,false,options.getFrame,commit,visualState,options.canInteract,{selection,getSelection,frame:inspectorFrame,labelControls:false,notice});if(retime)visualControls.push(retime);}
     };

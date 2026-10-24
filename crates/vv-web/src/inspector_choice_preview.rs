@@ -7,7 +7,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use vv_core::{BlurDirection, FilterKind, FontCase, Id, MaskMode};
+use vv_core::{BlendMode, BlurDirection, FilterKind, FontCase, Id, MaskMode};
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -31,6 +31,21 @@ pub enum Choice {
     TitleCase {
         case: FontCase,
     },
+    BlendMode {
+        blend: BlendMode,
+    },
+    TrackMatte {
+        matte: Matte,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum Matte {
+    None,
+    Alpha,
+    AlphaInverted,
+    Luma,
+    LumaInverted,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
@@ -116,6 +131,24 @@ pub fn apply(mut snapshot: FrameSnapshot, request: &Request) -> Result<(FrameSna
                     case: Some(*case),
                     ..Default::default()
                 }),
+            },
+        )?,
+        Choice::BlendMode { blend } => inspector::properties_batch(
+            &mut session,
+            snapshot.timeline,
+            &request.clip_ids,
+            &inspector::Properties {
+                blend: Some(*blend),
+                ..Default::default()
+            },
+        )?,
+        Choice::TrackMatte { matte } => inspector::properties_batch(
+            &mut session,
+            snapshot.timeline,
+            &request.clip_ids,
+            &inspector::Properties {
+                matte: Some(format!("{matte:?}")),
+                ..Default::default()
             },
         )?,
     }

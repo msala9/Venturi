@@ -123,26 +123,30 @@ export function compoundSelectionOperation(clip_ids,name,mode='native'){
   if(!Array.isArray(clip_ids) || !clip_ids.length || clip_ids.length>4096 || clip_ids.some(id=>typeof id!=='string' || !id) || new Set(clip_ids).size!==clip_ids.length || typeof name!=='string' || !name.trim() || !['native','keep_track_audio_mix'].includes(mode))throw Error('Choose a current clip selection, compound name and grouping mode');
   return {kind:mode==='native'?'make_native_compound':'make_compound',clip_ids:[...clip_ids],name};
 }
-export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName='',visualState}){
+function renderCompositingChoices(parent,detail,{disabled=false,current,operation,commit,notice,onPreview}){
+  const choices=[],buttons=[],doc=parent.ownerDocument ?? document;let disposed=false,waiting=false,unknown=false,sequence=0,pending=null;
+  const live=()=>!disposed && !disabled && parent.isConnected!==false && !doc.hidden && !parent.closest?.('[hidden],[inert],details:not([open])') && !doc.querySelector?.('dialog[open]') && current();
+  const available=()=>!waiting && !unknown && live();
+  const sync=()=>{for(const button of buttons)button.disabled=disabled || disposed || waiting || unknown;};
+  const send=(key,value)=>{
+    if(!available())return false;const attempt={sequence,dispatched:false};pending=attempt;waiting=true;sync();for(const choice of choices)choice.cancel();
+    return Promise.resolve().then(()=>{if(attempt.sequence!==sequence || pending!==attempt)return false;if(!live())throw Error('Video properties changed; read their current values before editing');attempt.dispatched=true;return Promise.resolve(commit(operation(key,value))).then(()=>true);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')unknown=true;notice(error.message);return false;}).finally(()=>{if(pending===attempt){pending=null;waiting=false;sync();}});
+  };
+  for(const [label,key,value,values,kind] of [['Blend mode','blend',detail.blend,detail.blends,'blend_mode'],['Track matte','matte',detail.matte,detail.mattes,'track_matte']]){
+    const field=document.createElement('label'),button=document.createElement('button');field.className='field';field.textContent=label;button.value=value;field.append(button);parent.append(field);buttons.push(button);
+    choices.push(createTransitionChoice(button,{label,values,canInteract:available,notice,onPreview:value=>onPreview?.(value===null?null:{kind,[key]:value}),onConfirm:value=>send(key,value)}));
+  }
+  function cancel(){if(disposed)return;sequence++;for(const choice of choices)choice.cancel();if(pending && !pending.dispatched){pending=null;waiting=false;}sync();}
+  sync();return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const choice of choices)choice.dispose();sync();}};
+}
+export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName='',visualState,frame,getFrame,previewInspectorChoice,disabled=false}){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || !detail.video || detail.locked)return;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),section=document.createElement('details'),summary=document.createElement('summary'),note=document.createElement('p');
   inspectorGroup(section,'video');section.setAttribute('data-visual-path','selected-compositing');section.className='inspector-compositing';section.open=visualState?.get('selected-compositing') ?? false;summary.textContent='Blending';note.className='muted';note.textContent=`Values from ${primaryName || 'the first selected video clip'} · changes apply to ${captured.clip_ids.length} selected unlocked video clip${captured.clip_ids.length===1?'':'s'}.`;section.append(summary);inspectorHelp(section,note);
-  let waiting=false;
-  const current=()=>root.isConnected!==false && canInteract() && JSON.stringify(getSelection())===identity;
-  const controls=[];
-  for(const [label,key,value,values] of [['Blend mode','blend',detail.blend,detail.blends],['Track matte','matte',detail.matte,detail.mattes]]){
-    const field=document.createElement('label'),select=document.createElement('select');field.className='field';field.textContent=label;select.setAttribute('aria-label',label);
-    for(const name of values)select.append(new Option(name,name));select.value=value;select.disabled=!current();field.append(select);section.append(field);controls.push(select);
-    select.addEventListener('change',()=>{
-      if(waiting)return;
-      if(!current()){notice('Video selection changed; read its current properties before editing');return;}
-      if(!values.includes(select.value)){notice('Choose an available native compositing value');return;}
-      const operation={kind:'set_properties_batch',clip_ids:[...captured.clip_ids],patch:{[key]:select.value}};
-      waiting=true;for(const control of controls)control.disabled=true;
-      Promise.resolve().then(()=>{if(!current())throw Error('Video selection changed; read its current properties before editing');return commit(operation);}).catch(error=>notice(error.message)).finally(()=>{waiting=false;for(const control of controls)control.disabled=!current();});
-    });
-  }
   root.append(section);
+  const detailIdentity=()=>JSON.stringify([detail.project_epoch,detail.generation,detail.timeline_id,detail.revision,detail.clip_id,detail.timeline_frame,detail.source_frame]),capturedDetail=detailIdentity();
+  const current=()=>root.isConnected!==false && canInteract() && JSON.stringify(getSelection())===identity && detailIdentity()===capturedDetail && (!Number.isSafeInteger(frame) || getFrame?.()===frame);
+  return renderCompositingChoices(section,detail,{disabled,current,commit,notice,onPreview:previewInspectorChoice,operation:(key,value)=>({kind:'set_properties_batch',clip_ids:[...captured.clip_ids],patch:{[key]:value}})});
 }
 const TRANSFORM_ROWS=[['Zoom',['ZoomX','ZoomY']],['Position',['PositionX','PositionY']],['Rotation',['Rotation']],['Anchor',['AnchorX','AnchorY']]];
 const CROP_ROWS=[['Crop left',['CropLeft']],['Crop right',['CropRight']],['Crop top',['CropTop']],['Crop bottom',['CropBottom']],['Crop softness',['CropSoftness']]];
@@ -346,7 +350,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     if(scope && visualState?.get("key-page-focus")===scope){pager.open=true;visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
   }
   const zoomLink=sharedZoomLink || createZoomLink(visualState);
-  let waiting=false;
+  let waiting=false;const compositingBindings=[];
   const guardedCommit=async operation=>{if(waiting || disabled || root.isConnected===false || section.isConnected===false || !canInteract())return;waiting=true;try{await Promise.resolve();if(root.isConnected===false || section.isConnected===false || !canInteract())return;return await commit(operation);}finally{waiting=false;}};
   const report = (operation) => guardedCommit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details");section.dataset.visualPath='clip-properties';section.open = visualState?.get(section.dataset.visualPath) ?? (transformControls || gainControls);section.className='inspector-advanced';
@@ -383,15 +387,9 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     const linkLabel=document.createElement("label"),linkInput=document.createElement("input");linkInput.type="checkbox";linkInput.disabled=disabled;zoomLink.register(linkInput);linkLabel.append(linkInput," Link Zoom X/Y");section.append(linkLabel);
     for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => transformPatch(parameter.param,value,zoomLink.get()), { kind: "transform", param: parameter.param }, parameter.keyframes,parameter.key_count);
     }
-    function choice(label, value, values, patch) {
-      const field = document.createElement("label"); field.className = "field"; field.textContent = label;
-      const select = document.createElement("select"); select.disabled = disabled;
-      for (const name of values) select.append(new Option(name, name)); select.value = value;
-      select.addEventListener("change", () => report(propertyOperation(detail.clip_id, patch(select.value)))); field.append(select); section.append(field);
-    }
     if(compositing){
-      choice("Blend mode", detail.blend, detail.blends, (blend) => ({ blend }));
-      choice("Track matte", detail.matte, detail.mattes, (matte) => ({ matte }));
+      const captured=JSON.stringify([detail.project_epoch,detail.generation,detail.timeline_id,detail.revision,detail.clip_id,detail.timeline_frame,detail.source_frame]);
+      compositingBindings.push(renderCompositingChoices(section,detail,{disabled,current:()=>!waiting && root.isConnected!==false && canInteract() && getFrame()===detail.timeline_frame && JSON.stringify([detail.project_epoch,detail.generation,detail.timeline_id,detail.revision,detail.clip_id,detail.timeline_frame,detail.source_frame])===captured,commit,notice,onPreview:previewInspectorChoice,operation:(key,value)=>propertyOperation(detail.clip_id,{[key]:value})}));
     }
     if(transformControls)for (const [index, label] of [[0, "Flip horizontal"], [1, "Flip vertical"]]) {
       const button = document.createElement("button"); button.textContent = label; button.disabled = disabled; button.setAttribute("aria-pressed", detail.flip[index]);
@@ -413,6 +411,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   const retime=renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
   const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
+  controls.push(...compositingBindings);
   if(retime)controls.push(retime);
   if(keyEditorRoot){
     const selectedKeys=createKeyPickSelection(visualState,scope ?? detail.clip_id);

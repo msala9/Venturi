@@ -415,3 +415,142 @@ fn inspector_choice_schema_is_strict_and_tags_bind_the_whole_choice_and_selectio
     wrong_size.size = (32, 18);
     assert!(apply(wrong_size, &request).is_err());
 }
+
+#[test]
+fn inspector_choice_compositing_matches_native_broadcast_and_preserves_saved_project_and_clocks() {
+    let (mut session, timeline, ids) = fixture();
+    session.project.timelines[timeline].tracks[1].clips[0]
+        .effects
+        .blend_mode = BlendMode::Screen;
+    session.project.timelines[timeline].tracks[1].clips[0]
+        .effects
+        .matte = Some(vv_core::MatteMode::Luma);
+    session.mark_saved();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let history = (
+        session.history.generation(),
+        session.history.position(),
+        session.has_unsaved_changes(),
+        session.timeline_revision(timeline),
+    );
+    let selected = vec![ids[2].clone(), ids[0].clone(), ids[1].clone()];
+    for blend in BlendMode::ALL {
+        let captured = snapshot(&session, timeline);
+        let value = request(&captured, &selected, Choice::BlendMode { blend });
+        let mut expected = session.project.clone();
+        for track in 0..3 {
+            let clip_id = expected.timelines[timeline].tracks[track].clips[0].id;
+            vv_core::set_clip_blend_mode(timeline, track, clip_id, blend).apply(&mut expected);
+        }
+        let draft = apply(captured, &value).unwrap().0;
+        assert_eq!(
+            serde_json::to_value(&draft.project).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+        assert_eq!(draft.query.frame, 19);
+    }
+    for (matte, native) in [
+        (Matte::None, None),
+        (Matte::Alpha, Some(vv_core::MatteMode::Alpha)),
+        (
+            Matte::AlphaInverted,
+            Some(vv_core::MatteMode::AlphaInverted),
+        ),
+        (Matte::Luma, Some(vv_core::MatteMode::Luma)),
+        (Matte::LumaInverted, Some(vv_core::MatteMode::LumaInverted)),
+    ] {
+        let captured = snapshot(&session, timeline);
+        let value = request(&captured, &selected, Choice::TrackMatte { matte });
+        let mut expected = session.project.clone();
+        for track in 0..3 {
+            let clip_id = expected.timelines[timeline].tracks[track].clips[0].id;
+            vv_core::set_clip_matte(timeline, track, clip_id, native).apply(&mut expected);
+        }
+        assert_eq!(
+            serde_json::to_value(apply(captured, &value).unwrap().0.project).unwrap(),
+            serde_json::to_value(expected).unwrap()
+        );
+    }
+    let captured = snapshot(&session, timeline);
+    let single = request(
+        &captured,
+        &ids[..1],
+        Choice::TrackMatte {
+            matte: Matte::Alpha,
+        },
+    );
+    let draft = apply(captured, &single).unwrap().0;
+    assert_eq!(
+        serde_json::to_value(&draft.project.timelines[timeline].tracks[1]).unwrap(),
+        serde_json::to_value(&session.project.timelines[timeline].tracks[1]).unwrap()
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(
+        (
+            session.history.generation(),
+            session.history.position(),
+            session.has_unsaved_changes(),
+            session.timeline_revision(timeline)
+        ),
+        history
+    );
+}
+
+#[test]
+fn inspector_choice_compositing_rejects_invalid_matte_schema_and_atomic_target_failures() {
+    let (session, timeline, ids) = fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let captured = snapshot(&session, timeline);
+    for choice in [
+        Choice::BlendMode {
+            blend: BlendMode::Multiply,
+        },
+        Choice::TrackMatte { matte: Matte::None },
+    ] {
+        for selected in [
+            vec![],
+            vec![ids[0].clone(), ids[0].clone()],
+            vec![ids[0].clone(), "99999".into()],
+            vec![ids[0].clone(), ids[3].clone()],
+            vec![ids[0].clone(); 4097],
+        ] {
+            let value = request(&captured, &selected, choice.clone());
+            assert!(apply(snapshot(&session, timeline), &value).is_err());
+        }
+        let mut locked = snapshot(&session, timeline);
+        locked.project.timelines[timeline].tracks[1].locked = true;
+        assert!(apply(locked, &request(&captured, &ids[..2], choice)).is_err());
+    }
+    let base = request(
+        &captured,
+        &ids[..1],
+        Choice::TrackMatte { matte: Matte::None },
+    );
+    let encoded = serde_json::to_value(&base).unwrap();
+    assert_eq!(encoded["choice"]["matte"], "None");
+    assert!(serde_json::from_value::<Request>(encoded.clone()).is_ok());
+    for choice in [
+        serde_json::json!({"kind":"track_matte","matte":null}),
+        serde_json::json!({"kind":"track_matte","matte":"Unknown"}),
+        serde_json::json!({"kind":"track_matte"}),
+        serde_json::json!({"kind":"track_matte","matte":{"mode":"Alpha"}}),
+        serde_json::json!({"kind":"track_matte","matte":"Alpha","track":0}),
+        serde_json::json!({"kind":"blend_mode","blend":"Unknown"}),
+    ] {
+        let mut invalid = encoded.clone();
+        invalid["choice"] = choice;
+        assert!(serde_json::from_value::<Request>(invalid).is_err());
+    }
+    let blend = request(
+        &captured,
+        &ids[..1],
+        Choice::BlendMode {
+            blend: BlendMode::Normal,
+        },
+    );
+    assert_ne!(
+        apply(snapshot(&session, timeline), &base).unwrap().1,
+        apply(snapshot(&session, timeline), &blend).unwrap().1
+    );
+    assert_eq!(serde_json::to_value(session.project).unwrap(), before);
+}

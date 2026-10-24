@@ -36,12 +36,13 @@ test('timeline duration is the maximum valid clip end across every track and inc
   const {document,timeline}=fixture();timeline.tracks=[{clips:[{start_frame:100,length_frames:10}]},{clips:[{start_frame:10,length_frames:50},{start_frame:900,length_frames:25}]}];
   assert.deepEqual([buildProgramWindow(document,timeline,0).start_frame,buildProgramWindow(document,timeline,0).end_frame],[0,925]);
   for(const clip of [{start_frame:-1,length_frames:1},{start_frame:0.5,length_frames:1},{start_frame:0,length_frames:0},{start_frame:0,length_frames:1.5},{start_frame:NaN,length_frames:5},{start_frame:999_999_999,length_frames:2},{start_frame:1_000_000_000,length_frames:Number.MAX_SAFE_INTEGER},null])assert.equal(buildProgramWindow(document,{...timeline,tracks:[{clips:[clip]}]},0),null);
-  const edge=buildProgramWindow(document,{...timeline,tracks:[{clips:[{start_frame:999_999_999,length_frames:1}]}]},1_000_000_000);assert.equal(edge.start_frame,999_999_999);assert.equal(edge.end_frame,1_000_000_000);
+  const edgeTimeline={...timeline,tracks:[{clips:[{start_frame:999_999_999,length_frames:1}]}]},edge=buildProgramWindow(document,edgeTimeline,999_999_999);assert.equal(edge.start_frame,999_999_999);assert.equal(edge.end_frame,1_000_000_000);assert.equal(buildProgramWindow(document,edgeTimeline,1_000_000_000),null);
 });
 
-test('manual starts clamp to the media timeline while explicit continuation starts stop at EOF',()=>{
+test('manual Play and explicit continuation both refuse the exclusive timeline end without replaying its last frame',()=>{
   const {document,timeline}=fixture(48);
-  for(const playhead of [48,1000,Number.MAX_SAFE_INTEGER])assert.deepEqual([buildProgramWindow(document,timeline,playhead).start_frame,buildProgramWindow(document,timeline,playhead).end_frame],[47,48]);
+  assert.deepEqual([buildProgramWindow(document,timeline,47).start_frame,buildProgramWindow(document,timeline,47).end_frame],[47,48]);
+  for(const playhead of [48,1000,Number.MAX_SAFE_INTEGER])assert.equal(buildProgramWindow(document,timeline,playhead),null);
   assert.equal(buildProgramWindow(document,timeline,-10).start_frame,0);
   for(const value of [48,49,Number.MAX_SAFE_INTEGER,-1,1.5,null,NaN,Infinity,'12'])assert.equal(buildProgramWindow(document,timeline,0,value),null);
   for(const value of [null,1.5,NaN,Infinity,'12'])assert.equal(buildProgramWindow(document,timeline,value),null);

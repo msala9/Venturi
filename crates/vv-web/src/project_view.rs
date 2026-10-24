@@ -29,14 +29,14 @@ pub fn normalized(project: &Project) -> ProjectView {
                 project
                     .timelines
                     .get(id)
-                    .map(|timeline| (id, frame.clamp(0, (timeline.total_frames() - 1).max(0))))
+                    .map(|timeline| (id, frame.clamp(0, timeline.total_frames().max(0))))
             })
             .collect(),
     }
 }
 pub fn record(project: &Project, id: TimelineId, frame: i64) -> ProjectView {
     let mut view = normalized(project);
-    let end = (project.timelines[id].total_frames() - 1).max(0);
+    let end = project.timelines[id].total_frames().max(0);
     view.active_timeline = Some(id);
     view.playheads.insert(id, frame.clamp(0, end));
     view

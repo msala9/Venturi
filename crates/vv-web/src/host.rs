@@ -68,6 +68,7 @@ pub enum Action {
     PresetList(usize, crate::preset_store::Query),
     AudioPresets(SourceQuery),
     RefreshNativeLibrary(SourceQuery, bool),
+    RefreshAudioPresets(SourceQuery),
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
@@ -1838,6 +1839,20 @@ impl Editor {
         self.retry_busy_libraries();
         Ok(json!({"project_epoch":query.project_epoch,"available":true}))
     }
+    fn refresh_audio_presets(&mut self, query: SourceQuery) -> Result<Value> {
+        self.validate_asset_epoch(&query.project_epoch, None)?;
+        self.audio_presets.retry().map_err(|error| {
+            if crate::media_roots::transient(&error) {
+                crate::media_roots::unavailable()
+            } else {
+                ApiError::invalid(
+                    "The configured audio preset root is unsafe or changed; existing data was preserved",
+                )
+            }
+        })?;
+        self.audio_presets.list()?;
+        Ok(json!({"project_epoch":query.project_epoch,"available":true}))
+    }
     fn prepare_native_edit(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
         if !matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation())
         {
@@ -2590,7 +2605,7 @@ impl Editor {
     fn validate_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
         let (id, size) = self.validate_frame_identity(query)?;
         let tl = &self.session.project.timelines[id];
-        if !(0..tl.total_frames().max(1)).contains(&query.frame) {
+        if !(0..=tl.total_frames().max(0)).contains(&query.frame) {
             return Err(ApiError::invalid("Preview frame is outside the timeline"));
         }
         Ok((id, size))
@@ -2844,10 +2859,10 @@ impl Editor {
             Action::RefreshNativeLibrary(query, assets) => {
                 self.refresh_native_library(query, assets)
             }
+            Action::RefreshAudioPresets(query) => self.refresh_audio_presets(query),
             Action::AudioPresets(query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 let mut value = self.audio_presets.list()?;
-                self.retry_busy_libraries();
                 value["project_epoch"] = json!(query.project_epoch);
                 Ok(value)
             }

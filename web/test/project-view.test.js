@@ -13,7 +13,7 @@ function harness({api,onView}={}){
   const calls=[],notices=[],changes=[];let revision=1,server=structuredClone(state.document.view);
   const response=(body,extra={})=>{
     const root=body.ancestors[0]?.timeline_id || body.query.timeline_id;
-    server={active_timeline:root,playheads:{...server.playheads,[root]:Math.min(root==='1'?99:49,body.query.frame)}};
+    server={active_timeline:root,playheads:{...server.playheads,[root]:Math.min(root==='1'?100:50,body.query.frame)}};
     return {project_epoch:body.query.project_epoch,generation:body.query.if_generation,view:structuredClone(server),view_revision:rev(++revision),changed:true,persisted:Boolean(body.persist && !state.document.unsaved),saved:Boolean(body.persist && !state.document.unsaved),persistence_notice:null,...extra};
   };
   const controller=createProjectView({getState:()=>state,api:(path,body,options)=>{calls.push({path,body:structuredClone(body),options});return api?api(path,body,options,response):Promise.resolve(response(body));},notice:message=>notices.push(message),onView:value=>{changes.push(value);if(onView)onView(value);else Object.assign(state.document,{view:value.view,view_revision:value.view_revision});}});
@@ -45,6 +45,41 @@ test('duplicate hidden and page-leave persistence intents share one in-flight re
   try{
     h.state.frame=40;const first=h.controller.flush({persist:true});await settle();const second=h.controller.flush({persist:true});assert.equal(first,second);assert.equal(h.calls.length,1);
     resolve();assert.equal(await first,true);assert.equal(await second,true);assert.equal(await h.controller.flush({persist:true}),true);assert.equal(h.calls.length,1);
+  }finally{h.controller.dispose();}
+});
+
+test('terminal stopped view flush preserves the exclusive end through its ACK and same-epoch snapshots',async()=>{
+  let reply;const h=harness({api:(path,body,options,response)=>new Promise(resolve=>reply=()=>resolve(response(body)))});
+  try{
+    h.state.frame=100;const pending=h.controller.flush({persist:true});await settle();
+    assert.equal(h.controller.frame('1'),100);assert.equal(h.calls[0].body.query.frame,100);
+    reply();assert.equal(await pending,true);assert.equal(h.changes[0].view.playheads['1'],100);assert.equal(h.state.document.view.playheads['1'],100);assert.equal(h.controller.frame('1'),100);
+    h.state.document={...h.state.document};h.controller.refresh();assert.equal(h.controller.frame('1'),100);
+    assert.equal(await h.controller.flush({persist:true}),true);assert.equal(h.calls.length,1);assert.deepEqual(h.notices,[]);
+    h.state.document={...h.state.document,project_epoch:'epoch:2'};h.controller.refresh();assert.equal(h.controller.frame('1'),99);assert.equal(h.state.document.view.playheads['1'],100,'Restoration does not rewrite the saved native view');
+  }finally{h.controller.dispose();}
+});
+
+test('native end positions validate inclusively but restore at the last content frame only on a new epoch',async()=>{
+  const h=harness();try{
+    h.state.document.view.playheads={'1':100,'2':50};
+    assert.deepEqual(nativeProjectView(h.state.document.view,h.state.document).playheads,{'1':100,'2':50});
+    assert.equal(h.controller.frame('1'),99);assert.equal(h.controller.frame('2'),49);
+    h.state.writable=false;h.state.frame=100;assert.equal(await h.controller.update(),true);assert.equal(h.controller.frame('1'),100);assert.deepEqual(h.calls,[]);
+    h.state.document={...h.state.document,timelines:[{...h.state.document.timelines[0],tracks:[{clips:[{start_frame:0,length_frames:40}]}]}]};h.controller.refresh();
+    assert.equal(h.controller.frame('1'),40);assert.equal(h.controller.frame('2'),0);assert.equal(h.state.document.view.playheads['1'],100);
+    h.state.document={...h.state.document,timelines:[{...h.state.document.timelines[0],tracks:[]}]};h.controller.refresh();assert.equal(h.controller.frame('1'),0);
+    for(const position of [-1,1.5,1_000_000_001])assert.throws(()=>nativeProjectView({active_timeline:'1',playheads:{'1':position}},h.state.document));
+  }finally{h.controller.dispose();}
+});
+
+test('a terminal view ACK cannot overwrite restoration after a project reopen',async()=>{
+  let reply;const h=harness({api:(path,body,options,response)=>{const value=response(body);return new Promise(resolve=>reply=()=>resolve(value));}});
+  try{
+    h.state.frame=100;const pending=h.controller.flush({persist:true});await settle();
+    h.state.document={...h.state.document,project_epoch:'epoch:2',view:{active_timeline:'1',playheads:{'1':100}}};h.controller.refresh();
+    assert.equal(await pending,false);assert.equal(h.calls[0].options.signal.aborted,true);assert.equal(h.controller.frame('1'),99);
+    reply();await settle();assert.equal(h.controller.frame('1'),99);assert.deepEqual(h.changes,[]);assert.deepEqual(h.notices,[]);
   }finally{h.controller.dispose();}
 });
 

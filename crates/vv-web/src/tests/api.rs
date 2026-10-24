@@ -6,6 +6,89 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn native_library_audio_refresh_http_routes_to_audio_while_attribute_catalog_is_locked() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-audio-refresh-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("other-browser".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let epoch = before["project_epoch"].as_str().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let held = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(".presets/.venturi-presets.lock"))
+        .unwrap();
+    held.try_lock().unwrap();
+    for (route, expected) in [
+        ("presets/refresh", StatusCode::CONFLICT),
+        ("audio/presets/refresh", StatusCode::OK),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .header("host", "127.0.0.1:8787")
+                    .header("content-type", "application/json")
+                    .method("POST")
+                    .uri(format!("/api/v1/{route}"))
+                    .body(Body::from(json!({"project_epoch":epoch}).to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        if expected == StatusCode::OK {
+            assert_eq!(value, json!({"project_epoch":epoch,"available":true}));
+        } else {
+            assert_eq!(value["error"]["code"], "LIBRARY_BUSY");
+        }
+    }
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .header("host", "127.0.0.1:8787")
+                .uri(format!("/api/v1/audio/presets?project_epoch={epoch}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let after = host.call(Action::Session).await.unwrap();
+    for key in [
+        "project_epoch",
+        "generation",
+        "history",
+        "media",
+        "timelines",
+        "unsaved",
+    ] {
+        assert_eq!(after[key], before[key], "Audio refresh changed {key}");
+    }
+    drop(held);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn unavailable_native_library_refresh_http_is_explicit_epoch_bound_and_lease_free() {
     let root = std::env::temp_dir().join(format!(
         "vv-library-refresh-http-{}",

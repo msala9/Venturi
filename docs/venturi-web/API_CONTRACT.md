@@ -21,6 +21,23 @@ Session `native_libraries` reports `assets_available`, `presets_available` and
 `audio_presets_available`; descriptor availability does not bypass operation
 locks or imply a catalog read succeeded.
 
+Audio preset Refresh reads only the audio preset catalog and its own lock;
+an attribute-preset lock or pending attribute recovery does not block it.
+Audio catalog GET likewise does not harvest unrelated Library receipts.
+
+## Program terminal position
+
+Composed frame snapshots accept the inclusive terminal frame `total_frames`,
+whose native composition has no active layers. Negative and later frames are
+still refused; document identity, dimensions and resource guards are unchanged.
+Movie windows remain half-open `[start_frame,end_frame)`. Final playback stops
+at the exclusive terminal position and manual Play there does not prepare a
+last-frame replay. Seek to an earlier frame before replaying.
+
+The current Session/view acknowledgment and clean persisted project view retain
+this terminal position. On a new project epoch, the browser restores the last
+content frame (`max(0,total_frames-1)`), matching native reopen behavior.
+
 
 ## Continuous Inspector numeric scrub
 
@@ -662,7 +679,7 @@ cancellation reject obsolete replies; no automatic replay or rate reconstruction
 
 Session snapshots expose native `view:{active_timeline,playheads}` with canonical
 string timeline IDs and `view_revision` (SHA-256 of the normalized view JSON).
-Remembered frames clamp to current content, and removed timelines are pruned.
+Remembered frames clamp to the inclusive terminal position, and removed timelines are pruned.
 POST `/projects/view` accepts the strict object
 `{client_id,query:FrameQuery,if_view_revision,ancestors,persist:false}`. A writer
 lease, document/timeline identity and independent view CAS protect this metadata
@@ -677,7 +694,8 @@ project whose view differs from its actual saved view. Dirty projects retain the
 view in memory until ordinary Save. Disk conflict/symlink/backup/fsync guards and
 automatic reopen metadata remain in force. The browser serializes/coalesces
 stopped navigation intents; playback frames do not produce metadata writes.
-Project epoch changes restore saved active timeline and playheads. Root and
+Project epoch changes restore saved active timeline and clamp playheads to the
+last content frame, as in the native restore path. Root and
 compound level switches reset selection, scroll and zoom to the native 60 px/s.
 
 Timeline `make_native_compound {clip_ids,name}` invokes the original desktop

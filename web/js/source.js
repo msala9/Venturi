@@ -38,7 +38,7 @@ function delay(signal,setTimer,clearTimer) {
     if(signal.aborted)abort();
   });
 }
-export function createSourcePlayer({ video, image, status, cancel, onReady, onStateChange = () => {}, windowed = false, canPrefetch = () => false, onPrefetch = () => {}, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, setTimer = setTimeout, clearTimer = clearTimeout }) {
+export function createSourcePlayer({ video, image, status, cancel, onReady, onStateChange = () => {}, onUserPause = () => {}, windowed = false, canPrefetch = () => false, onPrefetch = () => {}, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, setTimer = setTimeout, clearTimer = clearTimeout }) {
   let sequence=0,controller=null,jobPath=null,jobState=null,ready=false,binding=null,heartbeatTimer=null,heartbeatController=null,disposed=false;
   let preparing=false,playbackIntent=false,internalPause=false,ignoredPauses=0,startingPlayback=false,seekingTarget=null,pendingPath=null,windowContext=null;
   let stateContext=null,nativeSeeking=false,future=null;
@@ -246,7 +246,13 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   }
   function pauseVideo(){if(video.paused===false)ignoredPauses++;internalPause=true;try{video.pause();}finally{internalPause=false;}}
   function hold(){playbackIntent=false;clearFuture();pauseVideo();}
+  function reportUserPause(reason){
+    const owner=binding,seq=sequence;
+    const isCurrent=()=>!disposed && binding===owner && seq===sequence && ready && !preparing && !nativeSeeking && !!owner?.window && owner.verified && attached(owner) && video.paused && !playbackIntent;
+    if(isCurrent())onUserPause({reason,epoch:owner.epoch,media_id:owner.item.id,source_version:owner.window.source_version,isCurrent});
+  }
   function pause(reason='pause'){
+    const user=reason==='user' && playbackIntent;
     playbackIntent=false;clearFuture();
     if(windowed && (preparing || nativeSeeking)){
       const previous=stateContext;stateContext=null;nativeSeeking=false;
@@ -257,6 +263,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       return;
     }
     pauseVideo();
+    if(user)reportUserPause('pause');
   }
   function localFrame(value){
     if(!Number.isFinite(video.currentTime) || video.currentTime<0)return null;
@@ -412,7 +419,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(internalPause || isInternalPause(event) || startingPlayback){internalPauseEvents.add(event);return;}
     if(!windowed || video.paused===false || video.ended)return;
     if(!binding?.window && !preparing)return;
-    if(preparing || nativeSeeking)pause();else{playbackIntent=false;clearFuture();}
+    if(preparing || nativeSeeking)pause();else{const user=playbackIntent;playbackIntent=false;clearFuture();if(user && !video.seeking && !isInternalSeek())reportUserPause('pause');}
   };
   const seeking=()=>{
     if(!windowed || video.seeking===false || isInternalSeek() || (seekingTarget!==null && Math.abs(video.currentTime-seekingTarget)<1e-6))return;
@@ -437,7 +444,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   const ended=()=>{
     const value=binding;
     if(!video.ended || !playbackIntent || preparing || !value?.window || !ready || !attached(value) || !value.verified)return;
-    if(value.window.end_frame===value.window.total_frames){playbackIntent=false;clearFuture();status.textContent=`${value.item.name} · End of Source`;return;}
+    if(value.window.end_frame===value.window.total_frames){playbackIntent=false;clearFuture();status.textContent=`${value.item.name} · End of Source`;reportUserPause('ended');return;}
     invalidatePrefetch();const candidate=future?.from===value?future:null;
     void prepareWindow(value.item,value.epoch,value.quality,value.window.end_frame,{continuation:true,autoplay:true,version:value.window.source_version,audioSelection:value.audioSelection,candidate});
   };
@@ -457,7 +464,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
             if(disposed || owner!==sequence || !playable() || currentWindow()?.frame!==0)return;
           }
           playbackIntent=true;await play(binding);
-        }else pause();
+        }else pause('user');
         return;
       }
       if(windowed && windowContext && !preparing){const c=windowContext;return prepareWindow(c.item,c.epoch,c.quality,c.startFrame,{autoplay:true,version:c.version,audioSelection:c.audioSelection});}

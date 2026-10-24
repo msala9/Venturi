@@ -65,7 +65,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/audio/presets", get(audio_presets))
-        .route("/api/v1/audio/presets/refresh", post(refresh_presets))
+        .route("/api/v1/audio/presets/refresh", post(refresh_audio_presets))
         .route(
             "/api/v1/audio/presets/commands",
             post(audio_preset_library_command),
@@ -1058,6 +1058,19 @@ async fn refresh_presets(
     state
         .host
         .call(Action::RefreshNativeLibrary(query, false))
+        .await
+        .map(native_asset_json)
+}
+async fn refresh_audio_presets(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid native audio preset library refresh"))?
+        .0;
+    state
+        .host
+        .call(Action::RefreshAudioPresets(query))
         .await
         .map(native_asset_json)
 }

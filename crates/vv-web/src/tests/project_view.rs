@@ -32,7 +32,7 @@ fn project_view_normalization_prunes_removed_ids_clamps_heads_and_never_changes_
     let before = json!(project);
     let (view, revision) = snapshot(&project);
     assert_eq!(view["active_timeline"], Value::Null);
-    assert_eq!(view["playheads"][first.raw().to_string()], 35);
+    assert_eq!(view["playheads"][first.raw().to_string()], 36);
     assert_eq!(view["playheads"][empty.raw().to_string()], 0);
     assert_eq!(view["playheads"].as_object().unwrap().len(), 2);
     assert_eq!(json!(project), before);
@@ -43,7 +43,13 @@ fn project_view_normalization_prunes_removed_ids_clamps_heads_and_never_changes_
         first.raw().to_string()
     );
     assert_ne!(snapshot(&project).1, revision);
-    assert_eq!(record(&project, first, i64::MAX).playheads[&first], 35);
+    assert_eq!(record(&project, first, i64::MAX).playheads[&first], 36);
+    project.view = record(&project, first, 36);
+    assert_eq!(
+        snapshot(&project).0["playheads"][first.raw().to_string()],
+        36
+    );
+    assert_eq!(record(&project, empty, 0).playheads[&empty], 0);
 }
 
 #[test]

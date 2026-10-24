@@ -1,5 +1,18 @@
 # UX/UI specification — professional NLE with AI review
 
+## Native pause and end-of-content
+
+Explicit Source/Program Pause returns the shared playback speed to1x, as does
+the final source/timeline end. Seek, held preparation and internal encoded-window
+handoffs retain the chosen speed. Final native fast-audio tails complete before
+normalization; stale callbacks cannot reset a newer transport intent.
+
+Program ends at the exclusive terminal cursor and displays the empty native
+composition. Play at that cursor stays stopped; seek earlier to restart.
+The terminal position is retained during the session and in a clean saved view;
+reopening restores the last content frame, matching the original application.
+Meter completion cannot reopen a last-frame playback window after EOF.
+
 ## Native fullscreen presentation
 
 Fullscreen fits the active Source or Program image into the entire black

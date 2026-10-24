@@ -1,6 +1,158 @@
 use super::*;
 
 #[test]
+fn native_library_audio_refresh_ignores_attribute_lock_and_foreign_recovery_but_checks_its_own_catalog()
+ {
+    use vv_core::Id;
+
+    let root = std::env::temp_dir().join(format!(
+        "vv-audio-refresh-scope-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "AudioScope".into(),
+        },
+        "audio-scope-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let add = request(
+        &editor,
+        Operation::AddTrack { audio: false },
+        "audio-scope-track",
+        Some(timeline),
+    );
+    editor
+        .mutation(Some(timeline.raw().to_string()), add)
+        .unwrap();
+    let save = request(&editor, Operation::Save, "audio-scope-save", None);
+    editor.mutation(None, save).unwrap();
+    let revision = editor.audio_presets.list().unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    editor
+        .audio_presets
+        .edit(&crate::audio_presets::Edit::Save {
+            name: "Owned EQ".into(),
+            revision,
+            parameters: vv_core::AudioEffectKind::Equalizer(vv_core::Equalizer::DEFAULT),
+        })
+        .unwrap();
+    let catalog = editor.audio_presets.list().unwrap();
+    let catalog_bytes = std::fs::read(root.join(".presets/.venturi-audio-presets.json")).unwrap();
+    let saved = std::fs::read(editor.session.path().unwrap()).unwrap();
+    let project = json!(editor.session.project);
+    let before = editor.snapshot();
+    let epoch = before["project_epoch"].as_str().unwrap().to_owned();
+    editor.lease = Some(("other-browser".into(), Instant::now()));
+    let attributes = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(".presets/.venturi-presets.lock"))
+        .unwrap();
+    attributes.try_lock().unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::RefreshNativeLibrary(
+                SourceQuery {
+                    project_epoch: epoch.clone()
+                },
+                false
+            ))
+            .unwrap_err()
+            .1,
+        "LIBRARY_BUSY"
+    );
+    let ack = editor
+        .handle(Action::RefreshAudioPresets(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    assert_eq!(ack, json!({"project_epoch":epoch,"available":true}));
+    let read = editor
+        .handle(Action::AudioPresets(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    assert_eq!(read["revision"], catalog["revision"]);
+    assert_eq!(read["eq_presets"], catalog["eq_presets"]);
+    drop(attributes);
+    let pending = root.join(".presets/.venturi-native-presets-pending.json");
+    std::fs::write(&pending, b"foreign attribute recovery").unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::RefreshNativeLibrary(
+                SourceQuery {
+                    project_epoch: epoch.clone()
+                },
+                false
+            ))
+            .unwrap_err()
+            .1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        editor
+            .handle(Action::RefreshAudioPresets(SourceQuery {
+                project_epoch: epoch.clone()
+            }))
+            .unwrap(),
+        ack
+    );
+    let audio_lock = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(".presets/.venturi-audio-presets.lock"))
+        .unwrap();
+    audio_lock.try_lock().unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::RefreshAudioPresets(SourceQuery {
+                project_epoch: "old".into()
+            }))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(
+        editor
+            .handle(Action::RefreshAudioPresets(SourceQuery {
+                project_epoch: epoch.clone()
+            }))
+            .unwrap_err()
+            .1,
+        "AUDIO_PRESETS_BUSY"
+    );
+    drop(audio_lock);
+    assert_eq!(editor.audio_presets.list().unwrap(), catalog);
+    let after = editor.snapshot();
+    for key in ["project_epoch", "generation", "history", "unsaved"] {
+        assert_eq!(after[key], before[key], "Audio refresh changed {key}");
+    }
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.lease.as_ref().unwrap().0, "other-browser");
+    assert_eq!(
+        std::fs::read(editor.session.path().unwrap()).unwrap(),
+        saved
+    );
+    assert_eq!(
+        std::fs::read(root.join(".presets/.venturi-audio-presets.json")).unwrap(),
+        catalog_bytes
+    );
+    assert_eq!(
+        std::fs::read(pending).unwrap(),
+        b"foreign attribute recovery"
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn unavailable_library_startup_keeps_saved_offline_media_local_import_and_explicit_refresh() {
     let (root, mut seed, local) = native_asset_fixture("unavailable-library");
     let shared = root.with_file_name(format!(
@@ -1561,6 +1713,87 @@ fn duplicate_receipt_returns_only_native_copies_and_replay_keeps_the_same_ids() 
         .unwrap();
     assert_eq!(first, replay);
     assert_eq!(json!(editor.session.project), after);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn project_view_terminal_snapshot_is_empty_and_saved_without_changing_edit_history() {
+    use vv_core::Id;
+
+    let root =
+        std::env::temp_dir().join(format!("vv-terminal-view-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Terminal".into(),
+        },
+        "terminal-create",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "terminal-solid",
+        Some(id),
+    );
+    editor.mutation(Some(id.raw().to_string()), add).unwrap();
+    let save = request(&editor, Operation::Save, "terminal-save", None);
+    editor.mutation(None, save).unwrap();
+    let before = editor.snapshot();
+    let query = project_view_request(&editor, id, 24, false).query;
+    editor.handle(Action::CheckFrame(query.clone())).unwrap();
+    for frame in [-1, 25, commands::MAX_FRAME + 1] {
+        assert!(
+            editor
+                .handle(Action::CheckFrame(FrameQuery {
+                    frame,
+                    ..query.clone()
+                }))
+                .is_err()
+        );
+    }
+    let mut stale = query.clone();
+    stale.if_generation = "999".into();
+    assert_eq!(
+        editor.handle(Action::CheckFrame(stale)).unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    let (tx, mut rx) = oneshot::channel();
+    editor.handle(Action::FrameSnapshot(query, tx)).unwrap();
+    let snapshot = rx.try_recv().unwrap().unwrap();
+    assert_eq!(snapshot.query.frame, 24);
+    assert!(
+        snapshot.project.timelines[id]
+            .active_video_clips_at(24)
+            .is_empty()
+    );
+    assert_eq!(
+        snapshot.project.timelines[id]
+            .active_video_clips_at(23)
+            .len(),
+        1
+    );
+    let terminal = project_view_request(&editor, id, 24, true);
+    let ack = editor.handle(Action::ProjectView(terminal)).unwrap();
+    assert_eq!(ack["view"]["playheads"][id.raw().to_string()], 24);
+    assert_eq!(ack["saved"], true);
+    assert_eq!(
+        editor.files.load("Terminal.vvproj").unwrap().view.playheads[&id],
+        24
+    );
+    let after = editor.snapshot();
+    for field in ["generation", "history", "unsaved", "media", "timelines"] {
+        assert_eq!(after[field], before[field], "Terminal view changed {field}");
+    }
+    drop(snapshot);
     drop(editor);
     std::fs::remove_dir_all(root).unwrap();
 }

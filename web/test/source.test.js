@@ -214,7 +214,7 @@ test('decode failure, reset and disposal abort the active heartbeat and ignore i
   });
 });
 
-function windowHarness({fps={num:30_000,den:1001},total=10_000,api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,canPrefetch,onPrefetch}={}){
+function windowHarness({fps={num:30_000,den:1001},total=10_000,api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,canPrefetch,onPrefetch,onUserPause}={}){
   class Video extends EventTarget{
     url='';position=0;paused=true;ended=false;readyState=1;seeking=false;plays=0;error=null;waitMetadata=false;waitSeek=false;fastPause=false;deferPauses=false;pauseEvents=[];clampTime=Infinity;
     get src(){return this.url;}set src(value){this.url=value;this.ended=false;this.position=0;this.readyState=this.waitMetadata?0:1;}
@@ -227,7 +227,7 @@ function windowHarness({fps={num:30_000,den:1001},total=10_000,api,fetcher,befor
   const video=new Video(),status={textContent:''},requests=[],fetches=[],notifications=[],timers=new Map();let timerID=0;
   const item={id:'m',name:'Long source',duration_frames:total,fps},version='1:2:300:4:5';
   const ready=(body,id=`job${requests.length}`)=>({id,state:'ready',source_asset:'source.mp4',project_epoch:body.project_epoch,source_window:{...body.window,total_frames:total,fps:{...fps},source_version:version}});
-  const player=createSourcePlayer({video,status,windowed:true,cancel:new EventTarget(),beforeWindowChange,isInternalSeek,isInternalPause,canPrefetch,onPrefetch,onReady:value=>notifications.push(value),setTimer:(callback,delay)=>{const id=++timerID;timers.set(id,{callback,delay});return id;},clearTimer:id=>timers.delete(id),api:async(path,body)=>{requests.push(body);return api?api(body,ready):ready(body);},fetcher:async(path,options)=>{fetches.push({path,options});if(fetcher)return fetcher(path,options);return Response.json({...ready({project_epoch:'epoch',window:notifications.at(-1)?.source_window}),id:notifications.at(-1)?.job});}});
+  const player=createSourcePlayer({video,status,windowed:true,cancel:new EventTarget(),beforeWindowChange,isInternalSeek,isInternalPause,canPrefetch,onPrefetch,onUserPause,onReady:value=>notifications.push(value),setTimer:(callback,delay)=>{const id=++timerID;timers.set(id,{callback,delay});return id;},clearTimer:id=>timers.delete(id),api:async(path,body)=>{requests.push(body);return api?api(body,ready):ready(body);},fetcher:async(path,options)=>{fetches.push({path,options});if(fetcher)return fetcher(path,options);return Response.json({...ready({project_epoch:'epoch',window:notifications.at(-1)?.source_window}),id:notifications.at(-1)?.job});}});
   const finish=()=>{const c=player.current(),range=notifications.at(-1).source_window;video.position=(range.end_frame-range.start_frame)*fps.den/fps.num;video.ended=true;video.pause();video.dispatchEvent(new Event('ended'));return c;};
   return {player,video,status,item,version,requests,fetches,notifications,timers,ready,finish,open:(start=0)=>player.open(item,'epoch','medium',start)};
 }
@@ -300,6 +300,31 @@ test('Source EOF continues three bounded foreground windows with a final short t
     }
     h.finish();await settle();assert.equal(h.requests.length,3);assert.equal(h.player.current().frame,2*span+16);assert.match(h.status.textContent,/End of Source/);
     h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,3);
+  }finally{h.player.dispose();}
+});
+
+test('explicit Source toolbar and native pauses report one current owner for normal-speed restart',async()=>{
+  for(const action of ['toolbar','native']){
+    const pauses=[],h=windowHarness({onUserPause:ticket=>{pauses.push(ticket);if(ticket.isCurrent())h.video.playbackRate=1;}});
+    try{
+      await h.open();h.video.playbackRate=2;await h.player.toggle();assert.equal(h.video.paused,false);
+      if(action==='toolbar')await h.player.toggle();else h.video.pause();
+      assert.equal(pauses.length,1);assert.equal(pauses[0].reason,'pause');assert.equal(pauses[0].isCurrent(),true);assert.equal(pauses[0].media_id,h.item.id);assert.equal(pauses[0].source_version,h.version);assert.equal(h.video.playbackRate,1);
+      await h.player.toggle();assert.equal(h.video.paused,false);assert.equal(h.video.playbackRate,1);assert.equal(pauses[0].isCurrent(),false);
+    }finally{h.player.dispose();}
+  }
+});
+
+test('Source normal-speed authority excludes holds, seeks and window boundaries and binds only true final EOF',async()=>{
+  const pauses=[],h=windowHarness({fps:{num:30,den:1},total:1810,onUserPause:ticket=>pauses.push(ticket)});
+  try{
+    await h.open();h.video.playbackRate=2;await h.player.toggle();h.player.hold();assert.equal(pauses.length,0);
+    await h.player.toggle();await h.player.seekFrame(10);assert.equal(pauses.length,0);assert.equal(h.video.playbackRate,2);
+    await h.player.toggle();h.player.pause();assert.equal(pauses.length,0);
+    await h.player.toggle();h.finish();await settle();assert.equal(h.player.current().start_frame,1800);assert.equal(pauses.length,0);assert.equal(h.video.playbackRate,2);
+    h.finish();await settle();assert.equal(pauses.length,1);assert.equal(pauses[0].reason,'ended');assert.equal(pauses[0].isCurrent(),true);assert.equal(h.player.current().frame,1809);
+    h.video.dispatchEvent(new Event('ended'));assert.equal(pauses.length,1);
+    await h.player.toggle();assert.equal(pauses[0].isCurrent(),false,'a late tail completion cannot normalize replacement playback');
   }finally{h.player.dispose();}
 });
 

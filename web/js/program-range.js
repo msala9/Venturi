@@ -23,8 +23,8 @@ export function buildProgramWindow(documentState,timeline,playhead,explicitStart
   if(!total)return null;
   const requested=explicitStart===undefined?playhead:explicitStart;
   if(!Number.isSafeInteger(requested))return null;
-  if(explicitStart!==undefined && (requested<0 || requested>=total))return null;
-  const start=explicitStart===undefined?Math.max(0,Math.min(requested,total-1)):requested;
+  if(requested>=total || explicitStart!==undefined && requested<0)return null;
+  const start=explicitStart===undefined?Math.max(0,requested):requested;
   const origin=audioOrigin===undefined?start:audioOrigin;
   if(!Number.isSafeInteger(origin) || origin<0 || origin>start)return null;
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:start,end_frame:Math.min(total,start+capacity),width:960,audio_origin_frame:origin};

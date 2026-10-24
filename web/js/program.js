@@ -26,7 +26,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false, preparingQuery=null;
   let recordingHold=null,recordingStopped=null;
   let future=null;
-  const currentState=expected=>getState(undefined,expected?.audio_origin_frame);
+  const currentState=expected=>getState(expected?.start_frame,expected?.audio_origin_frame);
   const originMatches=(job,expected)=>expected.audio_origin_frame===undefined || job.program?.audio_origin_frame===expected.audio_origin_frame;
   const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
   function stopMonitor() {
@@ -118,7 +118,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   }
   function pauseLocal({notify=false,reason='pause'}={}) {
     const recording=recordingClock();recordingStopped=recording?{...recording,state:'stopped'}:null;recordingHold=null;
-    const frame=notify && playbackIntent && !suspended && ownsAttachment() && !video.seeking && !isInternalSeek()?clockFrame():null;
+    const frame=notify && playbackIntent && !suspended && ownsAttachment() && !video.seeking && !isInternalSeek()?(reason==='ended'?query.end_frame:clockFrame()):null;
     const playback=notify && reason==='ended'?telemetryTarget():null;
     const owner=attached,pausedQuery=query,seq=sequence;
     const preparing=state==='preparing';
@@ -284,8 +284,9 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   async function toggle() {
     if (state === "preparing") { stop(); return; }
     if (state === "ready" && !video.paused && sameComposition(query, currentState(query))) { pauseLocal({notify:true}); return; }
-    stop();
     const current = getState();
+    if(!current && video.ended && ownsAttachment())return;
+    stop();
     if (!current) return;
     playbackIntent=true;
     await prepare(current,false);

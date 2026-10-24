@@ -182,7 +182,7 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
   let playhead=origin,document={project_epoch:"epoch",if_generation:"1",timeline_id:"timeline",revision:"revision",width:960};
   const getState=(start,audioOrigin)=>{
     if(!document)return null;
-    const frame=start===undefined?Math.min(playhead,total-1):start;
+    const frame=start===undefined?playhead:start;
     if(strictOrigin && audioOrigin!==undefined && audioOrigin>frame)return null;
     return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
   };
@@ -205,14 +205,14 @@ test('toolbar pause, native pause and Stop report the exact owned frame once wit
   }
 });
 
-test('internal fast pause and window handoff do not enter editing; only final whole-timeline EOF reports the last frame',async()=>{
+test('internal fast pause and window handoff do not enter editing; only final whole-timeline EOF reports the exclusive end',async()=>{
   const fps={num:30000,den:1001},origin=137,total=origin+Math.floor(300*fps.num/fps.den)+3,notifications=[];
   let internal=false,handoffs=0;
   const f=windowFixture({origin,total,fps,isInternalPause:()=>internal,beforeWindowChange:()=>{handoffs++;f.video.pause();},onUserPause:ticket=>{notifications.push(ticket);f.player.stop();}});
   try{
     await f.player.toggle();await settle();internal=true;f.video.pause();internal=false;assert.equal(notifications.length,0);await f.video.play();await settle();
     f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,2);assert.equal(handoffs,1);assert.equal(notifications.length,0);assert.equal(f.player.state(),'ready');
-    f.video.finish(f.player.range());await settle();assert.equal(notifications.length,1);assert.equal(notifications[0].reason,'ended');assert.equal(notifications[0].frame,total-1);assert.equal(f.player.state(),'stopped');assert.equal(f.requests.length,2);
+    f.video.finish(f.player.range());await settle();assert.equal(notifications.length,1);assert.equal(notifications[0].reason,'ended');assert.equal(notifications[0].frame,total);assert.equal(f.player.state(),'stopped');assert.equal(f.requests.length,2);
     f.video.dispatchEvent(new Event('ended'));assert.equal(notifications.length,1);
   }finally{f.player.stop();}
 });
@@ -221,7 +221,7 @@ test('old pause tickets cannot stop a replay of the same cached asset or a newer
   const tickets=[],f=windowFixture({total:48,onUserPause:ticket=>tickets.push(ticket)});
   try{
     await f.player.toggle();await settle();f.video.finish(f.player.range());await settle();assert.equal(tickets.length,1);const old=tickets[0],range=old.query;assert.equal(old.isCurrent(),true);
-    await f.player.toggle();await settle();assert.equal(f.player.range(),range,'covering cache may reuse the same range object');assert.equal(f.requests.length,1);
+    f.setPlayhead(0);await f.player.toggle();await settle();assert.equal(f.player.range(),range,'covering cache may reuse the same range object after moving away from EOF');assert.equal(f.requests.length,1);
     f.video.paused=true;assert.equal(old.isCurrent(),false,'sequence ownership must reject a cached replay even when its video is paused');assert.equal(f.player.state(),'ready');
     f.video.paused=false;f.video.dispatchEvent(new Event('pause'));assert.equal(tickets.length,1,'a delayed old pause cannot act while the replacement is playing');
   }finally{f.player.stop();}
@@ -253,12 +253,23 @@ test('verified Program telemetry uses continuous absolute samples and native aud
   }finally{f.player.stop();}
 });
 
-test('short Program EOF exposes its exclusive sample end for the final meter bin while the editing frame remains clamped',async()=>{
+test('short Program EOF exposes its exclusive frame and sample end for the black editing frame and final meter bin',async()=>{
   const tickets=[],f=windowFixture({total:1,onUserPause:ticket=>tickets.push(ticket)});
   try{
     await f.player.toggle();await settle();f.video.position=.01;assert.equal(f.player.telemetryTarget().sample,480);
-    f.video.finish(f.player.range());await settle();assert.equal(tickets.length,1);assert.equal(tickets[0].frame,0);assert.equal(tickets[0].playback.sample,1600);assert.equal(tickets[0].playback.playing,false);assert.equal(tickets[0].playback.job_id,'window1');assert.equal(tickets[0].isCurrent(),true);
+    f.video.finish(f.player.range());await settle();assert.equal(tickets.length,1);assert.equal(tickets[0].frame,1);assert.equal(tickets[0].playback.sample,1600);assert.equal(tickets[0].playback.playing,false);assert.equal(tickets[0].playback.job_id,'window1');assert.equal(tickets[0].isCurrent(),true);
     assert.equal(f.player.telemetryTarget().sample,1600);f.player.stop();assert.equal(f.player.telemetryTarget(),null);assert.equal(tickets[0].isCurrent(),false);
+  }finally{f.player.stop();}
+});
+
+test('final Program EOF publishes an exclusive stopped cursor and Play stays idle until an explicit backward seek',async()=>{
+  const tickets=[],f=windowFixture({total:48,lineage:true,onUserPause:ticket=>{tickets.push(ticket);if(ticket.reason==='ended'){f.setPlayhead(ticket.frame);assert.equal(ticket.isCurrent(),true);f.player.stop();}}});
+  try{
+    await f.player.toggle();f.video.finish(f.player.range());await settle();
+    assert.equal(tickets.length,1);assert.equal(tickets[0].frame,48);assert.equal(f.getState(),null);assert.equal(f.player.state(),'stopped');assert.equal(f.video.src,'');
+    const requests=f.requests.length,plays=f.video.plays;await f.player.toggle();assert.equal(f.requests.length,requests);assert.equal(f.video.plays,plays);assert.equal(f.player.state(),'stopped');
+    f.setPlayhead(0);assert.equal(await f.player.seekFrame(0,{resume:false}),true);assert.equal(f.video.paused,true);
+    await f.player.toggle();assert.equal(f.video.paused,false);assert.equal(f.video.plays,plays+1);assert.equal(f.requests.length,requests);
   }finally{f.player.stop();}
 });
 
@@ -657,9 +668,9 @@ test('queued old pause and seeking events cannot revoke the playing replacement 
 });
 
 test('task-delayed fast pauses preserve Program intent in either listener order while a later user pause still revokes it',async t=>{
-  for(const order of ['program-first','fast-first'])for(const action of (order==='program-first'?['continue','user-pause','seek']:['continue','user-pause']))await t.test(`${order}/${action}`,async()=>{
-    const userPause=action==='user-pause',tempo=action==='seek'?2:8;
-    const pauseTasks=[],requests=[],audioRequests=[],buffers=[],frames=[],programTimers=fakeTimers(),audioTimers={jobs:new Map(),next:0,setTimeout(callback,delay){const id=++this.next;this.jobs.set(id,{callback,delay});return id;},clearTimeout(id){this.jobs.delete(id);}};
+  for(const order of ['program-first','fast-first'])for(const action of (order==='program-first'?['continue','user-pause','seek','normal-pause','normal-eof']:['continue','user-pause']))await t.test(`${order}/${action}`,async()=>{
+    const userPause=action==='user-pause',normalize=action.startsWith('normal-'),tempo=action==='seek' || normalize?2:8;
+    const pauseTasks=[],requests=[],audioRequests=[],buffers=[],frames=[],normalizations=[],terminalReads=[],meter=deferred(),programTimers=fakeTimers(),audioTimers={jobs:new Map(),next:0,setTimeout(callback,delay){const id=++this.next;this.jobs.set(id,{callback,delay});return id;},clearTimeout(id){this.jobs.delete(id);}};
     class Video extends EventTarget{
       movie='';position=0;readyState=1;seeking=false;paused=true;ended=false;duration=.1;volume=1;muted=false;playbackRate=1;plays=0;
       get src(){return this.movie;}set src(value){this.movie=value;this.position=0;this.ended=false;}
@@ -670,8 +681,16 @@ test('task-delayed fast pauses preserve Program intent in either listener order 
     }
     const video=new Video(),select={value:String(tempo),addEventListener(){}},context={state:'running',currentTime:0,destination:{},async resume(){},createGain:()=>({gain:{value:1,setValueAtTime(){}},connect(){},disconnect(){}}),createMediaElementSource:()=>({connect(){}}),async decodeAudioData(bytes){return {duration:bytes.byteLength/48000/4};},createBufferSource(){const source={stops:0,connect(){},disconnect(){},start(){},stop(){this.stops++;}};buffers.push(source);return source;}};
     let player,transport,playhead=0;
-    const getState=(start,origin)=>{const frame=start===undefined?Math.min(playhead,5):start;return frame>=6?null:{project_epoch:'epoch',if_generation:'1',timeline_id:'timeline',revision:'revision',width:960,start_frame:frame,end_frame:Math.min(6,frame+3),audio_origin_frame:origin ?? frame};};
-    const makeProgram=()=>createProgramPlayer({video,status:{textContent:''},cancel:new EventTarget(),timers:programTimers,getState,isInternalPause:event=>Boolean(transport?.pausing(video,event)),isInternalSeek:()=>Boolean(transport?.correcting(video)),beforeWindowChange:async()=>{if(!await transport.finishWindow(video))throw Error('Audio tail did not finish');},onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},fetcher:async()=>Response.json({state:'ready'}),api:async(path,range)=>{requests.push(range);return {id:`movie${requests.length}`,state:'ready',program:{...range,fps:{num:30,den:1},height:540}};}});
+    const getState=(start,origin)=>{const frame=start===undefined?playhead:start;return frame>=6?null:{project_epoch:'epoch',if_generation:'1',timeline_id:'timeline',revision:'revision',width:960,start_frame:frame,end_frame:Math.min(6,frame+3),audio_origin_frame:origin ?? frame};};
+    const makeProgram=()=>createProgramPlayer({video,status:{textContent:''},cancel:new EventTarget(),timers:programTimers,getState,isInternalPause:event=>Boolean(transport?.pausing(video,event)),isInternalSeek:()=>Boolean(transport?.correcting(video)),beforeWindowChange:async()=>{if(!await transport.finishWindow(video))throw Error('Audio tail did not finish');},onUserPause:ticket=>{
+      if(!normalize)return;
+      if(ticket.reason==='ended')playhead=ticket.frame;
+      normalizations.push((async()=>{
+        if(ticket.reason==='ended')assert.equal(await transport.finishWindow(video),true);
+        if(!ticket.isCurrent())return;transport.normal();
+        if(ticket.reason==='ended'){player.stop();const current=()=>player.state()==='stopped' && playhead===ticket.frame;terminalReads.push({frame:ticket.frame,current});await meter.promise;}
+      })());
+    },onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},fetcher:async url=>Response.json({state:'ready',program:{audio_origin_frame:Number(new URL(url,'http://host').searchParams.get('audio_origin_frame'))}}),api:async(path,range)=>{requests.push(range);return {id:`movie${requests.length}`,state:'ready',program:{...range,fps:{num:30,den:1},height:540}};}});
     const makeFast=()=>createFastTransport({videos:[video],select,status:{textContent:''},getVideo:()=>video,getTarget:()=>{const range=player?.range();return range?{identity:JSON.stringify([range.start_frame,range.end_frame,video.src]),fps:range.fps,origin:Math.round(range.start_frame/30*48000),end:Math.round(range.end_frame/30*48000),url:'/audio',query:{project_epoch:'epoch',audio_origin_frame:range.audio_origin_frame}}:null;},contextFactory:()=>context,timers:audioTimers,frame:()=>1,cancelFrame(){},fetcher:(url,options)=>new Promise(resolve=>audioRequests.push({resolve,body:JSON.parse(options.body),signal:options.signal}))});
     if(order==='program-first'){player=makeProgram();transport=makeFast();}else{transport=makeFast();player=makeProgram();}
     try{
@@ -680,6 +699,25 @@ test('task-delayed fast pauses preserve Program intent in either listener order 
       video.position=1/30;video.dispatchEvent(new Event('timeupdate'));assert.equal(frames.at(-1),1,'late internal pause must not suspend the current Program frame clock');
       const request=audioRequests[0].body,start=request.window.start_sample,end=request.window.end_sample,headers=new Map([['x-audio-start-sample',String(start)],['x-audio-end-sample',String(end)],['x-audio-tempo',String(tempo)],['x-audio-source-version','a'.repeat(64)],['x-audio-last','true']]);
       audioRequests[0].resolve({ok:true,headers,arrayBuffer:async()=>new ArrayBuffer((end-start)/tempo*4)});await settle();const timer=[...audioTimers.jobs].find(([,job])=>job.delay===50);assert.ok(timer);audioTimers.jobs.delete(timer[0]);timer[1].callback();await settle();assert.equal(video.paused,false);
+      if(action==='normal-pause'){
+        video.pause();pauseTasks.shift()();await Promise.all(normalizations);
+        assert.equal(select.value,'1');assert.equal(video.playbackRate,1);assert.equal(transport.active(),false);assert.equal(buffers[0].stops,1);assert.equal(player.playing(),false);
+        await player.toggle();await settle();assert.equal(video.paused,false);assert.equal(video.playbackRate,1);assert.equal(audioRequests.length,1,'normal restart must use the prepared movie audio');return;
+      }
+      if(action==='normal-eof'){
+        const endMovie=()=>{video.position=video.duration;video.ended=true;video.paused=true;video.dispatchEvent(new Event('pause'));video.dispatchEvent(new Event('ended'));};
+        endMovie();await settle();assert.equal(select.value,'2');assert.equal(normalizations.length,0);assert.equal(buffers[0].stops,0,'internal handoff must drain its existing native tail');
+        buffers[0].onended();await settle();while(pauseTasks.length)pauseTasks.shift()();assert.equal(requests.length,2);assert.equal(requests[1].audio_origin_frame,0);assert.equal(select.value,'2');
+        const next=audioRequests[1],from=next.body.window.start_sample,to=next.body.window.end_sample;
+        next.resolve({ok:true,headers:new Map([['x-audio-start-sample',String(from)],['x-audio-end-sample',String(to)],['x-audio-tempo','2'],['x-audio-source-version','b'.repeat(64)],['x-audio-last','true']]),arrayBuffer:async()=>new ArrayBuffer((to-from)/2*4)});await settle();
+        const startNext=[...audioTimers.jobs].find(([,job])=>job.delay===50);assert.ok(startNext);audioTimers.jobs.delete(startNext[0]);startNext[1].callback();await settle();
+        endMovie();await settle();assert.equal(select.value,'2');assert.equal(normalizations.length,1);assert.equal(buffers[1].stops,0,'final reset must wait for the last native buffer');assert.equal(playhead,6);
+        const terminalRequests=requests.length,terminalPlays=video.plays;await player.toggle();assert.equal(requests.length,terminalRequests);assert.equal(video.plays,terminalPlays);assert.equal(transport.active(),true,'Play at EOF cannot cancel the pending final tail');
+        buffers[1].onended();await settle();assert.equal(select.value,'1');assert.equal(video.playbackRate,1);assert.equal(player.playing(),false);assert.equal(player.state(),'stopped');assert.equal(video.src,'');assert.equal(terminalReads[0].frame,6);assert.equal(terminalReads[0].current(),true);
+        await player.toggle();assert.equal(requests.length,terminalRequests);assert.equal(video.plays,terminalPlays,'a pending meter read cannot admit replay of the final frame');
+        playhead=0;await player.seekFrame(0,{resume:false});await player.toggle();await settle();assert.equal(video.paused,false);assert.equal(video.playbackRate,1);assert.equal(audioRequests.length,2);assert.equal(terminalReads[0].current(),false);
+        meter.resolve();await Promise.all(normalizations);assert.equal(player.playing(),true,'late terminal telemetry cannot stop the new normal-speed playback');return;
+      }
       if(action==='seek'){
         const oldTail=buffers[0].onended,resume=player.playing() || transport.active();assert.equal(resume,true);
         transport.stop();player.pauseLocal();assert.equal(buffers[0].stops,1);assert.equal(buffers[0].onended,null);assert.equal(audioRequests[0].signal.aborted,true);

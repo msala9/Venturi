@@ -642,6 +642,7 @@ function togglePlayback() {
   programSeek?.cancel();
   if(cancelSeekPlayback)return;
   if(fastTransport?.cancelPreparation())return;
+  if(viewerMode==='program' && view.playhead>=programMarkTotal())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   derivativesTransportPending=true;sourceAssets?.refresh();timelineWaveforms?.refresh();
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)).finally(()=>{derivativesTransportPending=false;sourceAssets?.refresh();timelineWaveforms?.refresh();}); }
@@ -1149,7 +1150,7 @@ function updateTime() {
   ]
     .map((n) => String(n).padStart(2, "0"))
     .join(":");
-  const total=programMarkTotal(),slider=$('program-position');slider.max=Math.max(0,total-1);slider.disabled=total<=0;slider.value=Math.min(Number(slider.max),view.playhead);
+  const total=programMarkTotal(),slider=$('program-position');slider.max=Math.max(0,total);slider.disabled=total<=0;slider.value=Math.min(Number(slider.max),view.playhead);
   $('viewer-caption').textContent=timeline?.name || 'Program';
   const revealKey=JSON.stringify([timeline?.id,view.playhead]);if(timeline && lastReveal!==revealKey && canvasTimeline.navigationIdle()){view.origin=timelineOriginForFrame(timeline,view,$('timeline').clientWidth,view.playhead);lastReveal=revealKey;}
   canvasTimeline.invalidate();
@@ -2069,7 +2070,7 @@ $("inspector-content").addEventListener('click',event=>{
 scopes = createScopes({ panel: $("scopes"), isPlaying:()=>!document.hidden && viewerMode==='program' && programPlayer?.state()==='ready' && !$("program-video").paused, getTarget: () => !document.hidden && viewerMode === "program" && !["preparing","failed"].includes(programPlayer?.state()) ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(false);
 previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});
-seek = async ({resume=false}={}) => { if (viewerMode === "program") { audioMeters?.invalidate(); scopes.invalidate("SEEKING"); if(resume){viewer?.invalidate();return programPlayer.seekFrame(view.playhead,{resume:true});}programPlayer?.stop();await viewer.seek();scopes.refresh();previewCache.refresh();audioMeters?.refresh(); } };
+seek = async ({resume=false}={}) => { if (viewerMode === "program") { audioMeters?.invalidate(); scopes.invalidate("SEEKING"); if(resume && view.playhead<programMarkTotal()){viewer?.invalidate();return programPlayer.seekFrame(view.playhead,{resume:true});}programPlayer?.stop();await viewer.seek();scopes.refresh();previewCache.refresh();audioMeters?.refresh(); } };
 programSeek=createProgramSeek({
   getContext:()=>documentState && timeline && viewerMode==='program' && !busy && !unresolved && !document.hidden && !document.querySelector('dialog[open]')?JSON.stringify([documentState.project_epoch,documentState.generation,timeline.id,timeline.revision,$('playback-rate').value,Boolean(view.recording)]):null,
   getFrame:()=>view.playhead,
@@ -2118,18 +2119,21 @@ programPlayer = createProgramPlayer({
   onState: (state) => { cancelInspectorDraft(); if(viewerMode==='program')$('viewer-fullscreen-status').textContent=state==='failed'?$('program-status').textContent:''; const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();timelineWaveforms?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
   onUserPause:({frame,query,reason,isCurrent,playback})=>{
     const current=()=>isCurrent() && viewerMode==='program' && programPlayer?.state()==='ready' && programPlayer.range()===query && $('program-video').paused && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision;
-    if(!Number.isSafeInteger(frame) || frame<query.start_frame || frame>=query.end_frame || !current())return;
+    if(!Number.isSafeInteger(frame) || frame<query.start_frame || (reason==='ended'?frame!==query.end_frame:frame>=query.end_frame) || !current())return;
+    if(reason==='ended'){view.playhead=frame;updateTime();canvasTimeline.invalidate();}
     void (async()=>{
-      if(reason==='ended' && fastTransport?.active()){
+      if(reason==='ended' && fastTransport){
         const finished=await fastTransport.finishWindow($('program-video'));
         if(!current())return;
         if(!finished)throw Error('Fast audio did not finish its preview window · press Play to retry');
       }
-      if(reason==='ended' && current()){
-        try{await audioMeters?.finishPlayback(playback,isCurrent);}catch{}
-      }
       if(!current())return;
-      fastTransport?.stop();audioScrub?.stop();programPlayer.stop();view.playhead=frame;updateTime();canvasTimeline.invalidate();refreshStoppedProgramInspector();
+      fastTransport?.normal();
+      audioScrub?.stop();programPlayer.stop();view.playhead=frame;updateTime();canvasTimeline.invalidate();refreshStoppedProgramInspector();
+      if(reason==='ended'){
+        const terminal=()=>viewerMode==='program' && programPlayer?.state()==='stopped' && view.playhead===frame && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision;
+        try{await audioMeters?.finishPlayback(playback,terminal);}catch{}
+      }
     })().catch(error=>{if(current())notice(error.message);});
   },
   onStop:refreshStoppedProgramInspector,
@@ -2155,6 +2159,18 @@ fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")]
 }});
 sourcePlayer = createSourcePlayer({
   video: $("source-video"), image: $("source-image"), status: $("source-status"), cancel: $("source-cancel"),
+  onUserPause:({reason,epoch,media_id,isCurrent})=>{
+    const current=()=>isCurrent() && viewerMode==='source' && documentState?.project_epoch===epoch && currentSourceItem()?.id===media_id;
+    if(!current())return;
+    void (async()=>{
+      if(reason==='ended' && fastTransport){
+        const finished=await fastTransport.finishWindow($('source-video'));
+        if(!current())return;
+        if(!finished)throw Error('Fast audio did not finish its Source window · press Play to retry');
+      }
+      if(current())fastTransport?.normal();
+    })().catch(error=>{if(current())notice(error.message);});
+  },
   windowed:true,
   canPrefetch:()=>writable && !busy && !unresolved && !document.hidden && viewerMode==='source' && !view.recording && !fastTransport?.active() && !document.querySelector('dialog[open]'),
   onPrefetch:value=>{

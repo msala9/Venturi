@@ -1,0 +1,270 @@
+{
+  "schema": "venturi-current-prebuilt-r12-workflow-v1",
+  "date": "2026-10-25",
+  "archive": {
+    "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-9e29a444f47b-r12-332918d31b32.tar",
+    "bytes": 92712960,
+    "sha256": "332918d31b329a4873f9e626b90edd363abaeab4371443aef732d63d5104c061",
+    "kind": "internal-development-prebuilt",
+    "release_ready": false
+  },
+  "source": {
+    "binary_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+    "format_commit": "61e761e93fc459c971099c6a821ff112ce2836b7",
+    "documentation_commit": "8870ae23d581041b184b507b84347da413aa9a64",
+    "binary": {
+      "path": ".runtime/vv-web",
+      "sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f",
+      "bytes": 81064904
+    },
+    "post_binary_format_qualification": {
+      "binary_source_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+      "format_commit": "61e761e93fc459c971099c6a821ff112ce2836b7",
+      "public_evidence": "docs/venturi-web/evidence/f7-workspace-format-workflow.json",
+      "public_evidence_sha256": "57baf072eedc46821c41aca052bf7efeef8fecc65f1c4db9c410d4dd2e735ed8",
+      "raw_public_evidence_sha256": "978c0acf9caec813e7439f9faa6c42971b7e4cd8952675fbbf3ae3da12344cba",
+      "private_observation_sha256": "850104886aa688c5b9ce85fd668bc860b9ba4229ac690b9f25fe0c3717a41985",
+      "changed": {
+        "crates/vv-web/build.rs": {
+          "before_sha256": "bbc70c394ec5402467f27aa6718253c17174266c5b51f0378f3bb97a8415bef5",
+          "after_sha256": "a6d7c67849ce6e91e88428d83f5e4ba5aca34166a606d6dc07eae08be470504c"
+        },
+        "crates/vv-web/src/api.rs": {
+          "before_sha256": "15d3c19ba6f55f939c1af995e9d95e19bafd1c6e8af1ca7583498d32ba7e5da3",
+          "after_sha256": "2e095776a15c04933338105833d380f65a4e4ba2292eeecdbd0d7eb52bf1dc27"
+        },
+        "crates/vv-web/src/commands.rs": {
+          "before_sha256": "0999577401805db92c92ebc37c138d017b563e6bc3188e7e338570eccb54433f",
+          "after_sha256": "af365b2bebe8e1728eea61eaf26a17bf1ffcb195c1ba9d6fda51db2973ff9871"
+        },
+        "crates/vv-web/src/host.rs": {
+          "before_sha256": "2464be78abea69934025a14c876af1ef4f96dc23ae4896442f7805054a646769",
+          "after_sha256": "d78653db35b22429f2fd2ce94f6223e4f98a2ad92fd4c0e6f8352e61d0d12e85"
+        },
+        "crates/vv-web/src/source.rs": {
+          "before_sha256": "cae14f3c700a9446df68a9f15b0fae66c5849c2335af9b7263738abceb1bb495",
+          "after_sha256": "077dd2ddf252e72ddaabd0a7b800789c4b26c5180aea53487f300c89334e0256"
+        },
+        "crates/vv-web/src/tests/api.rs": {
+          "before_sha256": "0e33ca1d8dbd3885237248d71499caad07944db404df2251ab85bb3b5cac99ff",
+          "after_sha256": "5782a85b6cf97840a3ea66527b9212c4edb3aa32cc9a71e39e5f1fc70ca21366"
+        },
+        "crates/vv-web/src/tests/commands.rs": {
+          "before_sha256": "d01b2bf24a8b2e3268a45cc93261d86bb50f24f0314d928b3b799de46f3c1fce",
+          "after_sha256": "3fc69749bb6c7439b0ad88a3bd92b51b111286cc1f0ca816aba59c2a6709ee85"
+        },
+        "crates/vv-web/src/tests/host.rs": {
+          "before_sha256": "7179faad1708ab414ccd866adb53fe2bb1487bc0fdae94d293de55f751032704",
+          "after_sha256": "1e713f1a17dcde495c3ac7b3909b15665ff3ce0fae35dc89b1d71e641137575d"
+        },
+        "crates/vv-web/src/tests/preview.rs": {
+          "before_sha256": "98df61469851bf5ea9e61a4d868246a5bf8ab4d0f1fb031480dfe628252cee93",
+          "after_sha256": "0b80f4576bc4e995f5b65af32ebec641279744ba2c45d373751841353890adc6"
+        },
+        "crates/vv-web/src/tests/source.rs": {
+          "before_sha256": "9b4cfacfae75792671f7d3c77c162c98b533871b21a73e8d60171b25bef22c5c",
+          "after_sha256": "e33d2afbedca9053b2a3e820635ff5e2d879b1dfdb23e6caee3ad066a1f49428"
+        }
+      },
+      "formatted_manifest_sha256": "f701b0e5d444a6459bff1a024577e61db7f6b6073a25f8f0e68540ef58610be0",
+      "scope": "Ten exact standard-rustfmt after-images and full-workspace fmt check qualified separately. The binary remains from d0ee; no rebuild or runtime semantic claim is made for61e."
+    },
+    "qualification_sources": [
+      {
+        "source_commit": "c1f03e45af5e9f2bd05993de3bbaa2ffa4863300",
+        "binary_sha256": "b36f5c0dd542a18d4112878baf0ab5b2cc07e688264a92ddd87a8416b136fb10",
+        "source_manifest_count": 621,
+        "source_manifest_sha256": "97ff156bda93a768b9056098151ac0a14056fada3972c9ee46bd5eb5eefa2a3b"
+      },
+      {
+        "source_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+        "binary_sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f",
+        "source_manifest_count": 622,
+        "source_manifest_sha256": "26c25b6d9dcae0befc66468646595f54d672064f00a526df1fa79eb17ec2f47c"
+      }
+    ],
+    "current_qualification": {
+      "native_cases_passed": 7,
+      "fresh_clippy_passed": true,
+      "prior_source_bound_client_cases": 31,
+      "prior_source_bound_preview_cases": 6
+    },
+    "prior_chain": {
+      "evidence": "f7-current-prebuilt-r11-workflow.json",
+      "frozen_git_sha256": "cf85fcafe973da65fd65dc58eb46d0e690595397b8cf3d087bfeffe31130595f"
+    }
+  },
+  "packaged_files": {
+    "recorded_count": 66,
+    "git_frozen_count": 56,
+    "all_recorded_member_hashes_verified": true,
+    "all56_git_inputs_matched_to_frozen_docs": true,
+    "recorded_hash_map_sha256": "cb740363294cb04028fd01c9461befde31f123ebdfc3b926596fa9867c85a040"
+  },
+  "prerequisites": {
+    "loader_dependencies": 189,
+    "host_notice_texts": 199,
+    "host_loader_current_binding_exact": true,
+    "original_host_loader_identity_exact": false,
+    "zlib_before_after_exact": true,
+    "original_notice_companions": {
+      "rust-notices": {
+        "path": "third-party/rust-notices.tar",
+        "bytes": 4014080,
+        "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+        "original_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+        "original_binary_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+        "original_archive_and_index_unchanged": true
+      },
+      "notice-supplement": {
+        "path": "third-party/notice-supplement.tar",
+        "bytes": 194560,
+        "sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true
+      },
+      "host-notices": {
+        "path": "third-party/host-notices.tar",
+        "bytes": 3747840,
+        "sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+        "original_source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+        "original_binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+        "original_archive_and_index_unchanged": true
+      }
+    },
+    "build_only_dependency_delta": {
+      "previous_binary_source_commit": "c2b49b0dd0850c2e24bacf4c3d5d9bd1fb36b5ec",
+      "candidate_binary_source_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+      "inputs": {
+        "Cargo.lock": {
+          "previous_git_blob": "5d8bd7c6ebb165f34b735b899d0d6c61e97d7696",
+          "previous_sha256": "065da091d569398d72a965931c1fe31b4006272096687dbcce30dccc58f829a9",
+          "candidate_git_blob": "bc1f85f7b4136943ff682c6f12c3589a696fe44e",
+          "candidate_sha256": "d4ad6d9730c18b1c5f9520231b1701ca227a7f5c86a9588cfbfff459d67b01d3"
+        },
+        "crates/vv-web/Cargo.toml": {
+          "previous_git_blob": "7c720cf14a962253f71ad826fcbd1b959e73c58e",
+          "previous_sha256": "00d3c9d8b1c61f84e729177700b382e46ec1ec9ac82a8773b7bc7a25cfd48c39",
+          "candidate_git_blob": "0f5c4dc195c478d9e538083fef7ae786e896ce35",
+          "candidate_sha256": "38db8c75bfbac65262f1ec31320a7c95dfff6965ecd030d906e0b8c7429a3542"
+        }
+      },
+      "normal_dependency_declarations_equal": true,
+      "normal_dependency_declarations_sha256": "bff870ade57d7c2dfe051774c6679e7ee930d1cce258c0e85d0151bc7fcf7d0a",
+      "resolver": "2",
+      "locked_package_records_and_checksums_equal_except_vv_web_reference": true,
+      "locked_package_count": 618,
+      "added_vv_web_reference": "flate2",
+      "existing_package_version": "1.1.10",
+      "dependency_kinds": [
+        "build",
+        "dev"
+      ],
+      "new_runtime_packages": 0,
+      "public_evidence": "docs/venturi-web/evidence/f1-static-compression-workflow.json",
+      "public_evidence_sha256": "bbf7f87db8ca03171dfdf7ef48b05ef4d3a51b880009d869d59593d77ae77158",
+      "scope": "Original dependency-input blob bindings are retained as historical provenance. Only these two candidate blobs differ; existing flate2 is build/dev-only. No added runtime package, notice, or legal-clearance claim."
+    }
+  },
+  "launcher": {
+    "help_exit_code": 0,
+    "help_stdout": "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY] [--assets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview.\n"
+  },
+  "assembly": {
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=100%",
+      "MemoryMax=512M",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "RuntimeMaxSec=180",
+      "TimeoutStopSec=10",
+      "KillMode=control-group",
+      "Restart=no",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/current-prebuilt-r12/worker.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/current-prebuilt-r12/worker.log"
+    ],
+    "memory_peak_bytes": 243748864,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "scope": "One CPU/512MiB/no swap immutable assembly and streamed verification with launcher help only. No rebuild, functional test, renderer, browser, runback or reboot."
+  },
+  "preservation": {
+    "runtime_before_after_exact": true,
+    "unit": "venturi-web-halo1-static-compression.service",
+    "pid": "565076",
+    "binary_sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f",
+    "full_session_sha256": "049d1ce6291a6380d2f3142fd2a4568dc1742e29f6d7f76c1419368282a8e564",
+    "all17_saved_exact": true,
+    "saved_hash_map_sha256": "1c1fa3386ae846bdeb2a3d035677e7201227badd50eced17650f5157b47693c4",
+    "recovery": {
+      "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/.venturi-autosave.json",
+      "bytes": 195294,
+      "sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+      "status": {
+        "base_changed": true,
+        "created_unix_ms": 1792847309756,
+        "pending": true,
+        "project_token": "Venturi_Chrome_Input_V1.vvproj",
+        "resolved_to": "Venturi_Chrome_Input_V1.vvproj",
+        "revision": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+        "state": "pending"
+      }
+    },
+    "nas_catalogs_and_owned_versions_exact": true,
+    "prior_immutable_r11": {
+      "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8f549e225421-r11-5f578ea9bb6a.tar",
+      "bytes": 92088320,
+      "sha256": "5f578ea9bb6a02702662752f7b3f4fbeab595a0651ba349a28587ff6d369d0fe"
+    }
+  },
+  "private_receipts": {
+    "halo1-current-prebuilt-r12-start.json": {
+      "bytes": 459245,
+      "sha256": "7d52b32974ab723a11561f25f2466d065ecadac96cbe4baee4c7d20acff2659a"
+    },
+    "halo1-current-prebuilt-r12-observed.json": {
+      "bytes": 255265,
+      "sha256": "ab1f4569187eec061a20fafaef3d4f837c738a837762d15add241da596d8b2a6"
+    },
+    "halo1-final-gui-prebuilt_r12_before.json": {
+      "bytes": 89247,
+      "sha256": "ea2af0fb5e9d04a28552d7c25dd06e75f6eff70487fb8a43acba1ef737eaf332"
+    },
+    "halo1-final-gui-prebuilt_r12_after.json": {
+      "bytes": 89247,
+      "sha256": "4bb7089150d2990208c663959112d3b35809c3a1c69d778e29175b72983bf896"
+    }
+  },
+  "limitations": [
+    "Internal configured-halo1 development prebuilt; release_ready remains false and fullF1-F7/M7 acceptance remains active.",
+    "Binaryd0ee, formatting61e and docs8870 are separate authorities. Original notice indices/blob bindings remain historical; the two Cargo build/dev exceptions are explicit, with no added runtime package or legal-clearance claim.",
+    "Publication postdates frozen docs8870; earlier package-pending wording inside the immutable archive is retained.",
+    "No physical/device/OS/held/HTML-drop/fullscreen/long-playback/response/FPS/soak acceptance, new runback, reboot or self-contained distribution is inferred.",
+    "Ledger remains62 done/28 partial/two documented exclusions; all FINAL_CHECKS criteria remain."
+  ]
+}

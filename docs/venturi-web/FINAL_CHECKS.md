@@ -1,5 +1,25 @@
 # Checks reserved for final acceptance
 
+## Current immutable R12 development delivery - 2026-10-25
+
+Archive: `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-9e29a444f47b-r12-332918d31b32.tar`.
+Size: 92712960 bytes. SHA256:
+`332918d31b329a4873f9e626b90edd363abaeab4371443aef732d63d5104c061`.
+It binds binary sourced0ee294, separate formatting61e761e and docs8870ae2.
+All66 recorded file hashes and56 frozen Git inputs match; launcher help,
+three original notice companions,189 loader dependencies and199 host
+notice texts pass. The existing-flate2 build/dev Cargo delta is explicit;
+original notice provenance stays intact and no runtime package was added.
+Assembly uses one CPU/512MiB/no swap: peak243748864B, zero memory events.
+Full live Session,17 Saved, Recovery, NAS catalogs/owned versions and R11
+remain exact. See `evidence/f7-current-prebuilt-r12-workflow.json`.
+This consolidates the qualified native Preview diagnostics and static gzip
+without a rebuild. It remains internal development/release_ready=false;
+FINAL_CHECKS, all28 partial rows and full M7 remain open. No new physical,
+response/FPS/soak, runback or reboot acceptance is inferred. This receipt
+postdates the immutable docs snapshot. Ledger stays62 done/28 partial/2 excluded.
+
+
 ## Static asset transfer reduced - 2026-10-25
 
 Source `d0ee294` / runtime `9e29a444f47b` is active on halo1/8855.
@@ -283,7 +303,7 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. Cold derived-cache ready/reuse for its repeated source also passes in evidence/f1-chrome-dense500-cold-assets-workflow.json; this is not an HTTP count or pressure/eviction/FPS proof. The older5002-key/4clip fixture is separate. | Qualify broader cold/multiasset pressure,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
 | Performance instrumentation and response target | Sourcec1f03e4 adds actual nonblocking waiting-queue/cache counters; evidence/f1-native-preview-diagnostics-workflow.json. Sourced0ee294 serves the same93 initial JS modules as454887B gzip instead of1626238B,72.03% less; all decompress exact and Chrome reload passes in evidence/f1-static-compression-workflow.json. The indicative below100KB target stays open. Existing Canvas/RPC/software input measurements remain; earlier217.10ms/537.30ms single samples do not qualify one-frame response. | Profile safely before claiming response/FPS/loading acceptance; keep the size target explicit, retain VRAM unavailable and distinguish browser counters from physical display/audio timing. | No Windows benchmark/soak, pressure tests, inferred hardware latency or fabricated counters. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Live9e29a444f47b/sourced0ee294 includes preview diagnostics and qualified build-time static gzip. Immutable internal-development R11 retains earlier8f549e225421/sourcec2b49b0 and docse738612; see evidence/f7-current-prebuilt-r11-workflow.json. Its62 members/52 frozen Git inputs, launcher help, three notice companions,189 libraries and199 notice texts remain verified. New runtime preservation covers full Session/17 Saved/Recovery and40foreign PIDs/39 Sessions. | Consolidate a final source-bound package after remaining acceptance; release_ready remains false pending functional/physical/response/soak gates. Reuse prior qualification where direct inputs are unchanged. | Preserve immutable R11 and older archives/manifests/notices; no repeated package for each small change, new runback/reboot or M7 completion claim. |
+| Final delivery and regression receipt | Current9e29a444f47b/sourced0ee294 is consolidated in immutable internal-development R12 with separate formatting61e761e and docs8870ae2. See evidence/f7-current-prebuilt-r12-workflow.json:66 recorded files/56 frozen Git inputs, launcher help, three original notice companions,189 libraries and199 notice texts pass. Full live Session/17 Saved/Recovery/NAS and older R11 remain exact. The build/dev Cargo delta is explicit, with original notice provenance retained and no added runtime package. | Development consolidation is complete. Final release acceptance remains open; release_ready stays false pending functional/physical/response/soak criteria. Reuse prior qualification where direct inputs are unchanged. | Preserve immutable R12 and older archives/manifests/notices; no repeated package for each small change, new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

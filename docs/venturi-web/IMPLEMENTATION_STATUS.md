@@ -1,5 +1,25 @@
 # Implementation status
 
+## Current immutable R12 development delivery - 2026-10-25
+
+Archive: `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-9e29a444f47b-r12-332918d31b32.tar`.
+Size: 92712960 bytes. SHA256:
+`332918d31b329a4873f9e626b90edd363abaeab4371443aef732d63d5104c061`.
+It binds binary sourced0ee294, separate formatting61e761e and docs8870ae2.
+All66 recorded file hashes and56 frozen Git inputs match; launcher help,
+three original notice companions,189 loader dependencies and199 host
+notice texts pass. The existing-flate2 build/dev Cargo delta is explicit;
+original notice provenance stays intact and no runtime package was added.
+Assembly uses one CPU/512MiB/no swap: peak243748864B, zero memory events.
+Full live Session,17 Saved, Recovery, NAS catalogs/owned versions and R11
+remain exact. See `evidence/f7-current-prebuilt-r12-workflow.json`.
+This consolidates the qualified native Preview diagnostics and static gzip
+without a rebuild. It remains internal development/release_ready=false;
+FINAL_CHECKS, all28 partial rows and full M7 remain open. No new physical,
+response/FPS/soak, runback or reboot acceptance is inferred. This receipt
+postdates the immutable docs snapshot. Ledger stays62 done/28 partial/2 excluded.
+
+
 ## Full workspace Rust formatting - 2026-10-25
 
 Source61e761e imports the exact standard rustfmt output for ten vv-web files.

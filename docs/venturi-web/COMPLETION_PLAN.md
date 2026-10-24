@@ -1,8 +1,48 @@
 # Active completion plan — full Venturi Web scope
 
-## Full-area viewer and unavailable Library recovery delivered — 2026-10-24
+## Native Pause, terminal cursor and independent audio Refresh — 2026-10-24
 
-Source205db70 plus379ba0c/runtime968f22b9301d is active at
+Source14d4753/runtime8b413c047e1e is active at http://127.0.0.1:8855/,
+unit `venturi-web-halo1-native-transport.service`, captured PID450550.
+Explicit Program/Source Pause and final EOF return to1x. Internal window
+handoffs, held preparation and seek retain tempo. Program reaches the exclusive
+terminal cursor, displays native black and refuses last-frame replay; a prior
+seek permits Play. Tail completion precedes normalization and black repaint;
+meter HTTP cannot reopen playback. Live/clean Saved views retain terminal end,
+while project reopen restores end-1 like the native application.
+
+Custom audio preset Refresh now validates only its own catalog/lock. A locked
+attribute catalog or foreign attribute recovery cannot block healthy audio
+presets. Own audio locks, stale epoch and all project/history guards remain.
+Audio GET no longer harvests unrelated Library completion receipts.
+
+One serial bounded halo1 gate passes263 client and9 native cases, affected
+formatting, all-target Clippy and embedded build on its first run. Peak is
+2,064,306,176B within8CPU/4GiB/noSwap, with zero limit/OOM/kill events.
+Existing renderer/DSP/export and unrelated regression evidence is reused.
+
+Actual Windows Program2x Pause->Play1x passes. A three-frame2x final tail reaches
+701/00:00:29:05 with completed native audio, no replay; the native960x540 PNG is
+entirely opaque black (SHA ab402276a5dce678a1f8bb7d3483a37305fc72574806a379bdd911d9dff78c32).
+Reopen restores700/00:00:29:04. Source2x Pause and natural5.184s EOF restore1x;
+custom EQ Refresh returns the current catalog without editing the Saved project.
+
+Original project is restored48/1x/Fit/Edit/Video/Saved/empty history, all media
+paused and console clean. All13 Saved files,5 media,4 NAS byte/fresh-identity
+witnesses and shared proxy match; all39 foreign Sessions/40 PIDs match the fresh
+pre-upgrade capture. App peak466,616,320B; zero memory events.
+
+See `evidence/f2-f5-native-transport-audio-refresh-workflow.json`. These were real
+production defects found by a follow-up bounded native/Web comparison, not
+hardware blockers. Keep the complete90/F1-F7/M7 goal active,61done/29partial/
+2excluded. Physical/DPI/device, representative long footage, dense editing and
+two-hour browser-memory editing acceptance remain separate; no whole row is
+promoted by this bounded block. Earlier77d7 archives stay immutable/version-bound.
+
+
+## Previous delivery: full-area viewer and unavailable Library recovery — 2026-10-24
+
+At this checkpoint, source205db70 plus379ba0c/runtime968f22b9301d was active at
 http://127.0.0.1:8855/, unit `venturi-web-halo1-fullscreen-ready.service`,
 captured PID446198. Program/Source use full-area Fit with a bottom90px
 transport overlay and restore the prior zoom/focus on exit. Native fullscreen

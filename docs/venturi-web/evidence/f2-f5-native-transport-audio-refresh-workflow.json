@@ -1,0 +1,793 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "14d4753aad29a454d04b54c9cacea008998ebdab",
+  "scope": "F2 native Pause/terminal behavior and F5 independent custom-audio preset Refresh; bounded development acceptance, no complete-row or full-goal promotion",
+  "runtime": {
+    "new_unit": "venturi-web-halo1-native-transport.service",
+    "pid": "450550",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b413c047e1e",
+    "sha256": "8b413c047e1e1934db7064b19496f96c2afb3ead74349528c9fb476fc6c9169e",
+    "args": [
+      "/home/halo/.local/share/venturi-web/.runtime/vv-web-8b413c047e1e",
+      "--listen",
+      "127.0.0.1:8855",
+      "--projects-root",
+      "/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "--assets-root",
+      "/mnt/madrock-share/madrock-library",
+      "--presets-root",
+      "/mnt/madrock-share/madrock-library/presets",
+      "--library-url",
+      "http://127.0.0.1:8787",
+      "--gpu-device",
+      "0x7551",
+      "--gpu-lock",
+      "/tmp/HALO_BENCHMARK.lock"
+    ],
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "Restart=no",
+      "TimeoutStopSec=30",
+      "KillMode=control-group",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023",
+      "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-color-audio-controls-20261023/.xdg",
+      "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+      "Environment=WGPU_BACKEND=vulkan",
+      "Environment=TOKIO_WORKER_THREADS=4",
+      "StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log",
+      "StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log"
+    ],
+    "root": "/home/halo/VenturiWeb-color-audio-controls-20261023"
+  },
+  "runtime_bytes": 80351296,
+  "url": "http://127.0.0.1:8855/",
+  "native_reference": {
+    "source_pause_and_eof": "crates/vv-app/src/main.rs: toggle_browse_playback931 and drive_browse_playback969 reset to normal speed.",
+    "program_pause_and_eof": "crates/vv-app/src/main.rs: toggle_playback1061 and drive_playback1097 normalize1x; drive_playback1095 stops at exclusive end; toggle_playback1067 refuses Play there.",
+    "black_terminal": "Native active_video_clips_at(end) has zero layers; empty viewer output and compositor black clear provide the terminal image. Rendered content remains half-open, with no dropped last frame.",
+    "saved_view": "Native store_view1475 retains the raw end; restore_playhead1498 clamps to max(0,end-1).",
+    "audio_presets": "crates/vv-app/src/compressor_panel.rs preset_bar322-334 calls PresetBank::refresh; audio_preset_library.rs367-368 delegates refresh211-214 using only Kind::AudioPresets."
+  },
+  "implementation": {
+    "transport": "Existing fastTransport.normal() runs only on current-owned explicit user Pause or successfully finished final native audio tail. Source adds a guarded optional onUserPause ticket; hold/seek/preparation and intermediate windows do not notify or normalize.",
+    "terminal": "Final Program notification uses exclusive end, publishes the terminal cursor synchronously, finishes the old tail, stops/repaints before meter HTTP and rejects Play until an earlier seek. Range building refuses manual requests at/past end. Generic internal presentation and movie ranges remain end-exclusive.",
+    "preview": "Host permits exactly total_frames as the additional terminal snapshot, retaining negative/past-end, document, size and resource refusals. Native renderer/DSP/export implementation unchanged.",
+    "view": "Live Session/ACK and clean persisted view keep inclusive end; browser-only new-epoch restoration clamps to last content frame. Existing CAS, history, dirty-save, ancestors and late-ACK guards retained.",
+    "audio_refresh": "Dedicated RefreshAudioPresets dispatch validates only the current audio root/catalog. Attribute lock/pending recovery cannot block it. Audio GET no longer harvests unrelated native asset/attribute receipts. Own audio lock and epoch refusal retained; wire route/body/ACK unchanged."
+  },
+  "gate": {
+    "unit": "venturi-halo1-transport-refresh-r1-20261024.service",
+    "phase": "passed",
+    "terminal_main_pid": "0",
+    "client_pass": 263,
+    "native_pass": 9,
+    "attempts": 1,
+    "native_groups": {
+      "audio_refresh_host_and_http": 2,
+      "existing_unavailable_refresh_http": 1,
+      "project_view_host_and_contract": 6
+    },
+    "steps": [
+      {
+        "label": "format-rust",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+          "--edition",
+          "2024",
+          "--config",
+          "skip_children=true",
+          "crates/vv-web/src/api.rs",
+          "crates/vv-web/src/host.rs",
+          "crates/vv-web/src/project_view.rs",
+          "crates/vv-web/src/tests/api.rs",
+          "crates/vv-web/src/tests/host.rs",
+          "crates/vv-web/src/tests/project_view.rs"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/format-rust.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/main.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/program-range.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/program.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-2.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-3",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/project-view.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-3.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-4",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/source.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-4.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-5",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/program-range.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-5.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-6",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/program.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-6.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-7",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/project-view.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-7.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-8",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/source.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/syntax-8.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/fast-transport.test.js",
+          "test/program.test.js",
+          "test/program-seek.test.js",
+          "test/source.test.js",
+          "test/source-seek.test.js",
+          "test/source-windows.test.js",
+          "test/voiceover.test.js",
+          "test/ui.test.js",
+          "test/project-view.test.js",
+          "test/program-range.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 1.002,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/focused-client.log",
+        "log_bytes": 24455,
+        "failure": null
+      },
+      {
+        "label": "native-audio-refresh",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "native_library_audio_refresh",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 106.901,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/native-audio-refresh.log",
+        "log_bytes": 613,
+        "failure": null
+      },
+      {
+        "label": "native-unavailable-refresh",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "unavailable_native_library_refresh_http",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/native-unavailable-refresh.log",
+        "log_bytes": 399,
+        "failure": null
+      },
+      {
+        "label": "native-project-view",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web",
+          "project_view_",
+          "--",
+          "--test-threads=1"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/native-project-view.log",
+        "log_bytes": 972,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "clippy",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--all-targets",
+          "--no-deps",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 13.019,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/web-clippy.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.604,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.transport-refresh-r1-a6748fbb0ce145399afd03f7699179b6"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/transport-refresh-r1/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "test_counts": {
+      "transport-refresh-r1/focused-client": [
+        "tests 263",
+        "pass 263",
+        "fail 0"
+      ],
+      "transport-refresh-r1/native-audio-refresh": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 714 filtered out; finished in 0.03s"
+      ],
+      "transport-refresh-r1/native-unavailable-refresh": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 715 filtered out; finished in 0.01s"
+      ],
+      "transport-refresh-r1/native-project-view": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 710 filtered out; finished in 0.11s"
+      ]
+    },
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "eaf20f581b19bcbb78b21b22dcda8aeab8c82deccea4563d4c956473c8edbadd",
+      "crates/vv-web/src/host.rs": "c237074321874f1ace8609ef02c76d2cad6d3b90330dcac19946b9b108f503f9",
+      "crates/vv-web/src/project_view.rs": "5f7e8bd7a8a2d28ee7edf95f1b16c6b78d76f61861a212dfb9e21a37499768bb",
+      "crates/vv-web/src/tests/api.rs": "84fcfeecebc5b785b8b669da22f407cfa04b2adffc76b1dd9707d11d7cb1861a",
+      "crates/vv-web/src/tests/host.rs": "dfba8ef8b0cf3e0d4a88eba815cfdd568ac9623c3e3e700ed7d0c3a11b6fcf63",
+      "crates/vv-web/src/tests/project_view.rs": "240fd5928da4ea6325acf4b709a3a1d5dfd562e8389758c09ad049adb8454e4e",
+      "web/js/main.js": "523781ccd6e1bbd6c6d9424ab75ad7cb8f0db68c644b39274a51c84eb860564e",
+      "web/js/program-range.js": "7381d4af6003ba82b5bf29c05b71e2ea0712ea3fa43dd461f3faebe5f35dff18",
+      "web/js/program.js": "3e0698e1839431a3de93a8a20dad5db362e6be8a60de312170e269e0db44cae6",
+      "web/js/project-view.js": "c6ac279ebee4efc2ac171364a90cf901c40c2dba0a35c67f6f2f747bf67eba57",
+      "web/js/source.js": "26e77ba179d7690d2140b96d7416f1388851a4a0db3f29e5ba2627cd5dee4b5d",
+      "web/test/program-range.test.js": "b81937f89e97bb3f9ea275a8a9107ccbaadfe318811811f0166626e973e4ae34",
+      "web/test/program.test.js": "611ff1daeb7e96378254509bf6da8802bf5e839b35f64a50f3e108d042068c3b",
+      "web/test/project-view.test.js": "485d931a33f54d4328ecb0d3db620c9117ec3c5d0de3934904e99d8bd73536b3",
+      "web/test/source.test.js": "168f863ae5fd8be3b769d221c3494cbc49f50ecb4a2b9204d19e27b6c169e3e1"
+    },
+    "input_hashes": {
+      "crates/vv-web/src/api.rs": {
+        "previous_sha256": "630628f931b46e1d13b7e30bfdad9dd43120eaab7207b2d06a3b6b852f0f1e18",
+        "input_sha256": "eaf20f581b19bcbb78b21b22dcda8aeab8c82deccea4563d4c956473c8edbadd",
+        "bytes": 99929
+      },
+      "crates/vv-web/src/host.rs": {
+        "previous_sha256": "31affefe0187d13ded67674a7ee5839436502b6fc374fdc8581819ff177e9371",
+        "input_sha256": "c237074321874f1ace8609ef02c76d2cad6d3b90330dcac19946b9b108f503f9",
+        "bytes": 152182
+      },
+      "crates/vv-web/src/project_view.rs": {
+        "previous_sha256": "a540ec54e6f9521aad1cb6cf2a37d93eb6c3cdc87c16dd1ad1cc0f677e8010dd",
+        "input_sha256": "5f7e8bd7a8a2d28ee7edf95f1b16c6b78d76f61861a212dfb9e21a37499768bb",
+        "bytes": 1787
+      },
+      "crates/vv-web/src/tests/api.rs": {
+        "previous_sha256": "35699a58ed2e2422a8dc64a3f3a4384c551026c92f714a32005384e8ad77b5c2",
+        "input_sha256": "78a44d30f02815d16f012cdec433e07714c622df56c75252241fd10544dfe650",
+        "bytes": 153356
+      },
+      "crates/vv-web/src/tests/host.rs": {
+        "previous_sha256": "84f31af50d3d4307bd4d9b4f09c31afd7a8bad2fc0750bd7f2023210aca0b92b",
+        "input_sha256": "84f209d263ccf66616403421af74647c0db04ce37ce5007753f3360f9acf1633",
+        "bytes": 231314
+      },
+      "crates/vv-web/src/tests/project_view.rs": {
+        "previous_sha256": "02e8cab00c954a84e370dc477d7004ba8ae390eac990101b16a9fed9d3493ebd",
+        "input_sha256": "67792c0fe9398dc0ec47c2d14aaa48477ff05edf12c694cc1e66d8383bbf3928",
+        "bytes": 2744
+      },
+      "web/js/main.js": {
+        "previous_sha256": "e1f1e71894147a1126c47fd5a0fcbc32bf2916cb4f08e625a7aa4087cdc75c05",
+        "input_sha256": "523781ccd6e1bbd6c6d9424ab75ad7cb8f0db68c644b39274a51c84eb860564e",
+        "bytes": 204423
+      },
+      "web/js/program-range.js": {
+        "previous_sha256": "0f0c688a1d8af9b9113ef13aa1757183c09c1877e1b0bb1950e9ea620b0f7dca",
+        "input_sha256": "7381d4af6003ba82b5bf29c05b71e2ea0712ea3fa43dd461f3faebe5f35dff18",
+        "bytes": 2009
+      },
+      "web/js/program.js": {
+        "previous_sha256": "3b4a4687ba671c353f472f51033562f3654ba520875d503de42edc39b0c3c478",
+        "input_sha256": "3e0698e1839431a3de93a8a20dad5db362e6be8a60de312170e269e0db44cae6",
+        "bytes": 27587
+      },
+      "web/js/project-view.js": {
+        "previous_sha256": "6bf4eeedf064f19e88df81bd889eb060fa08743d2eab8c2da4f6835e25f0337a",
+        "input_sha256": "c6ac279ebee4efc2ac171364a90cf901c40c2dba0a35c67f6f2f747bf67eba57",
+        "bytes": 12040
+      },
+      "web/js/source.js": {
+        "previous_sha256": "ccabf8a2360fdd11fc972f951d6ecc65ddfb2649fb3623c543f502f2547aa23d",
+        "input_sha256": "26e77ba179d7690d2140b96d7416f1388851a4a0db3f29e5ba2627cd5dee4b5d",
+        "bytes": 37680
+      },
+      "web/test/program-range.test.js": {
+        "previous_sha256": "ead910492bfe7843f705e2456a8a38869878a5f87964f52ab27c079c7dd58612",
+        "input_sha256": "b81937f89e97bb3f9ea275a8a9107ccbaadfe318811811f0166626e973e4ae34",
+        "bytes": 6517
+      },
+      "web/test/program.test.js": {
+        "previous_sha256": "d5ff742c859bf1f9181fa4c897af4bf022b880667d1dd51dbaa7233f13d4e22a",
+        "input_sha256": "611ff1daeb7e96378254509bf6da8802bf5e839b35f64a50f3e108d042068c3b",
+        "bytes": 71141
+      },
+      "web/test/project-view.test.js": {
+        "previous_sha256": "99ff5611ee4c87ba16a89341dd50b99874fe4c7ac4460c245226fbc005a39b23",
+        "input_sha256": "485d931a33f54d4328ecb0d3db620c9117ec3c5d0de3934904e99d8bd73536b3",
+        "bytes": 17407
+      },
+      "web/test/source.test.js": {
+        "previous_sha256": "50b292451f245382ac25d9ca62c88cc7e05ccf00665a374d5273fb87a4b7f182",
+        "input_sha256": "168f863ae5fd8be3b769d221c3494cbc49f50ecb4a2b9204d19e27b6c169e3e1",
+        "bytes": 48564
+      }
+    },
+    "memory_peak_bytes": 2064306176,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "resources": {
+      "host": "halo1",
+      "cpus_max": 8,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "nice": 19,
+      "io_weight": 10,
+      "oom_score_adjust": 1000,
+      "tasks_max": 128,
+      "shared_nonblocking_lock": "/tmp/HALO_BENCHMARK.lock",
+      "serial": true,
+      "browser_playback_during_gate": false
+    },
+    "coverage": "Meaningful added cases cover independent attribute/audio locks and foreign recovery, actual HTTP dispatch/lease-free state preservation, terminal empty snapshot and Saved view, explicit pause/resume1x, internal handoff2x, final tail/terminal/no-replay during deferred meters and stale results, Source owned pause/final-vs-intermediate EOF, live end ACK/reopen and late-ACK cancellation.",
+    "reuse": "Existing renderer/DSP/full-HD/native4K export and unrelated integrated regression evidence retained by unchanged source; custom audio preset stores and fast-transport engine unchanged. No second full regression or export matrix."
+  },
+  "actual_browser": {
+    "existing_tab": "55",
+    "viewport_css": [
+      1024,
+      640
+    ],
+    "program_fast": {
+      "rate": 2,
+      "video_rate": 2,
+      "paused": false,
+      "start_frame": 48,
+      "end_frame": 701,
+      "audio_origin_frame": 48,
+      "job_id": "1792830476772289338",
+      "status": "2x native pitch-preserving audio"
+    },
+    "program_pause": {
+      "frame": 52,
+      "timecode": "00:00:02:04",
+      "rate": 1,
+      "video_rate": 1,
+      "paused": true
+    },
+    "program_resume": {
+      "start_frame": 52,
+      "end_frame": 701,
+      "audio_origin_frame": 52,
+      "job_id": "1792830505072270295",
+      "rate": 1,
+      "video_rate": 1,
+      "paused": false
+    },
+    "program_final_tail": {
+      "from_frame": 698,
+      "terminal_frame": 701,
+      "timecode": "00:00:29:05",
+      "rate_after": 1,
+      "video_rate_after": 1,
+      "paused": true,
+      "program_hidden": true,
+      "preview_pixels": [
+        960,
+        540
+      ],
+      "preview_complete": true,
+      "fast_metrics": {
+        "tempo": 2,
+        "windows": 1,
+        "max_drift_seconds": 0,
+        "video_time": 0.128,
+        "stopped": true,
+        "stop_reason": "ended",
+        "audio_complete": true
+      }
+    },
+    "play_at_terminal": {
+      "frame": 701,
+      "rate": 1,
+      "paused": true,
+      "program_src": null,
+      "program_hidden": true
+    },
+    "saved_view_reopen": {
+      "remembered_end": 701,
+      "restored_frame": 700,
+      "timecode": "00:00:29:04",
+      "saved": true,
+      "rate": 1
+    },
+    "source_fast": {
+      "media_id": "10",
+      "job_id": "1792830627696403052",
+      "rate": 2,
+      "video_rate": 2,
+      "paused": false,
+      "quality": "original",
+      "audio": "all streams"
+    },
+    "source_pause": {
+      "rate": 1,
+      "video_rate": 1,
+      "paused": true
+    },
+    "source_final_end": {
+      "ended": true,
+      "current_time": 5.184,
+      "duration": 5.184,
+      "rate_after": 1,
+      "video_rate_after": 1,
+      "paused": true,
+      "fast_metrics": {
+        "tempo": 2,
+        "windows": 2,
+        "max_drift_seconds": 0,
+        "video_time": 5.184,
+        "stopped": true,
+        "stop_reason": "ended",
+        "audio_complete": true
+      }
+    },
+    "audio_preset_refresh": {
+      "project": "Venturi_EQ_Normalize_V1.vvproj",
+      "timeline": "Assembly sequence",
+      "frame": 23,
+      "insert": "Master insert 3 Equalizer",
+      "action": "Refresh custom presets",
+      "result": "0 custom EQ presets",
+      "saved": true,
+      "effect_parameters_edited": false
+    },
+    "restored": {
+      "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "frame": 48,
+      "timecode": "00:00:02:00",
+      "rate": 1,
+      "zoom": "fit",
+      "workspace": "Edit",
+      "inspector": "Video",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "dialogs_visible": 0,
+      "all_eight_media_paused": true,
+      "console_warn_error": []
+    },
+    "observation_limits": "Two Source locator waits expired while their diagnostic already showed the visible Ready/EOF result. Fresh DOM read confirmed each result; no playback action was replayed. An unavailable historical Audio_Graphs filename was not opened; the actual current-root EQ_Normalize Saved project was used."
+  },
+  "actual_terminal_native_png": {
+    "query": {
+      "project_epoch": "1792830439594959427:1",
+      "if_generation": "0",
+      "timeline_id": "1",
+      "revision": "a4776c2ca8e71831",
+      "frame": 701,
+      "width": 960
+    },
+    "png_bytes": 3189,
+    "png_sha256": "ab402276a5dce678a1f8bb7d3483a37305fc72574806a379bdd911d9dff78c32",
+    "pixels": [
+      960,
+      540
+    ],
+    "all_pixels_rgba": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "session_view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 701,
+        "2": 199
+      }
+    },
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "saved": true
+  },
+  "final_capture": {
+    "at_unix": 1792830878.1097517,
+    "unit": {
+      "ActiveState": "active",
+      "MainPID": "450550",
+      "ControlGroup": "/system.slice/venturi-web-halo1-native-transport.service",
+      "MemoryCurrent": "455495680",
+      "MemoryPeak": "466616320"
+    },
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "protected": {
+      "foreign_sessions": 39,
+      "foreign_pids_checked": 40,
+      "foreign_pids_equal_checkpoint": 40,
+      "observed_foreign_pid_changes": {},
+      "original_saved_files": 13,
+      "local_media": 5,
+      "nas_files": 4,
+      "nas_fresh_identity_and_bytes_unchanged": true,
+      "shared_proxy_bytes_unchanged": true
+    },
+    "session": {
+      "project_epoch": "1792830439594959427:4",
+      "project_name": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 48,
+          "2": 199
+        }
+      },
+      "native_libraries": {
+        "assets_available": true,
+        "audio_presets_available": true,
+        "presets_available": true
+      },
+      "capabilities": {
+        "editing": true,
+        "export": true,
+        "media_imports": true,
+        "native_assets": true,
+        "playback": true,
+        "preview": true,
+        "scopes": true,
+        "software_preview": false,
+        "source_playback": true
+      }
+    },
+    "diagnostics": {
+      "preview": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": true,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      }
+    },
+    "served_module_hashes": {
+      "web/js/main.js": "523781ccd6e1bbd6c6d9424ab75ad7cb8f0db68c644b39274a51c84eb860564e",
+      "web/js/program.js": "3e0698e1839431a3de93a8a20dad5db362e6be8a60de312170e269e0db44cae6",
+      "web/js/program-seek.js": "c8d249f0760197406fe52e9976bb042de3de65d2c19c8ba6855095ad667a96d5",
+      "web/js/viewer-zoom.js": "356f3f41dd179d624929dab61aaa5d5f4acd3f35e8a5df69793d43f598f2beb5",
+      "web/js/native-assets.js": "a9f3a26e406968f2fef9e13a8e5f2fe1b3f4fc7ad57875f75cb7d29efe4fec62",
+      "web/js/presets.js": "092efa0eb03b0814548e77d15a93fe4fe2f48aeeac2b725c8c0f4752d94b3128",
+      "web/js/audio-presets.js": "48de4ceca952af1650b8a37686271f90ad23d9463d786cd2f024e81db805faf4",
+      "web/js/source.js": "26e77ba179d7690d2140b96d7416f1388851a4a0db3f29e5ba2627cd5dee4b5d",
+      "web/js/program-range.js": "7381d4af6003ba82b5bf29c05b71e2ea0712ea3fa43dd461f3faebe5f35dff18",
+      "web/js/project-view.js": "c6ac279ebee4efc2ac171364a90cf901c40c2dba0a35c67f6f2f747bf67eba57"
+    },
+    "saved_project_hashes": {
+      "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+      "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+      "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+      "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+      "Venturi_Keyframe_Replacement_V1.vvproj": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72",
+      "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+      "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+      "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+      "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+      "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+      "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+      "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2",
+      "Venturi_Seek_Playback_V1.vvproj": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7"
+    }
+  },
+  "limitations": [
+    "Actual browser checks use the existing Windows IAB and keyboard only; no new screenshot/mouse/DPI proof.",
+    "Native lock/recovery fault cases use owned temporary fixtures, not locks or recovery markers on the real NAS.",
+    "Program tail is3frames and real Source is5.184s; no representative long footage, full-resolution sustained throughput, physical audio/device/drift, dense500clip or two-hour browser-memory editing acceptance.",
+    "No renderer/DSP/export change and no newly claimed export or whole native-clock workspace pass.",
+    "Current immutable8b41 executable is newer than the prior77d7 archive; no package churn for this increment."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "goal_active": true
+  }
+}

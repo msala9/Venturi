@@ -32,6 +32,18 @@ functionality. A physical-input blocker does not block unrelated implementation.
 See `evidence/f2-f5-fullscreen-library-recovery-workflow.json` for the current
 349-client/192-native gate, actual browser scope and preservation witnesses.
 
+## Follow-up native transport/catalog corrections delivered
+
+Source14d4753 qualifies explicit Pause/final EOF normalization to1x and Program
+exclusive terminal cursor/black/no replay, including live/Saved end versus native
+last-frame restoration on reopen. Custom audio Refresh is isolated from attribute
+locks/recovery. One263-client/9-native affected halo1 gate plus actual Windows
+Program/Source and EQ Refresh checks pass. Prior renderer/DSP/export evidence is
+retained; see `evidence/f2-f5-native-transport-audio-refresh-workflow.json`.
+These were newly demonstrated source gaps in the earlier bounded review; the
+qualification map below is not proof that undiscovered production defects cannot
+exist or grounds to stop safe implementation when a concrete defect is found.
+
 ## Row-specific residuals
 
 "Qualification" means no additional missing native production workflow was
@@ -40,9 +52,9 @@ feature passes every requirement or cannot contain defects.
 
 | Partial capability | Concrete next work |
 |---|---|
-| source_viewer | Qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
-| program_viewer | Keyboard1x/2x navigation is qualified; complete physical ruler checks, then representative long-source playback/cold preparation and audio/device requirements. |
-| transport_play_pause | Keyboard1x/2x seek/resume and paused navigation are qualified; complete physical ruler/cancellation checks. Keep native paused arrow stepping; retain physical held-key/output checks. |
+| source_viewer | Native explicit Pause/final EOF speed reset delivered; qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
+| program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; keyboard1x/2x navigation is qualified; complete physical ruler checks, then representative long-source playback/cold preparation and audio/device requirements. |
+| transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard1x/2x seek/resume and paused navigation are qualified; complete physical ruler/cancellation checks. Keep native paused arrow stepping; retain physical held-key/output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
 | thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
 | waveforms_cached | Qualification: dense/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
@@ -63,7 +75,7 @@ feature passes every requirement or cannot contain defects.
 | push_cross_dissolve | Qualification: physical Alt-copy/replace, wheel/blur/cancellation and100%/150% mapping. |
 | smooth_cut_optical_flow | Qualification: physical transition-copy/replace/duration interactions and100%/150% mapping; retain existing moving native render/export evidence. |
 | clip_fades | Qualification: fade-handle mapping at100%/150%; existing125% physical handles and native video/PCM/AAC/MP4 proof remain accepted. |
-| shared_presets | Unavailable-root startup/retry delivered; qualify remaining physical/GUI lifecycle; reuse accepted cross-project Apply, native shortcuts, CAS/recovery and Delete evidence. |
+| shared_presets | Unavailable-root startup/retry and independent audio Refresh delivered; qualify remaining physical/GUI lifecycle; reuse accepted cross-project Apply, native shortcuts, CAS/recovery and Delete evidence. |
 | audio_mixer_track_master | Qualification: physical fader/Shift/graph/wheel/DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
 | voiceover_record | Qualification: actual microphone/disconnect/latency/output and retained-take browser download completion. Retain intentional5min/64MiB limits and synthetic-controller proof. |
 | export_h264_aac | Qualification: representative long real footage and sustained bounded export. Existing FullHD and synthetic48-frame4K equivalence are retained. |

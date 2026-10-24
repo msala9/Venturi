@@ -2,11 +2,10 @@
 
 ## Newer live executable — 2026-10-24
 
-Current source379ba0c/backend205db70/runtime968f22b9301d supplies full-area
-viewer presentation, bounded pending-fullscreen fallback and unavailable Library
-startup/recovery, qualified in
-`evidence/f2-f5-fullscreen-library-recovery-workflow.json`. Program seek evidence
-remains accepted from the preceding delivery.
+Current source14d4753/runtime8b413c047e1e supplies native Pause/terminal
+playback semantics and independent custom audio preset Refresh, qualified in
+`evidence/f2-f5-native-transport-audio-refresh-workflow.json`. The previous
+full-area viewer/unavailable Library and Program seek evidence remains accepted.
 RUNNING.md identifies the live unit and guarded configuration. Existing77d7
 archives/notices remain immutable, version-bound prior snapshots. No new archive
 is assembled for this increment; full release acceptance remains open.

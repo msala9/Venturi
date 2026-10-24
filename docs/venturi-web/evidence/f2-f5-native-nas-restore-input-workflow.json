@@ -316,7 +316,8 @@
     },
     "final_import_status": "Native asset already in Media pool \u00b7 project unchanged \u00b7 no Undo added",
     "final_import_generation": "0",
-    "final_import_history_empty": true
+    "final_import_history_empty": true,
+    "final_import_status_observed_in_chrome": true
   },
   "preservation": {
     "protected_saved_files": 13,
@@ -328,7 +329,9 @@
     "foreign_pids": 40,
     "foreign_sessions": 39,
     "foreign_changes": {},
-    "original_clean_project_restored": true
+    "original_clean_project_restored": true,
+    "retained_other_project_recovery_sha256": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+    "recovery_status_unchanged_across_deployment": true
   },
   "private_stage_receipts": [
     {

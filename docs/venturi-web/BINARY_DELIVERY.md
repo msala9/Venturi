@@ -30,8 +30,11 @@ external alongside fonts, Vulkan/Radeon userspace and configured NAS/ds4 data.
 488 texts from 257/265 normal third-party packages. Its old index identity remains
 historical. `third-party/notice-reuse.json` and `manifest.json` bind the current
 binary to unchanged Cargo manifests/lock/build inputs and the exact archive hash.
-Eight missing-text packages and system/font/optional/distribution review remain
-explicit; this is an internal development package, not redistribution clearance.
+The eight originally missing packages now have a separately-provenanced
+14-file supplement; see NOTICES.md and
+`evidence/f7-notice-supplement-workflow.json`. It is not retroactively part of
+this archive. Include both immutable companions in the next assembly. The
+system/font/optional/borrowed-code attribution and distribution scope remain.
 
 The actual packaged executable starts through its launcher on isolated 8856,
 automatically reopens the owned Saved 48-frame 4K fixture and renders frame 24 at

@@ -1,5 +1,33 @@
 # Implementation status
 
+## Eight-package notice supplement — 2026-10-24
+
+The missing-notice acquisition gap is closed with a separate immutable halo1
+companion: `venturi-web-notice-supplement-bf0b322.tar`, 194,560 B, SHA256
+`2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763`,
+under `/home/halo/.local/share/venturi-web/deliveries`, with its `.sha256` file.
+It supplies 14 notice/reference files for all 8 previously empty packages.
+For 7 packages, workspace license files come from upstream revisions recorded
+inside checksum-verified published crates; Git blob hashes are checked. The
+FFmpeg binding has no original standalone license file: its published WTFPL
+Cargo declaration is paired explicitly with the SPDX reference text. The 2
+Tract dirty VCS markers remain explicit; their 3 root license hashes also match
+published tract-core 0.23.8 files. None is mislabelled an original missing crate
+file. See NOTICES.md and `evidence/f7-notice-supplement-workflow.json`.
+
+The original 488-text/257-package companion remains unchanged. Together these
+supply notice material for all 265 selected normal third-party packages, with
+provenance retained. They do not establish dirty-source equivalence or complete
+system/font/optional/borrowed-code attribution/distribution acceptance.
+The earlier binary archives are not rewritten; final assembly must include
+both companions. No editor operation, build, test, render, browser check or restart was run.
+The 1 CPU/256 MiB/no-swap collection ends successfully in 4.04 s, peak 15,314,944 B,
+zero memory-limit/OOM/kill events. The live bf0b322/77d7 editor, 39 foreign
+Sessions/40 PIDs, 12 Saved files, 5 local media, 4 NAS files and proxy are unchanged.
+Ledger remains 61 done/29 partial/2 excluded; the full goal stays active.
+
+
+
 ## Native A/B source quality — 2026-10-24
 
 Source `bf0b322` / runtime `77d7f5fe4452` is active on port8855,

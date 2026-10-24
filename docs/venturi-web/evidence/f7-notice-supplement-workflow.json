@@ -1,0 +1,1005 @@
+{
+  "state": {
+    "phase": "passed",
+    "started_unix": 1792814314.0034263,
+    "updated_unix": 1792814318.0403683,
+    "index": {
+      "format": 1,
+      "source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+      "binary_sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+      "unchanged_graph_input_hashes": {
+        "Cargo.lock": "065da091d569398d72a965931c1fe31b4006272096687dbcce30dccc58f829a9",
+        "Cargo.toml": "83dc5cdcd5bb383911c6e6e0bba0171b6714efd872d947e28512c2e041f72cdd",
+        ".cargo/config.toml": "0e0de0defe7d7241d4538307d7164c7527c4149279ebde95cef0e2e63874b54c"
+      },
+      "original_companion": {
+        "path": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-rust-notices-2dbc9697d6e7.tar",
+        "sha256": "fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57",
+        "text_count": 488,
+        "packages_with_original_texts": 257,
+        "normal_third_party_packages": 265
+      },
+      "supplement_package_count": 8,
+      "supplement_notice_files": 14,
+      "packages": [
+        {
+          "name": "dasp_sample",
+          "version": "0.11.0",
+          "declared_license": "MIT OR Apache-2.0",
+          "crate_checksum": "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f",
+          "manifest_sha256": "887e72a805d35311dc78020a553e2106cb5ab83e4b37a66d3c1d9fab17831cfd",
+          "vcs": {
+            "git": {
+              "sha1": "97c3bb9b2363c0b46ac1633858bf1054fd02a980"
+            }
+          },
+          "binding_files": [
+            {
+              "path": "provenance/dasp_sample-0.11.0/.cargo_vcs_info.json",
+              "bytes": 74,
+              "sha256": "6087e3e70773558b775694400615f8ffc15ad269b0f7a741c26ef5c1e3696b7a",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+              }
+            },
+            {
+              "path": "provenance/dasp_sample-0.11.0/Cargo.toml.orig",
+              "bytes": 531,
+              "sha256": "a9debe8da6eca434f82d04bc9ba0df2b84a5ae18b1981ecc7d0781a3c6d5bab3",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/dasp_sample-0.11.0/LICENSE-APACHE",
+              "bytes": 561,
+              "sha256": "756c8d2ab2dc24f256e1455b5f03937f4933d83d7bc9f2d55009fc962377d512",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/rustaudio/sample.git",
+                "commit_recorded_in_crate": "97c3bb9b2363c0b46ac1633858bf1054fd02a980",
+                "path_in_vcs": null,
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE-APACHE",
+                "git_blob_sha1": "74c4f492b303bec6da5ec6af182865f664a4c4c0",
+                "request_url": "https://api.github.com/repositories/30742812/git/blobs/74c4f492b303bec6da5ec6af182865f664a4c4c0",
+                "resolved_url": "https://api.github.com/repositories/30742812/git/blobs/74c4f492b303bec6da5ec6af182865f664a4c4c0"
+              }
+            },
+            {
+              "path": "notices/dasp_sample-0.11.0/LICENSE-MIT",
+              "bytes": 1087,
+              "sha256": "b1d6df41ed3aa96806e74c729444d7c121d90e6660a6aed01d298e03fde475a0",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/rustaudio/sample.git",
+                "commit_recorded_in_crate": "97c3bb9b2363c0b46ac1633858bf1054fd02a980",
+                "path_in_vcs": null,
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE-MIT",
+                "git_blob_sha1": "b35b54912ac435a64227b09c9347475caefa1cbd",
+                "request_url": "https://api.github.com/repositories/30742812/git/blobs/b35b54912ac435a64227b09c9347475caefa1cbd",
+                "resolved_url": "https://api.github.com/repositories/30742812/git/blobs/b35b54912ac435a64227b09c9347475caefa1cbd"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "ffmpeg-sys-next",
+          "version": "9.0.0",
+          "declared_license": "WTFPL",
+          "crate_checksum": "9b939bf79dd5949412a4b81cfe21a07f48ea21b47fcbb5f57816c8c2de5ae30b",
+          "manifest_sha256": "32cceebdeda99fb255232fd9115600c4a596bc078dea49c21dabfc3fcbeef88e",
+          "vcs": {
+            "git": {
+              "sha1": "80b7dd8327c3539159f37d8ca5423c75d6cd2e57"
+            },
+            "path_in_vcs": ""
+          },
+          "binding_files": [
+            {
+              "path": "provenance/ffmpeg-sys-next-9.0.0/.cargo_vcs_info.json",
+              "bytes": 94,
+              "sha256": "40b61f6a303e341c283b30536d9d6d345f0771b6e7cac53488067a8bdcd7069c",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "9b939bf79dd5949412a4b81cfe21a07f48ea21b47fcbb5f57816c8c2de5ae30b"
+              }
+            },
+            {
+              "path": "provenance/ffmpeg-sys-next-9.0.0/Cargo.toml.orig",
+              "bytes": 3404,
+              "sha256": "e0d2e14bb762db0a7387c6c6bc5a659ad4aeeef42bff31e04a03d18a36af02d4",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "9b939bf79dd5949412a4b81cfe21a07f48ea21b47fcbb5f57816c8c2de5ae30b"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/ffmpeg-sys-next-9.0.0/SPDX-WTFPL.txt",
+              "bytes": 432,
+              "sha256": "13d8825a59e5e546d41e8711405d0f335a9934362a47c04a3b4280fa7932dc4a",
+              "provenance": {
+                "kind": "SPDX-reference-text-for-published-license-identifier",
+                "published_license": "WTFPL",
+                "metadata_url": "https://api.github.com/repos/spdx/license-list-data/contents/text/WTFPL.txt",
+                "resolved_metadata_url": "https://api.github.com/repos/spdx/license-list-data/contents/text/WTFPL.txt",
+                "git_blob_sha1": "7a3094a826e652c23d90a7dcb54b0963790b538b",
+                "immutable_blob_url": "https://api.github.com/repos/spdx/license-list-data/git/blobs/7a3094a826e652c23d90a7dcb54b0963790b538b",
+                "resolved_blob_url": "https://api.github.com/repos/spdx/license-list-data/git/blobs/7a3094a826e652c23d90a7dcb54b0963790b538b",
+                "note": "Reference text for the published Cargo license declaration; upstream crate/repository contains no standalone conventional license file. This is not an original package file."
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "harfrust",
+          "version": "0.5.2",
+          "declared_license": "MIT",
+          "crate_checksum": "9da2e5ae821f6e96664977bf974d6d6a2d6682f9ccee23e62ec1d134246845f9",
+          "manifest_sha256": "54f471a97dda129f825d84c381533e099c799725ea181a706e043fce0b8359de",
+          "vcs": {
+            "git": {
+              "sha1": "efdae3142ab76a2f1524d72cff9e3dfdc5afd7ca"
+            },
+            "path_in_vcs": "harfrust"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/harfrust-0.5.2/.cargo_vcs_info.json",
+              "bytes": 102,
+              "sha256": "86bdcf1ce6de7a5af4a4bf98be3160fc56c7aa58276f8c17d1c21bb8d73af92e",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "9da2e5ae821f6e96664977bf974d6d6a2d6682f9ccee23e62ec1d134246845f9"
+              }
+            },
+            {
+              "path": "provenance/harfrust-0.5.2/Cargo.toml.orig",
+              "bytes": 968,
+              "sha256": "bde128bf5c43ce76c58f1a5602f5684b0e68a5fd80d2db769c8a6f57887a3974",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "9da2e5ae821f6e96664977bf974d6d6a2d6682f9ccee23e62ec1d134246845f9"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/harfrust-0.5.2/LICENSE",
+              "bytes": 1117,
+              "sha256": "3a7c3f0b887abb7c638faf022d29257418458614c6724b120ceeffb279f9c7d2",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/harfbuzz/harfrust",
+                "commit_recorded_in_crate": "efdae3142ab76a2f1524d72cff9e3dfdc5afd7ca",
+                "path_in_vcs": "harfrust",
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE",
+                "git_blob_sha1": "37f101a957ca24d9f8ecbb2db7dfc6268561b46d",
+                "request_url": "https://api.github.com/repos/harfbuzz/harfrust/git/blobs/37f101a957ca24d9f8ecbb2db7dfc6268561b46d",
+                "resolved_url": "https://api.github.com/repos/harfbuzz/harfrust/git/blobs/37f101a957ca24d9f8ecbb2db7dfc6268561b46d"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "nom-language",
+          "version": "0.1.0",
+          "declared_license": "MIT",
+          "crate_checksum": "2de2bc5b451bfedaef92c90b8939a8fff5770bdcc1fafd6239d086aab8fa6b29",
+          "manifest_sha256": "dc6111b76b82592e83f88c749a5607678b3bbd922e834c9de9fb90afa852dfdd",
+          "vcs": {
+            "git": {
+              "sha1": "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1"
+            },
+            "path_in_vcs": "nom-language"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/nom-language-0.1.0/.cargo_vcs_info.json",
+              "bytes": 106,
+              "sha256": "61ef2d6baf5b25fca61349550a397663c558fdd4cc3d06e1c8bde24360ea04f6",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "2de2bc5b451bfedaef92c90b8939a8fff5770bdcc1fafd6239d086aab8fa6b29"
+              }
+            },
+            {
+              "path": "provenance/nom-language-0.1.0/Cargo.toml.orig",
+              "bytes": 311,
+              "sha256": "b5a35572e79e9645bc8e2d676ba8e1eaba7301ab864a906960adf9684addc249",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "2de2bc5b451bfedaef92c90b8939a8fff5770bdcc1fafd6239d086aab8fa6b29"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/nom-language-0.1.0/LICENSE",
+              "bytes": 1065,
+              "sha256": "4dbda04344456f09a7a588140455413a9ac59b6b26a1ef7cdf9c800c012d87f0",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/rust-bakery/nom",
+                "commit_recorded_in_crate": "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1",
+                "path_in_vcs": "nom-language",
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE",
+                "git_blob_sha1": "88557e44e34e2469f83d9c87701821c14386ba6b",
+                "request_url": "https://api.github.com/repos/rust-bakery/nom/git/blobs/88557e44e34e2469f83d9c87701821c14386ba6b",
+                "resolved_url": "https://api.github.com/repos/rust-bakery/nom/git/blobs/88557e44e34e2469f83d9c87701821c14386ba6b"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "profiling",
+          "version": "1.0.18",
+          "declared_license": "MIT OR Apache-2.0",
+          "crate_checksum": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5",
+          "manifest_sha256": "00c84a390cdb283f2fea80bb6ccbfef8af8cd2005e79309057af1b5030d3e6a5",
+          "vcs": {
+            "git": {
+              "sha1": "8271551172eb6fa4cba47369aedd93790c623df9"
+            },
+            "path_in_vcs": "profiling"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/profiling-1.0.18/.cargo_vcs_info.json",
+              "bytes": 103,
+              "sha256": "15498e60d175e3e5a4a1c4d30a3a4c836c130c79a93b5dd27944d5ae9a3b3b82",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
+              }
+            },
+            {
+              "path": "provenance/profiling-1.0.18/Cargo.toml.orig",
+              "bytes": 1582,
+              "sha256": "5c2cc51af406c9e636730400d7fd1293c3cc3ef294421113c6af826bb2d47c1b",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/profiling-1.0.18/LICENSE-APACHE",
+              "bytes": 10818,
+              "sha256": "10d30a673cd5e9349bdc02aeb48f14b3386d27d0da32df8f0a555d4aa16aa551",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/aclysma/profiling",
+                "commit_recorded_in_crate": "8271551172eb6fa4cba47369aedd93790c623df9",
+                "path_in_vcs": "profiling",
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE-APACHE",
+                "git_blob_sha1": "139dce95d473c201a8561ef17536314d8b8cda65",
+                "request_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/139dce95d473c201a8561ef17536314d8b8cda65",
+                "resolved_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/139dce95d473c201a8561ef17536314d8b8cda65"
+              }
+            },
+            {
+              "path": "notices/profiling-1.0.18/LICENSE-MIT",
+              "bytes": 1093,
+              "sha256": "c8167fdeeed46d3f244d3f85c5bf998ce889343691c32be2c61a8bc4b5c08333",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/aclysma/profiling",
+                "commit_recorded_in_crate": "8271551172eb6fa4cba47369aedd93790c623df9",
+                "path_in_vcs": "profiling",
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE-MIT",
+                "git_blob_sha1": "6a84e059ad8b43e03c2b06bc2af4dc1d8442808d",
+                "request_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/6a84e059ad8b43e03c2b06bc2af4dc1d8442808d",
+                "resolved_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/6a84e059ad8b43e03c2b06bc2af4dc1d8442808d"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "spirv",
+          "version": "0.4.0+sdk-1.4.341.0",
+          "declared_license": "Apache-2.0",
+          "crate_checksum": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f",
+          "manifest_sha256": "ccfb331b7ceec409f22af871472a4421fadc2bc37cd3b7b79416e0136d56a00d",
+          "vcs": {
+            "git": {
+              "sha1": "8afc3d0ac8e158128cd1410bb2e4b4c26ab11bb4"
+            },
+            "path_in_vcs": "spirv"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/spirv-0.4.0+sdk-1.4.341.0/.cargo_vcs_info.json",
+              "bytes": 99,
+              "sha256": "d6c805477fb7dd3f7ac6cd6589be6e91acb67f4976954a144278258409b8fa04",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
+              }
+            },
+            {
+              "path": "provenance/spirv-0.4.0+sdk-1.4.341.0/Cargo.toml.orig",
+              "bytes": 610,
+              "sha256": "4d19e7aaeba0b0dd52eaa00bb592dfc6015813385fc47badcee396c353cc1d61",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/spirv-0.4.0+sdk-1.4.341.0/LICENSE",
+              "bytes": 11358,
+              "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/gfx-rs/rspirv",
+                "commit_recorded_in_crate": "8afc3d0ac8e158128cd1410bb2e4b4c26ab11bb4",
+                "path_in_vcs": "spirv",
+                "published_vcs_dirty": false,
+                "repository_path": "LICENSE",
+                "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+                "request_url": "https://api.github.com/repos/gfx-rs/rspirv/git/blobs/d645695673349e3947e8e5ae42332d0ac3164cd7",
+                "resolved_url": "https://api.github.com/repos/gfx-rs/rspirv/git/blobs/d645695673349e3947e8e5ae42332d0ac3164cd7"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "tract-extra",
+          "version": "0.23.8",
+          "declared_license": "MIT OR Apache-2.0",
+          "crate_checksum": "2a05c86ece0c47880c7726e08dabb72d68e9cba0cd36d44bc0aa90e2291a05db",
+          "manifest_sha256": "5f99deae8e22f87173bd96813659b0e32d2f6f49efaf25d2113024448d590512",
+          "vcs": {
+            "git": {
+              "sha1": "248335349c0f59a5772d737480b8b39250097374",
+              "dirty": true
+            },
+            "path_in_vcs": "extra"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/tract-extra-0.23.8/.cargo_vcs_info.json",
+              "bytes": 118,
+              "sha256": "27516d0f04ba415e01c4e6c506f2e5d402ac3f53d9afd1d34339bdce97b51cf1",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "2a05c86ece0c47880c7726e08dabb72d68e9cba0cd36d44bc0aa90e2291a05db"
+              }
+            },
+            {
+              "path": "provenance/tract-extra-0.23.8/Cargo.toml.orig",
+              "bytes": 939,
+              "sha256": "b6027b969552e2f7bffa346c0dfcd908c37659595ca22e70279b23a7ea7cc04c",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "2a05c86ece0c47880c7726e08dabb72d68e9cba0cd36d44bc0aa90e2291a05db"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/tract-extra-0.23.8/LICENSE",
+              "bytes": 495,
+              "sha256": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "extra",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE",
+                "git_blob_sha1": "09250ca89f273c2eae410e7e7756c9ff7589ca02",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02"
+              }
+            },
+            {
+              "path": "notices/tract-extra-0.23.8/LICENSE-APACHE",
+              "bytes": 10847,
+              "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "extra",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE-APACHE",
+                "git_blob_sha1": "16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1"
+              }
+            },
+            {
+              "path": "notices/tract-extra-0.23.8/LICENSE-MIT",
+              "bytes": 1023,
+              "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "extra",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE-MIT",
+                "git_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        },
+        {
+          "name": "tract-transformers",
+          "version": "0.23.8",
+          "declared_license": "MIT OR Apache-2.0",
+          "crate_checksum": "4eefbb8d21ab36b48185fc86a3e861b3b62e6dcfd97c3cc13b0dd34389b60916",
+          "manifest_sha256": "bf402ad1f2411fd223fae45b954ffe2dc7b0f05a97f49f809fc622f843ea5f5e",
+          "vcs": {
+            "git": {
+              "sha1": "248335349c0f59a5772d737480b8b39250097374",
+              "dirty": true
+            },
+            "path_in_vcs": "transformers"
+          },
+          "binding_files": [
+            {
+              "path": "provenance/tract-transformers-0.23.8/.cargo_vcs_info.json",
+              "bytes": 125,
+              "sha256": "ba6b678357c7e4ae4cda40a0a46eff10b6ad9bb48f7d2c73b8f8edc69be08d5d",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "4eefbb8d21ab36b48185fc86a3e861b3b62e6dcfd97c3cc13b0dd34389b60916"
+              }
+            },
+            {
+              "path": "provenance/tract-transformers-0.23.8/Cargo.toml.orig",
+              "bytes": 864,
+              "sha256": "bbf0c43b3dab9054773ca371d714054b03855bc2d6e73a3e2bca502b04abfbee",
+              "provenance": {
+                "kind": "checksum-verified-published-crate",
+                "archive_sha256": "4eefbb8d21ab36b48185fc86a3e861b3b62e6dcfd97c3cc13b0dd34389b60916"
+              }
+            }
+          ],
+          "texts": [
+            {
+              "path": "notices/tract-transformers-0.23.8/LICENSE",
+              "bytes": 495,
+              "sha256": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "transformers",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE",
+                "git_blob_sha1": "09250ca89f273c2eae410e7e7756c9ff7589ca02",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02"
+              }
+            },
+            {
+              "path": "notices/tract-transformers-0.23.8/LICENSE-APACHE",
+              "bytes": 10847,
+              "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "transformers",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE-APACHE",
+                "git_blob_sha1": "16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1"
+              }
+            },
+            {
+              "path": "notices/tract-transformers-0.23.8/LICENSE-MIT",
+              "bytes": 1023,
+              "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+              "provenance": {
+                "kind": "upstream-workspace-license",
+                "repository": "https://github.com/sonos/tract",
+                "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+                "path_in_vcs": "transformers",
+                "published_vcs_dirty": true,
+                "repository_path": "LICENSE-MIT",
+                "git_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+                "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031",
+                "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031"
+              }
+            }
+          ],
+          "status": "separately-provenanced-notice-supplied"
+        }
+      ],
+      "files": [
+        {
+          "path": "provenance/dasp_sample-0.11.0/.cargo_vcs_info.json",
+          "bytes": 74,
+          "sha256": "6087e3e70773558b775694400615f8ffc15ad269b0f7a741c26ef5c1e3696b7a",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+          }
+        },
+        {
+          "path": "provenance/dasp_sample-0.11.0/Cargo.toml.orig",
+          "bytes": 531,
+          "sha256": "a9debe8da6eca434f82d04bc9ba0df2b84a5ae18b1981ecc7d0781a3c6d5bab3",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+          }
+        },
+        {
+          "path": "notices/dasp_sample-0.11.0/LICENSE-APACHE",
+          "bytes": 561,
+          "sha256": "756c8d2ab2dc24f256e1455b5f03937f4933d83d7bc9f2d55009fc962377d512",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/rustaudio/sample.git",
+            "commit_recorded_in_crate": "97c3bb9b2363c0b46ac1633858bf1054fd02a980",
+            "path_in_vcs": null,
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE-APACHE",
+            "git_blob_sha1": "74c4f492b303bec6da5ec6af182865f664a4c4c0",
+            "request_url": "https://api.github.com/repositories/30742812/git/blobs/74c4f492b303bec6da5ec6af182865f664a4c4c0",
+            "resolved_url": "https://api.github.com/repositories/30742812/git/blobs/74c4f492b303bec6da5ec6af182865f664a4c4c0"
+          }
+        },
+        {
+          "path": "notices/dasp_sample-0.11.0/LICENSE-MIT",
+          "bytes": 1087,
+          "sha256": "b1d6df41ed3aa96806e74c729444d7c121d90e6660a6aed01d298e03fde475a0",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/rustaudio/sample.git",
+            "commit_recorded_in_crate": "97c3bb9b2363c0b46ac1633858bf1054fd02a980",
+            "path_in_vcs": null,
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE-MIT",
+            "git_blob_sha1": "b35b54912ac435a64227b09c9347475caefa1cbd",
+            "request_url": "https://api.github.com/repositories/30742812/git/blobs/b35b54912ac435a64227b09c9347475caefa1cbd",
+            "resolved_url": "https://api.github.com/repositories/30742812/git/blobs/b35b54912ac435a64227b09c9347475caefa1cbd"
+          }
+        },
+        {
+          "path": "provenance/ffmpeg-sys-next-9.0.0/.cargo_vcs_info.json",
+          "bytes": 94,
+          "sha256": "40b61f6a303e341c283b30536d9d6d345f0771b6e7cac53488067a8bdcd7069c",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "9b939bf79dd5949412a4b81cfe21a07f48ea21b47fcbb5f57816c8c2de5ae30b"
+          }
+        },
+        {
+          "path": "provenance/ffmpeg-sys-next-9.0.0/Cargo.toml.orig",
+          "bytes": 3404,
+          "sha256": "e0d2e14bb762db0a7387c6c6bc5a659ad4aeeef42bff31e04a03d18a36af02d4",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "9b939bf79dd5949412a4b81cfe21a07f48ea21b47fcbb5f57816c8c2de5ae30b"
+          }
+        },
+        {
+          "path": "notices/ffmpeg-sys-next-9.0.0/SPDX-WTFPL.txt",
+          "bytes": 432,
+          "sha256": "13d8825a59e5e546d41e8711405d0f335a9934362a47c04a3b4280fa7932dc4a",
+          "provenance": {
+            "kind": "SPDX-reference-text-for-published-license-identifier",
+            "published_license": "WTFPL",
+            "metadata_url": "https://api.github.com/repos/spdx/license-list-data/contents/text/WTFPL.txt",
+            "resolved_metadata_url": "https://api.github.com/repos/spdx/license-list-data/contents/text/WTFPL.txt",
+            "git_blob_sha1": "7a3094a826e652c23d90a7dcb54b0963790b538b",
+            "immutable_blob_url": "https://api.github.com/repos/spdx/license-list-data/git/blobs/7a3094a826e652c23d90a7dcb54b0963790b538b",
+            "resolved_blob_url": "https://api.github.com/repos/spdx/license-list-data/git/blobs/7a3094a826e652c23d90a7dcb54b0963790b538b",
+            "note": "Reference text for the published Cargo license declaration; upstream crate/repository contains no standalone conventional license file. This is not an original package file."
+          }
+        },
+        {
+          "path": "provenance/harfrust-0.5.2/.cargo_vcs_info.json",
+          "bytes": 102,
+          "sha256": "86bdcf1ce6de7a5af4a4bf98be3160fc56c7aa58276f8c17d1c21bb8d73af92e",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "9da2e5ae821f6e96664977bf974d6d6a2d6682f9ccee23e62ec1d134246845f9"
+          }
+        },
+        {
+          "path": "provenance/harfrust-0.5.2/Cargo.toml.orig",
+          "bytes": 968,
+          "sha256": "bde128bf5c43ce76c58f1a5602f5684b0e68a5fd80d2db769c8a6f57887a3974",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "9da2e5ae821f6e96664977bf974d6d6a2d6682f9ccee23e62ec1d134246845f9"
+          }
+        },
+        {
+          "path": "notices/harfrust-0.5.2/LICENSE",
+          "bytes": 1117,
+          "sha256": "3a7c3f0b887abb7c638faf022d29257418458614c6724b120ceeffb279f9c7d2",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/harfbuzz/harfrust",
+            "commit_recorded_in_crate": "efdae3142ab76a2f1524d72cff9e3dfdc5afd7ca",
+            "path_in_vcs": "harfrust",
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE",
+            "git_blob_sha1": "37f101a957ca24d9f8ecbb2db7dfc6268561b46d",
+            "request_url": "https://api.github.com/repos/harfbuzz/harfrust/git/blobs/37f101a957ca24d9f8ecbb2db7dfc6268561b46d",
+            "resolved_url": "https://api.github.com/repos/harfbuzz/harfrust/git/blobs/37f101a957ca24d9f8ecbb2db7dfc6268561b46d"
+          }
+        },
+        {
+          "path": "provenance/nom-language-0.1.0/.cargo_vcs_info.json",
+          "bytes": 106,
+          "sha256": "61ef2d6baf5b25fca61349550a397663c558fdd4cc3d06e1c8bde24360ea04f6",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "2de2bc5b451bfedaef92c90b8939a8fff5770bdcc1fafd6239d086aab8fa6b29"
+          }
+        },
+        {
+          "path": "provenance/nom-language-0.1.0/Cargo.toml.orig",
+          "bytes": 311,
+          "sha256": "b5a35572e79e9645bc8e2d676ba8e1eaba7301ab864a906960adf9684addc249",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "2de2bc5b451bfedaef92c90b8939a8fff5770bdcc1fafd6239d086aab8fa6b29"
+          }
+        },
+        {
+          "path": "notices/nom-language-0.1.0/LICENSE",
+          "bytes": 1065,
+          "sha256": "4dbda04344456f09a7a588140455413a9ac59b6b26a1ef7cdf9c800c012d87f0",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/rust-bakery/nom",
+            "commit_recorded_in_crate": "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1",
+            "path_in_vcs": "nom-language",
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE",
+            "git_blob_sha1": "88557e44e34e2469f83d9c87701821c14386ba6b",
+            "request_url": "https://api.github.com/repos/rust-bakery/nom/git/blobs/88557e44e34e2469f83d9c87701821c14386ba6b",
+            "resolved_url": "https://api.github.com/repos/rust-bakery/nom/git/blobs/88557e44e34e2469f83d9c87701821c14386ba6b"
+          }
+        },
+        {
+          "path": "provenance/profiling-1.0.18/.cargo_vcs_info.json",
+          "bytes": 103,
+          "sha256": "15498e60d175e3e5a4a1c4d30a3a4c836c130c79a93b5dd27944d5ae9a3b3b82",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
+          }
+        },
+        {
+          "path": "provenance/profiling-1.0.18/Cargo.toml.orig",
+          "bytes": 1582,
+          "sha256": "5c2cc51af406c9e636730400d7fd1293c3cc3ef294421113c6af826bb2d47c1b",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
+          }
+        },
+        {
+          "path": "notices/profiling-1.0.18/LICENSE-APACHE",
+          "bytes": 10818,
+          "sha256": "10d30a673cd5e9349bdc02aeb48f14b3386d27d0da32df8f0a555d4aa16aa551",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/aclysma/profiling",
+            "commit_recorded_in_crate": "8271551172eb6fa4cba47369aedd93790c623df9",
+            "path_in_vcs": "profiling",
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE-APACHE",
+            "git_blob_sha1": "139dce95d473c201a8561ef17536314d8b8cda65",
+            "request_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/139dce95d473c201a8561ef17536314d8b8cda65",
+            "resolved_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/139dce95d473c201a8561ef17536314d8b8cda65"
+          }
+        },
+        {
+          "path": "notices/profiling-1.0.18/LICENSE-MIT",
+          "bytes": 1093,
+          "sha256": "c8167fdeeed46d3f244d3f85c5bf998ce889343691c32be2c61a8bc4b5c08333",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/aclysma/profiling",
+            "commit_recorded_in_crate": "8271551172eb6fa4cba47369aedd93790c623df9",
+            "path_in_vcs": "profiling",
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE-MIT",
+            "git_blob_sha1": "6a84e059ad8b43e03c2b06bc2af4dc1d8442808d",
+            "request_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/6a84e059ad8b43e03c2b06bc2af4dc1d8442808d",
+            "resolved_url": "https://api.github.com/repos/aclysma/profiling/git/blobs/6a84e059ad8b43e03c2b06bc2af4dc1d8442808d"
+          }
+        },
+        {
+          "path": "provenance/spirv-0.4.0+sdk-1.4.341.0/.cargo_vcs_info.json",
+          "bytes": 99,
+          "sha256": "d6c805477fb7dd3f7ac6cd6589be6e91acb67f4976954a144278258409b8fa04",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
+          }
+        },
+        {
+          "path": "provenance/spirv-0.4.0+sdk-1.4.341.0/Cargo.toml.orig",
+          "bytes": 610,
+          "sha256": "4d19e7aaeba0b0dd52eaa00bb592dfc6015813385fc47badcee396c353cc1d61",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
+          }
+        },
+        {
+          "path": "notices/spirv-0.4.0+sdk-1.4.341.0/LICENSE",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/gfx-rs/rspirv",
+            "commit_recorded_in_crate": "8afc3d0ac8e158128cd1410bb2e4b4c26ab11bb4",
+            "path_in_vcs": "spirv",
+            "published_vcs_dirty": false,
+            "repository_path": "LICENSE",
+            "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+            "request_url": "https://api.github.com/repos/gfx-rs/rspirv/git/blobs/d645695673349e3947e8e5ae42332d0ac3164cd7",
+            "resolved_url": "https://api.github.com/repos/gfx-rs/rspirv/git/blobs/d645695673349e3947e8e5ae42332d0ac3164cd7"
+          }
+        },
+        {
+          "path": "provenance/tract-extra-0.23.8/.cargo_vcs_info.json",
+          "bytes": 118,
+          "sha256": "27516d0f04ba415e01c4e6c506f2e5d402ac3f53d9afd1d34339bdce97b51cf1",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "2a05c86ece0c47880c7726e08dabb72d68e9cba0cd36d44bc0aa90e2291a05db"
+          }
+        },
+        {
+          "path": "provenance/tract-extra-0.23.8/Cargo.toml.orig",
+          "bytes": 939,
+          "sha256": "b6027b969552e2f7bffa346c0dfcd908c37659595ca22e70279b23a7ea7cc04c",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "2a05c86ece0c47880c7726e08dabb72d68e9cba0cd36d44bc0aa90e2291a05db"
+          }
+        },
+        {
+          "path": "notices/tract-extra-0.23.8/LICENSE",
+          "bytes": 495,
+          "sha256": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "extra",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE",
+            "git_blob_sha1": "09250ca89f273c2eae410e7e7756c9ff7589ca02",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02"
+          }
+        },
+        {
+          "path": "notices/tract-extra-0.23.8/LICENSE-APACHE",
+          "bytes": 10847,
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "extra",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE-APACHE",
+            "git_blob_sha1": "16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1"
+          }
+        },
+        {
+          "path": "notices/tract-extra-0.23.8/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "extra",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE-MIT",
+            "git_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031"
+          }
+        },
+        {
+          "path": "provenance/tract-transformers-0.23.8/.cargo_vcs_info.json",
+          "bytes": 125,
+          "sha256": "ba6b678357c7e4ae4cda40a0a46eff10b6ad9bb48f7d2c73b8f8edc69be08d5d",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "4eefbb8d21ab36b48185fc86a3e861b3b62e6dcfd97c3cc13b0dd34389b60916"
+          }
+        },
+        {
+          "path": "provenance/tract-transformers-0.23.8/Cargo.toml.orig",
+          "bytes": 864,
+          "sha256": "bbf0c43b3dab9054773ca371d714054b03855bc2d6e73a3e2bca502b04abfbee",
+          "provenance": {
+            "kind": "checksum-verified-published-crate",
+            "archive_sha256": "4eefbb8d21ab36b48185fc86a3e861b3b62e6dcfd97c3cc13b0dd34389b60916"
+          }
+        },
+        {
+          "path": "notices/tract-transformers-0.23.8/LICENSE",
+          "bytes": 495,
+          "sha256": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "transformers",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE",
+            "git_blob_sha1": "09250ca89f273c2eae410e7e7756c9ff7589ca02",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/09250ca89f273c2eae410e7e7756c9ff7589ca02"
+          }
+        },
+        {
+          "path": "notices/tract-transformers-0.23.8/LICENSE-APACHE",
+          "bytes": 10847,
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "transformers",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE-APACHE",
+            "git_blob_sha1": "16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/16fe87b06e802f094b3fbb0894b137bca2b16ef1"
+          }
+        },
+        {
+          "path": "notices/tract-transformers-0.23.8/LICENSE-MIT",
+          "bytes": 1023,
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "provenance": {
+            "kind": "upstream-workspace-license",
+            "repository": "https://github.com/sonos/tract",
+            "commit_recorded_in_crate": "248335349c0f59a5772d737480b8b39250097374",
+            "path_in_vcs": "transformers",
+            "published_vcs_dirty": true,
+            "repository_path": "LICENSE-MIT",
+            "git_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+            "request_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031",
+            "resolved_url": "https://api.github.com/repos/sonos/tract/git/blobs/31aa79387f27e730e33d871925e152e35e428031"
+          }
+        }
+      ],
+      "network_requests": 12,
+      "bytes_read_from_known_crate_archives": 473879,
+      "scope": "Adds upstream workspace license files at revisions recorded by exact checksum-verified published crates, and one explicit SPDX reference text for the published WTFPL identifier. Original package-notice archive remains verbatim. Tract dirty VCS markers remain explicit. This supplies notice material for all265 normal-graph packages, but is not exact-source equivalence for dirty repositories, exhaustive borrowed-code attribution or a system/font/optional dependency/distribution audit."
+    },
+    "archive": "/home/halo/.local/share/venturi-web/deliveries/venturi-web-notice-supplement-bf0b322.tar",
+    "archive_sha256": "2256945f8e90565ffcc5c23675d3df072b4d881c10c347f013727e24f4e88763",
+    "archive_bytes": 194560,
+    "memory_peak_bytes": 15314944,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    }
+  },
+  "unit": {
+    "LoadState": "not-found",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "MemoryCurrent": "[not set]",
+    "MemoryPeak": "[not set]"
+  },
+  "tail": "",
+  "date": "2026-10-24",
+  "source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+  "current_documentation_commit": "0429e7c",
+  "properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=100%",
+    "MemoryMax=256M",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=16",
+    "RuntimeMaxSec=85",
+    "TimeoutStopSec=5",
+    "Restart=no",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/notice-supplement-r1/worker.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/notice-supplement-r1/worker.log"
+  ],
+  "tract_published_text_comparison": {
+    "tract-extra": {
+      "same_text_sha256_as_published_tract_core_0_23_8": {
+        "LICENSE": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+        "LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+        "LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      },
+      "dirty_vcs_marker_retained": true
+    },
+    "tract-transformers": {
+      "same_text_sha256_as_published_tract_core_0_23_8": {
+        "LICENSE": "f7ef673bf046d823dcd775bdd0768432bd8855f81d0e5e1290a0a48c42e2dca3",
+        "LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+        "LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      },
+      "dirty_vcs_marker_retained": true
+    }
+  },
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 12,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "validation": "All8 exact cached .crate checksums, contained manifest hashes and .cargo_vcs_info checked; upstream Git blob hashes and UTF8 checked; archive index and every copied member re-read and SHA256 matched. Prior488-text archive hash rechecked, unchanged. No build/render/browser/restart or production/source mutation.",
+  "coverage": {
+    "normal_third_party_packages": 265,
+    "original_package_notice_texts": 257,
+    "additional_separately_provenanced_package_notices": 8,
+    "original_notice_files": 488,
+    "additional_notice_files": 14,
+    "supplement_integrated_into_previous_package": false
+  },
+  "remaining": [
+    "Attach both immutable notice companions to the next assembled binary delivery; existing archives remain version-qualified",
+    "System-library/font/optional or borrowed-code attribution and distribution scope remain separate",
+    "Physical input/DPI/audio/long real footage/dense/typical editing soak and9 native clock cases remain unqualified"
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2
+  }
+}

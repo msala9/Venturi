@@ -160,6 +160,11 @@ Current A/B quality qualification: `evidence/f6-review-quality-workflow.json`.
 
 The latest packaged snapshot and its isolated prior/forward startup are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. That archive remains bound to5959f90/59b6 and excludes the current A/B quality increment; use the live immutable executable above for this increment. Full M7 acceptance remains open.
 
+Current notice companions: NOTICES.md and `evidence/f7-notice-supplement-workflow.json`.
+The original488-text archive and separate14-file supplement retain distinct
+provenance and must accompany the next assembled delivery. Neither changes the
+current executable, editor configuration or existing package bytes.
+
 ## Historical deliveries and workflow notes
 
 The following sections retain earlier evidence and version-specific behavior.

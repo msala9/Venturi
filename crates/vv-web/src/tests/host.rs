@@ -5050,6 +5050,7 @@ fn native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edite
     let media_before = editor.session.project.media_pool.len();
     let timelines_before = editor.session.project.timelines.len();
     let imported = native_import(&mut editor, "compound-asset", &revision, "import-compound");
+    assert_eq!(imported["changed"], true);
     assert_eq!(editor.session.history.position(), position + 1);
     assert_eq!(editor.session.project.media_pool.len(), media_before + 2);
     assert_eq!(editor.session.project.timelines.len(), timelines_before + 1);
@@ -5083,6 +5084,7 @@ fn native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edite
     let position = editor.session.history.position();
     let generation = editor.session.history.generation();
     let reused = native_import(&mut editor, "compound-asset", &revision, "reuse-compound");
+    assert_eq!(reused["changed"], false);
     assert_eq!(reused["media_ids"], imported["media_ids"]);
     assert_eq!(editor.session.history.position(), position);
     assert_eq!(editor.session.history.generation(), generation);

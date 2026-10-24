@@ -538,6 +538,7 @@ impl Editor {
             self.native_command_capacity()?;
         }
         let previous_epoch = self.session.epoch();
+        let previous_generation = self.session.history.generation();
         self.media_import_receipt = None;
         self.native_asset_receipt = None;
         self.otio_import_receipt = None;
@@ -653,6 +654,7 @@ impl Editor {
                 && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
                 use vv_core::Id;
                 value["media_ids"]=json!(imported.selected.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>());
+                value["changed"]=json!(self.session.history.generation()!=previous_generation);
             }
             value
         });

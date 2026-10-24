@@ -144,6 +144,71 @@ fn ranged_proxy_keeps_the_native_held_frame_when_the_start_falls_inside_a_timest
     std::fs::remove_dir_all(directory).unwrap();
 }
 
+#[test]
+fn ranged_proxy_holds_the_first_picture_without_rebasing_a_delayed_video_stream() {
+    let directory =
+        std::env::temp_dir().join(format!("vv-proxy-range-delayed-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.mp4");
+    crate::probe::ensure_init();
+    let mut encoder = ProxyEncoder::new(
+        &source,
+        16,
+        16,
+        ProxyQuality::Low,
+        vv_core::Rational::new(25, 1),
+        ColorMatrix::Bt709,
+        false,
+        1,
+    )
+    .unwrap();
+    for index in 2..8 {
+        encoder.next_pts = index;
+        encoder
+            .write_frame(&crate::FrameYuv420 {
+                width: 16,
+                height: 16,
+                y: vec![40 + (index as u8 - 2) * 20; 256],
+                chroma: Chroma::Planar {
+                    u: vec![128; 64],
+                    v: vec![128; 64],
+                },
+                chroma_width: 8,
+                chroma_height: 8,
+                matrix: ColorMatrix::Bt709,
+                full_range: false,
+                alpha: None,
+            })
+            .unwrap();
+    }
+    encoder.finish().unwrap();
+    let mut original = Decoder::open_software_bounded(&source, 1).unwrap();
+    assert_eq!(original.next_frame().unwrap().unwrap().0, 2);
+    for start in [0, 1, 2] {
+        let output = directory.join(format!("range-{start}.mp4"));
+        generate_proxy_range_at(&source, &output, ProxyQuality::Low, start..6, 1, |_| true)
+            .unwrap();
+        let mut decoder = Decoder::open_software_bounded(&output, 1).unwrap();
+        for expected in start..6 {
+            let (index, picture) = decoder.next_frame().unwrap().unwrap();
+            assert_eq!(index, expected - start);
+            let luma = 40 + (expected.max(2) - 2) as u8 * 20;
+            assert!(picture.y[0].abs_diff(luma) <= 6);
+        }
+        assert!(decoder.next_frame().unwrap().is_none());
+    }
+    let canceled = directory.join("canceled.mp4");
+    assert!(matches!(
+        generate_proxy_range_at(&source, &canceled, ProxyQuality::Low, 0..6, 1, |frames| frames < 1),
+        Err(crate::MediaError::Cancelled)
+    ));
+    assert!(!canceled.exists());
+    assert!(!canceled
+        .with_extension(format!("tmp-{}.mp4", std::process::id()))
+        .exists());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
 fn make_test_clip(file_name: &str, size: &str, duration_secs: u32) -> PathBuf {
     let dir = std::env::temp_dir().join("vv-media-proxy-test");
     std::fs::create_dir_all(&dir).unwrap();

@@ -272,11 +272,6 @@ pub fn generate_proxy_range_at_width(
             if index < expected {
                 continue;
             }
-            if index != expected {
-                return Err(range_error(
-                    "Source range has no frame at its requested position",
-                ));
-            }
             if encoder.is_none() {
                 let (width, height) =
                     scaled_dimensions(frame.width, frame.height, max_width.clamp(2, 8192));
@@ -291,8 +286,16 @@ pub fn generate_proxy_range_at_width(
                     threads,
                 )?);
             }
-            encoder.as_mut().unwrap().write_frame(&frame)?;
-            frames += 1;
+            // Native export holds the first available picture before its PTS.
+            while range.start + (frames as i64) <= index
+                && range.start + (frames as i64) < range.end
+            {
+                if !on_frame(frames) {
+                    return Err(crate::MediaError::Cancelled);
+                }
+                encoder.as_mut().unwrap().write_frame(&frame)?;
+                frames += 1;
+            }
         }
         encoder
             .ok_or_else(|| range_error("Source range contains no video frames"))?

@@ -1990,7 +1990,7 @@ viewer = createViewer({
       : null,
 });
 function currentViewerContext(){
-  if(document.fullscreenElement===$('viewer'))return null;
+  if(document.fullscreenElement===$('viewer') || $('viewer').dataset.viewerMaximized==='true')return null;
   if(!documentState || !timeline || viewerMode!=="program" || !$("program-view").hidden || !$("slip-view").hidden)return null;
   const clips=timeline.tracks.filter(track=>track.kind==="video" && !track.muted).flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
   const clip=clips.length===1?clips[0]:null,current=viewer?.current();
@@ -1998,7 +1998,7 @@ function currentViewerContext(){
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
 }
 function currentViewerTransformContext(){
-  if(document.fullscreenElement===$('viewer'))return null;
+  if(document.fullscreenElement===$('viewer') || $('viewer').dataset.viewerMaximized==='true')return null;
   if(!documentState || !timeline || viewerMode!=='program' || !$('program-view').hidden || !$('slip-view').hidden || programPlayer?.state()!=='stopped' || document.querySelector('dialog[open]'))return null;
   const selection=videoPropertySelection({project_epoch:documentState.project_epoch,generation:documentState.generation,timeline,selection:view.selection});
   if(!selection)return null;
@@ -2047,7 +2047,7 @@ viewerZoom=createViewerZoom({screen:$('screen'),media:[$('preview'),$('program-v
     return !element.hidden && element.getAttribute('src')?element:null;
   },getContext:()=>JSON.stringify([documentState?.project_epoch,timeline?.id,viewerMode,sourceOpenId]),
   onChange:()=>{transformOverlay?.cancel();maskOverlay?.cancel();transformOverlay?.invalidate();maskOverlay?.invalidate();}});
-createViewerFullscreen({root:$('viewer'),button:$('fullscreen'),controls:$('viewer-playback-controls'),zoom:viewerZoom,onError:message=>{$('viewer-fullscreen-status').textContent=message;notice(message);},
+createViewerFullscreen({root:$('viewer'),button:$('fullscreen'),exitButton:$('viewer-fullscreen-exit'),fallbackLabel:$('viewer-fullscreen-mode'),controls:$('viewer-playback-controls'),zoom:viewerZoom,onFallback:notice,onError:message=>{$('viewer-fullscreen-status').textContent=message;notice(message);},
   onTogglePlayback:()=>{$('play').click();},
   beforeEnter:()=>{cancelInspectorDraft();programArrowHold?.cancel();canvasTimeline?.cancel();transformOverlay?.cancel();maskOverlay?.cancel();slipView?.reset();timelineContextMenu?.close(false);retimeMenu?.close(false);clipListDismissal.close();},
   onChange:()=>{transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();}});

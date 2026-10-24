@@ -12,9 +12,12 @@ remain visible. Exit restores normal zoom/pan and the entry focus.
 Ctrl+F and Escape operate only on the owned Viewer. Space on the fullscreen
 Viewer delegates the existing Play/Pause action; focused buttons and inputs
 retain their normal keyboard behavior. Entry cancels local editing gestures
-and drafts without committing them or resetting playback. A refused browser
-request restores the normal view; another element's fullscreen is left to its
-owner.
+and drafts without committing them or resetting playback. Native admission is bounded: a denied or unanswered request maximizes the
+Viewer inside the current tab with an explicit mode label and Exit control.
+Tab/Shift+Tab stay in its visible transport controls. Only one native request
+may remain unresolved; exiting cancels its intent, so a late grant cannot reopen
+the Viewer. A desired late grant may upgrade to native fullscreen and clears
+the fallback label. Another element's fullscreen is left to its owner.
 
 
 ## V1 audio tradeoff — owner decision, 2026-10-23

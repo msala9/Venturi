@@ -140,12 +140,16 @@ test('fullscreen temporarily fits Source and Program across resize while preserv
 });
 
 function fullscreenHarness(){
-  const h=harness(),controls=new Node('div',h.document),play=new Node('button',h.document),button=new Node('button',h.document),previous=new Node('button',h.document),errors=[],changes=[];
-  controls.append(play);h.screen.append(controls);previous.focus();let entered=0,exited=0,canceled=0,playback=0;
+  const h=harness(),controls=new Node('div',h.document),play=new Node('button',h.document),button=new Node('button',h.document),exitButton=new Node('button',h.document),fallbackLabel=new Node('output',h.document),previous=new Node('button',h.document),errors=[],fallbacks=[],changes=[];
+  const jobs=new Map();let timerId=0;
+  const timers={setTimeout(callback,delay){const id=++timerId;jobs.set(id,{callback,delay});return id;},clearTimeout(id){jobs.delete(id);},fire(){const [id,job]=jobs.entries().next().value;assert.equal(job.delay,1200);jobs.delete(id);job.callback();}};
+  controls.append(play,exitButton,fallbackLabel);h.screen.append(controls);previous.focus();let entered=0,exited=0,canceled=0,playback=0;
+  controls.querySelectorAll=()=>[play,exitButton];
+  h.screen.closest=selector=>selector===':fullscreen,[data-viewer-maximized="true"]' && (h.document.fullscreenElement===h.screen || h.screen.dataset.viewerMaximized==='true')?h.screen:null;
   h.screen.requestFullscreen=async()=>{entered++;h.document.fullscreenElement=h.screen;h.document.emit('fullscreenchange');};
   h.document.exitFullscreen=async()=>{exited++;h.document.fullscreenElement=null;h.document.emit('fullscreenchange');};
-  const fullscreen=createViewerFullscreen({root:h.screen,button,controls,zoom:h.zoom,beforeEnter:()=>canceled++,onTogglePlayback:()=>playback++,onChange:value=>changes.push(value),onError:message=>errors.push(message)});
-  return {...h,fullscreen,controls,play,button,previous,errors,changes,entered:()=>entered,exited:()=>exited,canceled:()=>canceled,playback:()=>playback,dispose(){fullscreen.dispose();h.zoom.dispose();}};
+  const fullscreen=createViewerFullscreen({root:h.screen,button,exitButton,fallbackLabel,controls,zoom:h.zoom,timers,beforeEnter:()=>canceled++,onTogglePlayback:()=>playback++,onChange:value=>changes.push(value),onError:message=>errors.push(message),onFallback:message=>fallbacks.push(message)});
+  return {...h,fullscreen,controls,play,button,exitButton,fallbackLabel,previous,errors,fallbacks,changes,timers,jobs,entered:()=>entered,exited:()=>exited,canceled:()=>canceled,playback:()=>playback,dispose(){fullscreen.dispose();h.zoom.dispose();}};
 }
 
 test('owned fullscreen reveals transport only in the bottom 90 pixels or keyboard focus and restores prior focus on Escape',async()=>{
@@ -163,10 +167,11 @@ test('owned fullscreen reveals transport only in the bottom 90 pixels or keyboar
   }finally{h.dispose();}
 });
 
-test('fullscreen failures and foreign fullscreen preserve normal zoom and focus without exiting another owner',async()=>{
+test('denied browser fullscreen offers explicit in-tab maximization; foreign fullscreen is never exited',async()=>{
   const h=fullscreenHarness();try{
     h.zoom.setScale(2);h.screen.requestFullscreen=async()=>{throw Error('Fullscreen permission denied');};
-    assert.equal(await h.fullscreen.toggle(),false);assert.equal(h.zoom.current().scale,2);assert.equal(h.document.activeElement,h.previous);assert.deepEqual(h.errors,['Fullscreen permission denied']);
+    assert.equal(await h.fullscreen.toggle(),true);assert.equal(h.zoom.current().is_fit,true);assert.equal(h.screen.dataset.viewerMaximized,'true');assert.equal(h.fallbackLabel.hidden,false);assert.match(h.fallbackLabel.textContent,/Browser fullscreen unavailable/);assert.match(h.fallbacks[0],/Fullscreen permission denied/);assert.deepEqual(h.errors,[]);
+    h.exitButton.emit('click');assert.equal(h.fullscreen.active(),false);assert.equal(h.zoom.current().scale,2);assert.equal(h.document.activeElement,h.previous);assert.equal(h.exitButton.hidden,true);
     h.document.fullscreenElement=new Node('video',h.document);assert.equal(await h.fullscreen.toggle(),false);h.document.emit('keydown',{key:'Escape'});h.document.emit('keydown',{key:'f',ctrlKey:true});
     assert.equal(h.exited(),0);assert.equal(h.zoom.current().scale,2);assert.equal(h.document.activeElement,h.previous);
     h.document.fullscreenElement=null;h.document.modal=true;assert.equal(await h.fullscreen.toggle(),false);assert.equal(h.canceled(),1);
@@ -176,7 +181,7 @@ test('fullscreen failures and foreign fullscreen preserve normal zoom and focus 
 test('pending fullscreen admission is single flight and browser-owned exit restores the saved normal view',async()=>{
   const h=fullscreenHarness();try{
     h.zoom.setScale(3);let grant;h.screen.requestFullscreen=()=>new Promise(resolve=>{grant=()=>{h.document.fullscreenElement=h.screen;h.document.emit('fullscreenchange');resolve();};});
-    const first=h.fullscreen.toggle();assert.equal(await h.fullscreen.toggle(),false);assert.equal(h.canceled(),1);assert.equal(h.zoom.current().is_fit,true);
+    const first=h.fullscreen.toggle();assert.equal(h.jobs.size,1);assert.equal(h.canceled(),1);assert.equal(h.zoom.current().is_fit,true);
     grant();assert.equal(await first,true);assert.equal(h.zoom.current().is_fit,true);
     h.document.fullscreenElement=null;h.document.emit('fullscreenchange');assert.equal(h.zoom.current().scale,3);assert.equal(h.document.activeElement,h.previous);
   }finally{h.dispose();}
@@ -191,8 +196,8 @@ test('fullscreen admission protects normal pan before an earlier resize or fulls
         if(rejected){h.document.area={...area};throw Error('Denied after resize');}
         h.document.fullscreenElement=h.screen;h.document.emit('fullscreenchange');
       };
-      assert.equal(await h.fullscreen.toggle(),!rejected);
-      h.document.area={...area};if(!rejected){h.document.fullscreenElement=null;h.document.emit('fullscreenchange');}
+      assert.equal(await h.fullscreen.toggle(),true);
+      h.document.area={...area};if(!rejected){h.document.fullscreenElement=null;h.document.emit('fullscreenchange');}else h.exitButton.emit('click');
       assert.deepEqual(h.zoom.bounds(),normal);assert.equal(h.zoom.current().scale,0.0625);
     }finally{h.dispose();}
   }
@@ -203,5 +208,52 @@ test('fullscreen Space toggles native playback once while focused controls keep 
     await h.fullscreen.toggle();const space={key:' ',target:h.screen};assert.equal(h.document.emit('keydown',space).defaultPrevented,true);assert.equal(h.playback(),1);
     for(const extra of [{repeat:true},{ctrlKey:true},{isComposing:true},{keyCode:229},{defaultPrevented:true},{target:{closest:()=>h.play}}])h.document.emit('keydown',{...space,...extra});
     assert.equal(h.playback(),1);h.document.modal=true;h.document.emit('keydown',space);assert.equal(h.playback(),1);
+  }finally{h.dispose();}
+});
+
+test('unsettled browser admission times out to bounded in-tab Fit and Exit restores normal zoom before a late grant',async()=>{
+  const h=fullscreenHarness();try{
+    h.zoom.setScale(3);let grant,requests=0;
+    h.screen.requestFullscreen=()=>{requests++;return new Promise(resolve=>{grant=()=>{h.document.fullscreenElement=h.screen;h.document.emit('fullscreenchange');resolve();};});};
+    const first=h.fullscreen.toggle();h.timers.fire();assert.equal(await first,true);assert.equal(requests,1);assert.equal(h.jobs.size,0);
+    assert.equal(h.document.fullscreenElement,undefined);assert.equal(h.screen.dataset.viewerMaximized,'true');assert.equal(h.exitButton.hidden,false);assert.equal(h.fallbackLabel.hidden,false);assert.equal(h.zoom.current().is_fit,true);
+    h.screen.emit('pointermove',{clientY:area.top+area.height-1});assert.equal(h.controls.inert,false);
+    h.document.emit('keydown',{key:' ',target:h.screen});assert.equal(h.playback(),1);
+    h.exitButton.emit('click');assert.equal(h.fullscreen.active(),false);assert.equal(h.screen.dataset.viewerMaximized,'false');assert.equal(h.zoom.current().scale,3);assert.equal(h.select.disabled,false);assert.equal(h.document.activeElement,h.previous);
+    grant();await Promise.resolve();await Promise.resolve();assert.equal(h.exited(),1);assert.equal(h.fullscreen.active(),false);assert.equal(h.document.fullscreenElement,null);assert.equal(h.zoom.current().scale,3);assert.equal(h.exitButton.hidden,true);assert.deepEqual(h.changes,[true,false]);
+  }finally{h.dispose();}
+});
+
+test('cancel and reenter while one browser request remains unresolved reuses fallback and never starts another request',async()=>{
+  const h=fullscreenHarness();try{
+    let grant,requests=0;h.screen.requestFullscreen=()=>{requests++;return new Promise(resolve=>{grant=()=>{h.document.fullscreenElement=h.screen;h.document.emit('fullscreenchange');resolve();};});};
+    const first=h.fullscreen.toggle();assert.equal(await h.fullscreen.toggle(),false);assert.equal(await first,false);assert.equal(h.jobs.size,0);assert.equal(h.select.disabled,false);
+    assert.equal(await h.fullscreen.toggle(),true);assert.equal(requests,1);assert.equal(h.screen.dataset.viewerMaximized,'true');assert.equal(h.document.activeElement,h.screen);
+    grant();await Promise.resolve();await Promise.resolve();assert.equal(h.fullscreen.active(),true);assert.equal(h.screen.dataset.viewerMaximized,'false');assert.equal(h.fallbackLabel.hidden,true);assert.equal(h.exited(),0);assert.equal(h.zoom.current().is_fit,true);
+    h.document.emit('keydown',{key:'Escape'});assert.equal(h.fullscreen.active(),false);assert.equal(h.document.activeElement,h.previous);assert.equal(h.jobs.size,0);
+  }finally{h.dispose();}
+});
+
+test('late native grants protect normal pan before controller dispatch and never exit a foreign fullscreen owner',async()=>{
+  const h=fullscreenHarness();try{
+    h.zoom.setScale(0.0625);h.screen.emit('pointerdown',{button:1,pointerId:5,clientX:400,clientY:200});h.screen.emit('pointermove',{pointerId:5,buttons:4,clientX:850,clientY:200});h.screen.emit('pointerup',{pointerId:5});const normal=h.zoom.bounds();
+    let grant;h.screen.requestFullscreen=()=>new Promise(resolve=>{grant=resolve;});
+    const first=h.fullscreen.toggle();await h.fullscreen.toggle();assert.equal(await first,false);
+    h.document.area={left:0,top:0,width:160,height:120};h.document.fullscreenElement=h.screen;h.zoom.refresh();assert.equal(h.zoom.current().is_fit,true);
+    h.document.fullscreenElement=new Node('video',h.document);h.document.area={...area};h.document.emit('fullscreenchange');grant();await Promise.resolve();await Promise.resolve();
+    assert.equal(h.exited(),0);assert.equal(h.fullscreen.active(),false);assert.deepEqual(h.zoom.bounds(),normal);assert.equal(h.select.disabled,false);
+  }finally{h.dispose();}
+});
+
+test('in-tab maximization keeps Tab and Shift Tab on visible transport controls without focusing the covered editor',async()=>{
+  const h=fullscreenHarness();try{
+    h.screen.requestFullscreen=()=>new Promise(()=>{});const opened=h.fullscreen.toggle();h.timers.fire();assert.equal(await opened,true);
+    assert.equal(h.document.activeElement,h.screen);assert.equal(h.controls.inert,true);
+    assert.equal(h.document.emit('keydown',{key:'Tab',target:h.screen}).defaultPrevented,true);assert.equal(h.document.activeElement,h.play);assert.equal(h.controls.inert,false);
+    h.document.emit('keydown',{key:'Tab',target:h.play});assert.equal(h.document.activeElement,h.exitButton);
+    h.document.emit('keydown',{key:'Tab',target:h.exitButton});assert.equal(h.document.activeElement,h.play);
+    h.document.emit('keydown',{key:'Tab',shiftKey:true,target:h.play});assert.equal(h.document.activeElement,h.exitButton);
+    h.document.modal=true;assert.equal(h.document.emit('keydown',{key:'Tab',target:h.exitButton}).defaultPrevented,undefined);h.document.modal=false;
+    h.exitButton.emit('click');assert.equal(h.document.activeElement,h.previous);assert.equal(h.controls.inert,false);
   }finally{h.dispose();}
 });

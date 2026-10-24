@@ -142,7 +142,7 @@ footer button { min-height: 17px; padding: 0 4px; font-size: 9px; }
  .viewer-primary-row > #viewer-caption { overflow: hidden; text-overflow: ellipsis; }
  #timecode { position: static; margin-right: auto; font-size: 10px; }
  #program-mark-range { display: none; }
- #viewer:not(:fullscreen) > #viewer-playback-controls > .transport { justify-content: flex-start; }
+ #viewer:not(:fullscreen):not([data-viewer-maximized="true"]) > #viewer-playback-controls > .transport { justify-content: flex-start; }
  .menu-items { position: fixed; top: 24px; left: 3px; }
 }
 

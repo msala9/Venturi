@@ -282,6 +282,8 @@
         <div id="viewer-playback-controls">
         <div class="viewer-seek"><input id="program-position" type="range" min="0" max="0" step="1" value="0" aria-label="Program position" disabled><div id="source-seek-control" hidden><label>Source position (full file) <input id="source-position" type="range" min="0" max="0" step="1" value="0" disabled></label></div></div>
         <div class="transport">
+          <button id="viewer-fullscreen-exit" type="button" hidden title="Escape · return to the editor">Exit fullscreen</button>
+          <output id="viewer-fullscreen-mode" hidden></output>
           <button id="step-back" aria-label="Previous frame">◀│</button
           ><button id="play" disabled title="Select Source for media playback">
             ▶ Play</button

@@ -8,50 +8,83 @@ const fresh=()=>({scale:null,pan:[0,0]});
 export function isViewerFullscreenShortcut(event,{dialogOpen=false}={}){
   return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.getModifierState?.('AltGraph') && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && event.key?.toLowerCase()==='f' && !isTextTarget(event.target);
 }
-export function createViewerFullscreen({root,button,controls,zoom,beforeEnter=()=>{},onTogglePlayback=()=>{},onChange=()=>{},onError=()=>{}}){
-  const documentRef=root.ownerDocument,listeners=[];
-  let pending=false,disposed=false,owned=false,returnFocus=null,hovering=false;
+export function createViewerFullscreen({root,button,exitButton,fallbackLabel,controls,zoom,timers,beforeEnter=()=>{},onTogglePlayback=()=>{},onChange=()=>{},onFallback=()=>{},onError=()=>{}}){
+  const documentRef=root.ownerDocument,timerAPI=timers ?? documentRef.defaultView,listeners=[];
+  let desired=false,maximized=false,attempt=null,disposed=false,owned=false,hadNative=false,returnFocus=null,hovering=false;
   const listen=(target,type,callback)=>{target.addEventListener(type,callback);listeners.push(()=>target.removeEventListener(type,callback));};
-  const active=()=>documentRef.fullscreenElement===root;
+  const native=()=>documentRef.fullscreenElement===root;
+  const active=()=>desired && (native() || maximized);
+  function finishAdmission(owner,value){
+    if(owner?.timer!==null && owner?.timer!==undefined)timerAPI.clearTimeout(owner.timer);
+    if(owner){owner.timer=null;const resolve=owner.resolve;owner.resolve=null;resolve?.(value);}
+  }
+  function exitNative(){
+    if(native())try{Promise.resolve(documentRef.exitFullscreen()).catch(error=>{if(!disposed)onError(error?.message || 'Exit browser fullscreen with Escape');});}catch(error){if(!disposed)onError(error.message);}
+  }
+  function fallback(owner,reason=''){
+    if(disposed || !desired)return;
+    maximized=true;
+    if(!owner?.reported){if(owner)owner.reported=true;onFallback(`Browser fullscreen unavailable · Viewer maximized in this tab${reason?` · ${reason}`:''}`);}
+    sync();finishAdmission(owner,true);
+  }
   function reveal(value,focused=controls.contains(documentRef.activeElement)){
     const visible=active() && (value || focused);
     root.dataset.fullscreenControls=String(visible);controls.inert=active() && !visible;
   }
   function sync(){
     if(disposed)return;
+    const inBrowser=native();
+    if(inBrowser && !desired){zoom.setFullscreen(true);exitNative();return;}
+    if(!inBrowser && hadNative && !maximized)desired=false;
+    if(documentRef.fullscreenElement && !inBrowser){desired=false;maximized=false;finishAdmission(attempt,false);}
+    if(inBrowser && desired){maximized=false;finishAdmission(attempt,true);}
+    hadNative=inBrowser;
     const next=active(),changed=next!==owned;owned=next;
-    root.dataset.viewerFullscreen=String(next);button.setAttribute('aria-pressed',String(next));zoom.setFullscreen(next);
+    root.dataset.viewerMaximized=String(next && maximized);root.dataset.viewerFullscreen=String(next);
+    button.setAttribute('aria-pressed',String(desired));exitButton.hidden=!next;
+    fallbackLabel.hidden=!(next && maximized);fallbackLabel.textContent='Browser fullscreen unavailable · maximized in this tab';
+    zoom.setFullscreen(desired || inBrowser);zoom.refresh();
     if(changed){
       hovering=false;reveal(false);onChange(next);
       if(next)root.focus({preventScroll:true});
-      else{
-        const previous=returnFocus;returnFocus=null;
-        if(previous?.isConnected!==false && typeof previous?.focus==='function')previous.focus({preventScroll:true});
-      }
     }else if(!next)controls.inert=false;
+    if(!next && !desired && !inBrowser){
+      const previous=returnFocus;returnFocus=null;
+      if(previous?.isConnected!==false && typeof previous?.focus==='function')previous.focus({preventScroll:true});
+    }
   }
   async function toggle(){
-    if(disposed || pending || documentRef.querySelector?.('dialog[open]') || documentRef.fullscreenElement && !active())return false;
-    pending=true;
-    try{
-      if(active())await documentRef.exitFullscreen();
-      else{
-        returnFocus=documentRef.activeElement;beforeEnter();zoom.setFullscreen(true);
-        await root.requestFullscreen();
-      }
-      if(disposed){if(active())await documentRef.exitFullscreen();return false;}
-      sync();return active();
-    }catch(error){if(!active())returnFocus=null;if(!disposed)onError(error?.message || 'Fullscreen viewer is unavailable');sync();return false;}
-    finally{pending=false;}
+    if(disposed || documentRef.querySelector?.('dialog[open]') || documentRef.fullscreenElement && !native())return false;
+    if(desired){desired=false;maximized=false;finishAdmission(attempt,false);sync();return false;}
+    desired=true;returnFocus=documentRef.activeElement;beforeEnter();zoom.setFullscreen(true);
+    if(attempt && !attempt.settled){fallback(attempt);return active();}
+    const owner={settled:false,reported:false,timer:null,resolve:null};attempt=owner;
+    const admitted=new Promise(resolve=>{owner.resolve=resolve;});
+    owner.timer=timerAPI.setTimeout(()=>{owner.timer=null;if(attempt===owner)fallback(owner);},1200);
+    const settled=error=>{
+      owner.settled=true;
+      if(disposed || !desired){finishAdmission(owner,false);exitNative();if(!disposed)sync();return;}
+      if(native()){sync();finishAdmission(owner,true);}else fallback(owner,error?.message || '');
+    };
+    try{Promise.resolve(root.requestFullscreen()).then(()=>settled(),settled);}catch(error){settled(error);}
+    return admitted;
   }
   listen(button,'click',()=>{void toggle();});
+  listen(exitButton,'click',()=>{if(desired)void toggle();});
   listen(documentRef,'fullscreenchange',sync);
   listen(documentRef,'keydown',event=>{
-    if(event.key==='Escape' && active() && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]')){
+    if(event.key==='Escape' && desired && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]')){
       event.preventDefault();event.stopPropagation();void toggle();
-    }else if(isViewerFullscreenShortcut(event,{dialogOpen:Boolean(documentRef.querySelector?.('dialog[open]'))}) && (!documentRef.fullscreenElement || active())){
+    }else if(isViewerFullscreenShortcut(event,{dialogOpen:Boolean(documentRef.querySelector?.('dialog[open]'))}) && (!documentRef.fullscreenElement || native())){
       event.preventDefault();event.stopPropagation();void toggle();
-    }else if(event.key==='Tab' && active() && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]'))reveal(true);
+    }else if(event.key==='Tab' && active() && !event.defaultPrevented && !event.isComposing && !documentRef.querySelector?.('dialog[open]')){
+      reveal(true);
+      if(maximized){
+        const nodes=[...controls.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(node=>!node.disabled && !node.hidden && node.getAttribute('tabindex')!=='-1' && !node.closest?.('[hidden],[inert]') && node.getClientRects?.().length!==0);
+        const index=nodes.indexOf(documentRef.activeElement),next=event.shiftKey?index<=0?nodes.at(-1):nodes[index-1]:nodes[(index+1)%nodes.length];
+        event.preventDefault();event.stopPropagation();(next ?? root).focus({preventScroll:true});
+      }
+    }
     else if(active() && [' ','Spacebar'].includes(event.key) && !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !documentRef.querySelector?.('dialog[open]') && !event.target?.closest?.('button,input,select,textarea,summary,a,[contenteditable],[role="button"]')){
       event.preventDefault();event.stopPropagation();onTogglePlayback();
     }
@@ -60,7 +93,7 @@ export function createViewerFullscreen({root,button,controls,zoom,beforeEnter=()
   listen(root,'pointerleave',()=>{hovering=false;reveal(false);});
   listen(controls,'focusin',()=>reveal(true));listen(controls,'focusout',event=>reveal(hovering,controls.contains(event.relatedTarget)));
   sync();
-  return {toggle,active,sync,dispose(){if(disposed)return;disposed=true;for(const remove of listeners)remove();controls.inert=false;zoom.setFullscreen(false);delete root.dataset.viewerFullscreen;delete root.dataset.fullscreenControls;if(active())void documentRef.exitFullscreen().catch(()=>{});}};
+  return {toggle,active,sync,dispose(){if(disposed)return;disposed=true;desired=false;maximized=false;finishAdmission(attempt,false);for(const remove of listeners)remove();controls.inert=false;exitButton.hidden=true;fallbackLabel.hidden=true;delete root.dataset.viewerMaximized;delete root.dataset.viewerFullscreen;delete root.dataset.fullscreenControls;zoom.setFullscreen(false);exitNative();}};
 }
 const valid=(area,frame,dpr)=>area && [area.left,area.top,area.width,area.height,...frame,dpr].every(Number.isFinite) && area.width>0 && area.height>0 && frame.every(value=>value>0) && dpr>0;
 export function viewerZoomPercent(scale){
@@ -100,7 +133,8 @@ export function viewerZoomPan(state,delta,area,frame,dpr=1){
 export function createViewerZoom({screen,media,getActive,getContext=()=>null,onChange=()=>{},select,status}){
   const documentRef=screen.ownerDocument,windowRef=documentRef.defaultView,listeners=[],groups=new Map(),originals=[];
   let state=fresh(),binding=null,pan=null,disposed=false,fullscreen=false;
-  const displayState=()=>fullscreen?fresh():state;
+  const forcedFit=()=>fullscreen || Boolean(screen.closest?.(':fullscreen,[data-viewer-maximized="true"]'));
+  const displayState=()=>forcedFit()?fresh():state;
   const listen=(target,type,callback,options)=>{target.addEventListener(type,callback,options);listeners.push(()=>target.removeEventListener(type,callback,options));};
   for(const element of media){
     const parent=element.parentNode;
@@ -134,13 +168,13 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
   function paint(next){
     const shown=displayState(),geometry=next && viewerZoomRect(shown,next.area,next.frame,dpr());
     if(select){
-      select.disabled=fullscreen || !geometry;
+      select.disabled=forcedFit() || !geometry;
       select.value=shown.scale===null?'fit':VIEWER_ZOOM_PRESETS.includes(shown.scale)?String(shown.scale):'custom';
       const custom=select.querySelector?.('option[value="custom"]');if(custom)custom.textContent=`${geometry?viewerZoomPercent(geometry.scale):'Custom'} · custom`;
     }
     if(status)status.textContent=geometry?`${shown.scale===null?'Fit':viewerZoomPercent(geometry.scale)} · ${next.frame[0]} × ${next.frame[1]} received preview pixels · 100% = one preview pixel per display pixel`:'Zoom applies to a received Source or Program preview';
     if(!geometry)return null;
-    if(!fullscreen)state={scale:state.scale,pan:geometry.pan};
+    if(!forcedFit())state={scale:state.scale,pan:geometry.pan};
     Object.assign(next.element.style,{left:`${geometry.left-next.area.left}px`,top:`${geometry.top-next.area.top}px`,width:`${geometry.width}px`,height:`${geometry.height}px`});
     return geometry;
   }
@@ -152,13 +186,13 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     return paint(next);
   }
   function change(next,reason){
-    if(disposed || fullscreen)return false;
+    if(disposed || forcedFit())return false;
     const current=target();if(!current)return false;
     state=next;onChange({reason});binding={...current,stamp:stamp(current)};paint(current);return true;
   }
-  function fit(){if(fullscreen)return;cancelPan();state=fresh();if(!disposed){onChange({reason:'fit'});refresh();}}
+  function fit(){if(forcedFit())return;cancelPan();state=fresh();if(!disposed){onChange({reason:'fit'});refresh();}}
   function setScale(scale){
-    if(fullscreen)return false;cancelPan();const current=target();
+    if(forcedFit())return false;cancelPan();const current=target();
     if(!current)return false;
     return change(viewerZoomScale(state,scale,current.area,current.frame,dpr()),'zoom');
   }
@@ -167,7 +201,7 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     if(select.value==='fit')fit();else if(select.value!=='custom')setScale(Number(select.value));
   });
   listen(screen,'wheel',event=>{
-    if(fullscreen)return;
+    if(forcedFit())return;
     const current=target();if(!current || event.defaultPrevented)return;
     const {area,frame}=current,x=event.clientX,y=event.clientY;
     if(x<area.left || y<area.top || x>=area.left+area.width || y>=area.top+area.height)return;
@@ -179,7 +213,7 @@ export function createViewerZoom({screen,media,getActive,getContext=()=>null,onC
     }else change(viewerZoomAround(state,[x,y],Math.exp(-delta[1]/200),area,frame,dpr()),'zoom');
   },{passive:false,capture:true});
   listen(screen,'pointerdown',event=>{
-    if(fullscreen || event.button!==1 || pan || event.defaultPrevented)return;
+    if(forcedFit() || event.button!==1 || pan || event.defaultPrevented)return;
     const current=target();if(!current)return;
     const {area}=current;
     if(event.clientX<area.left || event.clientX>=area.left+area.width || event.clientY<area.top || event.clientY>=area.top+area.height)return;

@@ -1,5 +1,25 @@
 # Active completion plan — full Venturi Web scope
 
+## Bounded workspace diagnostics delivered - 2026-10-24
+
+Source `f91792d` / runtime `c76c6b6cf349` is active on halo1/8855 (PID549742).
+The existing View/Diagnostics panel now shows Canvas draw CPU p50/p95/max
+over at most128 samples and accounted media-cache bytes/items. It updates
+at1Hz only while visible; closed/hidden/disposed cases have focused tests.
+All92 focused client cases, one native embedded-import/MIME check, fresh
+vv-web Clippy and incremental build pass. Peak2095054848B, zero memory events.
+Actual Chrome opens the panel, closes it for two zooms and reopens it:
+the sample window advances11 to13 while the closed text stays unchanged.
+All16 Saved, native model/view/history, Recovery and NAS items stay exact;
+40 foreign PIDs/39 Sessions are preserved across the guarded upgrade.
+See `evidence/f1-workspace-performance-workflow.json`. These are Canvas CPU
+and accounted cache values, not FPS, display/input latency, RSS or VRAM.
+Remaining physical/device/held/OS/fullscreen/long-playback/M7 checks remain
+in FINAL_CHECKS.md; the ledger stays62 done/28 partial/2 excluded.
+R9 remains immutable and separately source-bound to0667653/718; refresh
+the final archive after the remaining observability implementation.
+
+
 ## Dense500 cold derived assets checked - 2026-10-24
 
 On unchanged R9 source `0667653` / runtime `718850754776`, actual Chrome loads

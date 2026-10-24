@@ -516,6 +516,12 @@ Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo tes
 
 ## Observability and performance proof
 
+Canvas draw CPU/accounted media-cache diagnostics are implemented and checked in
+`evidence/f1-workspace-performance-workflow.json` (source f91792d). This is not
+FPS, hardware presentation/input latency, process memory or VRAM acceptance.
+RPC JSON timing, input-dispatch-to-Canvas-complete instrumentation and any
+remaining unavailable counters must retain explicit scope and bounded storage.
+
 Instrument CPU timing of Canvas draw, pointer-to-visible latency, RPC p50/p95, frame queue occupancy, cache bytes/hits, decoder/encoder choice, GPU adapter/VRAM, dropped frames and A/V drift. Don't print real prompt/media details in logs without consent.
 
 Performance numbers are goals, not achieved results: 60fps timeline, <=1 animation frame input visual response, browser initial compressed JS target <100KB, still seek cached target <100ms, playback start once cached target <500ms, no memory growth after 2h typical editing.

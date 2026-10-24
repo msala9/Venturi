@@ -19,6 +19,8 @@ use tokio::sync::oneshot;
 use vv_core::{Rational, Timeline, Track, TrackKind};
 use vv_session::Session;
 
+const LIBRARY_BUSY_NOTICE: &str = "Native libraries are busy. Project editing remains available; refresh the library after the current operation or native recovery finishes.";
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct KeyframeNavigationRequest {
@@ -220,6 +222,7 @@ pub struct Editor {
     import_warnings: Vec<String>,
     clipboard: Option<crate::clipboard::Clipboard>,
     persistence_notice: Option<&'static str>,
+    library_refresh_pending: bool,
     autosave: crate::autosave::Store,
     receipts: Option<crate::receipts::Store>,
     presets: crate::preset_store::Store,
@@ -335,13 +338,17 @@ impl Editor {
             import_warnings: vec![],
             clipboard: None,
             persistence_notice,
+            library_refresh_pending: false,
             autosave,
             receipts,
         };
-        if editor.harvest_native_completions(true).is_err() {
-            editor.persistence_notice = Some(
-                "Native library command outcomes require recovery. Existing metadata was preserved; resolve the command before retrying.",
-            );
+        if let Err(error) = editor.harvest_native_completions(true) {
+            editor.library_refresh_pending = error.1 == "LIBRARY_BUSY";
+            editor.persistence_notice.get_or_insert(if error.1 == "LIBRARY_BUSY" {
+                LIBRARY_BUSY_NOTICE
+            } else {
+                "Native library command outcomes require recovery. Existing metadata was preserved; resolve the command before retrying."
+            });
         }
         Ok(editor)
     }
@@ -1772,6 +1779,14 @@ impl Editor {
         }
         Ok(())
     }
+    fn retry_busy_libraries(&mut self) {
+        if self.library_refresh_pending && self.harvest_native_completions(true).is_ok() {
+            self.library_refresh_pending = false;
+            if self.persistence_notice == Some(LIBRARY_BUSY_NOTICE) {
+                self.persistence_notice = None;
+            }
+        }
+    }
     fn prepare_native_edit(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
         if !matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation())
         {
@@ -2778,6 +2793,7 @@ impl Editor {
             Action::AudioPresets(query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 let mut value = self.audio_presets.list()?;
+                self.retry_busy_libraries();
                 value["project_epoch"] = json!(query.project_epoch);
                 Ok(value)
             }
@@ -2788,7 +2804,9 @@ impl Editor {
                         "Project changed before reading presets",
                     ));
                 }
-                self.presets.list(page, &query)
+                let value = self.presets.list(page, &query)?;
+                self.retry_busy_libraries();
+                Ok(value)
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
             Action::PrepareMediaImport(request) => self.prepare_media_import(request),
@@ -2925,12 +2943,14 @@ impl Editor {
             Action::NativeAssetFolders(query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 let mut value = self.assets.folders()?;
+                self.retry_busy_libraries();
                 value["project_epoch"] = json!(query.project_epoch);
                 Ok(value)
             }
             Action::NativeAssetList(page, query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 let mut value = self.assets.list(page, &query)?;
+                self.retry_busy_libraries();
                 if let Some(items) = value["items"].as_array_mut() {
                     for item in items {
                         self.annotate_native_asset_placement(item);

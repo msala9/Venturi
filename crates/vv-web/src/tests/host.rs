@@ -1,6 +1,239 @@
 use super::*;
 
 #[test]
+fn native_library_busy_startup_keeps_local_edit_save_undo_and_refresh_on_configured_roots() {
+    use vv_core::Id;
+
+    for presets_busy in [false, true] {
+        let root = std::env::temp_dir().join(format!(
+            "vv-library-startup-busy-{}-{}",
+            std::process::id(),
+            crate::asset_jobs::nonce()
+        ));
+        let project_root = root.join("project");
+        let assets_root = root.join("shared");
+        let preset_root = assets_root.join("presets");
+        let mut seed = Editor::with_libraries(&project_root, &preset_root, &assets_root).unwrap();
+        let create = request(
+            &seed,
+            Operation::NewProject {
+                name: "Local".into(),
+            },
+            "startup-project",
+            None,
+        );
+        seed.mutation(None, create).unwrap();
+        let folder = folder_request(&seed, "configured-folder", "Configured Library");
+        let mut prepared = folder_prepare(&mut seed, folder.clone());
+        seed.mutation(None, folder).unwrap();
+        prepared.armed = false;
+        drop(prepared);
+        std::fs::write(preset_root.join("preserved.json"), b"{").unwrap();
+        let save = request(&seed, Operation::Save, "startup-baseline", None);
+        seed.mutation(None, save).unwrap();
+        let saved_path = seed.session.path().unwrap().to_owned();
+        let saved = std::fs::read(&saved_path).unwrap();
+        let folder_bytes = std::fs::read(assets_root.join("folders.json")).unwrap();
+        drop(seed);
+
+        let lock_path = if presets_busy {
+            preset_root.join(".venturi-presets.lock")
+        } else {
+            assets_root.join(".venturi-assets-catalog.lock")
+        };
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(lock_path)
+            .unwrap();
+        held.try_lock().unwrap();
+        let mut editor = Editor::with_libraries(&project_root, &preset_root, &assets_root).unwrap();
+        assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+        assert_eq!(editor.persistence_notice, Some(LIBRARY_BUSY_NOTICE));
+        let epoch = editor.snapshot()["project_epoch"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let read = |editor: &mut Editor| {
+            if presets_busy {
+                editor.handle(Action::PresetList(
+                    0,
+                    crate::preset_store::Query {
+                        project_epoch: epoch.clone(),
+                        ..Default::default()
+                    },
+                ))
+            } else {
+                editor.handle(Action::NativeAssetFolders(SourceQuery {
+                    project_epoch: epoch.clone(),
+                }))
+            }
+        };
+        assert_eq!(read(&mut editor).unwrap_err().1, "LIBRARY_BUSY");
+        let timeline = editor.session.project.timelines.keys().next().unwrap();
+        let tracks = editor.session.project.timelines[timeline].tracks.len();
+        let add = request(
+            &editor,
+            Operation::AddTrack { audio: false },
+            "startup-add-track",
+            Some(timeline),
+        );
+        editor
+            .mutation(Some(timeline.raw().to_string()), add)
+            .unwrap();
+        assert_eq!(
+            editor.session.project.timelines[timeline].tracks.len(),
+            tracks + 1
+        );
+        let undo = request(&editor, Operation::Undo, "startup-undo", None);
+        editor.mutation(None, undo).unwrap();
+        assert_eq!(
+            editor.session.project.timelines[timeline].tracks.len(),
+            tracks
+        );
+        let redo = request(&editor, Operation::Redo, "startup-redo", None);
+        editor.mutation(None, redo).unwrap();
+        let save = request(&editor, Operation::Save, "startup-save", None);
+        editor.mutation(None, save).unwrap();
+        assert_eq!(read(&mut editor).unwrap_err().1, "LIBRARY_BUSY");
+        let saved = std::fs::read(&saved_path).unwrap();
+        assert!(editor.library_refresh_pending);
+        let project = json!(editor.session.project);
+        let history = editor.snapshot()["history"].clone();
+        drop(held);
+
+        let refreshed = read(&mut editor).unwrap();
+        if presets_busy {
+            assert_eq!(refreshed["items"][0]["id"], "preserved");
+            assert!(refreshed["items"][0]["error"].is_string());
+        } else {
+            assert_eq!(refreshed["folders"][0]["id"], "configured-folder");
+            assert_eq!(refreshed["folders"][0]["name"], "Configured Library");
+        }
+        assert_eq!(editor.persistence_notice, None);
+        assert!(!editor.library_refresh_pending);
+        assert_eq!(json!(editor.session.project), project);
+        assert_eq!(editor.snapshot()["history"], history);
+        assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+        assert_eq!(
+            std::fs::read(assets_root.join("folders.json")).unwrap(),
+            folder_bytes
+        );
+        assert_eq!(
+            std::fs::read(preset_root.join("preserved.json")).unwrap(),
+            b"{"
+        );
+        assert!(!project_root.join(".assets").exists());
+        assert!(!project_root.join(".presets").exists());
+        drop(editor);
+        let reopened = Editor::with_libraries(&project_root, &preset_root, &assets_root).unwrap();
+        assert_eq!(
+            reopened.session.project.timelines[timeline].tracks.len(),
+            tracks + 1
+        );
+        assert_eq!(std::fs::read(saved_path).unwrap(), saved);
+        drop(reopened);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn native_library_busy_startup_preserves_foreign_recovery_until_its_owner_finishes() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-pending-startup-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let seed = Editor::new(&root).unwrap();
+    drop(seed);
+    let marker = root.join(".assets/.venturi-native-assets-pending.json");
+    let bytes = b"foreign recovery intent";
+    std::fs::write(&marker, bytes).unwrap();
+    let mut editor = Editor::new(&root).unwrap();
+    let epoch = editor.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_eq!(
+        editor
+            .handle(Action::NativeAssetFolders(SourceQuery {
+                project_epoch: epoch.clone()
+            }))
+            .unwrap_err()
+            .1,
+        "LIBRARY_BUSY"
+    );
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Local".into(),
+        },
+        "pending-local-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    assert_eq!(std::fs::read(&marker).unwrap(), bytes);
+    let saved = std::fs::read(editor.session.path().unwrap()).unwrap();
+    let project = json!(editor.session.project);
+    let history = editor.snapshot()["history"].clone();
+    let epoch = editor.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    std::fs::remove_file(marker).unwrap();
+    editor
+        .handle(Action::NativeAssetFolders(SourceQuery {
+            project_epoch: epoch,
+        }))
+        .unwrap();
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.snapshot()["history"], history);
+    assert_eq!(
+        std::fs::read(editor.session.path().unwrap()).unwrap(),
+        saved
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_library_unavailable_or_unsafe_root_still_refuses_startup_without_a_fallback() {
+    use std::os::unix::fs::symlink;
+
+    let root = std::env::temp_dir().join(format!(
+        "vv-library-invalid-startup-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let project_root = root.join("project");
+    let mut seed = Editor::new(&project_root).unwrap();
+    let create = request(
+        &seed,
+        Operation::NewProject {
+            name: "Preserved".into(),
+        },
+        "preserved-project",
+        None,
+    );
+    seed.mutation(None, create).unwrap();
+    let path = seed.session.path().unwrap().to_owned();
+    let saved = std::fs::read(&path).unwrap();
+    drop(seed);
+    let invalid = root.join("not-a-library");
+    std::fs::write(&invalid, b"preserved file").unwrap();
+    let presets = root.join("presets");
+    assert!(Editor::with_libraries(&project_root, &presets, &invalid).is_err());
+    let real = root.join("real-library");
+    std::fs::create_dir(&real).unwrap();
+    let link = root.join("library-link");
+    symlink(&real, &link).unwrap();
+    assert!(Editor::with_libraries(&project_root, &presets, &link).is_err());
+    assert_eq!(std::fs::read(invalid).unwrap(), b"preserved file");
+    assert_eq!(std::fs::read(path).unwrap(), saved);
+    assert!(!real.join("assets").exists());
+    assert!(!real.join("media").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn deliberate_relink_prepared_host_ack_replays_after_source_removal_and_restart() {
     let (root, mut editor, media) = native_asset_fixture("deliberate-relink");
     let original = std::fs::read(root.join("capture.wav")).unwrap();
@@ -3149,7 +3382,27 @@ fn native_folder_completion_is_harvested_on_restart_before_a_retry_or_unknown_lo
     let folders = std::fs::read(root.join(".assets/folders.json")).unwrap();
     drop(guard);
     drop(editor);
+    let held = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(".assets/.venturi-assets-catalog.lock"))
+        .unwrap();
+    held.try_lock().unwrap();
     let mut restarted = Editor::new(&root).unwrap();
+    assert!(restarted.library_refresh_pending);
+    assert!(!restarted.completed.contains_key("crash-folder"));
+    drop(held);
+    let epoch = restarted.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    restarted
+        .handle(Action::NativeAssetFolders(SourceQuery {
+            project_epoch: epoch,
+        }))
+        .unwrap();
+    assert!(!restarted.library_refresh_pending);
+    assert!(restarted.completed.contains_key("crash-folder"));
     let receipt = restarted.lookup("crash-folder").unwrap();
     assert_eq!(receipt["status"], "applied");
     assert_eq!(receipt["server_restarted"], true);

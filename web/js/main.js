@@ -17,6 +17,7 @@ import {createSourcePlacement} from './source-placement.js';
 import {createSourceWaveform} from './source-waveform.js';
 import {createTimelineWaveforms} from './timeline-waveforms.js';
 import { createProgramPlayer } from "./program.js";
+import {createProgramSeek} from './program-seek.js';
 import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
@@ -430,7 +431,7 @@ const view = {
 let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
-let seek = () => {},programArrowHold=null;
+let seek = () => {},programArrowHold=null,programSeek=null;
 let viewer = null, viewerZoom=null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null, sourceLibraryItem=null, sourcePreviewAttempt=null;
@@ -511,6 +512,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  programSeek?.cancel();
   programArrowHold?.cancel();
   cancelInspectorDraft();
   cancelSourcePreview();
@@ -647,6 +649,7 @@ $("program-mark-in").addEventListener('click',()=>setProgramMark(false));
 $("program-mark-out").addEventListener('click',()=>setProgramMark(true));
 function togglePlayback() {
   audioScrub?.stop();
+  if(programSeek?.cancel())return;
   if(fastTransport?.cancelPreparation())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   derivativesTransportPending=true;sourceAssets?.refresh();timelineWaveforms?.refresh();
@@ -1026,12 +1029,14 @@ const canvasTimeline = createTimeline({
   onSeek: (final) => {
     audioMeters?.invalidate();
     audioScrub?.stop();
-    programPlayer?.pauseLocal();
+    if(!programSeek?.begin())programPlayer?.pauseLocal();
     scopes?.invalidate("STALE · scrubbing");
     syncPlayheadSelection(false);
     updateTime();
-    if (final) { seek(); selected(); audioScrub?.request();void projectView?.update(); }
+    if (final) { void programSeek?.finish().then(applied=>{if(applied && !programPlayer?.playing())audioScrub?.request();}); selected();void projectView?.update(); }
   },
+  onSeekStart:()=>programSeek?.begin(),
+  onSeekCancel:()=>programSeek?.cancel(),
   onCommand: (operation) => commit(operation),
   onNotice: notice,
   canEdit: () => writable && !busy && !unresolved,
@@ -1276,9 +1281,11 @@ function step(delta) {
   audioScrub?.request();
   void projectView?.update();
 }
-$('program-position').addEventListener('pointerdown',()=>{fastTransport?.stop();programPlayer?.stop();audioScrub?.stop();});
-$('program-position').addEventListener('input',()=>{view.playhead=Number($('program-position').value);updateTime();});
-$('program-position').addEventListener('change',()=>{syncPlayheadSelection(false);void seek();selected();void projectView?.update();});
+$('program-position').addEventListener('pointerdown',()=>programSeek?.begin());
+$('program-position').addEventListener('input',()=>{programSeek?.begin();view.playhead=Number($('program-position').value);updateTime();});
+$('program-position').addEventListener('change',()=>{syncPlayheadSelection(false);void programSeek?.finish();selected();void projectView?.update();});
+$('program-position').addEventListener('pointercancel',()=>programSeek?.cancel());
+$('program-position').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();programSeek?.cancel();updateTime();}});
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));
 programArrowHold=createArrowHold({
@@ -1345,6 +1352,7 @@ async function openTimelineRoot(next){
 }
 async function refresh({preserveAudioDrafts=false}={}) {
   const invalidateTimeline=()=>{
+    programSeek?.cancel();
     compoundNavigation?.cancel();fastTransport?.stop();audioScrub?.stop();
     slipView?.reset();programPlayer?.stop();viewer?.invalidate();
   };
@@ -2064,7 +2072,17 @@ $("inspector-content").addEventListener('click',event=>{
 scopes = createScopes({ panel: $("scopes"), isPlaying:()=>!document.hidden && viewerMode==='program' && programPlayer?.state()==='ready' && !$("program-video").paused, getTarget: () => !document.hidden && viewerMode === "program" && !["preparing","failed"].includes(programPlayer?.state()) ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(false);
 previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});
-seek = async () => { if (viewerMode === "program") { audioMeters?.invalidate(); programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); previewCache.refresh(); audioMeters?.refresh(); } };
+seek = async ({resume=false}={}) => { if (viewerMode === "program") { audioMeters?.invalidate(); scopes.invalidate("SEEKING"); if(resume){viewer?.invalidate();return programPlayer.seekFrame(view.playhead,{resume:true});}programPlayer?.stop();await viewer.seek();scopes.refresh();previewCache.refresh();audioMeters?.refresh(); } };
+programSeek=createProgramSeek({
+  getContext:()=>documentState && timeline && viewerMode==='program' && !busy && !unresolved && !document.hidden && !document.querySelector('dialog[open]')?JSON.stringify([documentState.project_epoch,documentState.generation,timeline.id,timeline.revision,$('playback-rate').value,Boolean(view.recording)]):null,
+  getFrame:()=>view.playhead,
+  isPlaying:()=>!view.recording && Boolean(programPlayer?.playing() || fastTransport?.active()),
+  pause:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.pauseLocal();},
+  onSeek:(_frame,options)=>seek(options),onError:notice,
+});
+window.addEventListener('blur',()=>programSeek.cancel());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)programSeek.cancel();});
+$('program-cancel').addEventListener('click',()=>programSeek.cancel());
 audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
   if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {

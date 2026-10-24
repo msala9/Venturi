@@ -85,6 +85,8 @@ export function createInput({
   invalidate,
   onSelect,
   onSeek,
+  onSeekStart = () => {},
+  onSeekCancel = () => {},
   onCommand,
   onNotice,
   onSlip = () => {},
@@ -188,6 +190,7 @@ export function createInput({
     stopCoast();
     viewportMapping=canvasMapping();
     const previous=gesture;
+    if(previous?.kind==='scrub')onSeekCancel();
     const slipping = gesture?.kind === "slip";
     const pointerId=gesture?.pointerId;
     if(previous?.kind==='divider' && getTimeline()===previous.timeline && gapContext(previous.timeline)===previous.gapContext)view.videoPaneHeight=previous.beforeHeight;
@@ -430,6 +433,7 @@ export function createInput({
     } else if (hit.kind === "scrub") {
       if(event.isPrimary===false || canvas.isConnected===false || canvas.ownerDocument?.hidden)return;
       gesture = {kind:"scrub",pointerId:event.pointerId,context:scrubContext(timeline)};
+      onSeekStart();
       view.playhead = nativeRulerFrame(timeline,view,x);
       onSeek(false);
     } else if (hit.kind === "blank") {
@@ -744,7 +748,7 @@ export function createInput({
     if (canvas.hasPointerCapture(event.pointerId))
       canvas.releasePointerCapture(event.pointerId);
     if(g.selectionBefore)onSelect();
-    if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
+    if (g.kind === "marker" && !g.moved) { onSeekStart();view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
     const bodyChanged=!g.fromTransitionBody || draft?.changes?.some(change=>timeline.tracks.some(track=>track.clips.some(clip=>clip.id===change.clip_id && (track.id!==change.to_track || clip.start_frame!==change.to_start_frame || clip.length_frames!==change.length_frames))));
     if (draft && g.moved && markerChanged && bodyChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='gain' && draft.gain_db===draft.original) && !(draft.kind==='trim_group' && draft.target===draft.original) && !(g.kind==='transition' && draft.duration===g.duration) && !(g.kind==='retime' && draft.end_frame===g.end_frame)) {

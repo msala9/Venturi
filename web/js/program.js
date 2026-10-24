@@ -23,7 +23,7 @@ async function seekMedia(video, seconds, signal, beforeSeek = () => {}) {
 }
 export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onUserPause, onCache, canPrefetch=()=>false, onPrefetch=()=>{}, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
-  let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false;
+  let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false, preparingQuery=null;
   let recordingHold=null,recordingStopped=null;
   let future=null;
   const currentState=expected=>getState(undefined,expected?.audio_origin_frame);
@@ -123,6 +123,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     const owner=attached,pausedQuery=query,seq=sequence;
     const preparing=state==='preparing';
     playbackIntent = false;
+    preparingQuery=null;
     clearFuture();
     suspended = true;
     controller?.abort();
@@ -246,7 +247,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     return Number.isSafeInteger(value?.start_frame) && Number.isSafeInteger(value?.end_frame) && value.start_frame>=0 && value.end_frame>value.start_frame && (value.audio_origin_frame===undefined || Number.isSafeInteger(value.audio_origin_frame) && value.audio_origin_frame>=0 && value.audio_origin_frame<=value.start_frame);
   }
   function live(owner) {
-    if(owner.seq!==sequence || owner.signal.aborted || !playbackIntent)return false;
+    if(owner.seq!==sequence || owner.signal.aborted || !playbackIntent && owner.resume!==false)return false;
     if(!sameComposition(owner.current,currentState(owner.current))){fail("STALE_REVISION · reconnect before playback");return false;}
     return true;
   }
@@ -270,7 +271,8 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     recordingHold=null;recordingStopped=null;
     setState("ready");
     if(!live(owner) || !ownsAttachment())return;
-    status.textContent=message;monitorDocument(owner.seq);suspended=false;
+    status.textContent=message;monitorDocument(owner.seq);suspended=owner.resume===false;
+    if(owner.resume===false)return;
     if(rollover)present();
     startingPlayback=true;
     queueMicrotask(()=>{if(owner.seq===sequence)startingPlayback=false;});
@@ -288,14 +290,37 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     playbackIntent=true;
     await prepare(current,false);
   }
-  async function prepare(current,rollover,candidate=null) {
+  function playing() {
+    if(!playbackIntent)return false;
+    if(state==='preparing')return !!preparingQuery && sameComposition(preparingQuery,currentState(preparingQuery));
+    if(!ownsAttachment())return false;
+    if(video.ended){
+      const next=getState(query.end_frame,query.audio_origin_frame);
+      return !!next && validRange(next) && sameComposition(query,next) && next.start_frame===query.end_frame;
+    }
+    return true;
+  }
+  async function seekFrame(frame,{resume=playing()}={}) {
+    if(!Number.isSafeInteger(frame) || frame<0 || typeof resume!=='boolean')return false;
+    const previous=state==='preparing'?preparingQuery:query;
+    if(previous && !sameComposition(previous,getState(previous.start_frame,previous.audio_origin_frame))){pauseLocal();return false;}
+    const current=getState(frame,frame);
+    if(!current || !validRange(current) || current.start_frame!==frame || current.audio_origin_frame!==frame || !sameComposition(current,currentState(current)))return false;
+    // A manual jump owns a new native DSP origin. Local pause cancels any old
+    // attachment/wait without revoking the explicitly captured resume choice.
+    pauseLocal();playbackIntent=resume;
+    const pending=prepare(current,false,null,resume),seq=sequence;
+    await pending;
+    return seq===sequence && ownsAttachment() && query.audio_origin_frame===frame;
+  }
+  async function prepare(current,rollover,candidate=null,resume=true) {
     const recording=rollover?recordingClock():null;
     const seq = ++sequence;
     recordingHold=recording?.state==='holding'?{...recording,sequence:seq}:null;recordingStopped=null;
-    stopMonitor();controller?.abort();attached=null;jobURL=null;suspended=true;startingPlayback=false;seekingTarget=null;
+    stopMonitor();controller?.abort();attached=null;jobURL=null;suspended=true;startingPlayback=false;seekingTarget=null;preparingQuery=current;
     controller = new AbortController();
     const signal = controller.signal;
-    const owner={seq,signal,current};
+    const owner={seq,signal,current,resume};
     if(candidate){candidate.promoted=true;candidate.owner=owner;if(candidate.timer!==null && candidate.state==='ready'){timers.clearTimeout(candidate.timer);candidate.timer=null;}signal.addEventListener('abort',()=>candidate.controller.abort(),{once:true});}
     setState("preparing");pauseMedia();status.textContent = rollover ? "Paused · preparing next composition window…" : "Preparing native composition and audio…";
     try {
@@ -351,5 +376,5 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       if (seq === sequence && !signal.aborted && error.name !== "AbortError") fail(error.message);
     }
   }
-  return { toggle, stop, pauseLocal, telemetryTarget, recordingClock, prefetchState, invalidatePrefetch, state: () => state, range: () => query };
+  return { toggle, stop, pauseLocal, playing, seekFrame, telemetryTarget, recordingClock, prefetchState, invalidatePrefetch, state: () => state, range: () => query };
 }

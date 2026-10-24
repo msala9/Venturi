@@ -161,7 +161,7 @@ test("status failure, nonready result and media error release all ready-cache mo
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
-function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false,canPrefetch,onPrefetch}={}){
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false,strictOrigin=false,canPrefetch,onPrefetch}={}){
   class Video extends EventTarget {
     movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
     callbacks=new Map();canceled=[];nextCallback=0;
@@ -183,6 +183,7 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
   const getState=(start,audioOrigin)=>{
     if(!document)return null;
     const frame=start===undefined?Math.min(playhead,total-1):start;
+    if(strictOrigin && audioOrigin!==undefined && audioOrigin>frame)return null;
     return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
   };
   const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540,...(lineage?{audio_origin_frame:range.audio_origin_frame}:{})}});
@@ -412,6 +413,86 @@ test('native DSP playback origin survives multiple fractional windows; manual se
   }finally{f.player.stop();}
 });
 
+test('explicit Program seek resumes only after verified metadata and seek with a fresh native audio origin',async()=>{
+  const f=windowFixture({origin:137,total:30_000,lineage:true,fps:{num:30000,den:1001}});
+  try{
+    await f.player.toggle();assert.equal(f.player.playing(),true);
+    f.video.waitMetadata=true;f.video.waitSeek=true;
+    const sought=f.player.seekFrame(12_000);await settle();
+    assert.equal(f.player.state(),'preparing');assert.equal(f.player.playing(),true);assert.equal(f.video.paused,true);assert.equal(f.video.plays,1);
+    assert.equal(f.requests.at(-1).start_frame,12_000);assert.equal(f.requests.at(-1).audio_origin_frame,12_000);
+    f.video.readyState=1;f.video.dispatchEvent(new Event('loadedmetadata'));await settle();
+    assert.equal(f.video.plays,1);assert.equal(f.video.currentTime,0);
+    f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));assert.equal(await sought,true);
+    assert.equal(f.video.plays,2);assert.equal(f.player.playing(),true);assert.equal(f.player.range().audio_origin_frame,12_000);
+    const count=f.requests.length;f.video.waitMetadata=false;f.video.waitSeek=false;
+    assert.equal(await f.player.seekFrame(12_000),true);assert.equal(f.requests.length,count,'same-origin cached media must still pass its ready check');
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0].cache,'no-store');assert.equal(f.video.plays,3);
+  }finally{f.player.stop();}
+});
+
+test('latest Program seek retains pending resume intent and an obsolete ACK cannot attach or play',async()=>{
+  const first=deferred(),second=deferred();let calls=0;
+  const f=windowFixture({lineage:true,api:(range,ready)=>++calls===1?ready(range):calls===2?first.promise:second.promise});
+  try{
+    await f.player.toggle();const old=f.player.seekFrame(100);assert.equal(f.player.playing(),true);
+    const latest=f.player.seekFrame(10_000);assert.equal(f.player.playing(),true);
+    second.resolve(f.ready(f.requests[2],'latest-seek'));assert.equal(await latest,true);
+    const src=f.video.src;first.resolve(f.ready(f.requests[1],'obsolete-seek'));assert.equal(await old,false);
+    assert.equal(f.video.src,src);assert.match(src,/latest-seek/);assert.equal(f.video.plays,2);assert.equal(f.player.range().audio_origin_frame,10_000);
+  }finally{f.player.stop();}
+});
+
+test('backward Program navigation validates the old composition at its own start after the playhead has moved',async()=>{
+  const f=windowFixture({origin:500,lineage:true,strictOrigin:true});
+  try{
+    await f.player.toggle();const resume=f.player.playing(),previous=f.player.range();assert.equal(resume,true);
+    f.setPlayhead(12);
+    assert.equal(f.getState(undefined,previous.audio_origin_frame),null,'the old DSP origin is invalid at the already-updated playhead');
+    assert.equal(f.getState(previous.start_frame,previous.audio_origin_frame).start_frame,500);
+    assert.equal(await f.player.seekFrame(12,{resume}),true);
+    assert.equal(f.requests.length,2);assert.equal(f.requests[1].start_frame,12);assert.equal(f.requests[1].audio_origin_frame,12);
+    assert.equal(f.player.playing(),true);assert.equal(f.video.paused,false);assert.equal(f.video.plays,2);
+  }finally{f.player.stop();}
+});
+
+test('Program paused and explicit nonresuming seeks attach without playing; EOF never revives old intent',async()=>{
+  const f=windowFixture({total:100,lineage:true});
+  try{
+    assert.equal(f.player.playing(),false);assert.equal(await f.player.seekFrame(20),true);
+    assert.equal(f.video.paused,true);assert.equal(f.video.plays,0);assert.equal(f.player.playing(),false);assert.equal(f.timers.jobs.size,1);assert.deepEqual(f.frames,[]);
+    await f.player.toggle();assert.equal(f.video.plays,1);assert.equal(await f.player.seekFrame(40,{resume:false}),true);
+    assert.equal(f.video.paused,true);assert.equal(f.video.plays,1);assert.equal(f.player.playing(),false);
+    await f.player.toggle();f.video.finish(f.player.range());await settle();assert.equal(f.player.playing(),false);
+    assert.equal(await f.player.seekFrame(5),true);assert.equal(f.video.paused,true);assert.equal(f.video.plays,2);assert.equal(f.player.range().audio_origin_frame,5);
+  }finally{f.player.stop();}
+});
+
+test('Stop, newer pause and stale composition revoke a Program seek before a late ACK or media wait',async t=>{
+  for(const phase of ['ack','metadata','seek'])for(const action of ['stop','pause','stale','disconnect'])await t.test(`${phase}/${action}`,async()=>{
+    const ack=deferred();let calls=0;const f=windowFixture({lineage:true,api:(range,ready)=>++calls===2 && phase==='ack'?ack.promise:ready(range)});
+    try{
+      await f.player.toggle();f.video.waitMetadata=phase==='metadata';f.video.waitSeek=phase==='seek';
+      const sought=f.player.seekFrame(100);await settle();assert.equal(f.player.playing(),true);
+      if(action==='stop')f.player.stop();else if(action==='pause')f.player.pauseLocal();else f.setDocument(action==='disconnect'?null:{...f.getState(),revision:'changed'});
+      ack.resolve(f.ready(f.requests[1]));f.video.readyState=1;f.video.seeking=false;f.video.dispatchEvent(new Event('loadedmetadata'));f.video.dispatchEvent(new Event('seeked'));
+      assert.equal(await sought,false);assert.equal(f.video.plays,1);assert.equal(f.video.paused,true);assert.equal(f.player.playing(),false);
+      assert.equal(f.fetches.some(call=>call.method==='DELETE'),false);
+    }finally{f.player.stop();}
+  });
+});
+
+test('Program seek rejects invalid frames and stale captured owners without admitting a new preparation',async()=>{
+  const f=windowFixture({total:100,lineage:true});
+  try{
+    await f.player.toggle();const src=f.video.src,count=f.requests.length;
+    for(const frame of [-1,NaN,1.5,100,Number.MAX_SAFE_INTEGER+1])assert.equal(await f.player.seekFrame(frame),false);
+    assert.equal(await f.player.seekFrame(10,{resume:'yes'}),false);assert.equal(f.requests.length,count);assert.equal(f.video.src,src);assert.equal(f.player.playing(),true);
+    f.setDocument({...f.getState(),revision:'changed'});assert.equal(await f.player.seekFrame(10,{resume:true}),false);
+    assert.equal(f.requests.length,count);assert.equal(f.video.paused,true);assert.equal(f.player.playing(),false);
+  }finally{f.player.stop();}
+});
+
 test('a mismatched or missing authoritative DSP origin cannot attach or silently fall back to a cold preview',async()=>{
   for(const wrong of [undefined,0,8]){
     const f=windowFixture({origin:7,lineage:true,api:(range,ready)=>{const job=ready(range);job.program.audio_origin_frame=wrong;return job;}});
@@ -576,7 +657,8 @@ test('queued old pause and seeking events cannot revoke the playing replacement 
 });
 
 test('task-delayed fast pauses preserve Program intent in either listener order while a later user pause still revokes it',async t=>{
-  for(const order of ['program-first','fast-first'])for(const userPause of [false,true])await t.test(`${order}/${userPause?'user-pause':'continue'}`,async()=>{
+  for(const order of ['program-first','fast-first'])for(const action of (order==='program-first'?['continue','user-pause','seek']:['continue','user-pause']))await t.test(`${order}/${action}`,async()=>{
+    const userPause=action==='user-pause',tempo=action==='seek'?2:8;
     const pauseTasks=[],requests=[],audioRequests=[],buffers=[],frames=[],programTimers=fakeTimers(),audioTimers={jobs:new Map(),next:0,setTimeout(callback,delay){const id=++this.next;this.jobs.set(id,{callback,delay});return id;},clearTimeout(id){this.jobs.delete(id);}};
     class Video extends EventTarget{
       movie='';position=0;readyState=1;seeking=false;paused=true;ended=false;duration=.1;volume=1;muted=false;playbackRate=1;plays=0;
@@ -586,18 +668,31 @@ test('task-delayed fast pauses preserve Program intent in either listener order 
       pause(){if(this.paused)return;this.paused=true;pauseTasks.push(()=>this.dispatchEvent(new Event('pause')));}
       async play(){if(!this.paused)return;this.paused=false;this.ended=false;this.plays++;this.dispatchEvent(new Event('play'));}
     }
-    const video=new Video(),select={value:'8',addEventListener(){}},context={state:'running',currentTime:0,destination:{},async resume(){},createGain:()=>({gain:{value:1,setValueAtTime(){}},connect(){},disconnect(){}}),createMediaElementSource:()=>({connect(){}}),async decodeAudioData(bytes){return {duration:bytes.byteLength/48000/4};},createBufferSource(){const source={connect(){},disconnect(){},start(){},stop(){}};buffers.push(source);return source;}};
+    const video=new Video(),select={value:String(tempo),addEventListener(){}},context={state:'running',currentTime:0,destination:{},async resume(){},createGain:()=>({gain:{value:1,setValueAtTime(){}},connect(){},disconnect(){}}),createMediaElementSource:()=>({connect(){}}),async decodeAudioData(bytes){return {duration:bytes.byteLength/48000/4};},createBufferSource(){const source={stops:0,connect(){},disconnect(){},start(){},stop(){this.stops++;}};buffers.push(source);return source;}};
     let player,transport,playhead=0;
-    const getState=start=>{const frame=start===undefined?Math.min(playhead,5):start;return frame>=6?null:{project_epoch:'epoch',if_generation:'1',timeline_id:'timeline',revision:'revision',width:960,start_frame:frame,end_frame:Math.min(6,frame+3)};};
+    const getState=(start,origin)=>{const frame=start===undefined?Math.min(playhead,5):start;return frame>=6?null:{project_epoch:'epoch',if_generation:'1',timeline_id:'timeline',revision:'revision',width:960,start_frame:frame,end_frame:Math.min(6,frame+3),audio_origin_frame:origin ?? frame};};
     const makeProgram=()=>createProgramPlayer({video,status:{textContent:''},cancel:new EventTarget(),timers:programTimers,getState,isInternalPause:event=>Boolean(transport?.pausing(video,event)),isInternalSeek:()=>Boolean(transport?.correcting(video)),beforeWindowChange:async()=>{if(!await transport.finishWindow(video))throw Error('Audio tail did not finish');},onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},fetcher:async()=>Response.json({state:'ready'}),api:async(path,range)=>{requests.push(range);return {id:`movie${requests.length}`,state:'ready',program:{...range,fps:{num:30,den:1},height:540}};}});
-    const makeFast=()=>createFastTransport({videos:[video],select,status:{textContent:''},getVideo:()=>video,getTarget:()=>{const range=player?.range();return range?{identity:JSON.stringify([range.start_frame,range.end_frame,video.src]),fps:range.fps,origin:Math.round(range.start_frame/30*48000),end:Math.round(range.end_frame/30*48000),url:'/audio',query:{project_epoch:'epoch'}}:null;},contextFactory:()=>context,timers:audioTimers,frame:()=>1,cancelFrame(){},fetcher:(url,options)=>new Promise(resolve=>audioRequests.push({resolve,body:JSON.parse(options.body)}))});
+    const makeFast=()=>createFastTransport({videos:[video],select,status:{textContent:''},getVideo:()=>video,getTarget:()=>{const range=player?.range();return range?{identity:JSON.stringify([range.start_frame,range.end_frame,video.src]),fps:range.fps,origin:Math.round(range.start_frame/30*48000),end:Math.round(range.end_frame/30*48000),url:'/audio',query:{project_epoch:'epoch',audio_origin_frame:range.audio_origin_frame}}:null;},contextFactory:()=>context,timers:audioTimers,frame:()=>1,cancelFrame(){},fetcher:(url,options)=>new Promise(resolve=>audioRequests.push({resolve,body:JSON.parse(options.body),signal:options.signal}))});
     if(order==='program-first'){player=makeProgram();transport=makeFast();}else{transport=makeFast();player=makeProgram();}
     try{
       await player.toggle();await settle();assert.equal(pauseTasks.length,1);assert.equal(video.paused,true);assert.equal(transport.pausing(video),true);
       pauseTasks.shift()();assert.equal(transport.pausing(video),false);assert.equal(transport.pausing(video,new Event('pause')),false);assert.equal(player.state(),'ready');
       video.position=1/30;video.dispatchEvent(new Event('timeupdate'));assert.equal(frames.at(-1),1,'late internal pause must not suspend the current Program frame clock');
-      const request=audioRequests[0].body,start=request.window.start_sample,end=request.window.end_sample,headers=new Map([['x-audio-start-sample',String(start)],['x-audio-end-sample',String(end)],['x-audio-tempo','8'],['x-audio-source-version','a'.repeat(64)],['x-audio-last','true']]);
-      audioRequests[0].resolve({ok:true,headers,arrayBuffer:async()=>new ArrayBuffer((end-start)/8*4)});await settle();const timer=[...audioTimers.jobs].find(([,job])=>job.delay===50);assert.ok(timer);audioTimers.jobs.delete(timer[0]);timer[1].callback();await settle();assert.equal(video.paused,false);
+      const request=audioRequests[0].body,start=request.window.start_sample,end=request.window.end_sample,headers=new Map([['x-audio-start-sample',String(start)],['x-audio-end-sample',String(end)],['x-audio-tempo',String(tempo)],['x-audio-source-version','a'.repeat(64)],['x-audio-last','true']]);
+      audioRequests[0].resolve({ok:true,headers,arrayBuffer:async()=>new ArrayBuffer((end-start)/tempo*4)});await settle();const timer=[...audioTimers.jobs].find(([,job])=>job.delay===50);assert.ok(timer);audioTimers.jobs.delete(timer[0]);timer[1].callback();await settle();assert.equal(video.paused,false);
+      if(action==='seek'){
+        const oldTail=buffers[0].onended,resume=player.playing() || transport.active();assert.equal(resume,true);
+        transport.stop();player.pauseLocal();assert.equal(buffers[0].stops,1);assert.equal(buffers[0].onended,null);assert.equal(audioRequests[0].signal.aborted,true);
+        assert.equal(await player.seekFrame(4,{resume}),true);await settle();
+        assert.equal(requests.length,2);assert.equal(requests[1].start_frame,4);assert.equal(requests[1].audio_origin_frame,4);assert.equal(player.playing(),true,'owned fast startup pause retains the seek intent');
+        assert.equal(transport.active(),true);assert.equal(video.paused,true);assert.equal(select.value,'2');
+        while(pauseTasks.length)pauseTasks.shift()();
+        const next=audioRequests[1],from=next.body.window.start_sample,to=next.body.window.end_sample;
+        assert.equal(next.body.window.tempo,2);assert.equal(next.body.query.audio_origin_frame,4);assert.equal(from,6400);assert.equal(to,9600);
+        next.resolve({ok:true,headers:new Map([['x-audio-start-sample',String(from)],['x-audio-end-sample',String(to)],['x-audio-tempo','2'],['x-audio-source-version','b'.repeat(64)],['x-audio-last','true']]),arrayBuffer:async()=>new ArrayBuffer((to-from)/2*4)});await settle();
+        const resumed=[...audioTimers.jobs].find(([,job])=>job.delay===50);assert.ok(resumed);audioTimers.jobs.delete(resumed[0]);resumed[1].callback();await settle();
+        oldTail();assert.equal(video.paused,false);assert.equal(video.playbackRate,2);assert.equal(player.playing(),true);assert.equal(transport.active(),true);assert.match(video.src,/movie2/);assert.equal(buffers.length,2);assert.equal(buffers[1].stops,0);return;
+      }
       if(userPause){video.pause();await settle();pauseTasks.shift()();assert.equal(transport.active(),false);}
       video.position=video.duration;video.ended=true;video.paused=true;video.dispatchEvent(new Event('pause'));video.dispatchEvent(new Event('ended'));await settle();
       if(userPause)assert.equal(requests.length,1,'an actual user pause must still stop continuation');

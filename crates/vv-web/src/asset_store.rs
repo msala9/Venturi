@@ -289,7 +289,12 @@ impl Store {
             assets,
             media,
         }));
-        let _lock = store.read_guard().map_err(|e| std::io::Error::other(e.2))?;
+        // Reads and mutations retry catalog availability on the pinned directories.
+        match store.read_guard() {
+            Ok(_guard) => (),
+            Err(error) if error.1 == "LIBRARY_BUSY" => (),
+            Err(error) => return Err(std::io::Error::other(error.2)),
+        }
         Ok(store)
     }
     pub(crate) fn root(&self) -> &Path {

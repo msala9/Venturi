@@ -158,7 +158,7 @@ test('group move clamps the raw candidate before snapping and clamps again to fo
 });
 
 function harness(){
-  const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],seeks=[],timeline=fixture(),view=viewport();
+  const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],seeks=[],seekCancels=[],seekStarts=[],timeline=fixture(),view=viewport();
   let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline,commit=null,gapContext={project_epoch:'epoch',generation:'0'};
   const frames=new Map();
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
@@ -168,17 +168,17 @@ function harness(){
     removeEventListener(name,handler){const listeners=windowListeners.get(name);listeners?.delete(handler);if(!listeners?.size){windowListeners.delete(name);windowHandlers.delete(name);}},
   };
   const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
-  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>gapContext,view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
+  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>gapContext,view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onSeekStart:()=>seekStarts.push(view.playhead),onSeekCancel:()=>seekCancels.push(view.playhead),onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});
   const advance=ms=>clock+=ms,tick=ms=>{clock+=ms;const pending=[...frames];frames.clear();for(const [,fn] of pending)fn(clock);};
-  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,frames,advance,tick,setCommit:value=>commit=value,setTimeline:value=>currentTimeline=value,setGapContext:value=>gapContext=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
+  return {timeline,view,canvas,commands,notices,seeks,seekCancels,seekStarts,captures,handlers,windowHandlers,input,send,frames,advance,tick,setCommit:value=>commit=value,setTimeline:value=>currentTimeline=value,setGapContext:value=>gapContext=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
 }
 
 test('ruler scrubbing owns its pointer, samples the final release and makes one final seek without any edit',async()=>{
   const h=harness();try{
     h.setWritable(false);h.view.snap=true;h.view.selection=['10'];const before=structuredClone(h.timeline);
     h.send('pointerdown',frameToX(5,h.view,h.timeline.fps),20);
-    assert.equal(h.view.playhead,5);assert.deepEqual(h.seeks,[[false]]);
+    assert.equal(h.view.playhead,5);assert.deepEqual(h.seeks,[[false]]);assert.deepEqual(h.seekStarts,[0]);
     h.send('pointermove',frameToX(8,h.view,h.timeline.fps),20,{pointerId:2});
     await h.send('pointerup',frameToX(9,h.view,h.timeline.fps),20,{pointerId:2,buttons:0});
     assert.equal(h.view.playhead,5);assert.equal(h.captures.size,1);
@@ -189,7 +189,7 @@ test('ruler scrubbing owns its pointer, samples the final release and makes one 
     assert.equal(h.captures.size,0);assert.deepEqual(h.commands,[]);assert.deepEqual(h.view.selection,['10']);assert.deepEqual(h.timeline,before);
     h.view.snap=false;h.send('pointerdown',frameToX(2,h.view,h.timeline.fps),20);
     await h.send('pointerup',frameToX(7.8,h.view,h.timeline.fps),20,{buttons:0});
-    assert.equal(h.view.playhead,8);assert.deepEqual(h.seeks.slice(-2),[[false],[true]]);
+    assert.equal(h.view.playhead,8);assert.deepEqual(h.seeks.slice(-2),[[false],[true]]);assert.deepEqual(h.seekStarts,[0,10]);
   }finally{h.destroy();}
 });
 
@@ -229,7 +229,7 @@ test('ruler Escape and capture cancellation never finalize a preview and cannot 
       else if(kind==='blur')h.windowHandlers.get('blur')({});
       else h.handlers.get(kind)({pointerId:1});
       await h.send('pointerup',x+40,20,{buttons:0});
-      assert.equal(h.captures.size,0);assert.deepEqual(h.seeks,[[false]]);assert.deepEqual(h.commands,[]);
+      assert.equal(h.captures.size,0);assert.deepEqual(h.seeks,[[false]]);assert.deepEqual(h.commands,[]);assert.equal(h.seekCancels.length,1);
     }finally{h.destroy();}
   }
 });

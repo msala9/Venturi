@@ -78,6 +78,12 @@ and two-hour M7 remain open. No new package or whole-release acceptance.
 
 ## Row-specific residuals
 
+The later evidence/f1-chrome-selection-snapping-safe-move.json additionally qualifies
+ordinary Ctrl/Shift Clip-list selection, Canvas marquee/all/locked exclusion,
+Snap on/off and blocked overlap/locked-peer moves in actual Chrome. Exact Undo
+and own-copy Save/reopen pass. This reduces those rows to their retained held
+modifier, edge/scroll, DPI/dense/device requirements; no row is promoted.
+
 Chrome extension input is now connected. The2026-10-24 bounded workflow proves
 ordinary linked video/audio mouse move, Undo/Redo, Save/reopen, paused ruler
 click and Mixer header drag at observed DPR1.25. See
@@ -102,8 +108,8 @@ feature passes every requirement or cannot contain defects.
 | shared_library | Unavailable-root retry and actual native NAS two-way Restore are delivered; cached import no-op reporting is corrected. Retain accepted cross-project import/Relink/CIFS proof. Remaining actual HTML Project-to-Library capture and other explicit final checks stay in FINAL_CHECKS.md; no blanket new GUI-lifecycle blocker is introduced. |
 | track_arm_record | Qualification: real microphone permission, disconnect and device latency with native arming/placement semantics. |
 | linked_groups | Qualification: physical Alt-copy, gestures/DPI and dense timelines. Shared preset cross-project Apply is already qualified. |
-| select_multiclip_marquee | Qualification: physical marquee/modifiers/scrollbars, DPI and500-clip interactions. |
-| snapping | Qualification: physical ruler/edge snapping across DPI and dense timelines. |
+| select_multiclip_marquee | Ordinary reverse Canvas marquees, Clip-list Ctrl/Shift and Canvas Ctrl+A/locked exclusion pass in actual Chrome; qualify remaining Canvas modifier/cancel/scrollbar, DPI and500-clip interactions. |
+| snapping | Actual linked move snaps to playhead48 versus46 with Snap off at observed DPR1.25; qualify remaining ruler/edge snapping across required DPI and dense timelines. |
 | slip_tool | Qualification: prolonged uncached held-Slip continuity and physical/DPI operation. |
 | speed_handles_constant | Qualification: physical relative scrub, handles, modifiers, cancellation and dense/DPI operation. |
 | keyframe_editing | Qualification: physical multi-key graph/lane gestures and dense/DPI operation; explicit native destination replacement is delivered. |
@@ -120,7 +126,7 @@ feature passes every requirement or cannot contain defects.
 | audio_mixer_track_master | Qualification: physical fader/Shift/graph/wheel/DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
 | voiceover_record | Qualification: actual microphone/disconnect/latency/output and retained-take browser download completion. Retain intentional5min/64MiB limits and synthetic-controller proof. |
 | compare_take_AB | Qualification: sustained representative full-resolution comparison and physical audio; source quality/clock/stream/replace controls are delivered. |
-| clip_move_safe | Qualification: physical Alt-copy/linked move, cancellation, DPI and dense timeline. Existing ordinary move/overlap/Undo/persistence evidence remains. |
+| clip_move_safe | Ordinary linked move, Snap on/off, overlap refusal, locked-peer refusal and exact Undo/persistence pass in actual Chrome; qualify Alt-copy, cancellation, required DPI and dense timeline. |
 
 ## Integrated acceptance still required
 

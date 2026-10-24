@@ -1,5 +1,20 @@
 # Implementation status
 
+## Chrome selection and safe-move checkpoint — 2026-10-24
+
+On unchanged source455662c/runtime8b975, actual Chrome passes two reverse
+marquees, Clip-list Ctrl/Shift native selection, Canvas Ctrl+A with locked-track
+exclusion, linked move snapping to playhead48 versus raw46 with Snap off, safe
+overlap refusal and locked-linked-peer refusal. Each move makes one Undo; both
+Undo and lock Undo restore every timeline DTO/revision. Only the dedicated
+Chrome copy is Saved/reopened, retaining exact timeline/media content and native
+compound-cache refresh semantics. All13 protected Saved and NAS metadata remain
+exact; original clean project is restored. See evidence/f1-chrome-selection-snapping-safe-move.json.
+No source change, build, export, soak or package replacement. Physical held
+modifier drags/cancel, remaining edge/scroll/DPI/dense/device/long/M7 criteria
+remain FINAL_CHECKS. Ledger62done/28partial/2excluded stays unchanged.
+
+
 ## Current8b975 internal prebuilt package — 2026-10-24
 
 The immutable archive is

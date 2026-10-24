@@ -63,6 +63,15 @@ and two-hour M7 remain open. No new package or whole-release acceptance.
 
 ## Row-specific residuals
 
+Chrome extension input is now connected. The2026-10-24 bounded workflow proves
+ordinary linked video/audio mouse move, Undo/Redo, Save/reopen, paused ruler
+click and Mixer header drag at observed DPR1.25. See
+`evidence/f2-f4-chrome-physical-input-workflow.json`. The original13 Saved hashes
+are unchanged and the original clean document is restored; one dedicated Saved
+qualification copy is retained. This removes the disconnected-browser blocker.
+Alt-copy, cancellation, dense input, OS100%/150%, device/audio and native
+fullscreen admission still need their own evidence. Ledger stays62/28/2.
+
 "Qualification" means no additional missing native production workflow was
 demonstrated in the bounded source/evidence review. It is not a claim that the
 feature passes every requirement or cannot contain defects.

@@ -17,6 +17,17 @@ The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
 Undo/Redo at the checkpoint. Re-read live state before any operation: this may
 since have changed.
 
+The owner-installed Chrome extension is connected. One Chrome work tab now holds
+the normal writer lease; the previous IAB work tab was cleanly closed. A bounded
+mouse workflow passes on `Venturi_Chrome_Input_V1.vvproj`: linked move24frames,
+Undo/Redo, Save/reopen and paused ruler frame48. Mixer header drag/reverse also
+passes at observed DPR1.25. The original13 Saved hashes are unchanged, the owned
+copy is retained as the14th Saved project, and the original clean document/view
+is restored. Epoch/autosave receipt metadata advances through explicit reopen.
+No restart/build, prolonged playback or whole-row promotion is claimed. Native
+fullscreen is refused by Chrome automation; labelled in-tab fallback/Escape
+works. See `evidence/f2-f4-chrome-physical-input-workflow.json`.
+
 Mixer and Color now open independently and coexist with Curves, retaining the
 central Viewer allocation. They reuse the existing native mix, grading and scope
 controllers. Closing cancels owned gestures while retaining typed drafts;
@@ -33,7 +44,7 @@ runtime peak is 176,586,752 bytes with zero memory-limit/OOM/kill events.
 CLI, environment, bounds, identity checks and runback procedure. Refuse restart
 or runback when Unsaved, when Undo/Redo is nonempty, or while client drafts,
 unresolved commands, capture/playback or jobs remain active. Save alone does not
-clear history. Preserve the 39 foreign Sessions/40 PIDs, 13 Saved files, local media, NAS
+clear history. Preserve the 39 foreign Sessions/40 PIDs, 14 Saved files, local media, NAS
 assets/presets and shared proxy; no background enablement or driver/browser
 changes are authorized by this handover.
 

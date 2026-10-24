@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-24",
+  "scope": "Bounded physical Chrome extension input at observed DPR1.25; no whole-row promotion",
+  "source_commit": "5567359d14ac2a1539e05ff2750e413a20146f1e",
+  "runtime": {
+    "unit": "venturi-web-halo1-native-toolwindows-layout.service",
+    "pid": 457797,
+    "sha256": "87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff",
+    "restarted": false
+  },
+  "browser": {
+    "family": "Chrome",
+    "connection": "extension",
+    "viewport_css": [
+      884,
+      852
+    ],
+    "observed_device_pixel_ratio": 1.25,
+    "os_dpi_matrix_claimed": false,
+    "work_tabs": 1,
+    "writer_acquisition": "Previous IAB tab closed after exact Saved/empty-history capture; normal lease expiry and Reconnect; no forced takeover"
+  },
+  "fixture": {
+    "project": "Venturi_Chrome_Input_V1.vvproj",
+    "created": "Actual File / Save As UI from preserved original",
+    "timeline_id": "3",
+    "video_clip": "15",
+    "audio_clip": "16",
+    "linked_group": "5"
+  },
+  "mouse_workflow": {
+    "drag_css": {
+      "from": [
+        500,
+        713
+      ],
+      "to": [
+        560,
+        713
+      ]
+    },
+    "pixels_per_frame": 2.5,
+    "both_start_frames": [
+      0,
+      24,
+      0,
+      24
+    ],
+    "sequence": [
+      "drag",
+      "Undo menu",
+      "Redo menu",
+      "Save menu",
+      "Open project menu / same owned copy"
+    ],
+    "single_history_label": "MoveClips",
+    "source_ranges_and_lengths_preserved": true,
+    "all_other_clips_equal": true,
+    "saved_reopen_all_timelines_exact": true,
+    "saved_reopen_project_hashes_exact": true,
+    "owned_history_reset_on_reopen": "Intentional persistence check on dedicated qualification copy only"
+  },
+  "ruler_paused": {
+    "click_css": [
+      485,
+      621
+    ],
+    "program_frame": 48,
+    "timecode": "00:00:02:00",
+    "play_button_visible": true,
+    "document_generation": "0",
+    "history_empty": true,
+    "note": "Read live DOM input.value; getAttribute(value) retains initial0 and is not the live cursor oracle"
+  },
+  "mixer_window": {
+    "initial_rect_css": [
+      232,
+      246,
+      420,
+      360
+    ],
+    "drag_from": [
+      400,
+      261
+    ],
+    "drag_to": [
+      420,
+      276
+    ],
+    "moved_rect_css": [
+      252,
+      261,
+      420,
+      360
+    ],
+    "reverse_drag_restored_exact_rect": true,
+    "closed_after_check": true,
+    "faders_changed": false
+  },
+  "fullscreen": {
+    "actual_button_click_and_native_ax_click": "Both refused by browser; labelled maximized-in-tab fallback observed",
+    "escape_restored": true,
+    "native_admission": false,
+    "source_review": "requestFullscreen called synchronously before any await; no demonstrated source defect or code change justified"
+  },
+  "preservation": {
+    "original_saved_projects": 13,
+    "all_original_hashes_unchanged_each_capture": true,
+    "qualification_copies_added": 1,
+    "original_restored": true,
+    "original_session_equal_except": [
+      "autosave",
+      "project_epoch"
+    ],
+    "exception_explanation": "Project epoch advances on explicit reopen; autosave receipt records owned qualification copy. Original document, history, view, transport and media equal prior snapshot.",
+    "original_project_sha256": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72"
+  },
+  "resource_scope": {
+    "windows": "Small UI interactions, Git and small JSON evidence only; no builds, render, download or soak",
+    "halo1": "Existing bounded runtime; short read-only SSH snapshots; no new heavy job",
+    "all_owned_workers_terminal": true,
+    "port8856_closed": true,
+    "memory_current_bytes": 172687360,
+    "memory_peak_bytes": 236904448,
+    "disk_free_bytes": 102689198080,
+    "mem_available_bytes": 122405126144
+  },
+  "private_stage_receipts": [
+    {
+      "stage": "before",
+      "sha256": "3667c6deec6379a6d3fc46f194a75b6fb6be8b3730264804ccb8a356d837be7d",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    {
+      "stage": "moved",
+      "sha256": "164c330821930e8769d8d7ea4a5d73bf38c9d7036d9c2a99a5ef677ac8d11927",
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips"
+        ],
+        "position": 1
+      }
+    },
+    {
+      "stage": "undo",
+      "sha256": "50b0ce77070de31e00ef72ebaa6c83a569879c1150b1e98a8244e774db899b92",
+      "generation": "2",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips"
+        ],
+        "position": 0
+      }
+    },
+    {
+      "stage": "redo",
+      "sha256": "437577df482f19f6673112b02472da06cb8c598b5e851cbbfaa12ef7a878e3b3",
+      "generation": "3",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips"
+        ],
+        "position": 1
+      }
+    },
+    {
+      "stage": "saved",
+      "sha256": "45259ce482bf194f7525e1718fa8c764d64e2c693602e26f472afba4465fad63",
+      "generation": "3",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "MoveClips"
+        ],
+        "position": 1
+      }
+    },
+    {
+      "stage": "reopened",
+      "sha256": "f6faa827033861add0b6a4fccf3f78c49ef08bc0271f66db9a1f489c944a3a8f",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    {
+      "stage": "ruler_paused",
+      "sha256": "7caebfc85058060eae46ff104e74f86a5984dfbd8e69d8fd081dbdcbcb209397",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  ],
+  "limitations": [
+    "No Alt-copy, held modifiers or cancellation qualification",
+    "No100%/150% OS DPI, dense500-clip or device/audio acceptance",
+    "No continuous playing ruler qualification, long playback or two-hour browser memory gate",
+    "Mixer header drag is not fader/Shift/graph/wheel qualification",
+    "Native fullscreen admission remains open"
+  ],
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2,
+    "promotion": null
+  }
+}

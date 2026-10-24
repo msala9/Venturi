@@ -1,5 +1,19 @@
 # Implementation status
 
+## Chrome physical input checkpoint - 2026-10-24
+
+The owner-installed Chrome extension is connected. One bounded actual mouse
+workflow passes: linked video/audio move by24frames, Undo/Redo, Save/reopen,
+paused ruler frame48 and Mixer header drag/reverse at observed DPR1.25.
+Original13 Saved hashes are unchanged; one owned qualification copy is retained,
+and the original clean document/view is restored. Runtime87bc/PID457797 is
+unchanged. Native fullscreen remains browser-refused; in-tab fallback works.
+See evidence/f2-f4-chrome-physical-input-workflow.json and REMAINING_WORK.md.
+Ledger remains62done/28partial/2excluded; no Alt-copy/cancel/dense/DPI/device,
+long-playback or two-hour browser acceptance is inferred. Current prebuilt below
+remains immutable and predates this documentation-only checkpoint.
+
+
 ## Current87bc internal prebuilt package - 2026-10-24
 
 The immutable archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-87bc10633ec7-9647db624e70.tar`,

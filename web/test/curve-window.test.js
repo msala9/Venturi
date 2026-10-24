@@ -18,12 +18,12 @@ class Element{
   hasPointerCapture(id){return this.captures.has(id);}
   releasePointerCapture(id){this.captures.delete(id);this.emit('lostpointercapture',{pointerId:id});}
 }
-function harness({saved,storageFailure=false}={}){
+function harness({saved,storageFailure=false,onLayout}={}){
   const document=new Element('document');document.createElement=tag=>new Element(tag,document);document.hidden=false;document.modal=false;document.querySelector=()=>document.modal?{}:null;
   const window=new Element('window',document),root=new Element('body',document),launcher=new Element('button',document);document.defaultView=window;root.append(launcher);launcher.focus();
   const writes=[],changes=[],notices=[];let viewport={width:1280,height:720};
   const store={getItem:key=>{assert.equal(key,CURVE_WINDOW_STORAGE_KEY);return saved;},setItem:(key,value)=>{if(storageFailure)throw Error('Storage denied');writes.push({key,value:JSON.parse(value)});}};
-  const controller=createCurveWindow({root,storage:store,viewport:()=>viewport,onChange:value=>changes.push(value),notice:message=>notices.push(message)});
+  const controller=createCurveWindow({root,storage:store,viewport:()=>viewport,onChange:value=>changes.push(value),onLayout,notice:message=>notices.push(message)});
   const find=className=>controller.element.children.flatMap(node=>[node,...node.children]).find(node=>node.className===className),header=find('curve-window-header'),close=find('curve-window-close'),grip=find('curve-window-resize');
   return {controller,root,header,close,grip,launcher,document,window,writes,changes,notices,setViewport:value=>viewport=value,rect:()=>Object.fromEntries(['left','top','width','height'].map(key=>[key,Number.parseFloat(controller.element.style[key])]))};
 }
@@ -33,6 +33,32 @@ function toolParts(controller){
   const find=part=>all.find(node=>node.className===`native-tool-window-${part}`);
   return {header:find('header'),close:find('close'),grip:find('resize'),title:find('title'),status:find('status'),rect:()=>Object.fromEntries(['left','top','width','height'].map(key=>[key,Number.parseFloat(controller.element.style[key])]))};
 }
+
+test('tool layout notification follows final clamped styles through open, keyboard, pointer, cancel and viewport changes',()=>{
+  const h=harness(),layouts=[],writes=[],changes=[];let viewport={width:1280,height:720};
+  const tool=createToolWindow({root:h.root,name:'Color',viewport:()=>viewport,storage:{getItem:()=>null,setItem:(...value)=>writes.push(value)},onChange:value=>changes.push(value),onLayout:rect=>{
+    const element=h.root.children.find(node=>node.dataset.toolWindow==='color');
+    assert.deepEqual(element.style,{position:'fixed',left:`${rect.x}px`,top:`${rect.y}px`,width:`${rect.width}px`,height:`${rect.height}px`});
+    layouts.push({...rect});rect.width=1;
+  }});
+  try{
+    const p=toolParts(tool);assert.deepEqual(layouts,[{x:260,y:40,width:760,height:640}]);assert.equal(p.rect().width,760,'Callback receives a copy of the owned rectangle');
+    tool.open();assert.equal(layouts.length,2);p.grip.emit('keydown',{key:'ArrowLeft',shiftKey:true});assert.equal(layouts.at(-1).width,750);assert.equal(writes.length,1);
+    const before={...layouts.at(-1)};p.grip.emit('pointerdown',{clientX:0,clientY:0});p.grip.emit('pointermove',{clientX:10000,clientY:10000});assert.deepEqual(layouts.at(-1),{x:8,y:8,width:1264,height:704});
+    p.grip.emit('pointercancel');assert.deepEqual(layouts.at(-1),before);assert.equal(writes.length,1);assert.deepEqual(changes,[true]);
+    viewport={width:470,height:400};h.window.emit('resize');assert.deepEqual(layouts.at(-1),{x:8,y:8,width:454,height:384});assert.equal(writes.length,2);
+    p.header.emit('pointerdown',{clientX:0,clientY:0});p.header.emit('pointermove',{clientX:-100,clientY:-100});tool.dispose();
+    const count=layouts.length;h.window.emit('resize');p.grip.emit('keydown',{key:'ArrowRight'});tool.open();assert.equal(layouts.length,count);assert.equal(writes.length,2);assert.deepEqual(changes,[true]);
+  }finally{tool.dispose();h.controller.dispose();}
+});
+
+test('Curves accepts the same optional layout notification without changing visibility or cancel persistence',()=>{
+  const layouts=[],h=harness({onLayout:rect=>layouts.push(rect)});
+  try{
+    assert.deepEqual(layouts,[{x:280,y:140,width:720,height:440}]);h.controller.open();h.header.emit('pointerdown',{clientX:0,clientY:0});h.header.emit('pointermove',{clientX:20,clientY:20});h.controller.close();
+    assert.deepEqual(layouts.at(-1),{x:280,y:140,width:720,height:440});assert.deepEqual(h.changes,[true,false]);assert.equal(h.writes.length,0);
+  }finally{h.controller.dispose();}
+});
 
 test('Mixer and Color tools have independent native defaults, accessible names and no Curves key ownership',()=>{
   const h=harness(),mixer=createToolWindow({root:h.root,name:'Mixer',storage:null,viewport:()=>({width:1280,height:720})}),color=createToolWindow({root:h.root,name:'Color',storage:null,viewport:()=>({width:1280,height:720})});

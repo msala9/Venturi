@@ -157,3 +157,14 @@ test('narrow scopes crop the first native slot uniformly, retain the second pref
     assert.equal(h.guideCalls.filter(call=>call[0]==='arc').length,1);assert.equal(h.guide.width,800);assert.equal(h.guide.height,180);
   }finally{h.scopes.destroy();}
 });
+
+test('explicit tool layout updates responsive scope slots without ResizeObserver delivery or native requests',async t=>{
+  const h=scopeHarness(t,{playing:false,guides:true});
+  try{
+    h.selects[1].value='Vectorscope';h.scopes.layout();assert.equal(h.stage.dataset.scopeSlots,'2');
+    h.setWidth(439);h.scopes.layout();assert.equal(h.stage.dataset.scopeSlots,'1');assert.equal(h.selects[1].parentElement.hidden,true);assert.equal(h.requests.length,0);
+    h.panel.hidden=true;h.setWidth(800);h.scopes.layout();assert.equal(h.stage.dataset.scopeSlots,'2');assert.equal(h.selects[1].parentElement.hidden,false);assert.equal(h.guide.hidden,true);assert.equal(h.requests.length,0);
+    h.panel.hidden=false;const pending=h.scopes.refresh();h.requests[0].resolve(png());await pending;
+    h.setWidth(439);h.scopes.layout();assert.equal(h.stage.dataset.scopeSlots,'1');assert.equal(h.guide.width,360);assert.equal(h.selects[1].value,'Vectorscope');assert.equal(h.requests.length,1);
+  }finally{h.scopes.destroy();}
+});

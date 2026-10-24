@@ -127,7 +127,7 @@ export function createScopes({ panel, getTarget, isPlaying=()=>false, now=()=>pe
   button.addEventListener("click",refresh);
   const observer=guides && windowRef.ResizeObserver?new windowRef.ResizeObserver(drawGuides):null;observer?.observe(panel);
   return {
-    refresh,onPlaybackFrame:schedule,invalidate,
+    refresh,onPlaybackFrame:schedule,invalidate,layout:drawGuides,
     setVisible(visible,{defer=false}={}){const hidden=panel.hidden;panel.hidden=!visible;if(visible){if(defer){cancel();status.textContent='READY · scopes follow Program playback';return;}if(hidden || !isPlaying())return refresh();return schedule();}else cancel();},
     destroy(){if(destroyed)return;destroyed=true;cancel();observer?.disconnect();viewer.destroy();for(const select of selects)select.removeEventListener('change',refresh);button.removeEventListener('click',refresh);},
   };

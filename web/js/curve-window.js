@@ -23,7 +23,7 @@ export function createToolWindow({name='Tool',ariaLabel,closeLabel,moveLabel,res
   return createWindow({...options,name,ariaLabel:ariaLabel??`${name} window`,closeLabel:closeLabel??`Close ${name}`,moveLabel,resizeLabel,storageKey:key,defaultRect:{...defaults,...defaultRect},keyEditor:false});
 }
 
-function createWindow({root=document.body,onChange=()=>{},notice=()=>{},storage,viewport=()=>({width:innerWidth,height:innerHeight}),name,ariaLabel,closeLabel,moveLabel,resizeLabel,storageKey,defaultRect,keyEditor}){
+function createWindow({root=document.body,onChange=()=>{},onLayout=()=>{},notice=()=>{},storage,viewport=()=>({width:innerWidth,height:innerHeight}),name,ariaLabel,closeLabel,moveLabel,resizeLabel,storageKey,defaultRect,keyEditor}){
   const documentRef=root.ownerDocument??document,windowRef=documentRef.defaultView??window;
   const element=documentRef.createElement('section'),header=documentRef.createElement('div'),title=documentRef.createElement('h2'),closeButton=documentRef.createElement('button'),status=documentRef.createElement('p'),content=documentRef.createElement('div'),grip=documentRef.createElement('button');
   const prefix=keyEditor?'curve-window':'native-tool-window';
@@ -41,7 +41,7 @@ function createWindow({root=document.body,onChange=()=>{},notice=()=>{},storage,
   const listeners=[],listen=(node,event,fn,options)=>{node.addEventListener(event,fn,options);listeners.push(()=>node.removeEventListener(event,fn,options));};
   const modal=()=>Boolean(documentRef.querySelector?.('dialog[open]'));
   const available=()=>!disposed && opened && element.isConnected!==false && !documentRef.hidden && !modal();
-  const paint=()=>{rect=layout(rect);element.style.left=`${rect.x}px`;element.style.top=`${rect.y}px`;element.style.width=`${rect.width}px`;element.style.height=`${rect.height}px`;};
+  const paint=()=>{rect=layout(rect);element.style.left=`${rect.x}px`;element.style.top=`${rect.y}px`;element.style.width=`${rect.width}px`;element.style.height=`${rect.height}px`;onLayout({...rect});};
   const persist=()=>{try{store?.setItem(storageKey,JSON.stringify({version:1,...rect}));}catch{if(!storageWarned){storageWarned=true;notice(`${name} window layout could not be saved in this browser`);}}};
   const release=owner=>{try{if(owner.node.hasPointerCapture?.(owner.id))owner.node.releasePointerCapture(owner.id);}catch{}};
   function cancel(){const old=gesture;if(!old)return;gesture=null;rect=old.before;paint();release(old);}

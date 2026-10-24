@@ -692,7 +692,7 @@ const toolChanged=name=>open=>{
   syncNativeTools();
 };
 const mixerWindow=createToolWindow({name:'Mixer',notice,onChange:toolChanged('mixer')});
-const colorWindow=createToolWindow({name:'Color',notice,onChange:toolChanged('color')});
+const colorWindow=createToolWindow({name:'Color',notice,onChange:toolChanged('color'),onLayout:()=>scopes?.layout?.()});
 const colorToolbar=document.createElement('div'),colorGradeHost=document.createElement('div');colorToolbar.className='native-color-toolbar';colorGradeHost.dataset.colorGrade='true';
 function colorAction(label,action){const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',action);colorToolbar.append(button);return button;}
 const colorBalance=colorAction('Auto balance',()=>{

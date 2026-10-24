@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {timelineClipSelection,frameToX,RULER,timelineLayout} from '../js/timeline/geometry.js';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {timelineClipSelection,retainedTimelineSelection,frameToX,RULER,timelineLayout} from '../js/timeline/geometry.js';
 import {createInput,timelineSelectionAction,timelineSelectionFocus} from '../js/timeline/input.js';
+import {clampTimelineFrame} from '../js/project-view.js';
+import {maskFocusAfterEdit} from '../js/masks.js';
 
 const sourceTimeline=()=>({id:'timeline',revision:'revision',fps:{num:24,den:1},markers:[],gaps:[],transition_defaults:[{kind:'Push',duration:4,direction:'Left',ease:'None',curve:0.5}],tracks:[
   {id:'0',kind:'video',locked:false,clips:[{id:'9',start_frame:0,length_frames:10,linked_group:null,disabled:true,kind:'solid_color'},{id:'2',start_frame:20,length_frames:10,linked_group:'group',freeze_source_frame:1}]},
@@ -78,4 +82,44 @@ test('reentrant context, timeline or playhead changes refuse the captured select
 });
 test('invalid selection mode or playhead never clears a valid existing selection',()=>{
   const h=harness();try{h.view.selection=['9'];assert.equal(h.input.selectTimelineClips('unknown'),false);h.view.playhead=NaN;assert.equal(h.input.selectTimelineClips('from_playhead'),false);assert.deepEqual(h.view.selection,['9']);assert.deepEqual(h.commands,[]);}finally{h.destroy();}
+});
+
+test('native refresh retains only existing unlocked selected IDs on the same timeline, while default installation resets',()=>{
+  const timeline=sourceTimeline(),ids=['9','missing','3','locked'];timeline.tracks.push({id:'locked-track',locked:true,clips:[{id:'locked'}]});
+  assert.deepEqual(retainedTimelineSelection(timeline,timeline.id,ids),['9','3']);
+  assert.deepEqual(ids,['9','missing','3','locked']);
+  assert.deepEqual(retainedTimelineSelection(timeline,'another-timeline',ids),[]);
+  assert.deepEqual(retainedTimelineSelection(timeline,null,ids),[]);
+  assert.deepEqual(retainedTimelineSelection(timeline,timeline.id,[]),[]);
+  timeline.tracks[1].locked=true;assert.deepEqual(retainedTimelineSelection(timeline,timeline.id,['3']),[]);
+});
+
+test('the actual native refresh installation lets Mask ACK restore its picker without overriding newer user context or choice',async()=>{
+  const source=readFileSync(new URL('../js/main.js',import.meta.url),'utf8');
+  const install=source.slice(source.indexOf('function installTimeline('),source.indexOf('$("demo-button").addEventListener'));
+  const track=source.slice(source.indexOf('function trackViewerSelection('),source.indexOf('function syncViewerMasks('));
+  const commit=source.slice(source.indexOf('async function commitMask('),source.indexOf('transformOverlay=createViewerTransformOverlay'));
+  for(const change of ['none','frame','selection','project','timeline','choice']){
+    let api;const nodes=new Map(),makeNode=()=>({dataset:{},textContent:'',setAttribute(){},addEventListener(){},append(){},replaceChildren(){}});
+    const state={view:{selection:['12'],playhead:0},timeline:{id:'1',revision:'old',fps:{num:24,den:1},tracks:[{id:'0',label:'V1',locked:false,clips:[{id:'12',start_frame:0,length_frames:100},{id:'other',start_frame:0,length_frames:100}]}]},documentState:{project_epoch:'epoch'},maskChoice:{scope:'epoch:1:12',revision:'old',index:1},maskSelectionIdentity:null,maskSelectionSequence:0,
+      maskScope:context=>context?`${context.project_epoch}:${context.timeline_id}:${context.clip_id}`:null,maskFocusAfterEdit,retainedTimelineSelection,clampTimelineFrame,
+      currentViewerContext:()=>({project_epoch:state.documentState.project_epoch,timeline_id:state.timeline.id,revision:state.timeline.revision,clip_id:'12',detail:{masks:{items:[{},{},{}]}}}),
+      programArrowHold:null,retimeMenu:null,audioMeters:null,exportPanel:null,viewerZoom:null,canvasTimeline:{cancel(){},invalidate(){}},maskOverlay:{setEnabled(){throw Error('An existing handle edit must not switch overlay mode');},invalidate(){}},
+      syncProgramMarks(){},updatePlayAvailability(){},selected:()=>api.trackViewerSelection(),updateTime:()=>{api.trackViewerSelection();state.maskChoice=null;},syncViewerMasks(){},selectedTransition:()=>null,nativeGapAt:()=>null,
+      document:{createElement:makeNode},$:id=>{if(!nodes.has(id))nodes.set(id,makeNode());return nodes.get(id);},
+      commit:async()=>{
+        if(change==='frame')state.view.playhead=12;
+        if(change==='selection')state.view.selection=['other'];
+        if(change==='project')state.documentState.project_epoch='new-epoch';
+        api.trackViewerSelection();const next={...state.timeline,id:change==='timeline'?'2':'1',revision:'new'};
+        api.installTimeline(next,{selection:[...state.view.selection],selectionTimeline:'1'});
+        if(change==='choice'){state.maskSelectionSequence++;state.maskChoice={scope:'epoch:1:12',revision:'new',index:2};}
+        return {status:'applied'};
+      }};
+    api=runInNewContext(`${install}\n${track}\n${commit}\n({installTimeline,trackViewerSelection,commitMask})`,state);api.trackViewerSelection();const sequence=state.maskSelectionSequence;
+    assert.equal((await api.commitMask({kind:'edit_viewer_mask',clip_id:'12',index:1,parameters:[{param:'Width',value:1031}]})).status,'applied');
+    if(change==='none'){assert.equal(state.maskSelectionSequence,sequence);assert.equal(state.maskChoice.index,1);assert.equal(state.maskChoice.revision,'new');assert.deepEqual(Array.from(state.view.selection),['12']);}
+    else if(change==='choice')assert.equal(state.maskChoice.index,2);
+    else assert.equal(state.maskChoice,null,change);
+  }
 });

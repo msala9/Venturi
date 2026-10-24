@@ -200,6 +200,11 @@ export function timelineClipSelection(timeline,fromFrame=null){
     return clips.map(clip=>clip.id);
   });
 }
+export function retainedTimelineSelection(timeline,previousTimelineId,ids=[]){
+  if(!timeline || timeline.id!==previousTimelineId)return [];
+  const available=new Set(timeline.tracks.filter(track=>!track.locked).flatMap(track=>track.clips.map(clip=>clip.id)));
+  return ids.filter(id=>available.has(id));
+}
 export function clipSelectionAnchor(timeline,clipId,projectEpoch=null){
   const track=timeline?.tracks.find(track=>!track.locked && track.clips.some(clip=>clip.id===clipId));
   return track?{project_epoch:projectEpoch,timeline_id:timeline.id,track_id:track.id,clip_id:clipId}:null;

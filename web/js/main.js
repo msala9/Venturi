@@ -1,6 +1,6 @@
 import { isTextTarget, installSplitter, installClipListDismissal } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
-import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,timelineScrollBounds,timelineOriginForFrame } from "./timeline/geometry.js";
+import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,retainedTimelineSelection,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,timelineScrollBounds,timelineOriginForFrame } from "./timeline/geometry.js";
 import {isRetimeShortcut,isTimelineContextShortcut,timelineSelectionFocus} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
 import {createTimelineContextMenu} from './timeline/context-menu.js';
@@ -1222,7 +1222,7 @@ function updateTime() {
   const revealKey=JSON.stringify([timeline?.id,view.playhead]);if(timeline && lastReveal!==revealKey && canvasTimeline.navigationIdle()){view.origin=timelineOriginForFrame(timeline,view,$('timeline').clientWidth,view.playhead);lastReveal=revealKey;}
   canvasTimeline.invalidate();
 }
-function installTimeline(next,{transitionSelection=null}={}) {
+function installTimeline(next,{transitionSelection=null,selection=[],selectionTimeline=null}={}) {
   programArrowHold?.cancel();
   retimeMenu?.close();
   audioMeters?.invalidate();
@@ -1233,7 +1233,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   viewerZoom?.refresh();
   view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;
   updatePlayAvailability();
-  view.selection = [];
+  view.selection = retainedTimelineSelection(next,selectionTimeline,selection);
   view.selectionAnchor=null;
   selected();
   $("format").textContent = `${next.fps.num}/${next.fps.den} fps`;
@@ -1465,10 +1465,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     if(projectChanged)view.playhead=projectView.frame(active.id);
     if(previousId!==active.id){view.videoScroll=0;view.audioScroll=0;view.videoPaneHeight=null;view.rowHeight=62;}
     $("timeline-select").value = active.id;
-    installTimeline(active,{transitionSelection:previousId===active.id?transitionSelection:null});
-    view.selection = selection.filter((id) =>
-      active.tracks.some((t) => !t.locked && t.clips.some((c) => c.id === id)),
-    );
+    installTimeline(active,{transitionSelection:previousId===active.id?transitionSelection:null,selection,selectionTimeline:previousId});
     view.selectionAnchor=reconcileSelectionAnchor(active,selectionAnchor,next.project_epoch);
     selected();
     canvasTimeline.invalidate();

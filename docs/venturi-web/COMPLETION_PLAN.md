@@ -1,5 +1,33 @@
 # Active completion plan — full Venturi Web scope
 
+## Mask handle continuity and cross-parameter lanes qualified - 2026-10-24
+
+Source67882ef retains valid clip selection atomically during native refresh,
+fixing own-ACK mask picker loss. Actual Chrome Rectangle corner/side and Ellipse
+move/rotate pass four Undo/Redo and Save/reopen. Two cross-parameter keys move
+96/111 to98/113, then both become Hold, one command per operation, with exact
+two Undo/Redo and Save/reopen. Currentcf00a18d78dc also passes two consecutive
+mask edits without reselection: picker1 and CURRENT handles remain, followed
+by two Undo/Redo and Save/reopen. See
+evidence/f1-f3-chrome-mask-handles-lanes-workflow.json.
+The212-client/three-syntax gate and70.599s build pass, peak1463513088bytes/events0;
+unchanged native/Clippy proof is reused. Actual GUI lifetime peak233443328bytes,
+events0;16 Saved, Recovery and40foreign PIDs/39 Sessions remain exact.
+Mask held/cancel/required OS and lane wheel/held/dense/OS checks remain open.
+Ledger stays62done/28partial/2excluded; current packaging is pending, R6 historical.
+
+## Dense500 ordinary editing qualified - 2026-10-24
+
+Actual Chrome imports one native OTIO project with500clips/250linked A/V pairs
+using the existing River source. Fit/zoom/pan, reverse Canvas marquee, Ctrl/Shift
+selection, Ctrl+A, linked move, exact Undo/Redo and edited Save/reopen pass.
+The new Venturi_Dense500_Chrome_V1.vvproj is the sole16th Saved addition; all15
+prior Saved files and NAS remain exact. See evidence/f1-chrome-dense500-editing-workflow.json.
+Runtime lifetime peak271155200bytes and zero memory events are recorded, without
+claiming browser memory,60fps or cold-cache performance. Cold visible demand,
+required OS scaling, held/cancel input and browser soak remain FINAL_CHECKS.
+Ledger remains62done/28partial/2excluded; no row promotion.
+
 ## Speed controls and live Program end after Ripple corrected - 2026-10-24
 
 Actual Chrome passes ordinary percentage draft scrub/Cancel, Keep length75%,

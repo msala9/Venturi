@@ -13,6 +13,20 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
 
 ## Concrete production work
 
+- **Mask handles and cross-parameter lanes qualified:** source67882ef retains
+  valid selection before native refresh reaches Inspector/Viewer, keeping the
+  chosen mask after its own ACK. Actual four shape-handle edits and two lane
+  move/Hold operations, then two current mask edits without reselection, pass
+  Undo/Redo/Save/reopen. See evidence/f1-f3-chrome-mask-handles-lanes-workflow.json.
+  Held/cancel/required OS and remaining lane wheel/dense checks stay open.
+
+- **Dense500 ordinary editing qualified:** actual Chrome500clips/250linked A/V
+  pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A selection, linked move, exact
+  Undo/Redo and edited Save/reopen. evidence/f1-chrome-dense500-editing-workflow.json
+  preserves all15 prior Saved/NAS and adds only the owned16th Saved fixture.
+  Cold visible demand,60fps, browser-memory/soak and required OS/held input are
+  still unqualified; do not repeat ordinary dense editing as if it were missing.
+
 - **Live Program cursor after shortening corrected:** source5ce758c clamps the
   actual cursor before Inspector/marks/timecode and preview query installation.
   Actual old199/end176 failure is repaired; currentefa2 passes175→newend152,
@@ -133,22 +147,22 @@ feature passes every requirement or cannot contain defects.
 | program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; actual Chrome ruler seek/resume1x/2x and source5ce758c edit-induced end clamp/CURRENT black/Undo/Save/reopen pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
 | transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard and actual Chrome ruler1x/2x seek/resume pass, including stopped seek retaining selected2x and explicit Pause resetting1x. Keep native paused arrow stepping; qualify remaining held/cancel, required scaling and output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
-| thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
-| waveforms_cached | Qualification: dense/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
+| thumbnail_workers | Dense500 ordinary navigation is qualified. Qualify cold visible demand/scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
+| waveforms_cached | Dense500 ordinary navigation is qualified. Qualify cold/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |
 | shared_library | Unavailable-root retry and actual native NAS two-way Restore are delivered; cached import no-op reporting is corrected. Retain accepted cross-project import/Relink/CIFS proof. Remaining actual HTML Project-to-Library capture and other explicit final checks stay in FINAL_CHECKS.md; no blanket new GUI-lifecycle blocker is introduced. |
 | track_arm_record | Qualification: real microphone permission, disconnect and device latency with native arming/placement semantics. |
-| linked_groups | Qualification: physical Alt-copy, gestures/DPI and dense timelines. Shared preset cross-project Apply is already qualified. |
-| select_multiclip_marquee | Ordinary reverse Canvas marquees, Clip-list Ctrl/Shift and Canvas Ctrl+A/locked exclusion pass in actual Chrome; qualify remaining Canvas modifier/cancel/scrollbar, DPI and500-clip interactions. |
+| linked_groups | Dense500 linked move/Undo/Redo/Save/reopen is qualified. Retain physical Alt-copy, held/cancel, required DPI and dense performance gates. Shared preset cross-project Apply is already qualified. |
+| select_multiclip_marquee | Ordinary reverse Canvas marquees, Clip-list Ctrl/Shift and Canvas Ctrl+A/locked exclusion pass. Dense500 additionally qualifies Canvas Ctrl/Shift/Ctrl+A and navigation; retain held/cancel/scrollbar, required DPI and60fps/cold-demand checks. |
 | snapping | Actual linked move snaps to playhead48 versus46 with Snap off at observed DPR1.25; qualify remaining ruler/edge snapping across required DPI and dense timelines. |
 | slip_tool | Actual ordinary linked video-body and audio-body Slip, two Undo/Redo and edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json, preserving timing/rate/pitch and unrelated effects. Neutral wording9fbc205 is embedded in5ce758c/currentefa2. Qualify prolonged uncached held-Slip continuity, remaining cancel and required OS scaling. |
 | speed_handles_constant | Actual ordinary percentage scrub/draft Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. |
-| keyframe_editing | Actual position diamonds, graph marquee/two-key drag and complete Undo/Redo/edited SaveAs/reopen pass; qualify remaining cross-parameter lanes, held modifiers/cancel and dense/DPI operation. Native destination replacement remains delivered. |
-| curve_easing_bezier | Actual EaseInOut, Bezier Apply and first tangent drag pass; qualify remaining held modifiers, wheel/cancel and dense/DPI operation. |
+| keyframe_editing | Actual diamonds/graph and cross-parameter lanes pass: keys96/111 move to98/113, then both Hold, one command each with exact Undo/Redo/Save/reopen. Retain wheel/held/cancel, dense and required OS/DPI qualification; native destination replacement remains delivered. |
+| curve_easing_bezier | Actual EaseInOut, Bezier Apply/first tangent and cross-parameter lane Hold editing pass with exact Undo/Redo/Save/reopen. Retain wheel/held/cancel and dense/required OS-DPI qualification. |
 | transform_crop_softness | Actual Viewer move/left crop, scale/rotation/pivot handles and numeric softness/PositionX scrub pass, with exact eight-entry Undo/Redo and Saved reopen. Qualify continuous edge scrub, held/cancel and required DPI; retain native/API frame equivalence. |
 | title_font_style_bg | Actual font popup Cancel/family/style, Font size scrub, color palette and background height scrub pass with complete eight-entry Undo/Redo and Saved reopen; qualify remaining held/cancel and required scaling. Retain existing render/history/export workflow. |
 | solid_color | Actual palette Cancel/Hue/SV and native color-key insertion/automatic keying pass with three Undo/Redo and exact Saved reopen. Qualify generator HTML drag, remaining held/cancel and required DPI; retain native color/render/history/export proof. |
-| masks_rect_ellipse_bezier | Actual curved Path pen/cancel/vertex and three-shape editing, seven Undo/Redo and exact Saved reopen pass; repaired Inspector viewport stays fixed after Feather scrub. Qualify remaining handles/cancel and required DPI; retain native moving-frame/export proof. |
-| mask_boolean_feather | Actual Add/Subtract/Intersect custom choices and Feather pointer scrub pass, including one native Undo per edit and exact Saved reopen. Qualify remaining handle/cancel and required DPI; retain native composition proof. |
+| masks_rect_ellipse_bezier | Actual Path pen/vertex, Rectangle corner/side and Ellipse move/rotate pass with persistence. Source67882ef fixes own-ACK picker loss; two consecutive current edits retain picker1/CURRENT without reselection, exact Undo/Redo/Save/reopen. Retain held/cancel/required OS-DPI and native moving-frame/export proof. |
+| mask_boolean_feather | Actual Add/Subtract/Intersect choices, Feather scrub and shape handles pass with one native Undo per edit and exact Saved reopen. Own-ACK handle continuity is corrected; retain held/cancel/required OS-DPI qualification and native composition proof. |
 | push_cross_dissolve | Actual Chrome explicit create/replace, direction/ease closed-wheel and no-op, popup cancellation, paired seconds/frames/curve scrubs, Canvas duration, Remove and full Undo/Redo/Save/reopen pass in evidence/f3-chrome-transition-input-workflow.json. Qualify held Alt-copy, HTML drop, actual window blur and required100%/150% mapping. |
 | smooth_cut_optical_flow | Actual Chrome explicit SmoothCut replacement, Canvas selection/duration and full Undo/Redo/Save/reopen pass in evidence/f3-chrome-transition-input-workflow.json. Qualify held transition-copy/HTML drop, window blur and required100%/150% mapping; retain existing moving native render/export evidence. |
 | clip_fades | Qualification: fade-handle mapping at100%/150%; existing125% physical handles and native video/PCM/AAC/MP4 proof remain accepted. |
@@ -156,7 +170,7 @@ feature passes every requirement or cannot contain defects.
 | audio_mixer_track_master | Actual fader, EQ graph XY/wheel and compressor crossover/makeup pass; Mixer scroll and detached knob interception are corrected in d49ed8c, with full Undo/Redo/Save/reopen proof. Qualify remaining Shift/held/cancel/required DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
 | voiceover_record | Qualification: actual microphone/disconnect/latency/output and retained-take browser download completion. Retain intentional5min/64MiB limits and synthetic-controller proof. |
 | compare_take_AB | Qualification: sustained representative full-resolution comparison and physical audio; source quality/clock/stream/replace controls are delivered. |
-| clip_move_safe | Ordinary linked move, Snap on/off, overlap refusal, locked-peer refusal and exact Undo/persistence pass in actual Chrome; qualify Alt-copy, cancellation, required DPI and dense timeline. |
+| clip_move_safe | Dense500 linked move with exact Undo/Redo/Save/reopen is qualified; retain physical Alt-copy, cancellation, required DPI and dense performance checks. |
 
 ## Integrated acceptance still required
 

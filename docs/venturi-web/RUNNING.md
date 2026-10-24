@@ -1,5 +1,22 @@
 # Running the implemented host
 
+## Current owned mask-selection runtime - 2026-10-24
+
+The existing Windows URL remains http://127.0.0.1:8855/.
+Unit `venturi-web-halo1-mask-selection.service`, captured PID529488, executes
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-cf00a18d78dc`:
+SHA256 `cf00a18d78dc0f01062b7d1b7e014dca0a2319cbee0fcb1abd9d48a21c947e70`,
+source67882ef. Root remains `/home/halo/VenturiWeb-color-audio-controls-20261023`.
+All16 Saved, known Recovery and40foreign PIDs/39 Sessions are exact across
+deployment. Actual mask edits keep picker/handles without reselection, with
+Undo/Redo and Save/reopen. See
+evidence/f1-f3-chrome-mask-handles-lanes-workflow.json.
+The212-client/three-syntax gate and incremental build pass; native/Clippy proof
+is reused. Actual GUI current150089728bytes/lifetime peak233443328bytes, events0;
+not browser memory or an isolated benchmark. Current packaging is pending;
+R6 and the runtime/deployment records below remain historical and immutable.
+Do not start a duplicate server on occupied8855.
+
 ## Current owned live-playhead runtime - 2026-10-24
 
 The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.
@@ -13,6 +30,17 @@ across deployment. Actual speed controls, terminal black, Undo/Redo and edited
 Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Additive
 current delivery is pending; earlier R6 and runtime records stay version-bound.
 Do not start a duplicate server on occupied8855.
+
+## Owned Dense500 Saved fixture - 2026-10-24
+
+The unchanged5ce758c/efa2 live runtime now retains the additive
+Venturi_Dense500_Chrome_V1.vvproj in the same project root:500native clips,
+250linked A/V pairs, one reused River source. Actual paused Chrome navigation,
+selection/move, Undo/Redo and Save/reopen pass in evidence/f1-chrome-dense500-editing-workflow.json.
+All15 previously Saved projects and NAS remain exact; there are now16 Saved.
+The15-file deployment witnesses above remain historical and unchanged.
+Runtime lifetime peak271155200bytes, zero memory events; this is neither an
+isolated dense benchmark nor browser-memory/60fps/cold-cache/soak proof.
 
 ## Current owned Mixer runtime - 2026-10-24
 

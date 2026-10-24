@@ -1,0 +1,304 @@
+{
+  "date": "2026-10-24",
+  "status": "passed-scoped-actual-chrome-dense-editing",
+  "source_commit": "5ce758c1f237fc2f6bac5546d4c1765f0939dac9",
+  "runtime": {
+    "binary_sha256": "efa2c09f2c87a7794745bc9b941288d17e3aca553478f171d4f32c9d525117f4",
+    "pid": 521967,
+    "unit": "venturi-web-halo1-live-playhead.service",
+    "unchanged": true
+  },
+  "browser": {
+    "name": "Chrome",
+    "viewport_css": [
+      1638,
+      776
+    ],
+    "device_pixel_ratio": 1.5625,
+    "scope": "One existing tab/configuration; not an OS scaling matrix."
+  },
+  "fixture": {
+    "project": "Venturi_Dense500_Chrome_V1.vvproj",
+    "preparation_receipt": "halo1-dense500-prepared.json",
+    "receipt_sha256": "7920219362ca8db0d78b572cc325b172788b67d829c490bd75ce980f8b0bf5d8",
+    "otio_path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Dense500_Chrome_V1.otio",
+    "otio_bytes": 272073,
+    "otio_sha256": "92e8bf1862007247b84675d23e8782862a7ed67c90f8c5a65abd807611c5acab",
+    "source_path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Repair/River_AV_11s.mp4",
+    "source_bytes": 2854042,
+    "source_sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+    "source_scope": "Existing short River A/V source repeated, not long-source footage.",
+    "timeline_id": "1",
+    "tracks": 2,
+    "native_clips": 500,
+    "linked_AV_pairs": 250,
+    "fps": 24,
+    "timeline_end_frame": 47904,
+    "timeline_seconds": 1996,
+    "native_import": "One GUI OTIO import produces the native Saved project with initial generation0/empty history."
+  },
+  "capture_receipts": [
+    {
+      "stage": "original_before",
+      "file": "halo1-final-gui-dense_original_before.json",
+      "sha256": "108c2604c1c1c55e9760d4b1fe48a7a00d75201f6de5e57b34ca3d350e0211c3",
+      "at_unix": 1792861295.0116508,
+      "generation": 0,
+      "history_position": 0
+    },
+    {
+      "stage": "imported",
+      "file": "halo1-final-gui-dense_imported.json",
+      "sha256": "cfe50a2ff2251d5db8437c88ce3a40fe52074272620d97dbb0d73e33d7fbe60a",
+      "at_unix": 1792861517.354184,
+      "generation": 0,
+      "history_position": 0
+    },
+    {
+      "stage": "pair_moved",
+      "file": "halo1-final-gui-dense_pair_moved.json",
+      "sha256": "154f9038bec32c09f99ebaa1b1b2b58f08576a303eda7015deb209bf8bd9feb0",
+      "at_unix": 1792861730.2899325,
+      "generation": 1,
+      "history_position": 1
+    },
+    {
+      "stage": "move_undone",
+      "file": "halo1-final-gui-dense_move_undone.json",
+      "sha256": "4e6adb5984c21ca802a3cfb172c437731d735d900f8f6d57a42a53f8e1ec6c28",
+      "at_unix": 1792861823.8793256,
+      "generation": 2,
+      "history_position": 0
+    },
+    {
+      "stage": "move_redone",
+      "file": "halo1-final-gui-dense_move_redone.json",
+      "sha256": "4d7844fd930b6758f0183153b688c33117d58f3f609c952b009d7fdaad5c1dbe",
+      "at_unix": 1792861843.7246873,
+      "generation": 3,
+      "history_position": 1
+    },
+    {
+      "stage": "selection_navigation",
+      "file": "halo1-final-gui-dense_selection_navigation.json",
+      "sha256": "b6f83b3bfc317d4c244ca409e2b9a4a197fd611ec97318733f6df3b340c0f1e7",
+      "at_unix": 1792862157.1067464,
+      "generation": 3,
+      "history_position": 1
+    },
+    {
+      "stage": "saved",
+      "file": "halo1-final-gui-dense_saved.json",
+      "sha256": "e560e932d85f6a89ab2cce819b2d2b451e395c1deade389e7ba4e6f89bf50888",
+      "at_unix": 1792862397.4878905,
+      "generation": 3,
+      "history_position": 1
+    },
+    {
+      "stage": "reopened",
+      "file": "halo1-final-gui-dense_reopened.json",
+      "sha256": "fe37b2a40ca63bb33480ee2a65d8c9c1ab5abd756fa1f43cff17deda891813af",
+      "at_unix": 1792862417.252644,
+      "generation": 0,
+      "history_position": 0
+    },
+    {
+      "stage": "original_restored",
+      "file": "halo1-final-gui-dense_original_restored.json",
+      "sha256": "c59bab7442252055b7eb7fda86086e8580c2224ce01e1c95b0e5bdb7b6a5e03a",
+      "at_unix": 1792862443.8086917,
+      "generation": 0,
+      "history_position": 0
+    }
+  ],
+  "actual_gui_input": {
+    "provenance": "Parent actual Chrome pointer/keyboard/DOM observations. Native model outcomes independently asserted from capture JSON; selection is browser UI state, not inferred from Session DTO.",
+    "fit_zoom": "Fit followed by15 Zoom in clicks after closing the blocking dialog.",
+    "move": {
+      "selected_linked_pair": [
+        "0",
+        "250"
+      ],
+      "pointer_css": [
+        [
+          600,
+          610
+        ],
+        [
+          650,
+          610
+        ]
+      ],
+      "native_command": "MoveClips",
+      "generation": 1,
+      "starts_before_after": [
+        0,
+        12
+      ],
+      "other498_clips_exact": true
+    },
+    "undo_redo": {
+      "undo_generation": 2,
+      "undo_position": 0,
+      "redo_generation": 3,
+      "redo_position": 1,
+      "exact_full_native_timelines_restored": true
+    },
+    "selection_navigation": [
+      {
+        "input": "Reverse marquee",
+        "pointer_css": [
+          [
+            1050,
+            550
+          ],
+          [
+            400,
+            719
+          ]
+        ],
+        "observed_selection": "First linked A/V pair"
+      },
+      {
+        "input": "Ctrl+A",
+        "observed_selected_rows": 500
+      },
+      {
+        "input": "Click gap",
+        "pointer_css": [
+          1000,
+          610
+        ],
+        "observed_gap_frames": [
+          108,
+          192
+        ]
+      },
+      {
+        "input": "Scroll right",
+        "pages": 0.25,
+        "observed_origin_seconds_about": [
+          0,
+          3.37
+        ]
+      },
+      {
+        "input": "Canvas Ctrl-add",
+        "anchor_css": [
+          430,
+          610
+        ],
+        "second_pair_center_css": [
+          926.2,
+          622.5
+        ],
+        "observed_selected_rows": 4,
+        "observed_selection": "First two A/V pairs"
+      },
+      {
+        "input": "Explicit anchor then Shift-click same second-pair center",
+        "observed_selected_rows": 4,
+        "observed_selection": "First two A/V pairs"
+      }
+    ],
+    "preliminary_attempts_not_counted": [
+      "Fit/Zoom while a modal blocked navigation did not navigate; actual accepted sequence followed modal closure.",
+      "Initial Shift anchor/stale count interpretation was corrected using an explicit anchor and refreshed four-row selection.",
+      "Overstrong full Session navigation equality was corrected for fresh-import view ACK: active timeline null/playheads{} becomes timeline1/frame0, plus view_revision. Native editing model unchanged.",
+      "Close Projects after reopen returned no_matches because the picker had already closed automatically."
+    ]
+  },
+  "native_assertions": {
+    "clip_count": 500,
+    "unique_clip_ids": 500,
+    "linked_groups": 250,
+    "each_group_has_matching_video_audio": true,
+    "native_end_frame": 47904,
+    "only_first_pair_moved": true,
+    "move_preserves_source_range_length_rate_links_effect_fields": true,
+    "remaining498_clip_DTOs_exact": true,
+    "timeline_gap_revision_and_moved_trim_bounds_update_natively": true,
+    "baseline_timelines_sha256": "7bf3f2beea6b50382523d12e85cbeedcf26af6346d72bcabaf92bab9b21ff7d7",
+    "moved_timelines_sha256": "1af8d55be3ff121ea9780077770e9f3f4ae4a7c77bd3995e7b5c72e3d3ac0bac",
+    "navigation_only_session_differences": [
+      "/view/active_timeline",
+      "/view/playheads/1",
+      "/view_revision"
+    ],
+    "navigation_model_exact_excluding_only": [
+      "view",
+      "view_revision"
+    ],
+    "all16_saved_files_unchanged_during_move_undo_redo_navigation": true,
+    "save_reopen": {
+      "saved_generation": 3,
+      "saved_history_length": 1,
+      "saved_history_position": 1,
+      "reopened_generation": 0,
+      "reopened_history_empty": true,
+      "both_clean": true,
+      "full_timelines_media_exact": true,
+      "all16_saved_hashes_exact": true,
+      "project_sha256": "c6632fe53c7379d96df3c996d2664697d8fa11e45ede95121ab077e067cbd3f6"
+    }
+  },
+  "preservation": {
+    "all15_prior_saved_exact_throughout": true,
+    "prior_saved_map_sha256": "42736c671cf305046535e8f532579d502287f7c58f6017e00ff70c62927ff791",
+    "new_dense_saved_only_addition": true,
+    "final_saved_count": 16,
+    "final_saved_map_sha256": "26e48e3164ea9920c85947275a38f4faaba5f71decde8b40649e337a95571e49",
+    "NAS_catalogs_exact_excluding_only": [
+      "project_epoch",
+      "placement_generation",
+      "placement.generation"
+    ],
+    "catalog_semantic_sha256": "3a337ff20e38a454cc5e3f32fa033c4270d096d177ebf2a9548bed7c4efc4d84",
+    "owned_current_backup_versions_exact_sha256": "51525970493f4dfb30fdf5111cf23392c99912c836b6d4e95b7d7ab7e1d0d48e",
+    "known_ChromeInput_recovery_status_exact": {
+      "base_changed": true,
+      "created_unix_ms": 1792847309756,
+      "pending": true,
+      "project_token": "Venturi_Chrome_Input_V1.vvproj",
+      "resolved_to": "Venturi_Chrome_Input_V1.vvproj",
+      "revision": "2e77aa7e36061263d4b4cb61f0c41d0ec722f007635d2af0093cc314c4d0994a",
+      "state": "pending"
+    },
+    "original_restored_clean": true,
+    "original_full_session_model_view_exact_excluding_only": [
+      "project_epoch"
+    ],
+    "original_session_sha256_without_epoch": "45880ca1b4d24fc65b7831094b2c6bd12e8e5aabdb2043287e74d6ef49117354"
+  },
+  "resources": {
+    "receipt": "halo1-chrome-dense500-resources.json",
+    "sha256": "b8a93aa497fbde3ff83e8a836692de0d79224e26e52f3d8fa4b371724513d430",
+    "runtime_current_bytes": 218959872,
+    "runtime_lifetime_peak_bytes": 271155200,
+    "scope": "Lifetime includes earlier activity; not isolated dense-workflow benchmark or browser memory.",
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "limits": {
+      "cpus": 8,
+      "memory_bytes": 4294967296,
+      "swap_bytes": 0,
+      "nice": 19,
+      "oom_score_adjust": 1000,
+      "tasks": 128,
+      "io_weight": 10
+    }
+  },
+  "limits": [
+    "No new build, test, render, export, long-source media or browser installation. Paused editing only.",
+    "No 60 fps, cold-cache, browser-memory or soak claim.",
+    "Long/prolonged uncached, held/cancel, required OS/DPI/device and remaining M7 checks retain their criteria in FINAL_CHECKS.md.",
+    "No functional parity row promotion or full-plan completion claim."
+  ]
+}

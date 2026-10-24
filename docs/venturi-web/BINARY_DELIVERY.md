@@ -1,5 +1,18 @@
 # Prebuilt Linux development candidate
 
+## Current mask-selection correction - 2026-10-24
+
+Live cf00a18d78dc/source67882ef/PID529488 retains valid clip/mask selection
+through native edit refresh. Actual consecutive mask gestures, Undo/Redo and
+Saved reopen pass; ordinary cross-parameter lanes and Dense500 editing also
+pass. See evidence/f1-f3-chrome-mask-handles-lanes-workflow.json and
+evidence/f1-chrome-dense500-editing-workflow.json. The212 focused client cases
+and one incremental build pass with zero memory events; unchanged native and
+Clippy evidence is retained. All16 Saved and Recovery survive deployment.
+Earlier archives remain immutable; additive current packaging is pending.
+Full acceptance and FINAL_CHECKS remain open.
+
+
 ## Current live Program-end correction - 2026-10-24
 
 Liveefa2c09f2c87/source5ce758c/PID521967 repairs the live cursor/preview after

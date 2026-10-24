@@ -1,5 +1,26 @@
 # Active completion plan — full Venturi Web scope
 
+## Speed controls and live Program end after Ripple corrected - 2026-10-24
+
+Actual Chrome passes ordinary percentage draft scrub/Cancel, Keep length75%,
+Ripple100%, Canvas duration112.5%, strip preset200%, menu Cancel and safe overlap
+refusal. Five native speed edits, full Undo/Redo and edited Save/reopen pass.
+One preliminary stale-coordinate gesture changed pitch only; its exact command
+is retained without counting it as a75% scrub. Source5ce758c fixes the real
+post-Ripple preview defect: main kept cursor199 after timeline end shrank to176,
+requesting an invalid frame while the slider alone showed176. It now reuses the
+inclusive native frame clamp before installing Inspector/marks/timecode.
+Currentefa2c09f2c87/PID521967 passes actual175→152 shrink, CURRENT black960x540,
+timecode00:00:06:08, valid-cursor Undo/growth, Redo and edited Save/reopen151.
+All14 other Saved and NAS remain exact; closing only flushes the owned view
+152→151, with exact one-byte RON proof.58 focused client cases, three syntax
+checks and one incremental build pass at1469124608B peak/zero memory events;
+unchanged Rust/Clippy proof is reused. Slip wording9fbc205 is now embedded.
+See evidence/f3-chrome-retime-live-end-workflow.json. The original clean project
+is restored. No long playback/render/export/soak or new package; immutable R6
+retains its earlier source. Additive final delivery and remaining edge-relative/
+held/cancel/dense/required OS/device/M7 checks stay FINAL_CHECKS; ledger62/28/2.
+
 ## Actual linked Slip from video and audio - 2026-10-24
 
 Current26b6/source d49ed8c passes ordinary Canvas Slip from both linked video

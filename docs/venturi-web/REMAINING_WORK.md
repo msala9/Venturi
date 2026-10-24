@@ -13,6 +13,14 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
 
 ## Concrete production work
 
+- **Live Program cursor after shortening corrected:** source5ce758c clamps the
+  actual cursor before Inspector/marks/timecode and preview query installation.
+  Actual old199/end176 failure is repaired; currentefa2 passes175→newend152,
+  CURRENT black, valid-cursor Undo/growth, Redo and Saved/reopen151. Percentage
+  scrub/Cancel, Keep length/Ripple, Canvas speed handle/preset and overlap refusal
+  also pass. See evidence/f3-chrome-retime-live-end-workflow.json.58 affected
+  client cases and the incremental build pass; unchanged native proof is reused.
+
 - **Independent Mixer navigation corrected:** source d49ed8c preserves scroll
   across native refresh and applies EQ/compressor knob styles to the tool window,
   preventing oversized indicators from covering other controls. Actual EQ graph
@@ -122,7 +130,7 @@ feature passes every requirement or cannot contain defects.
 | Partial capability | Concrete next work |
 |---|---|
 | source_viewer | Native explicit Pause/final EOF speed reset delivered; qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
-| program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; keyboard and actual Chrome ruler seek/resume at1x/2x pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
+| program_viewer | Native terminal cursor/black/no replay and Pause/EOF1x delivered; actual Chrome ruler seek/resume1x/2x and source5ce758c edit-induced end clamp/CURRENT black/Undo/Save/reopen pass. Qualify held/cancel/required scaling, representative long-source playback/cold preparation and audio/device requirements. |
 | transport_play_pause | Native explicit Pause/finalEOF1x and terminal no-replay delivered; keyboard and actual Chrome ruler1x/2x seek/resume pass, including stopped seek retaining selected2x and explicit Pause resetting1x. Keep native paused arrow stepping; qualify remaining held/cancel, required scaling and output checks. |
 | viewer_fullscreen | Full-area Fit, bounded in-tab fallback and keyboard/Source/Program layout delivered and qualified; qualify actual native browser admission, physical bottom hover and DPI. |
 | thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
@@ -132,8 +140,8 @@ feature passes every requirement or cannot contain defects.
 | linked_groups | Qualification: physical Alt-copy, gestures/DPI and dense timelines. Shared preset cross-project Apply is already qualified. |
 | select_multiclip_marquee | Ordinary reverse Canvas marquees, Clip-list Ctrl/Shift and Canvas Ctrl+A/locked exclusion pass in actual Chrome; qualify remaining Canvas modifier/cancel/scrollbar, DPI and500-clip interactions. |
 | snapping | Actual linked move snaps to playhead48 versus46 with Snap off at observed DPR1.25; qualify remaining ruler/edge snapping across required DPI and dense timelines. |
-| slip_tool | Actual ordinary linked video-body and audio-body Slip, two Undo/Redo and edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json, preserving timing/rate/pitch and unrelated effects. Wording-only9fbc205 awaits final embedded rebuild. Qualify prolonged uncached held-Slip continuity, remaining cancel and required OS scaling. |
-| speed_handles_constant | Qualification: physical relative scrub, handles, modifiers, cancellation and dense/DPI operation. |
+| slip_tool | Actual ordinary linked video-body and audio-body Slip, two Undo/Redo and edited Save/reopen pass in evidence/f1-chrome-linked-slip-input-workflow.json, preserving timing/rate/pitch and unrelated effects. Neutral wording9fbc205 is embedded in5ce758c/currentefa2. Qualify prolonged uncached held-Slip continuity, remaining cancel and required OS scaling. |
+| speed_handles_constant | Actual ordinary percentage scrub/draft Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. |
 | keyframe_editing | Actual position diamonds, graph marquee/two-key drag and complete Undo/Redo/edited SaveAs/reopen pass; qualify remaining cross-parameter lanes, held modifiers/cancel and dense/DPI operation. Native destination replacement remains delivered. |
 | curve_easing_bezier | Actual EaseInOut, Bezier Apply and first tangent drag pass; qualify remaining held modifiers, wheel/cancel and dense/DPI operation. |
 | transform_crop_softness | Actual Viewer move/left crop, scale/rotation/pivot handles and numeric softness/PositionX scrub pass, with exact eight-entry Undo/Redo and Saved reopen. Qualify continuous edge scrub, held/cancel and required DPI; retain native/API frame equivalence. |

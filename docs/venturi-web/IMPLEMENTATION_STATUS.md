@@ -1,5 +1,22 @@
 # Implementation status
 
+## Speed controls and live Program end corrected - 2026-10-24
+
+Source5ce758c repairs the actual stale199 preview query after Ripple shrinks
+end200 to176. Currentefa2c09f2c87/PID521967 clamps the live cursor before query/
+Inspector/marks/timecode; actual175-to152 shrink shows CURRENT black960x540 and
+00:00:06:08, with valid-cursor Undo/growth, Redo and exact edited Save/reopen151.
+58 affected client cases, three syntax checks and one incremental build pass at
+1469124608B peak/zero memory events; native/Rust/Clippy proof is unchanged/reused.
+Ordinary percentage scrub/Cancel, Keep length/Ripple, Canvas duration/preset and
+overlap refusal plus five Undo/Redo/Save/reopen pass. A preliminary pitch-only
+mis-target is retained honestly.14 other Saved and NAS stay exact; owned closing
+view152-to151 is exactly one RON byte. Original clean project restored; see
+evidence/f3-chrome-retime-live-end-workflow.json. Slip guidance9fbc205 is embedded.
+No long playback/render/export/soak/repack. Final additive delivery and remaining
+edge-relative/held/cancel/dense/OS/device/M7 checks stay FINAL_CHECKS; ledger62/28/2.
+
+
 ## Actual linked Slip pointer workflow - 2026-10-24
 
 Current26b6/d49ed8c passes video-body and audio-body Canvas Slip on linked

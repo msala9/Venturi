@@ -1,5 +1,13 @@
 # Usable editing workflow — handover
 
+## Current live Program-end correction - 2026-10-24
+
+Liveefa2c09f2c87/source5ce758c/PID521967 repairs the live cursor/preview after
+timeline shortening and embeds neutral Slip guidance. See
+evidence/f3-chrome-retime-live-end-workflow.json and RUNNING.md. Earlier R6 stays
+immutable/version-bound; final additive current packaging remains pending.
+
+
 ## Current live Mixer correction - 2026-10-24
 
 Live26b6bf6f5059/source d49ed8c/PID515140 fixes Mixer scroll and detached audio

@@ -1,5 +1,19 @@
 # Running the implemented host
 
+## Current owned live-playhead runtime - 2026-10-24
+
+The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.
+Unit `venturi-web-halo1-live-playhead.service`, captured PID521967, executes
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-efa2c09f2c87`,80391152bytes,
+SHA256 `efa2c09f2c87a7794745bc9b941288d17e3aca553478f171d4f32c9d525117f4`,
+source5ce758c. It clamps the live Program cursor after timeline shortening and
+embeds neutral Slip guidance. Root, arguments,8CPU/4GiB/noSwap/low-priority
+limits,15 Saved, known Recovery and foreign40 PIDs/39 Sessions remain exact
+across deployment. Actual speed controls, terminal black, Undo/Redo and edited
+Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Additive
+current delivery is pending; earlier R6 and runtime records stay version-bound.
+Do not start a duplicate server on occupied8855.
+
 ## Current owned Mixer runtime - 2026-10-24
 
 The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.
@@ -13,9 +27,8 @@ evidence/f4-chrome-mixer-graph-scroll-workflow.json. Earlier R6 remains immutabl
 the additive current package is reserved for final delivery. Records below are
 historical; do not start a duplicate on occupied8855.
 
-Wording-only source9fbc205 follows the deployed d49ed8c; its neutral Slip drag
-guidance will be embedded in the final additive build/package. The current live
-binary and actual GUI evidence retain their exact d49ed8c/26b6 binding.
+The subsequent5ce758c runtime above embeds wording-only9fbc205. The older Mixer
+GUI evidence retains its exact d49ed8c/26b6 binding.
 
 ## Current owned Inspector-scroll runtime - 2026-10-24
 

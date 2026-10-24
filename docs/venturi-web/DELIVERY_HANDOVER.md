@@ -1,5 +1,23 @@
 # Usable editing workflow — handover
 
+## Current immutable R10 development delivery - 2026-10-24
+
+The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8e190ba8189f-r10-f1858d8a6e20.tar`.
+Size: 91781120 bytes. SHA256:
+`f1858d8a6e20095fcd5818dcbf7acf01b95bc4a29096544888a8a728c3522211`.
+It binds binary source `229aabd` separately from documentation `c46252b`.
+All58 recorded members and48 frozen Git inputs match; launcher help,
+three original notice companions,189 loader dependencies and199 host
+notice texts pass. Assembly used one CPU/512MiB/no swap: peak240193536B,
+zero memory events. Full live Session,16 Saved, Recovery and immutable R9
+remain exact. See `evidence/f7-current-prebuilt-r10-workflow.json`.
+This remains an internal development prebuilt with release_ready=false;
+physical/device/held/OS/fullscreen/long-playback/M7 and response-target
+acceptance remain open in FINAL_CHECKS.md. No runback/reboot is inferred.
+This publication postdates the frozen archive; its earlier package-pending
+wording remains historical. Ledger stays62 done/28 partial/2 excluded.
+
+
 ## Current immutable R9 delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-718850754776-r9-015c0363dcf1.tar`.

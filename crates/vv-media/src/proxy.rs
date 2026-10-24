@@ -152,7 +152,7 @@ pub fn generate_proxy_at_width(
     };
     // Real dimensions and color metadata from the first decoded frame, as
     // in the preview path.
-    let Some((_, first_frame)) = decoder.next_frame()? else {
+    let Some((first_index, first_frame)) = decoder.next_frame()? else {
         return Err(crate::MediaError::NoStream(format!(
             "no decodable frame in {}",
             source_path.display()
@@ -174,17 +174,18 @@ pub fn generate_proxy_at_width(
             first_frame.full_range,
             software_threads,
         )?;
-        enc.write_frame(&first_frame)?;
-        let mut frames = 1u64;
-        if !on_frame(frames) {
-            return Err(crate::MediaError::Cancelled);
-        }
-        while let Some((_, frame)) = decoder.next_frame()? {
-            enc.write_frame(&frame)?;
-            frames += 1;
-            if !on_frame(frames) {
-                return Err(crate::MediaError::Cancelled);
+        let mut frames = 0u64;
+        let mut next = Some((first_index, first_frame));
+        while let Some((index, frame)) = next {
+            // Preserve the source clock when its first picture starts after zero.
+            while i128::from(frames) <= i128::from(index) {
+                enc.write_frame(&frame)?;
+                frames += 1;
+                if !on_frame(frames) {
+                    return Err(crate::MediaError::Cancelled);
+                }
             }
+            next = decoder.next_frame()?;
         }
         enc.finish()
     })();

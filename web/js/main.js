@@ -687,7 +687,8 @@ inspectorViewport=createInspectorViewportKeeper($('inspector-content'),{getConte
   const transition=view.transitionSelection,gap=!view.selection.length && !transition?view.selectedGap:null;
   return JSON.stringify([documentState.project_epoch,timeline.id,$('inspector').dataset.inspectorTab,editor.dataset.workspace,[...view.selection].sort(),transition?{track_id:transition.track_id,clip_id:transition.clip_id,slot:transition.slot}:null,gap?{track_id:gap.track_id,start_frame:gap.start_frame,length_frames:gap.length_frames}:null]);
 }});
-const curveWindow=createCurveWindow({notice,onChange:open=>{
+const toolWindowViewport=()=>({width:innerWidth,height:innerHeight,topInset:$('workspaces')?.getBoundingClientRect().bottom??0});
+const curveWindow=createCurveWindow({notice,viewport:toolWindowViewport,onChange:open=>{
   for(const button of document.querySelectorAll('[data-ui="curves"]'))button.setAttribute('aria-pressed',String(open));
   selected();
 }});
@@ -697,9 +698,9 @@ const toolChanged=name=>open=>{
   for(const button of document.querySelectorAll(`[data-workspace="${name==='mixer'?'Audio':'Color'}"]`))button.setAttribute('aria-pressed',String(open));
   syncNativeTools();
 };
-const mixerWindow=createToolWindow({name:'Mixer',notice,onChange:toolChanged('mixer')});
+const mixerWindow=createToolWindow({name:'Mixer',notice,viewport:toolWindowViewport,onChange:toolChanged('mixer')});
 mixerViewport=createInspectorViewportKeeper(mixerWindow.content,{getContext:()=>documentState && timeline?JSON.stringify([documentState.project_epoch,timeline.id]):null});
-const colorWindow=createToolWindow({name:'Color',notice,onChange:toolChanged('color'),onLayout:()=>scopes?.layout?.()});
+const colorWindow=createToolWindow({name:'Color',notice,viewport:toolWindowViewport,onChange:toolChanged('color'),onLayout:()=>scopes?.layout?.()});
 const colorToolbar=document.createElement('div'),colorGradeHost=document.createElement('div');colorToolbar.className='native-color-toolbar';colorGradeHost.dataset.colorGrade='true';
 function colorAction(label,action){const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',action);colorToolbar.append(button);return button;}
 const colorBalance=colorAction('Auto balance',()=>{

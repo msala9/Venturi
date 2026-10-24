@@ -18,10 +18,10 @@ class Element{
   hasPointerCapture(id){return this.captures.has(id);}
   releasePointerCapture(id){this.captures.delete(id);this.emit('lostpointercapture',{pointerId:id});}
 }
-function harness({saved,storageFailure=false,onLayout}={}){
+function harness({saved,storageFailure=false,onLayout,initialViewport}={}){
   const document=new Element('document');document.createElement=tag=>new Element(tag,document);document.hidden=false;document.modal=false;document.querySelector=()=>document.modal?{}:null;
   const window=new Element('window',document),root=new Element('body',document),launcher=new Element('button',document);document.defaultView=window;root.append(launcher);launcher.focus();
-  const writes=[],changes=[],notices=[];let viewport={width:1280,height:720};
+  const writes=[],changes=[],notices=[];let viewport=initialViewport??{width:1280,height:720};
   const store={getItem:key=>{assert.equal(key,CURVE_WINDOW_STORAGE_KEY);return saved;},setItem:(key,value)=>{if(storageFailure)throw Error('Storage denied');writes.push({key,value:JSON.parse(value)});}};
   const controller=createCurveWindow({root,storage:store,viewport:()=>viewport,onChange:value=>changes.push(value),onLayout,notice:message=>notices.push(message)});
   const find=className=>controller.element.children.flatMap(node=>[node,...node.children]).find(node=>node.className===className),header=find('curve-window-header'),close=find('curve-window-close'),grip=find('curve-window-resize');
@@ -124,6 +124,45 @@ test('Curves window geometry centers defaults and clamps persisted or malformed 
   assert.deepEqual(curveWindowRect({x:-100,y:5000,width:9000,height:0},{width:500,height:300}),{x:8,y:72,width:484,height:220});
   assert.deepEqual(curveWindowRect({width:NaN,height:Infinity,x:'9',y:null},{width:100,height:80}),{x:8,y:8,width:84,height:64});
   assert.deepEqual(curveWindowRect({}, {width:1,height:1}),{x:0,y:0,width:1,height:1});
+});
+
+test('window top inset protects chrome while preserving legacy defaults and fitting tiny usable viewports',()=>{
+  const saved={x:8,y:8,width:420,height:360};
+  assert.deepEqual(curveWindowRect(saved,{width:1280,height:720,topInset:48.1}),{x:8,y:57,width:420,height:360});
+  assert.deepEqual(curveWindowRect(saved,{width:1280,height:720,topInset:0}),curveWindowRect(saved,{width:1280,height:720}));
+  assert.deepEqual(curveWindowRect({}, {width:100,height:80,topInset:70}),{x:2,y:72,width:96,height:6});
+  assert.deepEqual(curveWindowRect({}, {width:100,height:80,topInset:999}),{x:0,y:79,width:100,height:1});
+  for(const [width,height] of [[1,1],[8,8],[80,60]])for(const topInset of [-1,0,25,10000,NaN,Infinity]){
+    const rect=curveWindowRect({x:-100,y:-100,width:9999,height:9999},{width,height,topInset});
+    assert.ok(rect.x>=0 && rect.y>=0 && rect.width>=1 && rect.height>=1);
+    assert.ok(rect.x+rect.width<=width && rect.y+rect.height<=height);
+    const bound=Number.isFinite(topInset)?Math.max(0,Math.min(height-1,Math.ceil(topInset))):0;
+    assert.ok(rect.y>=bound);
+  }
+});
+
+test('persisted Mixer top8, keyboard and pointer edits and viewport resize keep Close below the toolbar',()=>{
+  const h=harness();let viewport={width:1280,height:720,topInset:48};
+  const writes=[],tool=createToolWindow({root:h.root,name:'Mixer',viewport:()=>viewport,storage:{getItem:()=>JSON.stringify({version:1,x:40,y:8,width:420,height:360}),setItem:(key,value)=>writes.push(JSON.parse(value))}});
+  try{
+    const p=toolParts(tool);assert.equal(p.rect().top,56);tool.open();
+    p.header.emit('keydown',{key:'ArrowUp',shiftKey:true});assert.equal(p.rect().top,56);
+    p.header.emit('keydown',{key:'ArrowDown',shiftKey:true});assert.equal(p.rect().top,66);
+    p.header.emit('pointerdown',{clientX:80,clientY:70});p.header.emit('pointerup',{clientX:80,clientY:-1000});assert.equal(p.rect().top,56);
+    p.grip.emit('pointerdown',{clientX:0,clientY:0});p.grip.emit('pointerup',{clientX:0,clientY:10000});
+    assert.deepEqual(p.rect(),{left:40,top:56,width:420,height:656});
+    viewport={width:500,height:300,topInset:60};h.window.emit('resize');assert.deepEqual(p.rect(),{left:40,top:68,width:420,height:224});
+    assert.ok(writes.every(rect=>rect.y>=56));p.close.emit('click');assert.equal(tool.isOpen(),false);
+  }finally{tool.dispose();h.controller.dispose();}
+});
+
+test('Curves restore and Color layout use the same optional top inset before opening',()=>{
+  const h=harness({saved:JSON.stringify({version:1,x:8,y:8,width:720,height:440}),initialViewport:{width:1280,height:720,topInset:48}});
+  const color=createToolWindow({root:h.root,name:'Color',storage:null,viewport:()=>({width:1280,height:720,topInset:48})});
+  try{
+    assert.equal(h.rect().top,56);assert.deepEqual(toolParts(color).rect(),{left:260,top:64,width:760,height:640});
+    h.controller.open();h.header.emit('keydown',{key:'ArrowUp'});assert.equal(h.rect().top,56);
+  }finally{color.dispose();h.controller.dispose();}
 });
 
 test('nonmodal open and close preserve content and restore the launcher, notifying only real visibility changes',()=>{

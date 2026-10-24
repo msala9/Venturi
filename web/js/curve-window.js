@@ -2,11 +2,12 @@ export const CURVE_WINDOW_STORAGE_KEY='venturi.curves-window.layout.v1';
 const finite=value=>typeof value==='number' && Number.isFinite(value);
 export function curveWindowRect(value={},viewport={width:1280,height:720}){
   const vw=Math.max(1,Math.round(finite(viewport.width)?viewport.width:1280)),vh=Math.max(1,Math.round(finite(viewport.height)?viewport.height:720));
-  const margin=Math.min(8,Math.floor(Math.min(vw,vh)/4)),maxWidth=Math.max(1,vw-2*margin),maxHeight=Math.max(1,vh-2*margin);
+  const topInset=Math.max(0,Math.min(vh-1,Math.ceil(finite(viewport.topInset)?viewport.topInset:0))),availableHeight=vh-topInset;
+  const margin=Math.min(8,Math.floor(Math.min(vw,availableHeight)/4)),maxWidth=Math.max(1,vw-2*margin),maxHeight=Math.max(1,availableHeight-2*margin);
   const width=Math.max(Math.min(320,maxWidth),Math.min(maxWidth,Math.round(finite(value.width)?value.width:720)));
   const height=Math.max(Math.min(220,maxHeight),Math.min(maxHeight,Math.round(finite(value.height)?value.height:440)));
   const x=Math.max(margin,Math.min(vw-margin-width,Math.round(finite(value.x)?value.x:(vw-width)/2)));
-  const y=Math.max(margin,Math.min(vh-margin-height,Math.round(finite(value.y)?value.y:(vh-height)/2)));
+  const y=Math.max(topInset+margin,Math.min(vh-margin-height,Math.round(finite(value.y)?value.y:topInset+(availableHeight-height)/2)));
   return {x,y,width,height};
 }
 

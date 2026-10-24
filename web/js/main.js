@@ -8,6 +8,7 @@ import {buildTimelineContext,timelineContextItems,timelineContextOperation} from
 import {createCommandOwnership,deleteCommandOwner} from './command-ownership.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
+import {createWorkspacePerformance,createWorkspacePerformancePanel} from './workspace-performance.js';
 import {createProxyControls} from "./proxies.js";
 import { createViewer } from "./viewer.js";
 import {createArrowHold,programArrowContext} from './arrow-hold.js';
@@ -458,6 +459,9 @@ let sourceAssets=null,timelineWaveforms=null,derivativesTransportPending=false;
 const sourceRanges = new Map();
 let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
+const MEDIA_ASSET_MAX_ENTRIES=64,MEDIA_ASSET_MAX_BYTES=64*1024*1024;
+const workspacePerformance=createWorkspacePerformance();
+const workspacePerformanceContext=()=>documentState && timeline?JSON.stringify([documentState.project_epoch,timeline.id,timeline.revision]):null;
 let nativeThumbnailDemand={epoch:null,items:[]};
 function nativeThumbnailCurrent(item,epoch){
   const reference=item.native_asset;
@@ -1078,7 +1082,7 @@ const canvasTimeline = createTimeline({
   view,
   getAssets: () => mediaAssets,
   getWaveforms: () => timelineWaveforms?.presentations() ?? new Map(),
-  onPaint:(_duration,demand)=>{if(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision){sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);timelineWaveforms?.demand(demand.waveform_clip_ids);}},
+  onPaint:(duration,demand)=>{if(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision){workspacePerformance.recordPaint(duration,workspacePerformanceContext());sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);timelineWaveforms?.demand(demand.waveform_clip_ids);}},
   getCache: () => previewCache?.ranges(),
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.selectionAnchor=null;view.markerId=null;revealInspector();selected();},
@@ -2306,7 +2310,7 @@ function installMediaAsset({item,epoch,thumbnail,waveform,waveformBytes=0,bytes,
   if(mediaAssets.get(key)===previous)releaseMediaAsset(previous);mediaAssets.delete(key);
   mediaAssets.set(key,{mediaId:item.id,contentHash:item.content_hash,nativeAsset:item.native_asset?{...item.native_asset}:null,audioStreamIndex,thumbnail,waveform:waveform || retainedWave?.waveform || null,waveformBytes:waveform?waveformBytes:retainedWave?.waveformBytes || 0,bytes:total,thumbnailURL,sourceVersion,fps:item.fps});
   updateMediaThumbnail(item.id);
-  while(mediaAssets.size>64 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>64*1024*1024){
+  while(mediaAssets.size>MEDIA_ASSET_MAX_ENTRIES || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>MEDIA_ASSET_MAX_BYTES){
     const oldest=mediaAssets.keys().next().value,asset=mediaAssets.get(oldest);releaseMediaAsset(asset);mediaAssets.delete(oldest);updateMediaThumbnail(asset.mediaId);
   }
   nativeAssets?.refreshThumbnails();canvasTimeline.invalidate();refreshSourceWaveform();return true;
@@ -2506,4 +2510,10 @@ document.addEventListener('keydown',event=>{
   menu.open=true;const controls=[...menu.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')].filter(node=>node.getClientRects().length),index=controls.indexOf(document.activeElement);
   controls[(index+(event.key==='ArrowDown'?1:controls.length-1)+controls.length)%controls.length]?.focus();
 },true);
+const diagnosticsRoot=document.querySelector('.diagnostics-menu'),diagnosticsMenu=diagnosticsRoot.closest('.app-menu');
+createWorkspacePerformancePanel({
+  root:diagnosticsRoot,output:$('workspace-performance'),eventTargets:[diagnosticsRoot,diagnosticsMenu,document],
+  isVisible:()=>diagnosticsRoot.open && diagnosticsMenu.open && !document.hidden,
+  getSnapshot:()=>workspacePerformance.snapshot(workspacePerformanceContext(),{entries:mediaAssets.size,bytes:[...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0),max_entries:MEDIA_ASSET_MAX_ENTRIES,max_bytes:MEDIA_ASSET_MAX_BYTES}),
+});
 connect().then(diagnostics);

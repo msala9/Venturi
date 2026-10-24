@@ -118,7 +118,8 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 footer { gap: 6px; padding: 0 5px; overflow: hidden; font-size: 9px; }
 #connection { flex: 0 0 auto; }
 #notice { flex: 1; max-width: none; }
-.diagnostics-menu :is(#revision,#gpu-status,#preview-cache-status,#recovery-status) { display: block; margin: 5px; max-width: 280px; white-space: normal; font-size: 10px; }
+.diagnostics-menu :is(#revision,#gpu-status,#preview-cache-status,#recovery-status,#workspace-performance) { display: block; margin: 5px; max-width: 280px; white-space: normal; font-size: 10px; }
+.diagnostics-menu #workspace-performance { white-space: pre-line; }
 footer button { min-height: 17px; padding: 0 4px; font-size: 9px; }
 #editor[data-workspace="Audio"] { --bottom: 30vh; }
 #editor[data-workspace="Color"] #viewer,#editor[data-workspace="Review"] #viewer { border-color: var(--border); }

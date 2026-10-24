@@ -2824,6 +2824,7 @@ async fn assets(request: Request) -> Response {
         "/js/keyframe-lanes.js" => asset!("/web/js/keyframe-lanes.js", "text/javascript"),
         "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
         "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
+        "/js/workspace-performance.js" => asset!("/web/js/workspace-performance.js", "text/javascript"),
         "/js/audio-presets.js" => asset!("/web/js/audio-presets.js", "text/javascript"),
         "/js/viewer-transform.js" => asset!("/web/js/viewer-transform.js", "text/javascript"),
         "/js/viewer-transform-overlay.js" => {

@@ -1,16 +1,18 @@
 # Release checklist
 
-2026-10-24. Current production source `14d4753`, integrated test source
-`9ab281e`; later client increments have focused evidence. The full
+2026-10-24. Current production source `5567359`, runtime `87bc10633ec7`;
+the native tool-window/title-reset increment is qualified by
+`evidence/f3-f4-native-toolwindows-title-reset-workflow.json`. Earlier integrated
+test source `9ab281e` and later focused gates remain version-bound. The full
 F1-F7 goal remains active. The owned halo1 editor is available on port8855.
 This is the release audit required by IMPLEMENTATION_PLAN.md, not a release-ready
-declaration. The ledger currently records 61 done, 29 partial and two excluded
+declaration. The ledger currently records 62 done, 28 partial and two excluded
 capabilities. New unqualified source changes do not inherit acceptance from this
 checkpoint.
 
 | Requirement | Current result | Authoritative evidence / remaining work |
 |---|---|---|
-| Full in-scope native behavior | Incomplete | FUNCTIONAL_PARITY.csv and COMPLETION_PLAN.md; all 29 partial rows remain in scope |
+| Full in-scope native behavior | Incomplete | FUNCTIONAL_PARITY.csv and COMPLETION_PLAN.md; all 28 partial rows remain in scope. Export-specific real-media/sustained qualification now passes in f7-public-real-media-export-workflow.json; global M7 gates stay open |
 | Compact native interface | Qualified baseline | native-ui-workflow.json, current-workspace-delivery.json; remaining physical scaling and dense-editing checks are explicit |
 | Multi-track editing and Inspector | Partial | f1-native-key-replacement-workflow.json qualifies explicit native selected destination replacement across graph/lanes/typed groups;99 client/29 native cases, actual Windows refusal/one replacement/UndoRedo/Save/reopen pass. Physical pointer/DPI/dense remain open.  f1-native-gestures-workflow.json, f3-mask-inspector-workflow.json, f1-native-curve-viewport-workflow.json; simultaneous animated lanes are implemented; native visible sampling, adjacent tangents and mixed-selection Undo/Save/playback pass. f1-floating-curves-workflow.json closes the dedicated nonmodal window and passes layout/draft/mixed Delete/Undo/Save/playback; physical modifier-wheel plus global DPI/dense acceptance stay open |
 | Media, ordinary-resolution playback and export | Partial | f2-f5-native-transport-audio-refresh-workflow.json qualifies native Pause/EOF1x and exclusive terminal black/no replay, Saved end/reopen last-frame semantics;263client/9native and actual short Windows Program/Source pass. f2-f5-program-seek-library-workflow.json qualifies guarded Program seek/resume, paused navigation and explicit Play; actual keyboard1x forward/backward and2x resumption pass on Saved copy, original restored. f2-native-arrow-hold-workflow.json qualifies native timed0.5x Program arrow hold logic, single-flight seek, cancellation and actual Windows single stepping; physical held-key acceptance remains.  f7-native-4k-export-workflow.json additionally qualifies48-frame native4K A/V import/Save/reopen and byte-exact Web/native4K MP4/AAC export within4GiB, with the isolated backend stopped; synthetic2s scope leaves representative long-footage and physical acceptance open.  f6-verified-take-workflow.json proves full-HD export and native/API parity; f2-program-lookahead-workflow.json qualifies one speculative future and natural 1× five-minute boundary at 960×540 on a Full HD timeline, Save and 75-frame Full HD/AAC export EOF. f2-source-lookahead-workflow.json qualifies adjacent Source continuation; f2-source-placement-workflow.json records the EOF project-view CAS fix. Representative long moving ordinary-resolution sources and physical audio/device acceptance stay open |

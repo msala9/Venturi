@@ -1,5 +1,28 @@
 # Codex runbook
 
+## Representative real-media H.264/AAC export accepted - 2026-10-24
+
+Runtime source5567359/binary87bc10633ec7 (not the later documentation HEAD)
+passes the isolated native/Web API workflow on halo1. Official CC-BY-3.0
+BBB FullHD completes all19038frames/634.6seconds in111.491s;
+the real3840x2160 source completes9000frames/300seconds in251.101s.
+Both outputs are native-scale H.264/AAC, hashed/probed with matching HTTP ranges.
+Three complete official movie sources retain exact attribution, hashes, dimensions
+and durations. Prepared import, Save As/reopen, late native frames and Original
+Source eight-second windows pass; original sources/Saved/live Session remain exact.
+Both owned workers/children terminate, with8CPU/4GiB/noSwap/low-priority admission
+and measured memory events retained. Failed acquisition/first-oracle attempts
+remain explicitly failed. See evidence/f7-public-real-media-export-workflow.json.
+
+Only export_h264_aac advances to done:62done/28partial/2excluded.
+Reuse accepted browser download/EOF, immutable snapshot/cancel/reconnect and
+native4K byte-exact MP4/decoded AAC evidence. These new heavy checks are API-only:
+no new browser playback, physical audio, Windows large copy or package claim.
+Source/Program long browser playback remain partial. Full90/F1-F7/M7 stays active,
+including physical/DPI/device, dense editing and two-hour browser-memory acceptance.
+Current87bc development-package refresh is pending; existing archives are unchanged.
+
+
 ## Independent Mixer/Color windows and native title reset â€” 2026-10-24
 
 Source5567359/runtime87bc10633ec7 is active at http://127.0.0.1:8855/,

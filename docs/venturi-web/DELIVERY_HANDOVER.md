@@ -4,28 +4,44 @@
 
 Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
 existing SSH tunnel (captured PID 23536). Tested source is
-`bf0b322f15bd86660701308b9ce3713e40502e24`; the transient system-manager unit is
-`venturi-web-halo1-review-quality.service`, captured PID 417052, running
+`5567359d14ac2a1539e05ff2750e413a20146f1e`; native tool-window code is `14d2cc3`.
+The transient system-manager unit is
+`venturi-web-halo1-native-toolwindows-layout.service`, captured PID 457797, running
 unprivileged as `halo:halo`. Use plain `systemctl` to inspect this unit, not
 `systemctl --user`.
 
-Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452`
-has SHA256 `77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81`.
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-87bc10633ec7`
+has SHA256 `87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff`.
 The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
-`Venturi_Keyframe_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
-checkpoint. Re-read live state before any operation: this may since have changed.
+`Venturi_Keyframe_Replacement_V1.vvproj` was Saved at frame48/1x/Fit with empty
+Undo/Redo at the checkpoint. Re-read live state before any operation: this may
+since have changed.
+
+Mixer and Color now open independently and coexist with Curves, retaining the
+central Viewer allocation. They reuse the existing native mix, grading and scope
+controllers. Closing cancels owned gestures while retaining typed drafts;
+Color returns its single grade card to the Inspector. Scope layout updates
+explicitly on window resize without another frame request, with scopes above
+grading. Actual Windows keyboard/DOM checks cover coexistence, draft reopen,
+grade docking, insert access and narrow/wide scope slots. The title Background
+reset follows native Enabled-preserving semantics, verified with native command
+and Undo/Redo fixtures. See
+`evidence/f3-f4-native-toolwindows-title-reset-workflow.json`; the final layout
+runtime peak is 176,586,752 bytes with zero memory-limit/OOM/kill events.
 
 [RUNNING.md](RUNNING.md#current-working-instance--2026-10-24) contains the actual
 CLI, environment, bounds, identity checks and runback procedure. Refuse restart
 or runback when Unsaved, when Undo/Redo is nonempty, or while client drafts,
 unresolved commands, capture/playback or jobs remain active. Save alone does not
-clear history. Preserve the 39 prior Sessions/40 PIDs, 11 prior Saved files and the new qualification project, NAS
+clear history. Preserve the 39 foreign Sessions/40 PIDs, 13 Saved files, local media, NAS
 assets/presets and shared proxy; no background enablement or driver/browser
 changes are authorized by this handover.
 
-The immutable prior source `5959f90` and binary `vv-web-59b6a3cc0114` are retained
-for guarded runback; the full path/hash and verification steps are in RUNNING.md.
-Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
+The historical source `5959f90` and binary `vv-web-59b6a3cc0114` are retained
+for the version-bound 77d7 package runback; the full path/hash and refusal gate
+are in RUNNING.md. That proof does not qualify downgrading the newer 87bc runtime
+or its subsequently saved projects. Selecting an older binary does not restore
+live Undo or unsaved state. Full F1-F7/M7,
 the final integrated, physical and editing-soak acceptance remain open. Isolated
 packaged77d7/prior59b6/forward77d7 runback passes in
 `evidence/f7-current-prebuilt-r2-workflow.json`; earlier proof stays version-bound.
@@ -36,11 +52,15 @@ Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow
 
 Current A/B quality and guarded live upgrade: `evidence/f6-review-quality-workflow.json`.
 
-BINARY_DELIVERY.md identifies the current verified77d7 package with4231ecf
-documentation; NOTICES.md describes its three immutable Rust/host companions.
+BINARY_DELIVERY.md identifies the immutable 77d7 package with4231ecf
+documentation, not the newer live 87bc binary; the archive is unchanged.
+NOTICES.md describes its three immutable Rust/host companions.
 All189 fresh loader identities match the host notice index. Earlier packages
-remain unchanged. Physical/long-media/dense/native-clock/editing-soak M7
-acceptance remains open.
+remain unchanged. Real-media native export is accepted by
+`evidence/f7-public-real-media-export-workflow.json`:634.6s FullHD and300s4K,
+with bounded resources and the original live Session preserved. The ledger is
+62done/28partial/2excluded. Physical/DPI/device, long Source/Program browser
+playback, dense/native-clock/editing-soak M7 acceptance remains open.
 
 ## Historical workflow deliveries
 

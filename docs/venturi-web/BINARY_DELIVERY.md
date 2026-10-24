@@ -2,8 +2,10 @@
 
 ## Newer live executable — 2026-10-24
 
-Current source14d4753/runtime8b413c047e1e supplies native Pause/terminal
-playback semantics and independent custom audio preset Refresh, qualified in
+Current source5567359/runtime87bc10633ec7 supplies independent Mixer/Color
+windows, responsive scope layout and native title Background reset, qualified in
+`evidence/f3-f4-native-toolwindows-title-reset-workflow.json`. Native Pause/terminal
+playback and independent audio preset Refresh remain qualified in
 `evidence/f2-f5-native-transport-audio-refresh-workflow.json`. The previous
 full-area viewer/unavailable Library and Program seek evidence remains accepted.
 RUNNING.md identifies the live unit and guarded configuration. Existing77d7

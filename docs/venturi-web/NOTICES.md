@@ -4,7 +4,9 @@ The selected Linux normal dependency graph contains 265 third-party packages.
 The following immutable companions supply original package texts and additional
 notice material separately. Existing binary archives retain their recorded
 contents; the current77d7 assembly includes all three companions and their
-checksums, as recorded in BINARY_DELIVERY.md. The current live bf0b322/77d7 executable is described in RUNNING.md.
+checksums, as recorded in BINARY_DELIVERY.md. The newer live5567359/87bc executable
+is described in RUNNING.md; the immutable77d7 package and its notices retain
+their original version bindings.
 
 | Companion on halo1 | Bytes | SHA256 |
 |---|---|---|

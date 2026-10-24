@@ -1,7 +1,7 @@
 # Remaining implementation and acceptance work
 
 2026-10-24. This file separates production changes from qualification in the
-29 partial rows. It does not replace FUNCTIONAL_PARITY.csv, weaken its evidence
+28 partial rows. It does not replace FUNCTIONAL_PARITY.csv, weaken its evidence
 requirements, or add exclusions. Global M7 gates stay separate from individual
 functionality. A physical-input blocker does not block unrelated implementation.
 
@@ -52,6 +52,15 @@ preserves enabled per target. See evidence/f3-f4-native-toolwindows-title-reset-
 The187-client/4-native bounded gate and Windows keyboard/DOM workflow do not
 replace physical input/DPI/audio or the other row-specific acceptance below.
 
+## Export row-specific acceptance delivered
+
+Representative long real-media and sustained bounded native-scale H.264/AAC
+export pass. Only export_h264_aac is accepted; ledger62done/28partial/2excluded.
+See evidence/f7-public-real-media-export-workflow.json for FullHD634.6s and
+real4K300s outputs, resources, preservation, failed attempts and reused evidence.
+Native Source/Program long browser playback, physical/DPI/device, dense editing
+and two-hour M7 remain open. No new package or whole-release acceptance.
+
 ## Row-specific residuals
 
 "Qualification" means no additional missing native production workflow was
@@ -86,7 +95,6 @@ feature passes every requirement or cannot contain defects.
 | shared_presets | Unavailable-root startup/retry and independent audio Refresh delivered; qualify remaining physical/GUI lifecycle; reuse accepted cross-project Apply, native shortcuts, CAS/recovery and Delete evidence. |
 | audio_mixer_track_master | Qualification: physical fader/Shift/graph/wheel/DPI and audible output/device behavior. The owner-approved paused-edit/explicit-Play workflow remains V1. |
 | voiceover_record | Qualification: actual microphone/disconnect/latency/output and retained-take browser download completion. Retain intentional5min/64MiB limits and synthetic-controller proof. |
-| export_h264_aac | Qualification: representative long real footage and sustained bounded export. Existing FullHD and synthetic48-frame4K equivalence are retained. |
 | compare_take_AB | Qualification: sustained representative full-resolution comparison and physical audio; source quality/clock/stream/replace controls are delivered. |
 | clip_move_safe | Qualification: physical Alt-copy/linked move, cancellation, DPI and dense timeline. Existing ordinary move/overlap/Undo/persistence evidence remains. |
 

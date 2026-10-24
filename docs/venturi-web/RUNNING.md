@@ -1,58 +1,46 @@
 # Running the implemented host
 
-## Current working instance — native transport and audio Refresh, 2026-10-24
-
-Use **http://127.0.0.1:8855/** and the existing Windows tunnel/tab.
-Source `14d4753`, immutable binary
-`/home/halo/.local/share/venturi-web/.runtime/vv-web-8b413c047e1e`, SHA256
-`8b413c047e1e1934db7064b19496f96c2afb3ead74349528c9fb476fc6c9169e`,
-80,351,296 bytes. Current unit is `venturi-web-halo1-native-transport.service`,
-captured PID450550; re-read PID/executable/args/Saved/history/jobs before acting.
-
-It retains the exact project/NAS/ds4/GPU arguments and resource properties
-shown below:8CPU/4GiB/noSwap, Nice19, IOWeight10, OOMScoreAdjust1000, Tasks128.
-Root is `/home/halo/VenturiWeb-color-audio-controls-20261023`; original
-`Venturi_Keyframe_Replacement_V1.vvproj` is restored Saved at frame48/1x/Fit and
-empty history. Saved acceptance copy is `Venturi_Seek_Playback_V1.vvproj`.
-R9700 Vulkan preview/playback/export and all three configured native catalogs
-are available. App peak466,616,320B, zero limit/OOM/kill events at capture.
-
-Previous owned program-seek/45ab, fullscreen-library/d8b3 and fullscreen-ready/968f services are stopped;
-their immutable binaries remain. All39 foreign Sessions/40 PIDs and13 Saved
-hashes match fresh pre-upgrade references; NAS/proxy witnesses are unchanged.
-No foreign service, driver or mount was operated. The existing Windows browser
-uses a labelled full-tab viewer if native fullscreen admission remains pending.
-See `evidence/f2-f5-native-transport-audio-refresh-workflow.json`,
-`evidence/f2-f5-fullscreen-library-recovery-workflow.json` and
-REMAINING_WORK.md for implemented behavior and acceptance limits.
-
-The current8b41 executable is newer than the immutable77d7 packaged archive.
-Full F1-F7/M7 release acceptance remains open. Historical captured PIDs and
-commands below are not ownership proof for current operations.
-
-## Earlier working instance (historical) — 2026-10-24
+## Current working instance — 2026-10-24
 
 Open **http://127.0.0.1:8855/** through the existing Windows SSH tunnel
 (captured PID 23536). Keep that tunnel and the existing browser intact. No local
 server, browser installation, driver change or new boot service is required.
-This is a tested development delivery; full F1-F7/M7 release acceptance remains
-open. Current feature and acceptance details are in IMPLEMENTATION_STATUS.md
-and COMPLETION_PLAN.md.
+This delivery adds independent Mixer and Color windows, reusing the existing
+controllers and preserving the Viewer allocation. Native tool-window code is
+`14d2cc3`; the current source below includes the explicit local scope-layout
+notification, which fixes the observed narrow-window ResizeObserver gap.
+Title Background reset preserves each target's Enabled state as in the native UI.
 
 | Binding | Verified value |
 |---|---|
-| Source | `bf0b322f15bd86660701308b9ce3713e40502e24` |
-| Unit | `venturi-web-halo1-review-quality.service` |
-| Captured process | PID 417052; re-read before operating, never use a remembered PID as ownership proof |
-| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452` |
-| Executable SHA256 | `77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81` |
+| Source | `5567359d14ac2a1539e05ff2750e413a20146f1e` |
+| Unit | `venturi-web-halo1-native-toolwindows-layout.service` |
+| Captured process | PID 457797; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-87bc10633ec7` |
+| Executable SHA256 | `87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff` |
 | Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
-| Captured saved project | `Venturi_Keyframe_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
+| Captured saved project | `Venturi_Keyframe_Replacement_V1.vvproj`, Saved at frame48/1x/Fit with empty Undo/Redo history |
 
 These are checkpoint facts, not permission to restart later. The owner may have
-created new edits, history, drafts or jobs since this capture. The 39 prior
-Sessions/40 PIDs, 11 prior Saved files and the new qualification project, NAS assets/presets and shared proxy remain
+created new edits, history, drafts or jobs since this capture. The 39 foreign
+Sessions/40 PIDs, 13 Saved files, local media, NAS assets/presets and shared proxy remain
 protected; do not restart, save, clear or migrate them as part of this delivery.
+
+The executable is 80,367,424 bytes; captured runtime peak is 176,586,752 bytes
+with zero memory-limit/OOM/kill events. Actual Windows keyboard/DOM checks cover
+Mixer/Color/Curves coexistence, unchanged Viewer geometry, retained numeric drafts,
+grade docking, insert access and one/two responsive scope slots. See
+`evidence/f3-f4-native-toolwindows-title-reset-workflow.json`. Previous transport
+and fullscreen/Library recovery evidence remains in
+`evidence/f2-f5-native-transport-audio-refresh-workflow.json` and
+`evidence/f2-f5-fullscreen-library-recovery-workflow.json`.
+
+This live executable is newer than the immutable 77d7 package. Full F1-F7/M7
+acceptance remains open for physical pointer/DPI/audio-device, long Source/Program
+browser playback, 500-clip/60fps, sustained uncached Slip/Compare and two-hour
+editing. Native real-media export now passes a complete634.6s FullHD film and
+300s at3840x2160; see `evidence/f7-public-real-media-export-workflow.json`.
+Historical PIDs and commands are not ownership proof.
 
 ### Actual host configuration
 
@@ -94,11 +82,11 @@ explicit root arguments rather than relying on launcher defaults.
 Read-only identity checks on halo1:
 
 ```bash
-systemctl show venturi-web-halo1-review-quality.service \
+systemctl show venturi-web-halo1-native-toolwindows-layout.service \
   -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
   -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
   -p MemorySwapMax -p Restart
-sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-87bc10633ec7
 curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 ```
 
@@ -121,7 +109,7 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    Confirm its MainPID is 0 and port 8855 has no listener before starting a
    replacement. Never kill a process discovered on that port or retry blindly.
    The stop command, only after this gate, is
-   `sudo systemctl stop venturi-web-halo1-review-quality.service`.
+   `sudo systemctl stop venturi-web-halo1-native-toolwindows-layout.service`.
 4. Select a verified immutable executable and use the recorded arguments,
    environment and limits above. No boot enablement, lingering, automatic
    restart loop or generic default-service replacement is part of this change.
@@ -134,9 +122,16 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    not resume automatically. Keep the Windows tunnel; reconnect the existing
    work tab only after confirming its drafts were safely resolved.
 
-### Immutable prior binary for runback
+### Historical packaged-binary runback reference
 
-The retained immediate-prior source is `5959f90`, executable
+The unchanged package binary is
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452`, SHA256
+`77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81`.
+Its source is `bf0b322f15bd86660701308b9ce3713e40502e24`; its package manifest
+separately binds documentation4231ecf.
+
+The retained binary immediately preceding the historical 77d7 package is source
+`5959f90`, executable
 `/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114`, SHA256
 `59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e`.
 Verify this hash before selecting it. A runback follows the same refusal gate
@@ -145,15 +140,18 @@ project, backups, receipts or caches. Validate reopening on a preserved project
 copy in a separate approved candidate before allowing writes from an older
 binary. If current edits/history/drafts/jobs exist, leave the live service
 untouched. Restoring a binary does not restore an earlier unsaved session.
-The current isolated packaged77d7 -> immediate-prior59b6 -> packaged77d7
+The version-bound isolated packaged77d7 -> prior59b6 -> packaged77d7
 runback is qualified in `evidence/f7-current-prebuilt-r2-workflow.json`. It
 reopens the owned Saved4K fixture with identical timeline/frame PNG, stops all
-three children and preserves the live editor. Older runbacks stay version-bound.
+three children and preserves the live editor. It does not qualify a downgrade
+of the newer 87bc runtime or its subsequently saved projects. Runbacks stay version-bound.
 M7 requires reload/recovery and documented operation, not a whole-host reboot.
 
-After the gate, the following bounded system-unit template selects that prior
-binary. First verify the proposed unit name is unused. This is a manual runback
-procedure, not an instruction to execute it against the working editor now.
+The following historical bounded template selects 59b6. It is retained as a
+reference for that package pair, not an instruction to downgrade the current
+editor. Apply the refusal gate and validate a preserved project copy in a
+separate owned candidate before considering any older binary; first verify
+the proposed unit name is unused.
 
 ```bash
 sudo systemd-run --unit=venturi-web-halo1-review-quality-runback.service \
@@ -188,12 +186,17 @@ Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow
 
 Current A/B quality qualification: `evidence/f6-review-quality-workflow.json`.
 
-The current prebuilt77d7 package and actual prior/forward startup are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-r2-workflow.json`. Its manifest binds binary sourcebf0b322 and documentation4231ecf separately. It includes all three immutable Rust/host notice companions and fresh189-library identity comparison. Full M7 acceptance remains open.
+The immutable prebuilt 77d7 package and its version-bound prior/forward startup
+are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-r2-workflow.json`.
+Its manifest binds binary source bf0b322 and documentation4231ecf separately;
+it does not contain the current 87bc runtime. It includes all three immutable
+Rust/host notice companions and fresh189-library identity comparison. The
+package has not been rewritten; full M7 acceptance remains open.
 
 Current notice companions: NOTICES.md and `evidence/f7-notice-supplement-workflow.json`.
 The original488-text archive,14-file Rust supplement and199-file configured-host
-companion retain distinct provenance and are included in the current assembled
-delivery. They change no executable, editor configuration or earlier package bytes.
+companion retain distinct provenance and are included in that immutable
+assembled package. They change no executable, editor configuration or earlier package bytes.
 
 ## Historical deliveries and workflow notes
 

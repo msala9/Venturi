@@ -1,5 +1,36 @@
 # Active completion plan — full Venturi Web scope
 
+## Native original audio and retained Voiceover format — 2026-10-24
+
+Source `78cb76f` / runtime `67ef4854a13d` is active on port 8855,
+unit `venturi-web-halo1-audio-export.service`, captured PID 411732.
+Voiceover now retains an explicit supported format across empty reopen and
+subsequent takes, revalidates the current server catalog and preserves retained
+take/upload identity. New composed movies and exports pass the existing audio
+resolver into native LevelCache. Exports keep original authority and validate
+touched audio/video witnesses before publication; completed/restored downloads
+remain immutable and usable without the original files. Native wrappers,
+Project paths, metadata, DSP and clocks retain their defaults.
+
+R1 passes 47 focused client and 25 native export cases (one existing ignored),
+including exact native PCM/full-MP4 equality on a tiny four-frame fixture and
+fatal resolver refusal. R3 passes 44 source, 20 Program and 8 frame_sources tests, all-target vv-session/vv-web Clippy and build.
+R1/R2 test-only compilation failures are retained, corrected and superseded;
+already passing client/native export tests are reused. All heavy work remains
+serial on halo1 within 8 CPUs/4 GiB/no swap; no memory-limit/OOM/kill events.
+See `evidence/f4-f7-original-audio-export-workflow.json` for exact commands,
+resource peaks, source/output identity and retained attempts.
+
+The existing Windows tab verifies FLAC survives empty close/reopen without
+capture. All 12 Saved hashes and native timelines, 39 foreign Sessions/40 PIDs,
+5 local media,4 fixed NAS files and proxy remain unchanged. The owned editor
+remains Saved with empty history. No microphone or physical A/V proof inferred.
+The two confirmed source gaps listed in the prior entry are closed. Full 90-capability
+scope remains active: ledger 61 done/29 partial/2 excluded; physical/device/DPI,
+representative long footage, editing soak and scoped distribution acceptance
+remain open. Existing whole-workspace and high-resolution evidence is reused.
+
+
 ## Native selected-key destination replacement — 2026-10-24
 
 Source `158a6d7` / runtime `01d3f2301ef9` is active on8855, system unit

@@ -4,13 +4,13 @@
 
 Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
 existing SSH tunnel (captured PID 23536). Tested source is
-`158a6d797adff3a5fa7f14d867c9b213f8839639`; the transient system-manager unit is
-`venturi-web-halo1-key-replacement.service`, captured PID 405992, running
+`78cb76f1a0b38c6d89f1eced048d5ff22fda296e`; the transient system-manager unit is
+`venturi-web-halo1-audio-export.service`, captured PID 411732, running
 unprivileged as `halo:halo`. Use plain `systemctl` to inspect this unit, not
 `systemctl --user`.
 
-Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-01d3f2301ef9`
-has SHA256 `01d3f2301ef9d5a4979b3ca42ad0184e0bec816c5be26004148d33ce1b9dc406`.
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d`
+has SHA256 `67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a`.
 The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
 `Venturi_Keyframe_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
 checkpoint. Re-read live state before any operation: this may since have changed.
@@ -28,6 +28,8 @@ for guarded runback; the full path/hash and verification steps are in RUNNING.md
 Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
 the final integrated, physical and editing-soak acceptance remain open. Isolated
 packaged/prior/forward runback passes in `evidence/f7-prebuilt-runback-workflow.json`.
+
+Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
 
 ## Historical workflow deliveries
 

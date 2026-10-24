@@ -11,11 +11,11 @@ and COMPLETION_PLAN.md.
 
 | Binding | Verified value |
 |---|---|
-| Source | `158a6d797adff3a5fa7f14d867c9b213f8839639` |
-| Unit | `venturi-web-halo1-key-replacement.service` |
-| Captured process | PID 405992; re-read before operating, never use a remembered PID as ownership proof |
-| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-01d3f2301ef9` |
-| Executable SHA256 | `01d3f2301ef9d5a4979b3ca42ad0184e0bec816c5be26004148d33ce1b9dc406` |
+| Source | `78cb76f1a0b38c6d89f1eced048d5ff22fda296e` |
+| Unit | `venturi-web-halo1-audio-export.service` |
+| Captured process | PID 411732; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d` |
+| Executable SHA256 | `67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a` |
 | Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
 | Captured saved project | `Venturi_Keyframe_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
 
@@ -64,11 +64,11 @@ explicit root arguments rather than relying on launcher defaults.
 Read-only identity checks on halo1:
 
 ```bash
-systemctl show venturi-web-halo1-key-replacement.service \
+systemctl show venturi-web-halo1-audio-export.service \
   -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
   -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
   -p MemorySwapMax -p Restart
-sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-01d3f2301ef9
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d
 curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 ```
 
@@ -91,7 +91,7 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    Confirm its MainPID is 0 and port 8855 has no listener before starting a
    replacement. Never kill a process discovered on that port or retry blindly.
    The stop command, only after this gate, is
-   `sudo systemctl stop venturi-web-halo1-key-replacement.service`.
+   `sudo systemctl stop venturi-web-halo1-audio-export.service`.
 4. Select a verified immutable executable and use the recorded arguments,
    environment and limits above. No boot enablement, lingering, automatic
    restart loop or generic default-service replacement is part of this change.
@@ -149,6 +149,8 @@ Observe the actual new unit/PID and its health; a launch failure is not permissi
 to stop another listener, change the NAS or retry with different roots. Recheck
 the current version's immutable hash before using the same template for a
 forward restoration, with a new unused unit name and the current executable.
+
+Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
 
 ## Historical deliveries and workflow notes
 

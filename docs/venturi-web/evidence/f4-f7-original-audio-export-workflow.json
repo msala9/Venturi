@@ -1,0 +1,596 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "78cb76f1a0b38c6d89f1eced048d5ff22fda296e",
+  "result": "Native audio source authority and retained Voiceover format implemented, qualified and deployed; full F1-F7/M7 remains open.",
+  "before": {
+    "voiceover": "Empty dialog reopen reset WAV and subsequent takes lost the explicit recording format.",
+    "export": "Native export created LevelCache without the existing audio resolver; durable export preparation discarded original authority."
+  },
+  "after": {
+    "voiceover": "Controller-local explicit supported format survives empty reopen and subsequent takes; fresh server catalog fallback never rewrites retained take/upload identity.",
+    "export": "Additive native resolver-pair wrapper installs the existing audio resolver before offline observed/plain/origin rendering. Existing wrappers/defaults, Project paths, metadata and native DSP/clocks preserved.",
+    "publication": "New exports force original video and retain original authority through touched manifest validation before publication. Completed and restored downloads still depend only on immutable output identity."
+  },
+  "source_hashes": {
+    "crates/vv-session/src/export.rs": "aba4ced0b0961dffc891ae88a2b06fe719e378719a6ef0edc2f03e971a43f7fa",
+    "crates/vv-session/src/tests/export.rs": "f2214f96a204245a2492f0c1c1013831d25b77ec434e0d69f2829d375832ca9d",
+    "crates/vv-web/src/preview.rs": "5e26fad19d414853e335022856a5e901f0a0b21459da6e0073a608160b994f27",
+    "crates/vv-web/src/program.rs": "c0cabd10988432b518a4af87298d76f0444f42b0c2a2b0ae6d8325652ce93e94",
+    "crates/vv-web/src/source.rs": "45ce2596e58c6254ac7e720bae7346dbf27051a8145ce76668ca6b803036803b",
+    "crates/vv-web/src/tests/source.rs": "e2b9ae33128648df88815c921df585c8f6590c00eb8084c275cdc9fb39835066",
+    "web/js/voiceover.js": "b273e2b1522bbe892e806e9ca000e04d10344ab11b8a0d54681b3c5aa3bafa69",
+    "web/test/voiceover.test.js": "804f78081304aaf2f3fdaabdf04d463bec331814b07361b8e78f02c6f2a1eef7"
+  },
+  "gates": {
+    "r1": {
+      "state": {
+        "phase": "failed",
+        "unit": "venturi-halo1-audio-export-r1-20261024.service",
+        "started_unix": 1792810514.8960443,
+        "updated_unix": 1792810667.5016587,
+        "steps": [
+          {
+            "label": "format-api",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+              "--edition",
+              "2024",
+              "--config",
+              "skip_children=true",
+              "crates/vv-session/src/export.rs",
+              "crates/vv-session/src/tests/export.rs",
+              "crates/vv-web/src/preview.rs",
+              "crates/vv-web/src/program.rs",
+              "crates/vv-web/src/source.rs",
+              "crates/vv-web/src/tests/source.rs"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.25,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/format-api.log",
+            "log_bytes": 0,
+            "failure": null
+          },
+          {
+            "label": "syntax-0",
+            "args": [
+              "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+              "--check",
+              "web/js/voiceover.js"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/syntax-0.log",
+            "log_bytes": 0,
+            "failure": null
+          },
+          {
+            "label": "syntax-1",
+            "args": [
+              "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+              "--check",
+              "web/test/voiceover.test.js"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/syntax-1.log",
+            "log_bytes": 0,
+            "failure": null
+          },
+          {
+            "label": "focused-client",
+            "args": [
+              "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+              "--test",
+              "--test-concurrency=1",
+              "test/voiceover.test.js",
+              "test/capture.test.js",
+              "test/audio-graphs.test.js"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source/web",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/focused-client.log",
+            "log_bytes": 4658,
+            "failure": null
+          },
+          {
+            "label": "native-export",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-session",
+              "export::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 136.443,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/native-export.log",
+            "log_bytes": 4787,
+            "failure": null
+          },
+          {
+            "label": "native-source",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web",
+              "source::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 101,
+            "elapsed_seconds": 15.022,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r1/native-source.log",
+            "log_bytes": 1010,
+            "failure": null
+          }
+        ],
+        "baseline": "158a6d797adff3a5fa7f14d867c9b213f8839639",
+        "inputs": {
+          "crates/vv-session/src/export.rs": {
+            "previous_sha256": "4baaa825bc1be394b6e9ad88210a66138192c6df23ee6926592b52e0afefb13e",
+            "input_sha256": "aba4ced0b0961dffc891ae88a2b06fe719e378719a6ef0edc2f03e971a43f7fa",
+            "bytes": 39510
+          },
+          "crates/vv-session/src/tests/export.rs": {
+            "previous_sha256": "eef89f19f37eb5e7b943476f2ce5f77331b750012b5d998fee2749b72497bb0d",
+            "input_sha256": "7a9b036460db592a5b8a8df850696adbae430da51a9a238279c5f5dc749258b7",
+            "bytes": 73165
+          },
+          "crates/vv-web/src/preview.rs": {
+            "previous_sha256": "b78bf744df65b820f8d824ef6501ad01aa1715cf47785a4a1913ebd462aea827",
+            "input_sha256": "5beab6db1cbe019d74971d117b3591775def41d36acbd9fc2526eed0c0f4c9aa",
+            "bytes": 38248
+          },
+          "crates/vv-web/src/program.rs": {
+            "previous_sha256": "8ad1d92e970ced7f1cf2761cc15ff44692e6ea39a3e7fada38487d6a9f4d697f",
+            "input_sha256": "c0cabd10988432b518a4af87298d76f0444f42b0c2a2b0ae6d8325652ce93e94",
+            "bytes": 34842
+          },
+          "crates/vv-web/src/source.rs": {
+            "previous_sha256": "dc733937664ae492b2cb2aca594a6a661a7b2cd2c3b5d6fedc84f9fcd351be47",
+            "input_sha256": "b926bc682c657b215990e20d43a1c6719a303ddff3f6a82492831136e798c6cc",
+            "bytes": 83744
+          },
+          "crates/vv-web/src/tests/source.rs": {
+            "previous_sha256": "a35e0c2f841cb11cad9e6372e9ef3f641d529a042b379676e5d994b6ee8bf635",
+            "input_sha256": "0bb53c1366a84181f00baebc13d0d60cfdb8dde5acc993461a9fc1626f043c7f",
+            "bytes": 110387
+          },
+          "web/js/voiceover.js": {
+            "previous_sha256": "aaf049b308e027a6e003f86c52f5b6c51a5196e760d89113ce335a830ebcd1cc",
+            "input_sha256": "b273e2b1522bbe892e806e9ca000e04d10344ab11b8a0d54681b3c5aa3bafa69",
+            "bytes": 18102
+          },
+          "web/test/voiceover.test.js": {
+            "previous_sha256": "f540c2dcf9734f053faf371ba7e84f1ec3c5bd3fa289e96bd59ea94d366c9b97",
+            "input_sha256": "804f78081304aaf2f3fdaabdf04d463bec331814b07361b8e78f02c6f2a1eef7",
+            "bytes": 21090
+          }
+        },
+        "preflight": {
+          "mem_available": 111447928832,
+          "disk_free": 108295794688
+        },
+        "memory_events_before": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        },
+        "error": "AssertionError('native-source failed: None')",
+        "memory_peak_bytes": 2219520000,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        }
+      },
+      "unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ExecMainStatus": "1"
+      },
+      "summaries": {
+        "format-api": [],
+        "syntax-0": [],
+        "syntax-1": [],
+        "focused-client": [
+          "\u2139 tests 47",
+          "\u2139 pass 47",
+          "\u2139 fail 0"
+        ],
+        "native-export": [
+          "test export::tests::export_source_resolvers_preserve_native_pcm_encoded_output_and_project_with_pinned_inputs ... WARNING: radv is not a conformant Vulkan implementation, testing use only.",
+          "test export::tests::export_source_resolvers_refuse_native_audio_before_normalize_fallback_can_publish_a_movie ... WARNING: radv is not a conformant Vulkan implementation, testing use only.",
+          "test result: ok. 25 passed; 0 failed; 1 ignored; 0 measured; 92 filtered out; finished in 0.94s"
+        ],
+        "native-source": []
+      }
+    },
+    "r2": {
+      "state": {
+        "phase": "failed",
+        "unit": "venturi-halo1-audio-export-r2-20261024.service",
+        "started_unix": 1792810749.6340973,
+        "updated_unix": 1792810758.1967084,
+        "steps": [
+          {
+            "label": "format-api",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+              "--edition",
+              "2024",
+              "--config",
+              "skip_children=true",
+              "crates/vv-web/src/tests/source.rs"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r2/format-api.log",
+            "log_bytes": 0,
+            "failure": null
+          },
+          {
+            "label": "native-source",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web",
+              "source::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 101,
+            "elapsed_seconds": 8.263,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r2/native-source.log",
+            "log_bytes": 925,
+            "failure": null
+          }
+        ],
+        "baseline": "158a6d797adff3a5fa7f14d867c9b213f8839639",
+        "inputs": {
+          "crates/vv-web/src/tests/source.rs": {
+            "previous_sha256": "d15b3fe84b2c4ed4c48d947a852682a133879bd83056bc1f898abc4b644c27a9",
+            "input_sha256": "105e20a578e99edb52207b2865476c569151a9d7e84ac7283bdda96bf99af459",
+            "bytes": 110811
+          }
+        },
+        "preflight": {
+          "mem_available": 111446560768,
+          "disk_free": 107876675584
+        },
+        "memory_events_before": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        },
+        "error": "AssertionError('native-source failed: None')",
+        "memory_peak_bytes": 1148895232,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        }
+      },
+      "unit": {
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ExecMainStatus": "1"
+      },
+      "summaries": {
+        "format-api": [],
+        "native-source": []
+      }
+    },
+    "r3": {
+      "state": {
+        "phase": "passed",
+        "unit": "venturi-halo1-audio-export-r3-20261024.service",
+        "started_unix": 1792810804.357687,
+        "updated_unix": 1792810996.9229515,
+        "steps": [
+          {
+            "label": "format-api",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustfmt",
+              "--edition",
+              "2024",
+              "--config",
+              "skip_children=true",
+              "crates/vv-web/src/tests/source.rs"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/format-api.log",
+            "log_bytes": 0,
+            "failure": null
+          },
+          {
+            "label": "native-source",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web",
+              "source::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 107.152,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/native-source.log",
+            "log_bytes": 5292,
+            "failure": null
+          },
+          {
+            "label": "native-program",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web",
+              "program::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.502,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/native-program.log",
+            "log_bytes": 2494,
+            "failure": null
+          },
+          {
+            "label": "native-frame-sources",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "test",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web",
+              "frame_sources::tests::",
+              "--",
+              "--test-threads=1"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.251,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/native-frame-sources.log",
+            "log_bytes": 1161,
+            "failure": null
+          },
+          {
+            "label": "web-clippy",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "clippy",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-session",
+              "-p",
+              "vv-web",
+              "--all-targets",
+              "--no-deps",
+              "--",
+              "-D",
+              "warnings"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 13.771,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/web-clippy.log",
+            "log_bytes": 243,
+            "failure": null
+          },
+          {
+            "label": "web-build",
+            "args": [
+              "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+              "build",
+              "--locked",
+              "--offline",
+              "-p",
+              "vv-web",
+              "--bin",
+              "vv-web"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 70.101,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/web-build.log",
+            "log_bytes": 153,
+            "failure": null
+          },
+          {
+            "label": "strip",
+            "args": [
+              "/usr/bin/strip",
+              "--strip-debug",
+              "/home/halo/.local/share/venturi-web/.runtime/.audio-export-r3-4cc2bbf04329408daa7f6aea850757aa"
+            ],
+            "cwd": "/home/halo/.cache/venturi-build/source",
+            "exit_code": 0,
+            "elapsed_seconds": 0.252,
+            "log": "/home/halo/.cache/venturi-build/audio-export-r3/strip.log",
+            "log_bytes": 0,
+            "failure": null
+          }
+        ],
+        "baseline": "158a6d797adff3a5fa7f14d867c9b213f8839639",
+        "inputs": {
+          "crates/vv-web/src/tests/source.rs": {
+            "previous_sha256": "105e20a578e99edb52207b2865476c569151a9d7e84ac7283bdda96bf99af459",
+            "input_sha256": "e2b9ae33128648df88815c921df585c8f6590c00eb8084c275cdc9fb39835066",
+            "bytes": 110821
+          }
+        },
+        "preflight": {
+          "mem_available": 111424200704,
+          "disk_free": 107876319232
+        },
+        "memory_events_before": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        },
+        "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d",
+        "sha256": "67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a",
+        "bytes": 80271848,
+        "source_hashes": {
+          "crates/vv-web/src/tests/source.rs": "e2b9ae33128648df88815c921df585c8f6590c00eb8084c275cdc9fb39835066"
+        },
+        "memory_peak_bytes": 2027790336,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        },
+        "scope": "Test-only ordered guard release after R2 borrow-check failure; R1/R2 preserved. Native source/Program/frame_sources; vv-session and vv-web all-target Clippy/build. R1 passed47 client and25 native export cases reused unchanged; no GPU export repeat or editor mutation."
+      },
+      "unit": {
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0"
+      },
+      "summaries": {
+        "format-api": [],
+        "native-source": [
+          "test source::tests::completed_exports_keep_their_snapshot_when_sources_or_current_revision_change ... ok",
+          "test source::tests::durable_export_history_restores_old_epoch_downloads_without_restarting_jobs_or_cache_eviction ... ok",
+          "test source::tests::new_export_keeps_original_audio_authority_and_refuses_replaced_sources_before_ready ... ok",
+          "test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 657 filtered out; finished in 0.83s"
+        ],
+        "native-program": [
+          "test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 681 filtered out; finished in 0.11s"
+        ],
+        "native-frame-sources": [
+          "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 693 filtered out; finished in 0.01s"
+        ],
+        "web-clippy": [],
+        "web-build": [],
+        "strip": []
+      }
+    }
+  },
+  "verification": {
+    "client": "R1:47 pass in Voiceover/capture/audio-graphs, including3 new preference/retained-upload regressions.",
+    "native_export": "R1:25 pass/1 existing ignored. Two new16x16/fourframe cases: resolver-based output exactly equals legacy native PCM and full MP4; missing virtual raw paths succeed only through pinned resolvers, Normalize uses originals, leases release, refusing resolver is fatal despite a readable raw path.",
+    "web": "R3 source/Program/frame_sources cover admitted new export authority, audio-only witness substitution despite refreshed broad inputs, no output publication, and completed/restored export downloads independent of missing originals.",
+    "retained_failures": "R1 web test compilation refused AtomicBool instead of Arc. R2 refused moving service while its jobs guard was borrowed. R3 changes only that test, fixes both types/release order; passed client/native export production source reused without rerunning.",
+    "browser": {
+      "tab": "55",
+      "url": "http://127.0.0.1:8855/",
+      "interaction": "Existing Windows browser: View > Voiceover, choose FLAC, close, View > Voiceover, read selected option, close.",
+      "before_close": "flac",
+      "after_reopen": "flac",
+      "catalog": [
+        "mp3",
+        "wav",
+        "flac",
+        "aac",
+        "opus",
+        "vorbis"
+      ],
+      "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+      "saved": "Saved",
+      "all_media_paused": true,
+      "dialogs_open": 0,
+      "viewer": "CURRENT",
+      "console_warnings_errors": [],
+      "recording_started": false,
+      "microphone_permission_requested": false,
+      "scope": "Actual empty reopen only; subsequent takes/catalog change/unknown uploads covered by focused client tests. No physical capture or audio qualification inferred. Screenshot/pointer provider failure from the existing environment remains unresolved; DOM/keyboard checks only."
+    }
+  },
+  "delivery": {
+    "unit": "venturi-web-halo1-audio-export.service",
+    "pid": "411732",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d",
+    "sha256": "67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a",
+    "root": "/home/halo/VenturiWeb-color-audio-controls-20261023",
+    "previous_unit": "venturi-web-halo1-key-replacement.service",
+    "previous_pid": "405992"
+  },
+  "saved_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 12,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "limits": [
+    "No microphone capture, physical device or A/V latency qualification inferred.",
+    "Representative long real footage, physical pointer/DPI/dense interactions, nine native output-clock cases, scoped distribution review and two-hour typical editing acceptance remain open.",
+    "Ledger stays61 done/29 partial/2 NOT-PLANNED exclusions."
+  ]
+}

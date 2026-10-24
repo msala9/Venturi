@@ -1,5 +1,32 @@
 # Active completion plan — full Venturi Web scope
 
+## Current prebuilt package and immediate-prior runback — 2026-10-24
+
+The persistent candidate now matches live source 5959f90/runtime 59b6a3cc0114:
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-59b6a3cc0114-860d0df522f4.tar`,
+84,684,800B, SHA256 `860d0df522f465bdd40c920e808f22b3fb4fab68ea21a47f8b746a323f907599`.
+It contains the prebuilt-only launcher, current runbook, 189 actual host-library
+identities and the verbatim 488-text Rust notice companion. A separate reuse
+binding verifies unchanged Cargo/lock/build inputs without rewriting its older
+embedded candidate identity. Host libraries/fonts/NAS remain external; notice
+gaps and distribution scope are explicit. See BINARY_DELIVERY.md.
+
+Archive member hashes and packaged `--help` pass under one CPU/512 MiB/no swap,
+peak 200,146,944B. Actual packaged current -> immediate prior 67ef ->
+packaged forward on isolated 8856 automatically reopens the owned Saved4K fixture,
+keeps empty history and renders the exact same 960x540 PNG and timeline in all
+three processes. Each process stops and 8856/GPU lock release; no live-editor
+restart. The separate serial 8 CPU/4 GiB/no swap unit peaks513,515,520B.
+Both units terminate successfully with zero memory-limit/OOM/kill events.
+
+All 39 foreign Sessions/40 PIDs, 12 Saved hashes, 5 local media, 4 fixed NAS files
+and proxy remain unchanged. See `evidence/f7-current-prebuilt-workflow.json`.
+This closes the current-version artifact/startup/runback gap. Full 90-capability
+scope remains active, ledger 61 done/29 partial/2 excluded. Physical input/DPI,
+devices/latency, real long footage, scoped distribution gaps and typical-editing
+soak remain open; the synthetic 48-frame fixture is not broad performance proof.
+
+
 ## Native continuous Inspector numeric drag — 2026-10-24
 
 Source `5959f90` / runtime `59b6a3cc0114` is active on port8855,

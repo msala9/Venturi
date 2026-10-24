@@ -86,13 +86,13 @@ newly enabled boot service. Tested source is
 `5959f90df52678cdbcb47ab7dcb353c666979f37`, executable
 `/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114`, captured
 PID 413887. RUNNING.md binds its full SHA256/configuration and the retained
-`2c587b7` / `vv-web-9a619eebab31` runback binary. The captured project was Saved
+`78cb76f` / `vv-web-67ef4854a13d` runback binary. The captured project was Saved
 with empty history; this must be checked again before any operational change.
 Earlier protected halo1/halo2 editor services remain live. No public listener
 is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
 client drafts and Undo chains. A saved project alone does not authorize restarting
 an editor with nonempty Undo history. The isolated packaged/prior/forward
-runback passes in `evidence/f7-prebuilt-runback-workflow.json`. M7 requires
+runback passes in `evidence/f7-current-prebuilt-workflow.json`. M7 requires
 reload/recovery and documented operation; a whole-host reboot is not a gate.
 
 Last-saved project reopening uses a private, bounded version-1 cursor containing

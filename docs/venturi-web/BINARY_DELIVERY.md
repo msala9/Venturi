@@ -1,5 +1,55 @@
 # Prebuilt Linux development candidate
 
+## Current verified candidate — 2026-10-24
+
+The current development package contains the same tested binary as the live 8855
+editor, including original-audio/Voiceover and continuous numeric-scrub changes.
+
+| Item | Verified value |
+|---|---|
+| Persistent halo1 archive | `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-59b6a3cc0114-860d0df522f4.tar` |
+| Archive bytes | `84684800` |
+| Archive SHA256 | `860d0df522f465bdd40c920e808f22b3fb4fab68ea21a47f8b746a323f907599` |
+| Companion checksum | Archive path followed by `.sha256` |
+| Binary source | `5959f90df52678cdbcb47ab7dcb353c666979f37` |
+| Packaged documentation source | `16f4a75910a2240af8faed17fbf0a5f10956e2a0` |
+| Binary SHA256 | `59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e` |
+
+No archive was downloaded to Windows. Verify the companion checksum on halo1,
+extract only into a new owned directory and verify `SHA256SUMS`. The launcher
+uses the packaged executable and never invokes Cargo or installs dependencies.
+All members were checked by streaming hashes; the packaged `--help` succeeds.
+The package records 189 actual loader-resolved host libraries, which remain
+external alongside fonts, Vulkan/Radeon userspace and configured NAS/ds4 data.
+
+`third-party/rust-notices.tar` includes the unchanged verbatim notice companion:
+488 texts from 257/265 normal third-party packages. Its old index identity remains
+historical. `third-party/notice-reuse.json` and `manifest.json` bind the current
+binary to unchanged Cargo manifests/lock/build inputs and the exact archive hash.
+Eight missing-text packages and system/font/optional/distribution review remain
+explicit; this is an internal development package, not redistribution clearance.
+
+The actual packaged executable starts through its launcher on isolated 8856,
+automatically reopens the owned Saved 48-frame 4K fixture and renders frame 24 at
+960x540. Immediate prior `67ef4854a13d` repeats this, followed by fresh packaged
+current `59b6a3cc0114`. All three timeline snapshots and PNG SHA256 match exactly;
+Saved/source bytes remain unchanged. Each process stops, 8856 closes and the GPU
+lock releases. Live 8855, 39 foreign Sessions/40 PIDs, 12 Saved files, 5 local media,
+4 fixed NAS files and the shared proxy remain unchanged.
+
+Packaging uses one CPU/512 MiB/no swap, peak 200,146,944B. The serial
+startup/prior/forward check uses at most 8 CPUs/4 GiB/no swap, peak 513,515,520B.
+Both terminate successfully without memory-limit/OOM/kill events. See
+[current evidence](evidence/f7-current-prebuilt-workflow.json). Physical devices,
+pointer/DPI, real long footage and the two-hour typical editing soak remain open.
+No whole-host reboot is required by M7.
+
+## Earlier candidate — 2dbc9697d6e7
+
+The following evidence is retained for the earlier binary and its original
+artifact bytes; use the current candidate above for the latest code.
+
+
 2026-10-24. The qualified halo1 executable is packaged without rebuilding or
 changing the live editor. Full F1-F7/M7 release acceptance remains open.
 

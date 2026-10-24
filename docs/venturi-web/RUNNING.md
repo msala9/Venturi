@@ -106,9 +106,9 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 
 ### Immutable prior binary for runback
 
-The retained prior source is `2c587b7`, executable
-`/home/halo/.local/share/venturi-web/.runtime/vv-web-9a619eebab31`, SHA256
-`9a619eebab3123f64e3f44a340a3b0bb3e0a9f470df98140768414a163581bff`.
+The retained prior source is `78cb76f`, executable
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d`, SHA256
+`67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a`.
 Verify this hash before selecting it. A runback follows the same refusal gate
 and bounded configuration; it does not overwrite the newer executable, saved
 project, backups, receipts or caches. Validate reopening on a preserved project
@@ -116,7 +116,7 @@ copy in a separate approved candidate before allowing writes from an older
 binary. If current edits/history/drafts/jobs exist, leave the live service
 untouched. Restoring a binary does not restore an earlier unsaved session.
 The isolated packaged/prior/forward runback is now qualified in
-`evidence/f7-prebuilt-runback-workflow.json`; it preserves the working editor.
+`evidence/f7-current-prebuilt-workflow.json`; it preserves the working editor.
 M7 requires reload/recovery and documented operation, not a whole-host reboot.
 
 After the gate, the following bounded system-unit template selects that prior
@@ -124,7 +124,7 @@ binary. First verify the proposed unit name is unused. This is a manual runback
 procedure, not an instruction to execute it against the working editor now.
 
 ```bash
-sudo systemd-run --unit=venturi-web-halo1-inspector-choice-runback.service \
+sudo systemd-run --unit=venturi-web-halo1-audio-export-runback.service \
   --property=User=halo --property=Group=halo \
   --property=WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023 \
   --property=CPUQuota=800% --property=MemoryMax=4G --property=MemorySwapMax=0 \
@@ -136,7 +136,7 @@ sudo systemd-run --unit=venturi-web-halo1-inspector-choice-runback.service \
   --property=Environment=WGPU_BACKEND=vulkan --property=Environment=TOKIO_WORKER_THREADS=4 \
   --property=StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
   --property=StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
-  /home/halo/.local/share/venturi-web/.runtime/vv-web-9a619eebab31 \
+  /home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d \
   --listen 127.0.0.1:8855 \
   --projects-root /home/halo/VenturiWeb-color-audio-controls-20261023 \
   --assets-root /mnt/madrock-share/madrock-library \
@@ -153,6 +153,8 @@ forward restoration, with a new unused unit name and the current executable.
 Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
 
 Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow.json`.
+
+Current candidate/archive and isolated immediate-prior/forward startup: BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. The package binds binary source5959f90 separately from its versioned documentation and immutable prior notice index. Full M7 acceptance remains open.
 
 ## Historical deliveries and workflow notes
 

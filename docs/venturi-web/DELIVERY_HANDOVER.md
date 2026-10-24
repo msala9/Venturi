@@ -23,15 +23,17 @@ clear history. Preserve the 39 prior Sessions/40 PIDs, 11 prior Saved files and 
 assets/presets and shared proxy; no background enablement or driver/browser
 changes are authorized by this handover.
 
-The immutable prior source `2c587b7` and binary `vv-web-9a619eebab31` are retained
+The immutable prior source `78cb76f` and binary `vv-web-67ef4854a13d` are retained
 for guarded runback; the full path/hash and verification steps are in RUNNING.md.
 Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
 the final integrated, physical and editing-soak acceptance remain open. Isolated
-packaged/prior/forward runback passes in `evidence/f7-prebuilt-runback-workflow.json`.
+packaged/prior/forward runback passes in `evidence/f7-current-prebuilt-workflow.json`.
 
 Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-export-workflow.json`.
 
 Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow.json`.
+
+Current candidate/archive and isolated immediate-prior/forward startup: BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. The package binds binary source5959f90 separately from its versioned documentation and immutable prior notice index. Full M7 acceptance remains open.
 
 ## Historical workflow deliveries
 

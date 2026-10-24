@@ -43,11 +43,27 @@ export function createWorkspacePerformance({limit=128}={}) {
 const milliseconds=value=>numeric(value)===null ? '—' : value.toFixed(2);
 const items=value=>numeric(value)===null ? '—' : String(value);
 const mib=value=>numeric(value)===null ? '—' : (value/1048576).toFixed(2);
-function summary(snapshot) {
+const counter=value=>Number.isSafeInteger(value) && value>=0;
+export function previewDiagnosticsSnapshot(value){
+  const queue=value?.preview?.frame_queue,cache=value?.preview?.composed_frame_cache;
+  const queueValid=queue && typeof queue.available==='boolean' && queue.capacity===1 && queue.scope==='waiting_only' && (queue.available?[0,1].includes(queue.waiting):queue.waiting===null);
+  const keys=['entries','bytes','lookup_hits','lookup_misses','source_validation_rejections'];
+  const cacheValid=cache && typeof cache.available==='boolean' && cache.entry_capacity===8 && cache.byte_capacity===16777216 && cache.scope==='process_lifetime_program_draft_scopes_balance' && keys.every(key=>cache.available?counter(cache[key]):cache[key]===null) && (!cache.available || cache.entries<=cache.entry_capacity && cache.bytes<=cache.byte_capacity);
+  return {frame_queue:queueValid?{available:queue.available,waiting:queue.waiting,capacity:1}:null,
+    composed_frame_cache:cacheValid?Object.fromEntries(['available',...keys,'entry_capacity','byte_capacity'].map(key=>[key,cache[key]])):null};
+}
+function summary(snapshot,preview) {
   const cache=snapshot?.cache || {};
   const timing=(label,value={})=>`${label} · p50 ${milliseconds(value.p50_ms)} ms · p95 ${milliseconds(value.p95_ms)} ms · max ${milliseconds(value.max_ms)} ms · sample window ${items(value.count)}`;
   const rpc=snapshot?.rpc || {};
-  return [timing('Timeline draw CPU',snapshot?.draw),timing('RPC JSON roundtrip (excludes direct fetch/media)',rpc),`RPC outcomes · ${outcomes.map(key=>`${key} ${items(rpc.outcomes?.[key])}`).join(' · ')}`,timing('Software input dispatch → Canvas callback (not hardware/display latency)',snapshot?.input),`Accounted media cache · ${mib(cache.bytes)} / ${mib(cache.max_bytes)} MiB · ${items(cache.entries)} / ${items(cache.max_entries)} items`,'Authoritative frame queue / cache hits / VRAM: unavailable'].join('\n');
+  const queue=preview?.value?.frame_queue,frames=preview?.value?.composed_frame_cache,video=snapshot?.video_playback;
+  const videoValid=counter(video?.total_frames) && counter(video?.dropped_frames) && video.dropped_frames<=video.total_frames;
+  return [timing('Timeline draw CPU',snapshot?.draw),timing('RPC JSON roundtrip (excludes direct fetch/media)',rpc),`RPC outcomes · ${outcomes.map(key=>`${key} ${items(rpc.outcomes?.[key])}`).join(' · ')}`,timing('Software input dispatch → Canvas callback (not hardware/display latency)',snapshot?.input),`Accounted media cache · ${mib(cache.bytes)} / ${mib(cache.max_bytes)} MiB · ${items(cache.entries)} / ${items(cache.max_entries)} items`,
+    `Preview snapshot · ${preview?.status || 'unavailable'}${numeric(preview?.age_ms)!==null?` · ${(preview.age_ms/1000).toFixed(1)} s old`:''}`,
+    queue?.available?`Native preview queue · ${queue.waiting} / ${queue.capacity} waiting (excludes active worker)`:'Native preview queue · unavailable',
+    frames?.available?`Composed frame cache · ${mib(frames.bytes)} / ${mib(frames.byte_capacity)} MiB · ${frames.entries} / ${frames.entry_capacity} entries · process-lifetime lookups: hits ${frames.lookup_hits}, misses ${frames.lookup_misses}, source-validation rejections ${frames.source_validation_rejections}`:'Composed frame cache / lookup counters · unavailable',
+    videoValid?`Current video element · total ${video.total_frames} frames · dropped ${video.dropped_frames} (browser playback API)`:'Current video element playback counters · unavailable',
+    'Decoder choice / VRAM / physical A/V drift: unavailable'].join('\n');
 }
 
 export function createWorkspaceInputTiming({target,documentRef,windowRef,getContext,onSample,now=()=>performance.now()}) {
@@ -96,10 +112,23 @@ export function createWorkspaceInputTiming({target,documentRef,windowRef,getCont
   return {navigationChanged,painted,dispose};
 }
 
-export function createWorkspacePerformancePanel({root,output,getSnapshot,isVisible,eventTargets=[root],setTimer=setTimeout,clearTimer=clearTimeout,interval=1000}) {
+export function createWorkspacePerformancePanel({root,output,getSnapshot,isVisible,eventTargets=[root],readDiagnostics,getContext=()=>null,now=()=>performance.now(),setTimer=setTimeout,clearTimer=clearTimeout,interval=1000}) {
   const targets=[...new Set(eventTargets)].filter(target=>target?.addEventListener);
   const delay=Number.isFinite(interval) && interval>0 ? interval : 1000;
-  let timer=null, sequence=0, disposed=false;
+  let timer=null, sequence=0, disposed=false,visible=false,context=null,reading=null,preview=null;
+  const currentContext=()=>{try{const value=getContext();return contextValid(value)?value:null;}catch{return null;}};
+  const clock=()=>{try{return numeric(now());}catch{return null;}};
+  function clearPreview(){reading?.controller.abort();reading=null;preview=null;}
+  function read(context){
+    if(typeof readDiagnostics!=='function' || context===null)return;
+    const owner={context,controller:new AbortController()};reading=owner;preview={status:'loading'};
+    const current=()=>!disposed && reading===owner && !owner.controller.signal.aborted && isVisible() && currentContext()===context;
+    void Promise.resolve().then(()=>current()?readDiagnostics({signal:owner.controller.signal}):null).then(value=>{
+      if(!current())return;
+      const snapshot=previewDiagnosticsSnapshot(value);
+      preview={status:snapshot.frame_queue || snapshot.composed_frame_cache?'captured once on open':'unavailable · invalid response',value:snapshot,at:clock()};reading=null;refresh();
+    }).catch(()=>{if(current()){reading=null;preview={status:'unavailable · request failed'};refresh();}});
+  }
   function stop(){
     sequence++;
     if(timer!==null){clearTimer(timer);timer=null;}
@@ -107,10 +136,16 @@ export function createWorkspacePerformancePanel({root,output,getSnapshot,isVisib
   function refresh(){
     if(disposed)return;
     stop();
-    if(!isVisible())return;
+    if(!isVisible()){visible=false;context=null;clearPreview();return;}
+    const next=currentContext(),opened=!visible;
+    if(next!==context)clearPreview();
+    context=next;visible=true;
+    if(opened)read(context);
     const owner=sequence, value=getSnapshot();
-    if(disposed || owner!==sequence || !isVisible())return;
-    output.textContent=summary(value);
+    if(disposed || owner!==sequence)return;
+    if(!isVisible()){visible=false;context=null;clearPreview();return;}
+    const time=clock(),age=preview?.at!==null && preview?.at!==undefined && time!==null?Math.max(0,time-preview.at):null;
+    output.textContent=summary(value,preview?{...preview,age_ms:age}:null);
     timer=setTimer(()=>{
       if(disposed || owner!==sequence)return;
       timer=null;refresh();
@@ -118,7 +153,7 @@ export function createWorkspacePerformancePanel({root,output,getSnapshot,isVisib
   }
   function dispose(){
     if(disposed)return;
-    disposed=true;stop();
+    disposed=true;stop();clearPreview();
     for(const target of targets){target.removeEventListener('toggle',refresh);target.removeEventListener('visibilitychange',refresh);}
   }
   for(const target of targets){target.addEventListener('toggle',refresh);target.addEventListener('visibilitychange',refresh);}

@@ -1,6 +1,174 @@
 use super::*;
 use vv_core::Id;
 
+fn observability_snapshot() -> FrameSnapshot {
+    let mut session = vv_session::Session::default();
+    let timeline = session.create_timeline(vv_core::Timeline {
+        name: "Private diagnostic fixture".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    FrameSnapshot {
+        originals: None,
+        video: Default::default(),
+        project: session.project,
+        timeline,
+        query: FrameQuery {
+            timeline_id: timeline.raw().to_string(),
+            project_epoch: "private-diagnostic-epoch".into(),
+            if_generation: "1".into(),
+            revision: "private-diagnostic-revision".into(),
+            frame: 0,
+            width: 64,
+        },
+        size: (64, 64),
+    }
+}
+
+#[test]
+fn preview_observability_reports_actual_waiting_cache_and_nonblocking_busy_snapshots() {
+    let mut preview = Preview::disabled();
+    let disabled = preview.diagnostic();
+    assert_eq!(disabled["frame_queue"]["available"], false);
+    assert!(disabled["frame_queue"]["waiting"].is_null());
+    assert_eq!(disabled["frame_queue"]["reason"], "disabled");
+    assert_eq!(disabled["composed_frame_cache"]["available"], true);
+    assert_eq!(disabled["composed_frame_cache"]["bytes"], 0);
+    preview.queue = Some(Arc::new(Queue::default()));
+    let queue = preview.queue.as_ref().unwrap();
+    assert_eq!(preview.diagnostic()["frame_queue"]["waiting"], 0);
+    let (first, mut first_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: observability_snapshot(),
+        mode: FrameMode::Program,
+        reply: first,
+    });
+    let (second, _second_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: observability_snapshot(),
+        mode: FrameMode::Program,
+        reply: second,
+    });
+    assert!(matches!(
+        first_reply.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
+    assert_eq!(preview.diagnostic()["frame_queue"]["waiting"], 1);
+    {
+        let pending = queue.pending.lock().unwrap();
+        let cache = preview.cache.lock().unwrap();
+        let busy = preview.diagnostic();
+        assert_eq!(busy["frame_queue"]["available"], false);
+        assert_eq!(busy["frame_queue"]["reason"], "busy");
+        assert!(busy["frame_queue"]["waiting"].is_null());
+        assert_eq!(busy["composed_frame_cache"]["reason"], "busy");
+        for field in [
+            "entries",
+            "bytes",
+            "lookup_hits",
+            "lookup_misses",
+            "source_validation_rejections",
+        ] {
+            assert!(busy["composed_frame_cache"][field].is_null());
+        }
+        assert!(pending.job.is_some());
+        assert_eq!(cache.bytes, 0);
+    }
+    let active = queue.next(std::time::Duration::from_millis(1)).unwrap();
+    assert_eq!(
+        preview.diagnostic()["frame_queue"]["waiting"],
+        0,
+        "a dequeued job is not waiting, even before its reply finishes"
+    );
+    assert!(!active.reply.is_closed());
+    let snapshot = observability_snapshot();
+    let key = FrameMode::Program.cache_key(&snapshot);
+    {
+        let mut cache = preview.cache.lock().unwrap();
+        cache.insert(CachedFrame {
+            key: key.clone(),
+            query: snapshot.query.clone(),
+            inputs: crate::program::inputs(&snapshot).unwrap(),
+            originals: None,
+            program: true,
+            render_tag: snapshot.video.tag.clone(),
+            data: vec![1, 2, 3],
+        });
+        assert_eq!(cache.lookup(&snapshot, "absent").unwrap(), None);
+        assert_eq!(cache.lookup(&snapshot, &key).unwrap(), Some(vec![1, 2, 3]));
+    }
+    let before_discovery = preview.diagnostic();
+    assert_eq!(preview.cached_frames(&snapshot), vec![0]);
+    let measured = preview.diagnostic();
+    assert_eq!(
+        measured, before_discovery,
+        "cache discovery must not manufacture lookup hits"
+    );
+    assert_eq!(measured["frame_queue"]["capacity"], 1);
+    assert_eq!(measured["frame_queue"]["scope"], "waiting_only");
+    let cache = &measured["composed_frame_cache"];
+    assert_eq!(cache["entries"], 1);
+    assert_eq!(cache["bytes"], 3);
+    assert_eq!(cache["entry_capacity"], 8);
+    assert_eq!(cache["byte_capacity"], 16 * 1024 * 1024);
+    assert_eq!(cache["lookup_hits"], 1);
+    assert_eq!(cache["lookup_misses"], 1);
+    assert_eq!(cache["source_validation_rejections"], 0);
+    assert_eq!(cache["scope"], "process_lifetime_program_draft_scopes_balance");
+    let text = measured.to_string();
+    for private in ["private-diagnostic", &key, "Private diagnostic fixture"] {
+        assert!(!text.contains(private));
+    }
+}
+
+#[test]
+fn preview_observability_counters_saturate_and_poisoned_cache_is_not_reported_as_empty() {
+    let preview = Preview::disabled();
+    let snapshot = observability_snapshot();
+    {
+        let mut cache = preview.cache.lock().unwrap();
+        cache.insert(CachedFrame {
+            key: "invalid-source".into(),
+            query: snapshot.query.clone(),
+            inputs: vec![],
+            originals: Some(Default::default()),
+            program: false,
+            render_tag: snapshot.video.tag.clone(),
+            data: vec![7],
+        });
+        cache.lookup_misses = u64::MAX;
+        cache.source_validation_rejections = u64::MAX;
+        assert!(cache.lookup(&snapshot, "invalid-source").unwrap().is_none());
+        assert_eq!(cache.lookup_misses, u64::MAX);
+        assert_eq!(cache.source_validation_rejections, u64::MAX);
+        cache.insert(CachedFrame {
+            key: "valid".into(),
+            query: snapshot.query.clone(),
+            inputs: crate::program::inputs(&snapshot).unwrap(),
+            originals: None,
+            program: false,
+            render_tag: snapshot.video.tag.clone(),
+            data: vec![9],
+        });
+        cache.lookup_hits = u64::MAX;
+        assert_eq!(cache.lookup(&snapshot, "valid").unwrap(), Some(vec![9]));
+        assert_eq!(cache.lookup_hits, u64::MAX);
+    }
+    let poisoned = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _cache = preview.cache.lock().unwrap();
+        panic!("Owned diagnostic poison fixture");
+    }));
+    assert!(poisoned.is_err());
+    let measured = preview.diagnostic();
+    assert_eq!(measured["composed_frame_cache"]["available"], false);
+    assert_eq!(measured["composed_frame_cache"]["reason"], "poisoned");
+    assert!(measured["composed_frame_cache"]["bytes"].is_null());
+    assert!(measured["composed_frame_cache"]["lookup_hits"].is_null());
+}
+
 #[test]
 fn title_draft_cache_and_queue_are_isolated_from_committed_program_frames() {
     fn snapshot() -> FrameSnapshot {
@@ -232,6 +400,8 @@ fn guarded_frame_cache_reopens_touched_sources_and_rejects_legacy_or_changed_lin
         data: vec![1],
     });
     assert!(cache.lookup(&snapshot, "legacy").unwrap().is_none());
+    assert_eq!(cache.lookup_misses, 1);
+    assert_eq!(cache.source_validation_rejections, 1);
     cache.insert(CachedFrame {
         key: "guarded".into(),
         query: snapshot.query.clone(),
@@ -243,10 +413,14 @@ fn guarded_frame_cache_reopens_touched_sources_and_rejects_legacy_or_changed_lin
     });
     assert_eq!(cache.lookup(&snapshot, "guarded").unwrap(), Some(vec![2]));
     assert_eq!(cache.validated_frames(&snapshot), vec![7]);
+    assert_eq!(cache.lookup_hits, 1);
     std::fs::rename(root.join("used"), root.join("old")).unwrap();
     std::fs::rename(root.join("other"), root.join("used")).unwrap();
     assert!(cache.lookup(&snapshot, "guarded").unwrap().is_none());
     assert!(cache.validated_frames(&snapshot).is_empty());
+    assert_eq!(cache.lookup_hits, 1);
+    assert_eq!(cache.lookup_misses, 2);
+    assert_eq!(cache.source_validation_rejections, 2);
     std::fs::remove_dir_all(root).unwrap();
 }
 #[test]
@@ -338,6 +512,8 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
     assert!(cache.frames(&query, &inputs, "proxy:low").is_empty());
     assert_eq!(cache.entries.len(), 8);
     assert_eq!(cache.bytes, 128);
+    assert_eq!(cache.diagnostic()["entries"], 8);
+    assert_eq!(cache.diagnostic()["bytes"], 128);
     assert_eq!(
         cache.frames(&query, &inputs, "originals"),
         vec![2, 3, 4, 5, 6, 7, 8]
@@ -376,6 +552,8 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
     });
     assert_eq!(cache.entries.len(), 1);
     assert_eq!(cache.bytes, 16 * 1024 * 1024);
+    assert_eq!(cache.diagnostic()["entries"], 1);
+    assert_eq!(cache.diagnostic()["bytes"], 16 * 1024 * 1024);
     cache.insert(CachedFrame {
         key: "too-large".into(),
         query,

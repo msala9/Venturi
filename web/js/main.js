@@ -461,6 +461,7 @@ let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
 const MEDIA_ASSET_MAX_ENTRIES=64,MEDIA_ASSET_MAX_BYTES=64*1024*1024;
 const workspacePerformance=createWorkspacePerformance();
+let workspaceDiagnostics=null;
 let workspaceInputTiming=null;
 const workspacePerformanceContext=()=>documentState && timeline?JSON.stringify([documentState.project_epoch,timeline.id,timeline.revision]):null;
 let nativeThumbnailDemand={epoch:null,items:[]};
@@ -1444,7 +1445,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   if(newTimelineOwner && !newTimelineOwner.committing && !catalogOwnerCurrent(newTimelineOwner,next))$('timeline-error').textContent='The project changed. Close this dialog and try again.';
   const projectChanged=documentState?.project_epoch!==next.project_epoch;
   if(preserveAudioDrafts && writable && !unresolved && canRetainAudioPresetDraft(documentState,next,timeline?.id)) {
-    documentState=next;timeline=next.timelines.find(item=>item.id===timeline.id);
+    documentState=next;workspaceDiagnostics?.refresh();timeline=next.timelines.find(item=>item.id===timeline.id);
     $("project-persistence-notice").textContent=next.persistence_notice || "";
     recoveryPanel?.update(next.autosave);
     $("connection").textContent="Connected · writer";
@@ -1475,6 +1476,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   const previousId = projectChanged ? null : timeline?.id,
     selection = view.selection,selectionAnchor=view.selectionAnchor,transitionSelection=view.transitionSelection;
   documentState = next;
+  workspaceDiagnostics?.refresh();
   projectView.refresh();
   compoundNavigation?.invalidate();
   $("play").disabled = viewerMode === "program" && !next.capabilities.playback;
@@ -2543,9 +2545,21 @@ observeRequests(()=>{
   return measurement=>{if(context && !document.hidden && context===workspacePerformanceContext())workspacePerformance.recordRequest(measurement,context);};
 });
 const diagnosticsRoot=document.querySelector('.diagnostics-menu'),diagnosticsMenu=diagnosticsRoot.closest('.app-menu');
-createWorkspacePerformancePanel({
+workspaceDiagnostics=createWorkspacePerformancePanel({
   root:diagnosticsRoot,output:$('workspace-performance'),eventTargets:[diagnosticsRoot,diagnosticsMenu,document],
   isVisible:()=>diagnosticsRoot.open && diagnosticsMenu.open && !document.hidden,
-  getSnapshot:()=>workspacePerformance.snapshot(workspacePerformanceContext(),{entries:mediaAssets.size,bytes:[...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0),max_entries:MEDIA_ASSET_MAX_ENTRIES,max_bytes:MEDIA_ASSET_MAX_BYTES}),
+  getContext:()=>documentState?.project_epoch,
+  readDiagnostics:({signal})=>request('/diagnostics',undefined,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,options.signal,AbortSignal.timeout(10_000)])})),
+  getSnapshot:()=>{
+    const snapshot=workspacePerformance.snapshot(workspacePerformanceContext(),{entries:mediaAssets.size,bytes:[...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0),max_entries:MEDIA_ASSET_MAX_ENTRIES,max_bytes:MEDIA_ASSET_MAX_BYTES});
+    const video=$(viewerMode==='source'?'source-video':'program-video'),item=viewerMode==='source'?currentSourceItem():null;
+    const verified=viewerMode==='source'?sourcePosition() && sourcePlayer.verifiedSource():programPlayer?.telemetryTarget();
+    if(!verified || !$('slip-view').hidden || video.isConnected===false || video.hidden || video.readyState<2 || !video.getAttribute('src') || viewerMode==='source' && (!item?.has_video || item.is_image))return snapshot;
+    try{
+      const value=video.getVideoPlaybackQuality?.();
+      if(Number.isSafeInteger(value?.totalVideoFrames) && value.totalVideoFrames>=0 && Number.isSafeInteger(value?.droppedVideoFrames) && value.droppedVideoFrames>=0 && value.droppedVideoFrames<=value.totalVideoFrames)snapshot.video_playback={total_frames:value.totalVideoFrames,dropped_frames:value.droppedVideoFrames};
+    }catch{/* Browser playback counters are optional. */}
+    return snapshot;
+  },
 });
 connect().then(diagnostics);

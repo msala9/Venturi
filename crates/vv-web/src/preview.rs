@@ -14,6 +14,9 @@ use tokio::sync::oneshot;
 use vv_core::{Project, TimelineId};
 use vv_render::{Compositor, wgpu};
 
+const FRAME_CACHE_ENTRIES: usize = 8;
+const FRAME_CACHE_BYTES: usize = 16 * 1024 * 1024;
+
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FrameQuery {
@@ -144,6 +147,9 @@ struct CachedFrame {
 struct FrameCache {
     entries: VecDeque<CachedFrame>,
     bytes: usize,
+    lookup_hits: u64,
+    lookup_misses: u64,
+    source_validation_rejections: u64,
 }
 impl FrameCache {
     fn valid_originals(&self, entry: &CachedFrame, snapshot: &FrameSnapshot) -> bool {
@@ -155,13 +161,32 @@ impl FrameCache {
             _ => false,
         }
     }
-    fn lookup(&self, snapshot: &FrameSnapshot, key: &str) -> Result<Option<Vec<u8>>> {
-        snapshot.video.validate()?;
-        Ok(self
-            .entries
-            .iter()
-            .find(|entry| entry.key == key && self.valid_originals(entry, snapshot))
-            .map(|entry| entry.data.clone()))
+    fn lookup(&mut self, snapshot: &FrameSnapshot, key: &str) -> Result<Option<Vec<u8>>> {
+        if let Err(error) = snapshot.video.validate() {
+            self.source_validation_rejections = self.source_validation_rejections.saturating_add(1);
+            return Err(error);
+        }
+        let mut rejected = false;
+        let data = self.entries.iter().find_map(|entry| {
+            if entry.key != key {
+                return None;
+            }
+            if self.valid_originals(entry, snapshot) {
+                Some(entry.data.clone())
+            } else {
+                rejected = true;
+                None
+            }
+        });
+        if rejected {
+            self.source_validation_rejections = self.source_validation_rejections.saturating_add(1);
+        }
+        if data.is_some() {
+            self.lookup_hits = self.lookup_hits.saturating_add(1);
+        } else {
+            self.lookup_misses = self.lookup_misses.saturating_add(1);
+        }
+        Ok(data)
     }
     fn validated_frames(&self, snapshot: &FrameSnapshot) -> Vec<i64> {
         if snapshot.video.validate().is_err() {
@@ -183,16 +208,45 @@ impl FrameCache {
         frames
     }
     fn insert(&mut self, entry: CachedFrame) {
-        if entry.data.len() > 16 * 1024 * 1024 {
+        if entry.data.len() > FRAME_CACHE_BYTES {
             return;
         }
-        while self.bytes + entry.data.len() > 16 * 1024 * 1024 || self.entries.len() >= 8 {
+        while self.bytes + entry.data.len() > FRAME_CACHE_BYTES
+            || self.entries.len() >= FRAME_CACHE_ENTRIES
+        {
             if let Some(old) = self.entries.pop_front() {
                 self.bytes -= old.data.len();
             }
         }
         self.bytes += entry.data.len();
         self.entries.push_back(entry);
+    }
+    fn diagnostic(&self) -> Value {
+        json!({
+            "available": true,
+            "entries": self.entries.len(),
+            "bytes": self.bytes,
+            "entry_capacity": FRAME_CACHE_ENTRIES,
+            "byte_capacity": FRAME_CACHE_BYTES,
+            "lookup_hits": self.lookup_hits,
+            "lookup_misses": self.lookup_misses,
+            "source_validation_rejections": self.source_validation_rejections,
+            "scope": "process_lifetime_program_draft_scopes_balance",
+        })
+    }
+    fn unavailable_diagnostic(reason: &str) -> Value {
+        json!({
+            "available": false,
+            "entries": null,
+            "bytes": null,
+            "entry_capacity": FRAME_CACHE_ENTRIES,
+            "byte_capacity": FRAME_CACHE_BYTES,
+            "lookup_hits": null,
+            "lookup_misses": null,
+            "source_validation_rejections": null,
+            "scope": "process_lifetime_program_draft_scopes_balance",
+            "reason": reason,
+        })
     }
     #[cfg(test)]
     fn frames(
@@ -722,6 +776,40 @@ impl Preview {
             self.resident.load(Ordering::Relaxed)
                 || self.active_programs.load(Ordering::Relaxed) > 0
         );
+        value["frame_queue"] = match &self.queue {
+            Some(queue) => match queue.pending.try_lock() {
+                Ok(pending) => json!({
+                    "available": true,
+                    "waiting": usize::from(pending.job.is_some()),
+                    "capacity": 1,
+                    "scope": "waiting_only",
+                }),
+                Err(error) => json!({
+                    "available": false,
+                    "waiting": null,
+                    "capacity": 1,
+                    "scope": "waiting_only",
+                    "reason": match error {
+                        std::sync::TryLockError::WouldBlock => "busy",
+                        std::sync::TryLockError::Poisoned(_) => "poisoned",
+                    },
+                }),
+            },
+            None => json!({
+                "available": false,
+                "waiting": null,
+                "capacity": 1,
+                "scope": "waiting_only",
+                "reason": "disabled",
+            }),
+        };
+        value["composed_frame_cache"] = match self.cache.try_lock() {
+            Ok(cache) => cache.diagnostic(),
+            Err(std::sync::TryLockError::WouldBlock) => FrameCache::unavailable_diagnostic("busy"),
+            Err(std::sync::TryLockError::Poisoned(_)) => {
+                FrameCache::unavailable_diagnostic("poisoned")
+            }
+        };
         value
     }
     pub async fn frame(&self, snapshot: FrameSnapshot) -> Result<Vec<u8>> {

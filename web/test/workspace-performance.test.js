@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorkspacePerformance,createWorkspacePerformancePanel,createWorkspaceInputTiming} from '../js/workspace-performance.js';
+import {createWorkspacePerformance,createWorkspacePerformancePanel,createWorkspaceInputTiming,previewDiagnosticsSnapshot} from '../js/workspace-performance.js';
 
 test('paint samples retain a bounded chronological window and nearest-rank percentiles',()=>{
   const performance=createWorkspacePerformance({limit:4});
@@ -63,7 +63,9 @@ test('closed diagnostics do no reads or writes; visible updates have one timer a
   assert.match(h.text(),/Accounted media cache.*1.00 \/ 2.00 MiB.*2 \/ 32 items/);
   assert.match(h.text(),/RPC JSON roundtrip \(excludes direct fetch\/media\)/);
   assert.match(h.text(),/Software input dispatch → Canvas callback \(not hardware\/display latency\)/);
-  assert.match(h.text(),/Authoritative frame queue \/ cache hits \/ VRAM: unavailable/);
+  assert.match(h.text(),/Native preview queue · unavailable/);
+  assert.match(h.text(),/Composed frame cache \/ lookup counters · unavailable/);
+  assert.match(h.text(),/Decoder choice \/ VRAM \/ physical A\/V drift: unavailable/);
   h.tick();assert.equal(h.read(),2);assert.equal(h.timers.size,1);
   const stale=[...h.callbacks];h.visible(false);h.menu.dispatch('toggle');
   assert.equal(h.timers.size,0);const reads=h.read(),writes=h.write();
@@ -86,6 +88,69 @@ test('closing during snapshot acquisition cannot write a hidden panel or create 
   const root=new Target();let visible=true,writes=0,timers=0;
   const panel=createWorkspacePerformancePanel({root,output:{set textContent(value){writes++;}},isVisible:()=>visible,getSnapshot:()=>{visible=false;return {};},setTimer:()=>{timers++;},clearTimer:()=>{}});
   assert.equal(writes,0);assert.equal(timers,0);panel.dispose();assert.equal(root.count(),0);
+});
+
+function nativeDiagnostics(){
+  return {preview:{frame_queue:{available:true,waiting:1,capacity:1,scope:'waiting_only'},composed_frame_cache:{available:true,entries:3,bytes:1048576,entry_capacity:8,byte_capacity:16777216,lookup_hits:12,lookup_misses:4,source_validation_rejections:2,scope:'process_lifetime_program_draft_scopes_balance'},private_path:'/not/displayed'}};
+}
+test('native diagnostic snapshots validate bounded queue/cache schemas without substituting zero or retaining other fields',()=>{
+  const value=nativeDiagnostics(),snapshot=previewDiagnosticsSnapshot(value);
+  assert.deepEqual(snapshot.frame_queue,{available:true,waiting:1,capacity:1});assert.equal(snapshot.composed_frame_cache.lookup_hits,12);
+  snapshot.composed_frame_cache.lookup_hits=99;assert.equal(value.preview.composed_frame_cache.lookup_hits,12);assert.ok(!JSON.stringify(snapshot).includes('private'));
+  value.preview.frame_queue={available:false,waiting:null,capacity:1,scope:'waiting_only',reason:'disabled'};
+  value.preview.composed_frame_cache.available=false;for(const key of ['entries','bytes','lookup_hits','lookup_misses','source_validation_rejections'])value.preview.composed_frame_cache[key]=null;
+  const unavailable=previewDiagnosticsSnapshot(value);assert.equal(unavailable.frame_queue.waiting,null);assert.equal(unavailable.composed_frame_cache.lookup_hits,null);
+  for(const change of [v=>v.preview.frame_queue.waiting=2,v=>v.preview.frame_queue.scope='active_and_waiting',v=>v.preview.frame_queue.capacity=2]){
+    const invalid=nativeDiagnostics();change(invalid);assert.equal(previewDiagnosticsSnapshot(invalid).frame_queue,null);
+  }
+  for(const change of [v=>v.preview.composed_frame_cache.entries=9,v=>v.preview.composed_frame_cache.bytes=16777217,v=>v.preview.composed_frame_cache.lookup_hits=Number.MAX_SAFE_INTEGER+1,v=>v.preview.composed_frame_cache.lookup_misses=-1,v=>v.preview.composed_frame_cache.scope='current_project']){
+    const invalid=nativeDiagnostics();change(invalid);assert.equal(previewDiagnosticsSnapshot(invalid).composed_frame_cache,null);
+  }
+  assert.deepEqual(previewDiagnosticsSnapshot(null),{frame_queue:null,composed_frame_cache:null});
+});
+
+function diagnosticsFixture(){
+  const root=new Target(),menu=new Target(),document=new Target(),timers=new Map(),calls=[];
+  let visible=false,context='epoch1',time=1000,text='',next=0,video=null;
+  const panel=createWorkspacePerformancePanel({root,output:{set textContent(value){text=value;}},eventTargets:[root,menu,document],isVisible:()=>visible,getContext:()=>context,now:()=>time,
+    getSnapshot:()=>({video_playback:video}),readDiagnostics:({signal})=>new Promise((resolve,reject)=>calls.push({signal,resolve,reject})),
+    setTimer:callback=>{timers.set(++next,callback);return next;},clearTimer:id=>timers.delete(id)});
+  return {root,menu,document,panel,timers,calls,text:()=>text,setVisible(value){visible=value;root.dispatch('toggle');},setHidden(value){visible=!value;document.dispatch('visibilitychange');},setContext(value){context=value;panel.refresh();},setTime(value){time=value;},setVideo(value){video=value;},tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();}};
+}
+async function settleDiagnostics(){for(let i=0;i<5;i++)await Promise.resolve();}
+test('native preview diagnostics fetch once per visible opening; the existing timer only formats snapshot age and browser counters',async()=>{
+  const h=diagnosticsFixture();try{
+    h.root.dispatch('toggle');await settleDiagnostics();assert.equal(h.calls.length,0);assert.equal(h.timers.size,0);
+    h.setVisible(true);await settleDiagnostics();assert.equal(h.calls.length,1);assert.match(h.text(),/Preview snapshot · loading/);
+    h.menu.dispatch('toggle');h.root.dispatch('toggle');h.panel.refresh();h.tick();await settleDiagnostics();assert.equal(h.calls.length,1);
+    h.calls[0].resolve(nativeDiagnostics());await settleDiagnostics();
+    assert.match(h.text(),/Native preview queue · 1 \/ 1 waiting \(excludes active worker\)/);
+    assert.match(h.text(),/Composed frame cache · 1.00 \/ 16.00 MiB · 3 \/ 8 entries · process-lifetime lookups: hits 12, misses 4, source-validation rejections 2/);
+    h.setTime(3500);h.setVideo({total_frames:120,dropped_frames:2});h.tick();assert.match(h.text(),/2.5 s old/);assert.match(h.text(),/Current video element · total 120 frames · dropped 2 \(browser playback API\)/);assert.equal(h.calls.length,1);
+    h.setVideo({total_frames:120,dropped_frames:121});h.tick();assert.match(h.text(),/Current video element playback counters · unavailable/);
+    h.setVisible(false);assert.equal(h.timers.size,0);h.setVisible(true);await settleDiagnostics();assert.equal(h.calls.length,2);
+  }finally{h.panel.dispose();}
+});
+test('closed, hidden, changed-epoch and disposed diagnostic requests cannot publish late values or automatically retry',async()=>{
+  const h=diagnosticsFixture();try{
+    h.setVisible(true);await settleDiagnostics();const first=h.calls[0];
+    h.setVisible(false);assert.equal(first.signal.aborted,true);first.resolve(nativeDiagnostics());await settleDiagnostics();assert.equal(h.timers.size,0);
+    h.setVisible(true);await settleDiagnostics();const second=h.calls[1];h.setContext('epoch2');assert.equal(second.signal.aborted,true);assert.match(h.text(),/Preview snapshot · unavailable/);
+    second.resolve(nativeDiagnostics());await settleDiagnostics();h.tick();h.document.dispatch('visibilitychange');await settleDiagnostics();assert.equal(h.calls.length,2);assert.doesNotMatch(h.text(),/hits 12/);
+    h.setVisible(false);h.setVisible(true);await settleDiagnostics();h.calls[2].reject(Error('network failed'));await settleDiagnostics();assert.match(h.text(),/unavailable · request failed/);h.tick();assert.equal(h.calls.length,3);
+    h.setVisible(false);h.setVisible(true);await settleDiagnostics();const last=h.calls[3];h.panel.dispose();assert.equal(last.signal.aborted,true);last.resolve(nativeDiagnostics());await settleDiagnostics();assert.equal(h.timers.size,0);assert.equal(h.root.count(),0);
+  }finally{h.panel.dispose();}
+});
+test('document hiding aborts its one read and busy native snapshots stay unavailable without a retry loop',async()=>{
+  const h=diagnosticsFixture();try{
+    h.setVisible(true);await settleDiagnostics();const first=h.calls[0];h.setHidden(true);assert.equal(first.signal.aborted,true);
+    first.resolve(nativeDiagnostics());await settleDiagnostics();assert.equal(h.timers.size,0);
+    h.setHidden(false);await settleDiagnostics();assert.equal(h.calls.length,2);
+    const value=nativeDiagnostics();value.preview.frame_queue.available=false;value.preview.frame_queue.waiting=null;value.preview.composed_frame_cache.available=false;
+    for(const key of ['entries','bytes','lookup_hits','lookup_misses','source_validation_rejections'])value.preview.composed_frame_cache[key]=null;
+    h.calls[1].resolve(value);await settleDiagnostics();assert.match(h.text(),/Native preview queue · unavailable/);assert.match(h.text(),/Composed frame cache \/ lookup counters · unavailable/);assert.doesNotMatch(h.text(),/hits 0/);
+    h.tick();h.panel.refresh();await settleDiagnostics();assert.equal(h.calls.length,2);
+  }finally{h.panel.dispose();}
 });
 
 test('RPC outcomes follow only the retained window and all rings reset together without recording identities',()=>{

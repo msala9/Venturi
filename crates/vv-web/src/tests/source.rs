@@ -1832,12 +1832,128 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
 }
 
 #[test]
+fn new_export_keeps_original_audio_authority_and_refuses_replaced_sources_before_ready() {
+    let (service, receiver, _) = dormant_assets_service();
+    let root = (*service.root).clone();
+    let files = crate::files::Files::new(&root).unwrap();
+    let path = root.join("sound.wav");
+    std::fs::write(&path, b"original audio").unwrap();
+    let originals = Arc::new(crate::frame_sources::FrameSources::capture(&files).unwrap());
+    let query = ProgramQuery {
+        project_epoch: "audio-export:1".into(),
+        if_generation: "0".into(),
+        timeline_id: "1".into(),
+        revision: "r".into(),
+        start_frame: 0,
+        end_frame: 48,
+        audio_origin_frame: None,
+        width: 960,
+    };
+    let mut snapshot = cache_program_snapshot(&query);
+    snapshot.originals = Some(originals.clone());
+    let mut meta = window_fixture_meta();
+    meta.has_video = false;
+    meta.has_audio = true;
+    meta.audio_streams = 1;
+    meta.channels = 1;
+    meta.sample_rate = 48_000;
+    let media = snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: path.clone(),
+        meta,
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    let mut audio = vv_core::Track::new(vv_core::TrackKind::Audio);
+    audio.insert_sorted(vv_core::Clip::from_source_range(
+        vv_core::ClipId(2),
+        vv_core::ClipSource::Media(media),
+        0,
+        48,
+        0,
+        vv_core::Rational::one(),
+    ));
+    snapshot.project.timelines[snapshot.timeline]
+        .tracks
+        .push(audio);
+    let receipt = service
+        .prepare_program(ProgramTask {
+            snapshot,
+            query,
+            preview: crate::preview::Preview::disabled(),
+            export: Some(
+                serde_json::from_value(json!({
+                    "quality":18,"preset":"veryfast","audio":true
+                }))
+                .unwrap(),
+            ),
+        })
+        .unwrap();
+    let Work::Program(task) = receiver.try_recv().unwrap().1 else {
+        panic!("Expected native Program work")
+    };
+    let captured = task
+        .snapshot
+        .originals
+        .as_ref()
+        .expect("New exports retain source authority");
+    assert!(Arc::ptr_eq(captured, &originals));
+    assert!(task.snapshot.video.sources.is_empty());
+    let sound = captured.audio_resolver().resolve(&path).unwrap();
+    let manifest = captured.manifest().unwrap();
+    let mut jobs = service.jobs.lock().unwrap();
+    let job = jobs
+        .iter_mut()
+        .find(|job| job.id == receipt["id"].as_str().unwrap())
+        .unwrap();
+    assert!(Arc::ptr_eq(job.originals.as_ref().unwrap(), captured));
+    job.original_manifest = Some(manifest);
+    assert!(job.validate_program_sources().is_ok());
+    std::fs::rename(&path, root.join("old.wav")).unwrap();
+    std::fs::write(&path, b"replaced audio").unwrap();
+    assert_eq!(
+        job.validate_program_sources().unwrap_err().1,
+        "SOURCE_CHANGED"
+    );
+    let mut pinned = vec![];
+    std::io::Read::read_to_end(&mut File::open(&sound.path).unwrap(), &mut pinned).unwrap();
+    assert_eq!(pinned, b"original audio");
+    let inputs = task.inputs().unwrap();
+    assert!(program::unchanged(&inputs));
+    assert_eq!(
+        task.generate(
+            &job.directory,
+            &Arc::new(AtomicBool::new(false)),
+            &Mutex::new(Default::default()),
+            &inputs,
+            true
+        )
+        .unwrap_err()
+        .1,
+        "SOURCE_CHANGED"
+    );
+    assert!(!job.directory.join("program.mp4").exists());
+    assert!(!job.directory.join("rendering.mp4").exists());
+    drop(jobs);
+    drop((sound, task, originals, files, service));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change() {
     let jobs = MediaJobs::start().unwrap();
     let directory = jobs.root.join("export-test");
     std::fs::create_dir(&directory).unwrap();
     std::fs::write(directory.join("program.mp4"), b"frozen-output").unwrap();
     let cancel = Arc::new(AtomicBool::new(false));
+    let original_path = jobs.root.join("sound.wav");
+    std::fs::write(&original_path, b"original audio").unwrap();
+    let files = crate::files::Files::new(&jobs.root).unwrap();
+    let originals = Arc::new(crate::frame_sources::FrameSources::capture(&files).unwrap());
+    drop(originals.audio_resolver().resolve(&original_path).unwrap());
+    let manifest = originals.manifest().unwrap();
+    std::fs::remove_file(&original_path).unwrap();
+    assert!(originals.validate_manifest(&manifest).is_err());
     jobs.jobs.lock().unwrap().push_back(Job {
         id: "export-test".into(),
         key: "export:old-revision".into(),
@@ -1857,8 +1973,8 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
             jobs.root.join("source-no-longer-present"),
             "old-identity".into(),
         )],
-        originals: None,
-        original_manifest: None,
+        originals: Some(originals),
+        original_manifest: Some(manifest),
         source_asset: None,
         render_tag: "originals".into(),
         source_version: None,
@@ -1872,6 +1988,8 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         "ready"
     );
     assert!(jobs.export_asset("export-test", "p:1").is_ok());
+    jobs.jobs.lock().unwrap()[0].originals = None;
+    jobs.jobs.lock().unwrap()[0].original_manifest = None;
     let query = ProgramQuery {
         project_epoch: "p:1".into(),
         if_generation: "0".into(),

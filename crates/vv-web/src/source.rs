@@ -504,14 +504,12 @@ impl MediaJobs {
                                 &inputs,
                                 durable,
                             )?;
-                            if task.export.is_none() {
-                                original_manifest = task
-                                    .snapshot
-                                    .originals
-                                    .as_ref()
-                                    .map(|sources| sources.manifest())
-                                    .transpose()?;
-                            }
+                            original_manifest = task
+                                .snapshot
+                                .originals
+                                .as_ref()
+                                .map(|sources| sources.manifest())
+                                .transpose()?;
                             Ok(())
                         }
                     }
@@ -535,14 +533,16 @@ impl MediaJobs {
                     match result {
                         Ok(()) => {
                             job.original_manifest = original_manifest;
-                            let published = match (&worker_exports, &mut job.durable) {
-                                (Some(store), Some(stored)) => {
-                                    store.publish_output(stored).map(|output| {
-                                        stored.record.output = Some(output);
-                                    })
+                            let published = job.validate_program_sources().and_then(|()| {
+                                match (&worker_exports, &mut job.durable) {
+                                    (Some(store), Some(stored)) => {
+                                        store.publish_output(stored).map(|output| {
+                                            stored.record.output = Some(output);
+                                        })
+                                    }
+                                    _ => Ok(()),
                                 }
-                                _ => job.validate_program_sources(),
-                            };
+                            });
                             match published {
                                 Ok(()) => {
                                     job.state = "ready";
@@ -854,7 +854,7 @@ impl MediaJobs {
     pub fn prepare_program(&self, mut task: ProgramTask) -> Result<Value> {
         if task.export.is_some() {
             self.check_exports()?;
-            task.snapshot.originals = None;
+            task.snapshot.video = Default::default();
         }
         task.validate()?;
         if task.export.is_none() {
@@ -867,11 +867,7 @@ impl MediaJobs {
         let key = task.key();
         let inputs = task.inputs()?;
         task.snapshot.video.validate()?;
-        let originals = if task.export.is_none() {
-            task.snapshot.originals.clone()
-        } else {
-            None
-        };
+        let originals = task.snapshot.originals.clone();
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter_mut().find(|j| {
             j.inputs == inputs

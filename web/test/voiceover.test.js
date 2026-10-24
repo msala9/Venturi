@@ -14,8 +14,8 @@ test("voiceover placement remains bound to the captured native revision and arme
 class Control extends EventTarget {
   constructor(value=""){super();this.value=value;this.hidden=false;this.disabled=false;this.checked=false;this.textContent="";}
   click(){if(!this.disabled)this.dispatchEvent(new Event("click"));}
-  replaceChildren(){}
-  append(){}
+  replaceChildren(...children){this.children=children;}
+  append(...children){(this.children??=[]).push(...children);}
   pause(){}
   removeAttribute(name){delete this[name];}
 }
@@ -32,6 +32,36 @@ function harness(options={}) {
   return{voice,root,nodes,target,uploads,commits,lifecycle,video,form,button:(name)=>nodes[`[data-voice-${name}]`]};
 }
 async function settle(){for(let n=0;n<5;n++)await new Promise(resolve=>setImmediate(resolve));}
+
+test('explicit recording format survives empty reopen and is revalidated against the fresh encoder catalog',async()=>{
+  const h=harness(),format=h.form.elements.format,available=[{id:'wav',label:'WAV'},{id:'flac',label:'FLAC'}];h.target.formats=available;
+  await h.voice.open();assert.equal(format.value,'wav');format.value='flac';format.dispatchEvent(new Event('change'));h.button('close').click();await h.voice.open();assert.equal(format.value,'flac');
+  h.button('close').click();h.target.formats=[{id:'wav',label:'WAV current'}];await h.voice.open();assert.equal(format.value,'wav');assert.deepEqual(format.children.map(option=>[option.value,option.label]),[['wav','WAV current']]);
+  h.button('close').click();h.target.formats=[{id:'ogg',label:'Ogg'}];await h.voice.open();assert.equal(format.value,'ogg','A catalog without WAV uses its first supported encoder');
+  h.button('close').click();delete h.target.formats;await h.voice.open();assert.equal(format.value,'wav');
+  h.button('close').click();h.target.formats=available;await h.voice.open();assert.equal(format.value,'flac','Temporary encoder unavailability does not overwrite the explicit preference');
+  assert.deepEqual(h.uploads,[]);assert.deepEqual(h.commits,[]);
+});
+
+test('format choice survives subsequent saved, placed and discarded takes without changing their captured formats',async()=>{
+  const uploads=[],h=harness({fetcher:async(url,request)=>{uploads.push({url,body:request.body});const query=new URL(url,'http://voiceover.test').searchParams,id=url.split('/recordings/')[1].split('?')[0],format=query.get('format');return {ok:true,json:async()=>({id,frames:5,sample_rate:48000,channels:1,format,path_token:`${id}.${format}`})};}});
+  h.target.formats=[{id:'wav',label:'WAV'},{id:'flac',label:'FLAC'}];await h.voice.open();const format=h.form.elements.format;format.value='flac';format.dispatchEvent(new Event('change'));
+  for(let index=0;index<3;index++){
+    h.button('start').click();await settle();h.button('stop').click();await settle();assert.equal(h.button('apply').disabled,false);assert.equal(new URL(uploads[index].url,'http://voiceover.test').searchParams.get('format'),'flac');
+    if(index===0){h.button('apply').click();await settle();await h.voice.open();assert.equal(format.value,'flac');}
+    else if(index===1){h.button('discard').click();h.button('close').click();await h.voice.open();assert.equal(format.value,'flac');}
+  }
+  h.target.formats=[{id:'wav',label:'WAV'}];h.button('start').click();await settle();h.button('stop').click();await settle();assert.equal(new URL(uploads[3].url,'http://voiceover.test').searchParams.get('format'),'wav','Starting the next take revalidates even without reopening the dialog');
+  assert.equal(h.commits.length,1);assert.equal(uploads.length,4);assert.equal(new Set(uploads.map(upload=>upload.url.split('?')[0])).size,4);
+});
+
+test('changed catalog or next-take preference never rewrites a retained unknown upload identity',async()=>{
+  let failed=true;const uploads=[],h=harness({api:async()=>{throw Error('No saved receipt');},fetcher:async(url,request)=>{uploads.push({url,body:request.body});if(failed){failed=false;throw new TypeError('Connection lost');}return {ok:true,json:async()=>({id:url.split('/recordings/')[1].split('?')[0],frames:5,sample_rate:48000,channels:1,format:'flac',path_token:'retained.flac'})};}});
+  h.target.formats=[{id:'wav',label:'WAV'},{id:'flac',label:'FLAC'}];await h.voice.open();const format=h.form.elements.format;format.value='flac';format.dispatchEvent(new Event('change'));h.button('start').click();await settle();h.button('stop').click();await settle();assert.match(h.nodes.output.textContent,/take retained locally/);
+  h.button('close').click();h.target.formats=[{id:'wav',label:'WAV'}];await h.voice.open();assert.equal(format.value,'flac','Opening a retained take does not replace its catalog or captured state');
+  format.value='wav';format.dispatchEvent(new Event('change'));h.button('save').click();await settle();assert.equal(uploads.length,2);assert.equal(uploads[1].url,uploads[0].url);assert.equal(uploads[1].body,uploads[0].body);assert.equal(h.button('apply').disabled,false);
+  h.button('discard').click();h.button('close').click();await h.voice.open();assert.equal(format.value,'wav');assert.equal(h.commits.length,0);
+});
 
 test('live recording progress binds complete stereo peaks to its captured context while stop keeps every PCM sample',async()=>{
   let callbacks;const progress=[],uploads=[],chunks=[new Float32Array(500),new Float32Array(1464),new Float32Array([.7,-.9])];

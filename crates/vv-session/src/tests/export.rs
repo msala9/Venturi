@@ -166,6 +166,32 @@ impl ResolverFixture {
         std::fs::write(&path, bytes).unwrap();
         path
     }
+    fn audio(&self) -> PathBuf {
+        let path = self.root.join("source.wav");
+        let frames = PROJECT_SAMPLE_RATE as usize;
+        let bytes = (frames * 4) as u32;
+        let mut wav = Vec::with_capacity(bytes as usize + 44);
+        wav.extend_from_slice(b"RIFF");
+        wav.extend_from_slice(&(36 + bytes).to_le_bytes());
+        wav.extend_from_slice(b"WAVEfmt ");
+        wav.extend_from_slice(&16_u32.to_le_bytes());
+        wav.extend_from_slice(&1_u16.to_le_bytes());
+        wav.extend_from_slice(&2_u16.to_le_bytes());
+        wav.extend_from_slice(&PROJECT_SAMPLE_RATE.to_le_bytes());
+        wav.extend_from_slice(&(PROJECT_SAMPLE_RATE * 4).to_le_bytes());
+        wav.extend_from_slice(&4_u16.to_le_bytes());
+        wav.extend_from_slice(&16_u16.to_le_bytes());
+        wav.extend_from_slice(b"data");
+        wav.extend_from_slice(&bytes.to_le_bytes());
+        for frame in 0..frames {
+            for frequency in [0.071_f32, 0.113_f32] {
+                let sample = 0.25 * (frame as f32 * frequency).sin();
+                wav.extend_from_slice(&((sample * i16::MAX as f32) as i16).to_le_bytes());
+            }
+        }
+        std::fs::write(&path, wav).unwrap();
+        path
+    }
 }
 #[cfg(target_os = "linux")]
 impl Drop for ResolverFixture {
@@ -205,6 +231,216 @@ impl VideoSourceResolver for TestVideoResolver {
             lease,
         })
     }
+}
+
+#[cfg(target_os = "linux")]
+struct TestAudioResolver {
+    paths: HashMap<PathBuf, PathBuf>,
+    calls: Mutex<Vec<PathBuf>>,
+    dropped: std::sync::mpsc::Sender<()>,
+}
+
+#[cfg(target_os = "linux")]
+impl AudioSourceResolver for TestAudioResolver {
+    fn resolve(
+        &self,
+        original: &Path,
+    ) -> Result<crate::audio_render::ResolvedAudioSource, ExportError> {
+        use std::os::fd::AsRawFd;
+        struct Lease {
+            file: std::fs::File,
+            dropped: std::sync::mpsc::Sender<()>,
+        }
+        impl Drop for Lease {
+            fn drop(&mut self) {
+                let _ = self.dropped.send(());
+            }
+        }
+        self.calls.lock().unwrap().push(original.to_owned());
+        let path = self
+            .paths
+            .get(original)
+            .ok_or_else(|| ExportError::Failed("export audio resolver refused source".into()))?;
+        let lease = Arc::new(Lease {
+            file: std::fs::File::open(path).map_err(ExportError::failed)?,
+            dropped: self.dropped.clone(),
+        });
+        Ok(crate::audio_render::ResolvedAudioSource {
+            path: PathBuf::from(format!("/proc/self/fd/{}", lease.file.as_raw_fd())),
+            lease,
+        })
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn export_audio_fixture(fixture: &ResolverFixture) -> (Project, TimelineId, MediaId) {
+    let audio_path = fixture.audio();
+    let meta = vv_media::probe_media(&audio_path).unwrap();
+    let mut project = Project::default();
+    let audio = project.media_pool.insert(vv_core::MediaItem {
+        path: audio_path,
+        meta: meta.clone(),
+        content_hash: 83,
+        compound: None,
+        folder: None,
+    });
+    let mut video_track = Track::new(TrackKind::Video);
+    video_track.insert_sorted(solid_color_clip(1501, 0, 4, red()));
+    let mut audio_track = Track::new(TrackKind::Audio);
+    audio_track.insert_sorted(Clip::from_source_range(
+        ClipId(1502),
+        ClipSource::Media(audio),
+        0,
+        meta.duration_frames,
+        0,
+        vv_core::Rational::conform_rate(vv_core::Rational::new(24, 1), meta.fps),
+    ));
+    let mut timeline = timeline_with(vec![video_track, audio_track]);
+    timeline.fps = vv_core::Rational::new(24, 1);
+    timeline.resolution = (16, 16);
+    timeline.master.effects.push(vv_core::AudioEffect::new(
+        vv_core::AudioEffectKind::Normalize {
+            target_db: -1.0,
+            mode: vv_core::NormalizeMode::SamplePeak,
+            set_level: vv_core::SetLevel::Relative,
+        },
+    ));
+    let timeline = project.timelines.insert(timeline);
+    (project, timeline, audio)
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn export_source_resolvers_preserve_native_pcm_encoded_output_and_project_with_pinned_inputs() {
+    let fixture = ResolverFixture::new();
+    let (mut project, timeline, audio) = export_audio_fixture(&fixture);
+    let moving = fixture.moving();
+    let video = project.media_pool.insert(vv_core::MediaItem {
+        path: moving.clone(),
+        meta: vv_media::probe_media(&moving).unwrap(),
+        content_hash: 84,
+        compound: None,
+        folder: None,
+    });
+    project.timelines[timeline].tracks[0].clips[0].source = ClipSource::Media(video);
+    let expected_path = fixture.root.join("native.mp4");
+    let settings = ExportSettings::new(expected_path.clone());
+    let cancel = Arc::new(AtomicBool::new(false));
+    let mut expected_pcm = Vec::new();
+    export_timeline_with_gpu_observed(
+        &project,
+        timeline,
+        &settings,
+        0..4,
+        &Mutex::new(ExportProgress::default()),
+        &cancel,
+        || Ok(vv_render::Compositor::new_headless()),
+        |_| Ok(()),
+        2,
+        &mut |_, pcm, _| expected_pcm.extend_from_slice(pcm),
+    )
+    .unwrap();
+    assert!(expected_pcm.iter().any(|sample| sample.abs() > 0.1));
+    let audio_path = project.media_pool[audio].path.clone();
+    project.media_pool[audio].path = fixture.root.join("virtual-original.wav");
+    project.media_pool[video].path = fixture.root.join("virtual-original.mp4");
+    let original = serde_json::to_value(&project).unwrap();
+    let (dropped, receiver) = std::sync::mpsc::channel();
+    let audio_resolver = Arc::new(TestAudioResolver {
+        paths: HashMap::from([(project.media_pool[audio].path.clone(), audio_path)]),
+        calls: Default::default(),
+        dropped,
+    });
+    let video_resolver = Arc::new(TestVideoResolver {
+        paths: HashMap::from([(video, moving)]),
+        ..Default::default()
+    });
+    let actual_path = fixture.root.join("resolved.mp4");
+    let settings = ExportSettings::new(actual_path.clone());
+    let progress = Mutex::new(ExportProgress::default());
+    let mut actual_pcm = Vec::new();
+    export_timeline_preview_with_gpu_with_resolvers(
+        &project,
+        timeline,
+        &settings,
+        0..4,
+        &progress,
+        &cancel,
+        || Ok(vv_render::Compositor::new_headless()),
+        |_| Ok(()),
+        2,
+        Some(&mut |_, pcm, _| actual_pcm.extend_from_slice(pcm)),
+        &PreviewVideoSources::new(),
+        Some(video_resolver.clone()),
+        Some(audio_resolver.clone()),
+    )
+    .unwrap();
+    assert_eq!(actual_pcm, expected_pcm);
+    assert_eq!(
+        std::fs::read(actual_path).unwrap(),
+        std::fs::read(expected_path).unwrap()
+    );
+    assert!(progress.lock().unwrap().done);
+    let calls = audio_resolver.calls.lock().unwrap();
+    assert!(!calls.is_empty());
+    assert!(
+        calls
+            .iter()
+            .all(|path| path == &project.media_pool[audio].path)
+    );
+    for _ in 0..calls.len() {
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap();
+    }
+    assert_eq!(video_resolver.calls.lock().unwrap().len(), 1);
+    assert_eq!(serde_json::to_value(&project).unwrap(), original);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn export_source_resolvers_refuse_native_audio_before_normalize_fallback_can_publish_a_movie() {
+    let fixture = ResolverFixture::new();
+    let (project, timeline, audio) = export_audio_fixture(&fixture);
+    assert!(project.media_pool[audio].path.is_file());
+    let before = serde_json::to_value(&project).unwrap();
+    let (dropped, _) = std::sync::mpsc::channel();
+    let resolver = Arc::new(TestAudioResolver {
+        paths: HashMap::new(),
+        calls: Default::default(),
+        dropped,
+    });
+    let mut settings = ExportSettings::new(fixture.root.join("refused.mp4"));
+    settings.audio_render_origin = Some(0);
+    let progress = Mutex::new(ExportProgress::default());
+    let result = export_timeline_preview_with_gpu_with_resolvers(
+        &project,
+        timeline,
+        &settings,
+        0..4,
+        &progress,
+        &Arc::new(AtomicBool::new(false)),
+        || Ok(vv_render::Compositor::new_headless()),
+        |_| Ok(()),
+        2,
+        None,
+        &PreviewVideoSources::new(),
+        None,
+        Some(resolver.clone()),
+    );
+    assert_eq!(
+        result.unwrap_err(),
+        ExportError::Failed("export audio resolver refused source".into())
+    );
+    assert!(!progress.lock().unwrap().done);
+    let calls = resolver.calls.lock().unwrap();
+    assert!(!calls.is_empty());
+    assert!(
+        calls
+            .iter()
+            .all(|path| path == &project.media_pool[audio].path)
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
 }
 
 #[cfg(target_os = "linux")]

@@ -14,7 +14,8 @@ use vv_core::{Clip, ClipId, FrameIdx, MediaId, Project, Timeline, TimelineId, Tr
 use vv_audio::mixer::{PROJECT_SAMPLE_RATE, timeline_frame_to_sample};
 
 use crate::audio_render::{
-    AudioObserver, LevelCache, render_offline, render_offline_from_origin, render_offline_observed,
+    AudioObserver, AudioSourceResolver, LevelCache, render_offline, render_offline_from_origin,
+    render_offline_observed,
 };
 
 use crate::frame_provider::{
@@ -418,6 +419,7 @@ pub fn export_timeline_with_gpu<G>(
         None,
         None,
         None,
+        None,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -444,6 +446,7 @@ pub fn export_timeline_with_gpu_cancellable<G>(
         progress,
         cancel,
         Some(cancel.clone()),
+        None,
         None,
         None,
         None,
@@ -475,6 +478,7 @@ pub fn export_timeline_with_gpu_observed<G>(
         cancel,
         Some(cancel.clone()),
         Some(observer),
+        None,
         None,
         None,
         create_compositor,
@@ -527,6 +531,39 @@ pub fn export_timeline_preview_with_gpu_with_resolver<G>(
     sources: &PreviewVideoSources,
     resolver: Option<Arc<dyn VideoSourceResolver>>,
 ) -> Result<(), ExportError> {
+    export_timeline_preview_with_gpu_with_resolvers(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+        observer,
+        sources,
+        resolver,
+        None,
+    )
+}
+
+/// Resolves requested video and original audio without changing native project paths.
+pub fn export_timeline_preview_with_gpu_with_resolvers<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &Arc<AtomicBool>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+    observer: Option<&mut AudioObserver<'_>>,
+    sources: &PreviewVideoSources,
+    video_resolver: Option<Arc<dyn VideoSourceResolver>>,
+    audio_resolver: Option<Arc<dyn AudioSourceResolver>>,
+) -> Result<(), ExportError> {
     export_timeline_configured(
         project,
         timeline_id,
@@ -537,7 +574,8 @@ pub fn export_timeline_preview_with_gpu_with_resolver<G>(
         Some(cancel.clone()),
         observer,
         Some(sources),
-        resolver,
+        video_resolver,
+        audio_resolver,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -555,6 +593,7 @@ fn export_timeline_configured<G>(
     audio_observer: Option<&mut AudioObserver<'_>>,
     video_sources: Option<&PreviewVideoSources>,
     video_resolver: Option<Arc<dyn VideoSourceResolver>>,
+    audio_resolver: Option<Arc<dyn AudioSourceResolver>>,
     create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
     acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
     cpu_threads: usize,
@@ -634,6 +673,7 @@ fn export_timeline_configured<G>(
             // Stops once the encoder side is gone.
             scope.spawn(move || {
                 let levels = &mut LevelCache::on_disk();
+                levels.set_source_resolver(audio_resolver);
                 if cpu_threads > 0 {
                     levels.threads = cpu_threads;
                 }

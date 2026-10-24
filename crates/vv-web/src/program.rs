@@ -784,9 +784,7 @@ impl ProgramTask {
         durable: bool,
     ) -> Result<()> {
         self.snapshot.video.validate()?;
-        if self.export.is_none()
-            && let Some(originals) = &self.snapshot.originals
-        {
+        if let Some(originals) = &self.snapshot.originals {
             originals.validate()?;
         }
         if !unchanged(inputs) {
@@ -877,9 +875,7 @@ impl ProgramTask {
             return Err(ApiError::invalid("Program preparation was canceled"));
         }
         self.snapshot.video.validate()?;
-        if self.export.is_none()
-            && let Some(originals) = &self.snapshot.originals
-        {
+        if let Some(originals) = &self.snapshot.originals {
             originals.validate()?;
         }
         if !unchanged(inputs) {

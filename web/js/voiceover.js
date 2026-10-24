@@ -16,8 +16,17 @@ export function voiceoverPlaybackClock(clock,target){
 }
 export function createVoiceover({root,getTarget,getClientId,canCommit,commit,playback,notice,onProgress=()=>{},getInput=microphoneInput,captureFactory=createCapture,api=request,fetcher=fetch,confirmDiscard=(message)=>window.confirm(message)}) {
   const status=root.querySelector("output"),start=root.querySelector("[data-voice-start]"),stop=root.querySelector("[data-voice-stop]"),save=root.querySelector("[data-voice-save]"),apply=root.querySelector("[data-voice-apply]"),rebind=root.querySelector("[data-voice-rebind]"),close=root.querySelector("[data-voice-close]"),form=root.querySelector("form"),audio=root.querySelector("audio"),download=root.querySelector("[data-voice-download]"),backup=root.querySelector("[data-voice-backup]"),meter=root.querySelector("meter");
-  let take=null,controller=null,sequence=0,phase="idle",stopping=false;
+  let take=null,controller=null,sequence=0,phase="idle",stopping=false,preferredFormat=null;
   const discard=root.querySelector("[data-voice-discard]");
+  function formats(target){
+    const available=Array.isArray(target?.formats)?target.formats.filter(format=>typeof format?.id==='string' && format.id && typeof format.label==='string'):[];
+    return available.length?available:[{id:'wav',label:'WAV'}];
+  }
+  function refreshFormat(target){
+    const available=formats(target),choice=available.find(format=>format.id===preferredFormat) || available.find(format=>format.id==='wav') || available[0];
+    form.elements.format.replaceChildren(...available.map(format=>new Option(format.label,format.id)));form.elements.format.value=choice.id;
+  }
+  form.elements.format.addEventListener('change',()=>{if(!form.elements.format.disabled && formats(getTarget()).some(format=>format.id===form.elements.format.value))preferredFormat=form.elements.format.value;});
   form.addEventListener("submit",(event)=>event.preventDefault());
   const current=()=>take && voiceoverIdentity(getTarget())===take.identity;
   function resetPreview(){audio.pause();audio.hidden=true;audio.removeAttribute("src");download.hidden=true;backup.hidden=true;meter.value=0;}
@@ -98,6 +107,7 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
     if(phase==="waiting"){const captured=take,seq=sequence;await playback.start();if(seq===sequence && take===captured && phase==='waiting' && !playback.video.paused)begin(captured);return;}
     const currentTarget=getTarget(),target=currentTarget?{...currentTarget,tracks:[...currentTarget.tracks]}:null;if(!canCommit() || !target?.tracks.length)return;
     if(take?.blob && !take.receipt)return;
+    refreshFormat(target);
     if(take?.backup)URL.revokeObjectURL(take.backup);
     const seq=++sequence;controller=new AbortController();const signal=controller.signal;
     take={id:crypto.randomUUID(),target,identity:voiceoverIdentity(target),format:form.elements.format.value,channels:Number(form.elements.channels.value),chunks:[],frames:0,blob:null,receipt:null,capture:null,started:false,originSample:null,followsPlayback:form.elements.playback.checked && target.canPlayback};const captured=take;
@@ -144,7 +154,7 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
     syncPlayback,
     async open(){
       root.showModal();const target=getTarget();
-      if(!take){resetPreview();form.elements.format.replaceChildren(...(target?.formats || [{id:"wav",label:"WAV"}]).map((format)=>new Option(format.label,format.id)));form.elements.format.value="wav";form.elements.playback.checked=!!target?.canPlayback;form.elements.start.value=target?.start_frame || 0;status.textContent=target?.tracks.length?`Ready · armed tracks ${target.tracks.join(", ")} · recordings save to this server project`:"Save the project and arm unlocked audio tracks in the Inspector first";}
+      if(!take){resetPreview();refreshFormat(target);form.elements.playback.checked=!!target?.canPlayback;form.elements.start.value=target?.start_frame || 0;status.textContent=target?.tracks.length?`Ready · armed tracks ${target.tracks.join(", ")} · recordings save to this server project`:"Save the project and arm unlocked audio tracks in the Inspector first";}
       controls();
       try {const devices=await navigator.mediaDevices?.enumerateDevices();if(devices){const old=form.elements.device.value;form.elements.device.replaceChildren(new Option("Default microphone",""));devices.filter((device)=>device.kind==="audioinput" && device.deviceId!=="default").forEach((device,index)=>form.elements.device.append(new Option(device.label || `Audio input ${index+1}`,device.deviceId)));form.elements.device.value=old;}}catch{}
     },

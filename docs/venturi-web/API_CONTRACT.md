@@ -1,5 +1,25 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Original audio in composed playback and new exports
+
+New Program movies and exports pass the existing root-bound audio resolver into
+the native export pipeline alongside its video resolver. Actual native audio
+reads, including Normalize and continuation preroll, use pinned original files;
+the native Project paths, metadata, clocks and DSP remain unchanged. Exports
+force original video selection, independently of preview proxies. Touched-source
+witnesses are checked before generation and publication. A changed or refused
+source fails generation rather than silently using an unrestricted path.
+
+Already completed exports remain immutable downloads. Their status, history,
+download and restart recovery validate the saved output, without requiring the
+original inputs to remain available. No endpoint or request schema changes.
+
+Voiceover retains an explicit recording format across empty dialog reopen and
+subsequent takes in the current browser controller. Each new take checks the
+current native encoder catalog; an unavailable preference falls back to WAV or
+the first available format. Retained takes and uncertain upload retries keep
+their captured format, bytes and recording ID.
+
 ## Explicit destination-key replacement
 
 Existing `edit_key_selection.edit` and `edit_curve_keys.edit` accept optional

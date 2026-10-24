@@ -651,7 +651,7 @@ impl Preview {
             })
         };
         let result = if snapshot.originals.is_some() || !snapshot.video.sources.is_empty() {
-            vv_session::export::export_timeline_preview_with_gpu_with_resolver(
+            vv_session::export::export_timeline_preview_with_gpu_with_resolvers(
                 &snapshot.project,
                 snapshot.timeline,
                 settings,
@@ -667,6 +667,10 @@ impl Preview {
                     .originals
                     .as_ref()
                     .map(|sources| sources.resolver(&snapshot.video.sources)),
+                snapshot
+                    .originals
+                    .as_ref()
+                    .map(|sources| sources.audio_resolver()),
             )
         } else {
             match observer {

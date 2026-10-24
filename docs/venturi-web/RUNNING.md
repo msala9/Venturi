@@ -1,5 +1,18 @@
 # Running the implemented host
 
+## Current immutable R7 package - 2026-10-24
+
+The live cf00 runtime below is now packaged as
+`venturi-web-linux-x86_64-cf00a18d78dc-r7-4bcfc52ca353.tar` in the existing
+delivery directory:91463680bytes, SHA256
+`4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d`.
+Binary source67882ef and docs1487519 are separately bound; this receipt
+postdates the archive's unchanged pending-package docs snapshot. All members,
+launcher --help, three notice companions and reviewed loader/zlib bindings pass.
+Peak237674496bytes/zero events at1CPU/512MiB/noSwap; live Session/16 Saved/Recovery
+and prior R6 are unchanged. See evidence/f7-current-prebuilt-r7-workflow.json.
+No new runback/reboot/M7 claim; remaining FINAL_CHECKS stay open.
+
 ## Current owned mask-selection runtime - 2026-10-24
 
 The existing Windows URL remains http://127.0.0.1:8855/.
@@ -13,7 +26,7 @@ Undo/Redo and Save/reopen. See
 evidence/f1-f3-chrome-mask-handles-lanes-workflow.json.
 The212-client/three-syntax gate and incremental build pass; native/Clippy proof
 is reused. Actual GUI current150089728bytes/lifetime peak233443328bytes, events0;
-not browser memory or an isolated benchmark. Current packaging is pending;
+not browser memory or an isolated benchmark. Current R7 packaging is complete;
 R6 and the runtime/deployment records below remain historical and immutable.
 Do not start a duplicate server on occupied8855.
 

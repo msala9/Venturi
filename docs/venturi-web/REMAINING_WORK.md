@@ -13,6 +13,14 @@ device/soak prerequisites; do not promote rows merely by deferring their checks.
 
 ## Concrete production work
 
+- **Current R7 delivery complete:** verified cf00 archive91463680bytes binds
+  binary source67882ef separately from docs1487519. Streaming member/launcher/
+  notice/189-loader/zlib checks pass at237674496bytes peak and zero events;
+  live Session/16 Saved/Recovery and prior R6 remain exact. See
+  evidence/f7-current-prebuilt-r7-workflow.json and BINARY_DELIVERY.md. This
+  publication postdates the unchanged archive snapshot; earlier pending notes
+  are historical. Remaining FINAL_CHECKS and ledger62/28/2 are unchanged.
+
 - **Mask handles and cross-parameter lanes qualified:** source67882ef retains
   valid selection before native refresh reaches Inspector/Viewer, keeping the
   chosen mask after its own ACK. Actual four shape-handle edits and two lane

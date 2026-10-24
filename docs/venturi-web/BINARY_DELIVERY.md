@@ -1,5 +1,21 @@
 # Prebuilt Linux development candidate
 
+## Current immutable R7 package - 2026-10-24
+
+The verified additive archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-cf00a18d78dc-r7-4bcfc52ca353.tar`,
+91463680bytes, SHA256
+`4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d`.
+Binary source67882ef and packaged documentation source1487519 are separately
+bound. This receipt postdates the immutable docs snapshot, whose pending-package
+wording remains unchanged inside the archive. See evidence/f7-current-prebuilt-r7-workflow.json.
+Streaming verification checks every member and launcher --help, all three
+original notice companions,189 loader identities,199 notice texts and the
+reviewed zlib binding. One1CPU/512MiB/noSwap assembly peaks237674496bytes with
+zero memory events, preserving prior R6 and the live cf00/PID529488 Session,
+16 Saved and Recovery. No new runback/reboot or full M7 acceptance is claimed;
+ledger remains62/28/2. Earlier packaging-pending notes below are historical.
+
 ## Current mask-selection correction - 2026-10-24
 
 Live cf00a18d78dc/source67882ef/PID529488 retains valid clip/mask selection

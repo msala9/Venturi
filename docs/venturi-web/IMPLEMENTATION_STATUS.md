@@ -1,5 +1,19 @@
 # Implementation status
 
+## Current additive R7 delivery complete - 2026-10-24
+
+The cf00 archive is verified:91463680bytes, SHA256
+4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d.
+Binary source67882ef and docs1487519 are separately bound. This publication
+receipt postdates the immutable packaged docs, whose pending wording remains
+unchanged. All members/launcher --help, three notice companions,189 loaders,
+199 notice texts and reviewed zlib provenance pass streaming verification.
+Assembly peak237674496bytes/events0 at1CPU/512MiB/noSwap; prior R6 and current
+cf00/PID529488 Session/16 Saved/Recovery remain exact. See
+evidence/f7-current-prebuilt-r7-workflow.json and BINARY_DELIVERY.md.
+Earlier pending-package notes below are historical; no new runback/reboot/M7
+acceptance or row promotion. Remaining FINAL_CHECKS continue; ledger62/28/2.
+
 ## Mask handle continuity and cross-parameter lanes qualified - 2026-10-24
 
 Source67882ef retains valid clip selection atomically during native refresh,

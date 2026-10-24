@@ -1,5 +1,21 @@
 # Release checklist
 
+## Current R7 packaging receipt - 2026-10-24
+
+R7 assembly/stream verification is complete: all members, launcher --help,
+three immutable notice companions,189 loader identities,199 notice texts and
+reviewed zlib provenance pass. The archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-cf00a18d78dc-r7-4bcfc52ca353.tar`,
+91463680bytes, SHA256
+`4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d`.
+Binary source67882ef and docs1487519 are separate; this publication receipt
+postdates the immutable docs snapshot, whose pending wording is preserved.
+One1CPU/512MiB/noSwap job peaks237674496bytes with zero memory events and
+preserves live cf00/PID529488 Session/16 Saved/Recovery and prior R6. See
+evidence/f7-current-prebuilt-r7-workflow.json. Earlier pending notes below are
+historical. Runback/reboot and the remaining FINAL_CHECKS/M7 are not newly
+qualified; ledger remains62/28/2 and no functional row is promoted.
+
 ## Current mask-selection correction - 2026-10-24
 
 Live cf00a18d78dc/source67882ef/PID529488 retains valid clip/mask selection

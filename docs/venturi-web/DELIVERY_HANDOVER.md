@@ -1,5 +1,21 @@
 # Usable editing workflow — handover
 
+## Current immutable R7 delivery - 2026-10-24
+
+Current cf00/PID529488 now has the verified additive archive
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-cf00a18d78dc-r7-4bcfc52ca353.tar`,
+91463680bytes, SHA256
+`4bcfc52ca353ff02d20b9b16f831d08643000676e61fe4dd8023a21ac805779d`.
+Binary source67882ef is separate from packaged docs1487519. This receipt
+postdates that immutable snapshot; its pending-package wording is retained.
+Every member, launcher --help, three original notice companions,189 loaders,
+199 notice texts and reviewed zlib provenance pass streaming verification.
+Assembly uses1CPU/512MiB/noSwap, peak237674496bytes/zero memory events; live
+Session/16 Saved/Recovery and prior R6 remain exact. See
+evidence/f7-current-prebuilt-r7-workflow.json. Earlier pending notes below are
+historical; no new runback, reboot or M7 qualification is claimed. Remaining
+FINAL_CHECKS continue unchanged; ledger62/28/2.
+
 ## Current mask-selection correction - 2026-10-24
 
 Live cf00a18d78dc/source67882ef/PID529488 retains valid clip/mask selection

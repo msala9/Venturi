@@ -11,14 +11,14 @@ functionality. A physical-input blocker does not block unrelated implementation.
   native playing/stopped state and selected tempo. Native `main.rs` transport
   seek and `timeline_audio.rs::seek_sample` preserve playback; arrow stepping
   deliberately pauses. The old Web `seek` unconditionally stopped Program.
-  The current candidate adds guarded seek/resume, fresh native audio origin,
+  Source8995296 delivers guarded seek/resume, fresh native audio origin,
   backward seeking and cancellation. Qualification is tracked separately.
 - **Fullscreen:** native `main.rs::show_fullscreen_viewer` fits the image to the
   entire screen and reveals transport only in the bottom90px hover zone. Web
   currently only calls `requestFullscreen` on the ordinary Viewer; its header,
   controls and custom zoom remain. Implement the native presentation and retain
   keyboard access, Escape, Source/Program ownership and existing transport.
-- **Library startup while busy:** the candidate tolerates a temporary catalog
+- **Library startup while busy:** source8995296 tolerates a temporary catalog
   lock after validating the configured directories, retains local editing and
   retries deferred receipts on explicit Refresh. All operation guards remain.
   This does not implement startup with an inaccessible configured root.
@@ -38,8 +38,8 @@ feature passes every requirement or cannot contain defects.
 | Partial capability | Concrete next work |
 |---|---|
 | source_viewer | Qualification: representative long moving media, cold preparation, sustained playback and actual audio/device behavior. Existing full-source seeking/quality/continuation evidence is retained. |
-| program_viewer | Qualify the Program navigation fix, then representative long-source playback/cold preparation and audio/device requirements. |
-| transport_play_pause | Qualify seek/resume at retained tempo, paused seeks and cancellation. Keep native paused arrow stepping; retain physical held-key/output checks. |
+| program_viewer | Keyboard1x/2x navigation is qualified; complete physical ruler checks, then representative long-source playback/cold preparation and audio/device requirements. |
+| transport_play_pause | Keyboard1x/2x seek/resume and paused navigation are qualified; complete physical ruler/cancellation checks. Keep native paused arrow stepping; retain physical held-key/output checks. |
 | viewer_fullscreen | Implement full-area Fit and bottom hover transport described above; qualify keyboard entry/exit and Source/Program layout. |
 | thumbnail_workers | Qualification: dense visible demand/cold scheduling and bounded cache behavior; retain existing native producer and visibility/recovery evidence. |
 | waveforms_cached | Qualification: dense/large-media demand and physical gesture/DPI behavior; retain native fractional-clock/gain/freeze and existing cache proof. |

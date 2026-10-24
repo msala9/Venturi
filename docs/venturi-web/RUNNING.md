@@ -1,6 +1,30 @@
 # Running the implemented host
 
-## Current working instance — 2026-10-24
+## Current working instance — Program seek delivery, 2026-10-24
+
+Use **http://127.0.0.1:8855/** and the existing Windows tunnel/tab.
+Source `8995296`, immutable binary
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-45ab6c3fc431`, SHA256
+`45ab6c3fc431c4eb7967285c5276fe25a6bb821b6327da668eff0102f4f6436e`.
+Current unit is `venturi-web-halo1-program-seek.service`, captured PID438091;
+re-read PID/executable/args/Saved/history/jobs before any operation.
+
+It retains the exact project/NAS/ds4/GPU arguments and resource properties
+shown below:8CPU/4GiB/noSwap, Nice19, IOWeight10, OOMScoreAdjust1000, Tasks128.
+Root is `/home/halo/VenturiWeb-color-audio-controls-20261023`; original
+`Venturi_Keyframe_Replacement_V1.vvproj` is restored Saved at frame48/1x and
+empty history. Saved acceptance copy is `Venturi_Seek_Playback_V1.vvproj`.
+R9700 Vulkan preview/playback/export are available. The preceding owned77d7
+and intermediate d100 services are stopped; their immutable binaries remain.
+No foreign service was operated by this delivery; no driver or mount was changed. This is still a development
+delivery with full F1-F7/M7 acceptance open; see REMAINING_WORK.md and
+`evidence/f2-f5-program-seek-library-workflow.json`.
+
+The current45ab executable is newer than the immutable77d7 packaged archive.
+Do not mistake old captured PIDs or historical commands below for the live unit.
+
+
+## Earlier working instance (historical) — 2026-10-24
 
 Open **http://127.0.0.1:8855/** through the existing Windows SSH tunnel
 (captured PID 23536). Keep that tunnel and the existing browser intact. No local

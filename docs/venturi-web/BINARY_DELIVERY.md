@@ -1,5 +1,14 @@
 # Prebuilt Linux development candidate
 
+## Newer live executable — 2026-10-24
+
+Current source8995296/runtime45ab6c3fc431 supplies Program seek and transient
+Library startup fixes, qualified in `evidence/f2-f5-program-seek-library-workflow.json`.
+RUNNING.md identifies the live unit and guarded configuration. Existing77d7
+archives/notices remain immutable, version-bound prior snapshots. No new archive
+is assembled for this increment; full release acceptance remains open.
+
+
 ## Current verified package — 2026-10-24
 
 The current package contains the same bf0b322/77d7 executable as live port8855,

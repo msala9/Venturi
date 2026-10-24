@@ -36,8 +36,8 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8855/**, source `b8d6133`,
-runtime `2dbc9697d6e7`. All five native Inspector choice previews now pass their
+The current halo1 delivery is **http://127.0.0.1:8855/**, source `8995296`,
+runtime `45ab6c3fc431`. All five native Inspector choice previews now pass their
 affected gate and live native draft/cancel checks; the actual native-resolution
 4K import/save/reopen/export workflow also passes within its synthetic48-frame
 scope. See [implementation status](IMPLEMENTATION_STATUS.md),

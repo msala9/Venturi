@@ -1,0 +1,196 @@
+{
+  "date": "2026-10-24",
+  "source_commit": "89952969fa49e863e15e255b5b0ed53bbefa71bf",
+  "result": "Two production fixes delivered; full90/F1-F7/M7 remains active.",
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-program-seek.service",
+    "captured_pid": "438091",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-45ab6c3fc431",
+    "sha256": "45ab6c3fc431c4eb7967285c5276fe25a6bb821b6327da668eff0102f4f6436e",
+    "gpu": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "original_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "original_project_sha256": "a027345b1bc603759f2901a4557459c0e580184cc92711356d9ae426dac62d72",
+    "restored_frame": 48,
+    "restored_speed": 1,
+    "saved": true,
+    "empty_history": true
+  },
+  "implemented": [
+    "Program ruler and position navigation capture playing/stopped intent before the first draft sample, pause local media without pointermove HTTP, and seek/resume once on release. Paused seeks and intentional arrow stepping remain stopped.",
+    "Guarded Program seek binds a fresh native audio origin, validates the previous composition independently of the already-updated playhead, retains selected1/2/4/8x tempo, and rejects stale/canceled/late owners. The existing fast-audio adapter is unchanged.",
+    "Explicit Play during a paused still seek starts playback; an in-flight resumed seek remains explicitly cancelable. Escape, pointer cancellation, blur, visibility, mode and refresh revoke owned resume intent.",
+    "A native asset catalog transiently busy at startup no longer aborts Editor after its configured directories are validated. Local edit/Undo/Redo/Save remain available; explicit catalog reads retry deferred native completion receipts. Operation locks, root validation, CAS, foreign journals and durable receipts stay active."
+  ],
+  "gate": {
+    "client_unique": 369,
+    "initial_client_passed": 368,
+    "followup_client_passed": 102,
+    "followup_overlaps_initial": true,
+    "native_cases": 25,
+    "native_breakdown": {
+      "startup": 5,
+      "receipt": 1,
+      "asset_store": 17,
+      "preset_guard": 1,
+      "embedded_modules": 1
+    },
+    "native_r3_reused_in_r4": true,
+    "r4_native_reused_in_r5": true,
+    "rust_format": true,
+    "all_target_clippy": true,
+    "embedded_build": true,
+    "r4_peak_bytes": 2025639936,
+    "r5_peak_bytes": 1569878016,
+    "r4_memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "r5_memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "host": "halo1",
+    "cpus": 8,
+    "memory_gib": 4,
+    "swap": false,
+    "serial": true
+  },
+  "actual_windows": [
+    {
+      "action": "Home from paused frame48 then Play",
+      "observed_frame": 0,
+      "paused": false,
+      "audio_origin_frame": 0
+    },
+    {
+      "action": "PageUp during1x playback",
+      "observed_frame": 70,
+      "paused": false,
+      "audio_origin_frame": 70
+    },
+    {
+      "action": "Home during1x playback",
+      "observed_frame": 0,
+      "paused": false,
+      "audio_origin_frame": 0
+    },
+    {
+      "action": "Explicit Pause then Home",
+      "observed_frame": 0,
+      "paused": true,
+      "src": null,
+      "play_label": "Play"
+    },
+    {
+      "action": "Home during2x playback; wait for actual Play event",
+      "observed_frame": 0,
+      "paused": false,
+      "playback_rate": 2,
+      "native_pitch_preserving_audio": true,
+      "audio_origin_frame": 0
+    },
+    "Save the separate qualification copy, reopen the original project at frame48/1x/Saved/empty history, all media paused/no dialogs/no warnings or errors."
+  ],
+  "qualification_project": {
+    "path": "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Seek_Playback_V1.vvproj",
+    "sha256": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7",
+    "bytes": 191019
+  },
+  "served": {
+    "web/js/main.js": "d260bee4134e474b668ba189787087df6eb4a213480a52ad1734422b83fe1901",
+    "web/js/program.js": "3b4a4687ba671c353f472f51033562f3654ba520875d503de42edc39b0c3c478",
+    "web/js/program-seek.js": "c8d249f0760197406fe52e9976bb042de3de65d2c19c8ba6855095ad667a96d5"
+  },
+  "live_resources": {
+    "unit": {
+      "ActiveState": "active",
+      "MainPID": "438091",
+      "ControlGroup": "/system.slice/venturi-web-halo1-program-seek.service",
+      "MemoryCurrent": "316731392",
+      "MemoryPeak": "321937408"
+    },
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    }
+  },
+  "protected": {
+    "foreign_sessions": 39,
+    "foreign_pids_checked": 40,
+    "foreign_pids_equal_checkpoint": 39,
+    "observed_foreign_pid_changes": {
+      "ds4-console.service": {
+        "previous": "437037",
+        "current": "438900"
+      }
+    },
+    "original_saved_files": 12,
+    "local_media": 5,
+    "nas_files": 4,
+    "nas_fresh_identity_and_bytes_unchanged": true,
+    "shared_proxy_bytes_unchanged": true
+  },
+  "environment_observation": "All historical Web sessions/PIDs had been restarted before this work; the owned8855 compositor was unavailable. Fresh exact args/Saved/history/jobs/file guards preceded each owned-only upgrade. Current R9700 preview/playback/export are restored. Compare current foreign state with fresh pre-upgrade snapshots, not obsolete PIDs. A later ds4-console PID change is recorded without intervention. One older NAS identity differed, while bytes matched; the fresh identity and bytes remain exact through qualification.",
+  "orchestration_corrections": [
+    "R1 client368 passed; the native test command incorrectly selected a nonexistent library target. No native test/build ran there.",
+    "R2 compiled; one new test setup skipped mandatory folder preparation. Only that fixture was corrected to use the existing prepared path; R3 native groups pass.",
+    "The R3 embedded-module check found the missing explicit route for program-seek.js. The route is supplied and passes inR4; unchanged passed native/client evidence is reused.",
+    "R5 manifest SHA was shadowed by an unchanged-source-check loop variable after building. The original raw record is retained. Independent hashing of the immutable executable verifies its filename and authoritative SHA45ab6c3fc431c4eb7967285c5276fe25a6bb821b6327da668eff0102f4f6436e. No executable/test result changed.",
+    "A browser forward-seek attempt during the locked R5 build received GPU_BUSY and is not accepted as playback proof. Final workflow checks run after the terminal build and pass."
+  ],
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "db11ade96b8b56a97d13568b85815d7e4857e9c70ba8f1219c08014ad9fdf0a4",
+    "crates/vv-web/src/asset_store.rs": "670877fbd33346205001792e33ac7ddb7625a0f879fb2a4f213bf12c8133a6b3",
+    "crates/vv-web/src/host.rs": "c9611fa15823778d108d9f3c3ef5715250fc6def36a5e002294d40a11d7fb8ec",
+    "crates/vv-web/src/tests/host.rs": "b5b10cb3d2aca74d1cb34649a391f4a179fb0633a3271946147df7963682f5bc",
+    "web/js/main.js": "d260bee4134e474b668ba189787087df6eb4a213480a52ad1734422b83fe1901",
+    "web/js/program.js": "3b4a4687ba671c353f472f51033562f3654ba520875d503de42edc39b0c3c478",
+    "web/js/program-seek.js": "c8d249f0760197406fe52e9976bb042de3de65d2c19c8ba6855095ad667a96d5",
+    "web/js/timeline/input.js": "99dd8b74602ef56a7e99e484fc441593284e114c0b95ba6580e0bc28d11e251e",
+    "web/test/program.test.js": "d5ff742c859bf1f9181fa4c897af4bf022b880667d1dd51dbaa7233f13d4e22a",
+    "web/test/program-seek.test.js": "ed3ff964d4f92b100beb16990ff13bbdbf55a922ac3634915146a684784e78bc",
+    "web/test/timeline-layout.test.js": "4e983d3110e2b03fa44a41554ca7b517d348fe75b06cf0f943c1b116dd620604"
+  },
+  "remaining": [
+    "Fullscreen full-area Fit and bottom90px hover transport still differ from the native UI; implement this production behavior next.",
+    "Startup with temporarily inaccessible configured roots still needs a safe unavailable/explicit-retry state. Invalid/unsafe roots must still fail; no fallback catalogs.",
+    "Physical ruler/slider/cursor/DPI/held-key, actual audio/microphone, dense/long representative footage, native9 clock cases and integrated two-hour browser-memory editing soak remain unqualified.",
+    "No new export or synthetic long-footage substitute. Existing notice companions and77d7 package stay immutable; current45ab executable is newer than that archive.",
+    "Screenshots/pointer capture provider remained unavailable; DOM/keyboard observations do not certify physical pointer or visual-scaling acceptance."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

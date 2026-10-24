@@ -1,5 +1,47 @@
 # Active completion plan — full Venturi Web scope
 
+## Program seek and busy Library startup delivered — 2026-10-24
+
+Source8995296/runtime45ab6c3fc431 is active at http://127.0.0.1:8855/,
+unit `venturi-web-halo1-program-seek.service`, captured PID438091.
+Program navigation now preserves playing/stopped intent and selected tempo,
+including backward jumps with a fresh native audio origin, one release and no
+pointermove HTTP. Paused seeks and intentional arrow stepping remain stopped;
+explicit Play during a paused still seek is honored. Cancellation and stale
+ownership cannot start a late movie. The existing native fast-audio adapter,
+DSP/render/export engines and V1 stopped-audio decision are unchanged.
+
+A temporarily busy configured native catalog no longer aborts local Editor
+startup. Existing directory pinning and operation locks/CAS/journals remain;
+explicit Refresh retries deferred completion receipts without changing project
+history. Inaccessible-root startup is a separate production gap still open.
+
+The focused halo1 gate qualifies369 unique client cases by reuse plus the
+overlapping102-case follow-up,25 native cases, formatting, all-target Clippy
+and embedded build. Serial jobs remain within8CPU/4GiB/noSwap; peaks are
+2,025,639,936B and1,569,878,016B with zero limit/OOM/kill events. Accepted native
+renderer/export and unrelated regression gates are reused. Initial command,
+fixture, module-route and manifest corrections are retained in the evidence.
+
+The existing Windows tab verifies paused-seek/Play,1x forward70/backward0,
+paused navigation and actual2x backward resumption with matching native origins.
+The separate `Venturi_Seek_Playback_V1.vvproj` is Saved. Original project is
+restored at frame48/1x/Saved/empty history, all media paused and console clean.
+All12 original Saved hashes,5 media,4 NAS byte/fresh-identity witnesses and proxy
+bytes remain exact. All39 foreign Web sessions match fresh pre-upgrade captures;
+39of40 foreign PIDs match, with a ds4-console change observed and left untouched.
+Historical session/PID baselines had already changed before this work and are
+not asserted unchanged. Current app peak321,937,408B, zero memory events.
+
+See `evidence/f2-f5-program-seek-library-workflow.json` and REMAINING_WORK.md,
+which explicitly maps all29 partial rows to production or qualification work.
+Next production blocks are native fullscreen Fit/hover transport and safe
+unavailable-root startup/retry. These are not blocked by physical-device tests.
+Keep the full90/F1-F7/M7 objective active,61done/29partial/2excluded; no whole
+row or release promotion follows from this bounded workflow. Current45ab is
+newer than the immutable77d7 archive; defer another assembly until appropriate.
+
+
 ## Acceptance reconciliation: reuse the existing cross-project preset workflow — 2026-10-24
 
 The `linked_groups` evidence field still described cross-project preset Apply as

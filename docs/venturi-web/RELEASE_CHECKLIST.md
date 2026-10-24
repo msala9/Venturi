@@ -1,5 +1,26 @@
 # Release checklist
 
+## Current adc69 Inspector correction package - 2026-10-24
+
+The additive immutable archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-adc69ead4557-r6-7ccf7badbe07.tar`,
+91258880bytes, SHA256
+`7ccf7badbe07f6aa78517b18fad8be09d1a77c7b7cfe6d9d25a312e8e3069a08`.
+Binary source39b3ae3 and documentation source0b2565e are separately bound;
+the actual Chrome mask/scroll, transform/curve, selection and NAS input proofs
+are included. Source146-client/embedded-build qualification and unchanged
+Rust/Clippy input reuse are retained. Every archive member and packaged --help
+passes; all three immutable notice companions, reviewed189-loader bindings and
+199 installed notice texts remain exact. One1CPU/512MiB/noSwap low-priority
+assembly peaks237010944B with zero limit/OOM/kill events. It leaves live8855
+PID497792, full Session, all15 Saved and known recovery bytes/status exact.
+Prior R5 remains byte-exact. See evidence/f7-current-prebuilt-r6-workflow.json.
+This is the assembly-time snapshot; later deliberate owned GUI edits and this
+publication do not rewrite the archive or its0b2565e documentation snapshot.
+No build/render/server, extra browser, Windows archive copy, downgrade or reboot
+ran during packaging. Full acceptance and FINAL_CHECKS remain open; ledger62/28/2.
+
+
 ## Current8b975 internal prebuilt package — 2026-10-24
 
 The immutable archive is

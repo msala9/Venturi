@@ -1,0 +1,299 @@
+{
+  "date": "2026-10-24",
+  "status": "passed within actual Chrome Solid color input and native keyframe persistence scope; no whole-row promotion",
+  "source_commit": "39b3ae375c68b323875768a63023a29aa694abf2",
+  "runtime": {
+    "unit": "venturi-web-halo1-inspector-scroll.service",
+    "pid": "497792",
+    "binary_sha256": "adc69ead45577897e6d2e71cb8086664d5bb96d29ea4e601b77b86df287450b9"
+  },
+  "browser": {
+    "name": "Chrome",
+    "viewport_css": [
+      1536,
+      814
+    ],
+    "device_pixel_ratio": 1.25,
+    "input": "Actual semantic pointer clicks and keyboard/buttons; no synthetic DOM edit or new render/export."
+  },
+  "fixture": {
+    "project": "Venturi_Chrome_Effects_V1.vvproj",
+    "timeline_id": "1",
+    "solid_clip_id": "14",
+    "timeline_frame": 700,
+    "source_frame": 119,
+    "title_preservation_clip_id": "12",
+    "title_evaluation_frame": 0
+  },
+  "capture_receipts": {
+    "solid_input_before": {
+      "file": "halo1-final-gui-solid_input_before.json",
+      "sha256": "9d9eb8b5a7668b6821dacc535afb0983bd739b4eac859c2b5f8f6a62372b9c26",
+      "at_unix": 1792854706.361556,
+      "generation": "0",
+      "history_position": 0
+    },
+    "solid_palette_cancelled": {
+      "file": "halo1-final-gui-solid_palette_cancelled.json",
+      "sha256": "9978f139465f5a968c6507e2fed257c2a0a4bbe2fb6596cbbb3f5b373d583774",
+      "at_unix": 1792854779.9017506,
+      "generation": "0",
+      "history_position": 0
+    },
+    "solid_hue_changed": {
+      "file": "halo1-final-gui-solid_hue_changed.json",
+      "sha256": "46cc61cdc6682b09ba07fadb09c7a84d1102b88f631a84632505fd94ae9d6a70",
+      "at_unix": 1792854791.3618803,
+      "generation": "1",
+      "history_position": 1
+    },
+    "solid_color_keyed": {
+      "file": "halo1-final-gui-solid_color_keyed.json",
+      "sha256": "63e67e296a2ea6944f8fbbb815973027385d9d297d3c09c9f4a6a021ec0d90e7",
+      "at_unix": 1792854803.6763275,
+      "generation": "2",
+      "history_position": 2
+    },
+    "solid_animated_color": {
+      "file": "halo1-final-gui-solid_animated_color.json",
+      "sha256": "b5abfe9c98bba81cd8f3cc11a5c1e81fee7582a769c5afae6a7ebaa784f0315e",
+      "at_unix": 1792854848.6999779,
+      "generation": "3",
+      "history_position": 3
+    },
+    "solid_all_undone": {
+      "file": "halo1-final-gui-solid_all_undone.json",
+      "sha256": "6594fe40e60c0eb065e0f8ba5649203d20284d785e93e5821e8c0b9be6705a33",
+      "at_unix": 1792854885.5352342,
+      "generation": "6",
+      "history_position": 0
+    },
+    "solid_all_redone": {
+      "file": "halo1-final-gui-solid_all_redone.json",
+      "sha256": "32480d53628b72216a51a4eb0ae80dc5c5f6f911d68d67748b625c3bb54cdac0",
+      "at_unix": 1792854898.94402,
+      "generation": "9",
+      "history_position": 3
+    },
+    "solid_saved": {
+      "file": "halo1-final-gui-solid_saved.json",
+      "sha256": "ba5aff775e131ddf96e74cbd1e79c803839d1fa1445e3515c5bf9d3a4e8de0f3",
+      "at_unix": 1792854950.427194,
+      "generation": "9",
+      "history_position": 3
+    },
+    "solid_reopened": {
+      "file": "halo1-final-gui-solid_reopened.json",
+      "sha256": "870acc6e484660f4bf56b4a8b4bfcf71d2b5e118462c1ef381f513dc231cd160",
+      "at_unix": 1792854965.3423078,
+      "generation": "0",
+      "history_position": 0
+    },
+    "solid_final": {
+      "file": "halo1-final-gui-solid_final.json",
+      "sha256": "696f84a30bc4d8851c346635a3bfc905ea8ea61905a4a4e987e0098b36691d17",
+      "at_unix": 1792854980.8935378,
+      "generation": "0",
+      "history_position": 0
+    }
+  },
+  "actual_input": {
+    "cancel": {
+      "button": "Cancel Solid color color",
+      "method": "Actual click of the correctly named Cancel button",
+      "commands": 0,
+      "generation_before_after": [
+        "0",
+        "0"
+      ],
+      "full_solid_timelines_media_saved_exact": true,
+      "failed_attempts_not_accepted": [
+        "roleDialog.pressEscape did not complete the focused dismissal; Escape is not qualified.",
+        "A generic Cancel locator did not match the actual accessible name; it is not counted as a successful cancel."
+      ]
+    },
+    "hue": {
+      "control": "Solid color hue",
+      "method": "Actual semantic pointer click at the control center; no CSS coordinates inferred",
+      "display_hue_before_degrees": 221.4116334915161,
+      "display_hue_after": "approximately180degrees",
+      "native_linear_rgba_before": {
+        "a": 1.0,
+        "b": 0.46000000834465027,
+        "g": 0.2277199625968933,
+        "r": 0.12345679104328156
+      },
+      "native_linear_rgba_after": {
+        "a": 1.0,
+        "b": 0.46000000834465027,
+        "g": 0.4599993824958801,
+        "r": 0.12345679849386215
+      },
+      "one_command": "ClipColor",
+      "generation": "1"
+    },
+    "key_at_playhead": {
+      "button": "Toggle solid color keyframes at playhead",
+      "native_source_frame": 119,
+      "timeline_frame": 700,
+      "one_command": "SetKeyframe",
+      "generation": "2",
+      "keys": [
+        {
+          "source_frame": 119,
+          "timeline_frame": 700,
+          "value": {
+            "a": 1.0,
+            "b": 0.46000000834465027,
+            "g": 0.4599993824958801,
+            "r": 0.12345679849386215
+          },
+          "interpolation": "Linear"
+        }
+      ]
+    },
+    "animated_color": {
+      "seek": "Program ArrowLeft to699, then ArrowRight to700 after edit",
+      "control": "Solid color saturation and value",
+      "method": "Actual semantic pointer click at control center",
+      "one_command": "SetKeyframe",
+      "generation": "3",
+      "native_color_default": {
+        "a": 1.0,
+        "b": 0.46000000834465027,
+        "g": 0.4599993824958801,
+        "r": 0.12345679849386215
+      },
+      "native_color_keys": [
+        {
+          "source_frame": 118,
+          "timeline_frame": 699,
+          "value": {
+            "a": 1.0,
+            "b": 0.21404114365577698,
+            "g": 0.21404093503952026,
+            "r": 0.10702050477266312
+          },
+          "interpolation": "Linear"
+        },
+        {
+          "source_frame": 119,
+          "timeline_frame": 700,
+          "value": {
+            "a": 1.0,
+            "b": 0.46000000834465027,
+            "g": 0.4599993824958801,
+            "r": 0.12345679849386215
+          },
+          "interpolation": "Linear"
+        }
+      ],
+      "two_distinct_linear_values": true
+    }
+  },
+  "native_model_checks": {
+    "three_undo": {
+      "generation": "6",
+      "history_position": 0,
+      "full_solid_except_generation_epoch_sha256": "ce0af3cfe84109eba7b403fdc4605db690f59824de36a838bd35d5391779cf81",
+      "baseline_same_sha256": "ce0af3cfe84109eba7b403fdc4605db690f59824de36a838bd35d5391779cf81",
+      "full_timelines_exact": true,
+      "all15_saved_exact_to_before": true,
+      "dirty_flag_retained": true
+    },
+    "three_redo": {
+      "generation": "9",
+      "history_position": 3,
+      "full_solid_except_generation_epoch_sha256": "ee80ba8bfcfd94d00ca0016ebb492cd98957408acf40e2ae8734aa2124cd7134",
+      "edited_same_sha256": "ee80ba8bfcfd94d00ca0016ebb492cd98957408acf40e2ae8734aa2124cd7134",
+      "full_timelines_exact": true
+    },
+    "save_reopen": {
+      "saved_history_position": 3,
+      "reopened_history_position": 0,
+      "reopened_generation": "0",
+      "saved": true,
+      "full_solid_and_title_except_generation_epoch_exact": true,
+      "full_timelines_and_media_exact": true,
+      "all15_saved_exact": true,
+      "owned_saved_sha256": "b534f889e12476e9571a826605677f696df9e94f83a452f47747c34cb2c85116"
+    }
+  },
+  "prior_title_masks_filters_keys_preserved": {
+    "reference_capture": "halo1-final-gui-handles_title_reopened.json",
+    "reference_sha256": "66e7a2e9a930cd862452423e82c0655d0330d508c6c6e327a901e5f02dbae59f",
+    "evaluation_timeline_frame": 0,
+    "evaluation_source_frame": 0,
+    "excluded_only": [
+      "generation",
+      "project_epoch",
+      "revision"
+    ],
+    "reason": "Revision belongs to the whole timeline and changed with the Solid edit. Every other field in the complete native Title detail is compared.",
+    "canonical_before_sha256": "ae0a617fb35456bc835dbe45859b6998be523bfe42a739cdbc48af0ddb43bd47",
+    "canonical_after_sha256": "ae0a617fb35456bc835dbe45859b6998be523bfe42a739cdbc48af0ddb43bd47",
+    "save_reopen_same": true
+  },
+  "preservation": {
+    "other_saved_files_exact": 14,
+    "all_saved_files_final": 15,
+    "final_saved_hashes": {
+      "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+      "Venturi_Chrome_Input_V1.vvproj": "1828c9a11b802f988ec4c5c2213bfb56004307cf45756dc2d8d6207fff2544bb",
+      "Venturi_Chrome_Effects_V1.vvproj": "b534f889e12476e9571a826605677f696df9e94f83a452f47747c34cb2c85116",
+      "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+      "Venturi_Seek_Playback_V1.vvproj": "7e2dc08d29e7214312b2ec587d3e466693eb6e8e49445274afcdbe973ad7fac7",
+      "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+      "Venturi_Keyframe_Replacement_V1.vvproj": "bd26a3cd0c802f94c0f211d8fc56b6a5879227bc2dec3973b082a5126dfafec1",
+      "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+      "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+      "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+      "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+      "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+      "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+      "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+      "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+    },
+    "nas_catalogs_exact_except_project_epoch_and_placement_generation": true,
+    "nas_catalog_semantic_sha256": "3a337ff20e38a454cc5e3f32fa033c4270d096d177ebf2a9548bed7c4efc4d84",
+    "owned_asset_preset_current_backup_versions": {
+      "preset": {
+        ".json": {
+          "sha256": "c9caf396ea206dc8adfe09962c6dc55c1d29fe608da21f81139b09391f3f1720",
+          "bytes": 6632
+        },
+        ".json.bak": {
+          "sha256": "d8bde279d1851325221f8c20cba9e4cd4f5a5e1a3a75eddd0eb3e262a8ff60b5",
+          "bytes": 6625
+        }
+      },
+      "asset": {
+        ".json": {
+          "sha256": "bc225cf1c9191421c92e83f5240262c4d0185ecbbca18da497b27ab3b909d648",
+          "bytes": 825
+        },
+        ".json.bak": {
+          "sha256": "ec55b0b0185ca14fd21348c90f33dbe3a34af4b3eb84a119d6e9d08cdbdb273f",
+          "bytes": 821
+        }
+      }
+    },
+    "final_original_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "final_saved": true,
+    "final_generation": "0",
+    "final_history_position": 0,
+    "runtime_pid_unchanged": true
+  },
+  "package_reuse": {
+    "proof": "f7-current-prebuilt-r6-workflow.json",
+    "proof_sha256": "5f0f75a234333831914898af97760bdefa5737f2b7190a6f985c0ea0c4622d6d",
+    "archive_sha256": "7ccf7badbe07f6aa78517b18fad8be09d1a77c7b7cfe6d9d25a312e8e3069a08",
+    "note": "R6 predates this GUI workflow and remains immutable. Its Session/Saved binding is historical to package assembly; no reassembly or relabeling."
+  },
+  "limits": [
+    "No new tests, build, native rendering, export, package assembly or remote action was performed for this receipt.",
+    "Cancel-button acceptance only; Escape was not qualified by the failed focus attempt.",
+    "Generator HTML drag, modifier/cancellation combinations, other DPI mappings and remaining FINAL_CHECKS/M7 acceptance stay open.",
+    "No ledger status changes or full F1-F7/M7 completion is inferred."
+  ]
+}

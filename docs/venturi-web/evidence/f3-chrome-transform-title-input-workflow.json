@@ -1,0 +1,259 @@
+{
+  "date": "2026-10-24",
+  "scope": "Actual paused Chrome Transform handles and Title controls, font-preview cancellation, eight Undo/Redo and Saved reopen; no whole-row promotion",
+  "source_commit": "39b3ae375c68b323875768a63023a29aa694abf2",
+  "runtime": {
+    "binary_sha256": "adc69ead45577897e6d2e71cb8086664d5bb96d29ea4e601b77b86df287450b9",
+    "unit": "venturi-web-halo1-inspector-scroll.service",
+    "pid": "497792",
+    "restarted": false,
+    "observed_memory_peak_bytes": 239898624
+  },
+  "browser": {
+    "family": "Chrome",
+    "connection": "existing extension",
+    "work_tabs": 1,
+    "viewport_css": [
+      1536,
+      814
+    ],
+    "observed_device_pixel_ratio": 1.25,
+    "os_dpi_matrix_claimed": false,
+    "viewport_note": "User window differs from earlier858px-height captures; this is the observed current viewport, not an OS scaling qualification."
+  },
+  "fixture": {
+    "project": "Venturi_Chrome_Effects_V1.vvproj",
+    "timeline": "1",
+    "title_clip": "12",
+    "before_saved_sha256": "4b1cc3c6385211d876870ed7f07ece20e780c361c0c5af518bde7f71bd8302fe",
+    "edited_saved_sha256": "e624b37d25e21cd24adff14ee8f6521260ef8db53ff40696787a677e33c1ee56"
+  },
+  "actual_actions": [
+    {
+      "action": "Viewer scale corner",
+      "from_css": [
+        419,
+        86
+      ],
+      "to_css": [
+        439,
+        106
+      ],
+      "zoom_xy": [
+        1,
+        0.9260665774345398
+      ],
+      "native_history": "SetKeyframe",
+      "source_frame": 0,
+      "native_key0_interpolation": "Linear",
+      "later_zoom_x_key96_preserved": true
+    },
+    {
+      "action": "Viewer rotation handle",
+      "from_css": [
+        738,
+        173
+      ],
+      "to_css": [
+        778,
+        183
+      ],
+      "native_rotation": 23.806154251098633,
+      "native_history": "Transform"
+    },
+    {
+      "action": "Viewer pivot handle",
+      "from_css": [
+        738,
+        274
+      ],
+      "to_css": [
+        758,
+        284
+      ],
+      "native_anchor_xy": [
+        57.47749710083008,
+        -28.73874855041504
+      ],
+      "native_history": "Transform"
+    },
+    {
+      "action": "Font family popup Home/Escape",
+      "native_generation": 3,
+      "commands": 0,
+      "full_title_and_native_model_unchanged": true
+    },
+    {
+      "action": "Font family actual pointer choice",
+      "family": "DejaVu Sans",
+      "native_history": "Title"
+    },
+    {
+      "action": "Font style actual pointer choice",
+      "style": "Bold",
+      "font_weight": 700,
+      "italic": false,
+      "native_history": "Title"
+    },
+    {
+      "action": "Font size numeric scrub",
+      "from_css": [
+        1448,
+        407
+      ],
+      "to_css": [
+        1458,
+        407
+      ],
+      "native_before": 81.98999786376953,
+      "native_after": 91.98999786376953,
+      "native_history": "Title"
+    },
+    {
+      "action": "Title color palette pointer choice",
+      "at_css": [
+        1390,
+        390
+      ],
+      "native_unmultiplied_linear_rgba": {
+        "a": 0.9900000095367432,
+        "b": 0.17788319289684296,
+        "g": 0.3213330805301666,
+        "r": 0.4243323802947998
+      },
+      "alpha_preserved": true,
+      "native_history": "Title"
+    },
+    {
+      "action": "Title background height numeric scrub",
+      "from_css": [
+        1448,
+        221
+      ],
+      "to_css": [
+        1468,
+        221
+      ],
+      "native_before": 0,
+      "native_after": 0.10000000149011612,
+      "native_history": "Title"
+    }
+  ],
+  "history": {
+    "labels": [
+      "SetKeyframe",
+      "Transform",
+      "Transform",
+      "Title",
+      "Title",
+      "Title",
+      "Title",
+      "Title"
+    ],
+    "actual_undo_count": 8,
+    "actual_redo_count": 8,
+    "undo_generation": 16,
+    "redo_generation": 24,
+    "full_title_and_timelines_exact": true,
+    "full_title_metadata_exclusions": [
+      "generation",
+      "project_epoch"
+    ],
+    "saved_file_bytes_unchanged_until_save": true
+  },
+  "persistence": {
+    "actual_save_reopen": true,
+    "all_timelines_media_folders_and_full_title_exact": true,
+    "all_fifteen_saved_hashes_exact_across_reopen": true,
+    "owned_reopen_history_reset": true
+  },
+  "preservation": {
+    "three_existing_masks_exact_including_paths_modes_feather_and_keys": true,
+    "prior_filter_stack_and_title_content_keys_exact": true,
+    "unmodified_later_zoom_key_and_other_prior_native_keys_retained": true,
+    "fourteen_other_saved_hashes_exact": true,
+    "nas_catalog_items_exact_excluding_placement": true,
+    "owned_active_backup_versions_exact": true,
+    "original_clean_project_restored": true
+  },
+  "compact_native_sha256": {
+    "before_full_title": "836b2b7a6761f205591e3e2e7bb8f0ebee3dc664b11c28775525586f5a2d8266",
+    "edited_full_title": "edb966a265b95353be11821eb59568449961e081a658d0be4cb219a3e8b12cfd",
+    "undo_full_title": "836b2b7a6761f205591e3e2e7bb8f0ebee3dc664b11c28775525586f5a2d8266",
+    "redo_full_title": "edb966a265b95353be11821eb59568449961e081a658d0be4cb219a3e8b12cfd",
+    "reopened_full_title": "edb966a265b95353be11821eb59568449961e081a658d0be4cb219a3e8b12cfd",
+    "prior_masks": "34e0c5a1b97064be1981add318b96d9480fa1005bc6f0456fb5b2ac39e1f0724",
+    "prior_filters": "53be3b3a7d9313d2f59aef583e1a275f05b889f72e83c14881c6096c85df5f83"
+  },
+  "private_stage_receipts": [
+    {
+      "stage": "handles_input_before",
+      "sha256": "c181e0e381a11e4f5bfd12d30784a87e4b85733c6cccb44d13a382b40ddb5125"
+    },
+    {
+      "stage": "handles_scaled",
+      "sha256": "75332ec40317cdce42809c749e736d85ad52588686a81853832fce3fde02f782"
+    },
+    {
+      "stage": "handles_rotated",
+      "sha256": "fd294857828f8adfa6158a9de4a0287d23d2bae055558d9acc8824d55040a884"
+    },
+    {
+      "stage": "handles_anchor",
+      "sha256": "2abfe7e624a12b4c7df12f5b7bd1e8f0715d635111e311a9d27afc563f06eea0"
+    },
+    {
+      "stage": "title_font_cancelled",
+      "sha256": "831af4f5ff29dbeddcde032996a0d8ab75cfaeea15bc90074429d0a0f1454f56"
+    },
+    {
+      "stage": "title_font_changed",
+      "sha256": "f200c1039763ae4891e1357d76fc9a3643433e91e008b7858b597177edb618a9"
+    },
+    {
+      "stage": "title_style_changed",
+      "sha256": "04937ae6e4081bc2cfd6004f33341dc703c5c5a19cbdf7bfc947cb56651a1d78"
+    },
+    {
+      "stage": "title_size_scrubbed",
+      "sha256": "9e2d621e14242d82ef65ae2f105198fc0c794ed11c55dccd7cdd5d3323624684"
+    },
+    {
+      "stage": "title_color_picked",
+      "sha256": "a7cec60ee95d9713919cb4133d95a3f35da5d4ebff45013e160651c17b64e57e"
+    },
+    {
+      "stage": "title_background_scrubbed",
+      "sha256": "938a9a5029e59563269342a9e972209975206c07adcfbb30576856917191e884"
+    },
+    {
+      "stage": "handles_title_all_undone",
+      "sha256": "4a8c5967b8acb6e12a183330f3b2f61551dd50aefa8603b3e22c57259323b676"
+    },
+    {
+      "stage": "handles_title_all_redone",
+      "sha256": "ac2be0c113de20603fb0d94c992d124e3b2b3aa2ac6b1afb25a8d073ad7a5862"
+    },
+    {
+      "stage": "handles_title_saved",
+      "sha256": "041ce316f1d6eb9ccc46c89295f1f530cf7c1941bb7b12dea57ef70e6bc24977"
+    },
+    {
+      "stage": "handles_title_reopened",
+      "sha256": "66e7a2e9a930cd862452423e82c0655d0330d508c6c6e327a901e5f02dbae59f"
+    },
+    {
+      "stage": "handles_title_final",
+      "sha256": "0476b1d70cd595bf7dfc363be76626e2d02f7f53c7aa83add8358a2332a1ed29"
+    }
+  ],
+  "gate": "No source change: existing source39b3ae/adc69 affected146-client and embedded-build qualification reused; no new tests/build/render/export.",
+  "package": "The immutable current r6 was assembled before this GUI workflow and deliberate owned-project changes. Unchanged executable is reused; no rebuild/repack or retroactive package evidence claim.",
+  "remaining": "Held modifiers, interrupted/edge gestures, required OS100/150 scaling, dense/long/device/soak and other FINAL_CHECKS remain open. No new render/export or acoustic acceptance.",
+  "ledger": {
+    "done": 62,
+    "partial": 28,
+    "excluded": 2,
+    "promotion": null
+  }
+}

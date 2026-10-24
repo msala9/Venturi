@@ -1,5 +1,22 @@
 # Running the implemented host
 
+## Current owned Inspector-scroll runtime - 2026-10-24
+
+The existing Windows tunnel/browser still uses http://127.0.0.1:8855/.
+Owned unit `venturi-web-halo1-inspector-scroll.service`, captured PID497792,
+executes `/home/halo/.local/share/venturi-web/.runtime/vv-web-adc69ead4557`:
+80388928bytes, SHA256
+`adc69ead45577897e6d2e71cb8086664d5bb96d29ea4e601b77b86df287450b9`,
+source39b3ae3. Root, CLI arguments, GPU/NAS/ds4 configuration and resource limits
+are inherited exactly from the prior owned8855 unit, which was stopped only
+after a durable clean-session checkpoint. All15 Saved, known recovery and
+40 foreign PIDs/39 Sessions remained exact across deployment. The paused Chrome
+Feather scrub now keeps its scroll/control position and Saves/reopens correctly.
+See evidence/f3-chrome-masks-inspector-scroll-workflow.json and
+BINARY_DELIVERY.md for the additive immutable R6 package. Prior runtime/package
+records below remain historical; do not launch a duplicate on occupied8855.
+
+
 ## Current8b975 internal prebuilt package — 2026-10-24
 
 The immutable archive is

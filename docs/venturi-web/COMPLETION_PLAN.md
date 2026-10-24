@@ -1,5 +1,47 @@
 # Active completion plan — full Venturi Web scope
 
+## Complete paused Chrome transform, title and solid-color inputs - 2026-10-24
+
+On currentadc69/source39b3ae3, actual Viewer corner scale, rotation and pivot
+produce one native history entry each, preserving unrelated keys/properties.
+Title font popup cancellation makes no edit; DejaVu Sans, Bold, Font size scrub,
+SV palette click and background height scrub pass as five individual Title edits.
+Eight Undo/Redo and edited Save/reopen restore exact full Title/timeline DTOs,
+media and Saved hashes; all three prior masks and filter/key content are retained.
+The solid generator palette Cancel makes no edit; Hue and animated SV input
+create exactly ClipColor/SetKeyframe/SetKeyframe, with Linear source118/119 keys
+at timeline699/700. Three Undo/Redo and edited Save/reopen retain full Solid and
+Title content. All14 other Saved and NAS metadata remain exact; the original
+clean project is restored. See evidence/f3-chrome-transform-title-input-workflow.json
+and evidence/f3-chrome-solid-color-input-workflow.json. Actual viewport1536x814
+and DPR1.25 are recorded without claiming the required OS scaling matrix.
+No source change, new build/test/render/export, restart or repack was needed.
+Immutable R6 binds its earlier0b2565e docs snapshot; these later GUI receipts
+are additive. Continuous edge, held/cancel, required OS scaling/dense/device/long
+and M7 acceptance stay FINAL_CHECKS. Ledger62done/28partial/2excluded is unchanged.
+
+
+## Current adc69 Inspector correction package - 2026-10-24
+
+The additive immutable archive is
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-adc69ead4557-r6-7ccf7badbe07.tar`,
+91258880bytes, SHA256
+`7ccf7badbe07f6aa78517b18fad8be09d1a77c7b7cfe6d9d25a312e8e3069a08`.
+Binary source39b3ae3 and documentation source0b2565e are separately bound;
+the actual Chrome mask/scroll, transform/curve, selection and NAS input proofs
+are included. Source146-client/embedded-build qualification and unchanged
+Rust/Clippy input reuse are retained. Every archive member and packaged --help
+passes; all three immutable notice companions, reviewed189-loader bindings and
+199 installed notice texts remain exact. One1CPU/512MiB/noSwap low-priority
+assembly peaks237010944B with zero limit/OOM/kill events. It leaves live8855
+PID497792, full Session, all15 Saved and known recovery bytes/status exact.
+Prior R5 remains byte-exact. See evidence/f7-current-prebuilt-r6-workflow.json.
+This is the assembly-time snapshot; later deliberate owned GUI edits and this
+publication do not rewrite the archive or its0b2565e documentation snapshot.
+No build/render/server, extra browser, Windows archive copy, downgrade or reboot
+ran during packaging. Full acceptance and FINAL_CHECKS remain open; ledger62/28/2.
+
+
 ## Chrome masks and Inspector viewport correction - 2026-10-24
 
 Actual paused Chrome passes cancelled/committed four-point curved Path drawing,

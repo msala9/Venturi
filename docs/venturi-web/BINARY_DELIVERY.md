@@ -56,3 +56,28 @@ This candidate is for the already qualified Linux x86_64 host. Self-contained
 portability, complete third-party notices/distribution review, optional dynamic
 runtime paths, fresh project/GPU startup from the archive, reboot/runback and
 the final integrated editing/device/soak gates remain unqualified.
+
+## Verified Rust notice-text companion
+
+A separate persistent archive is available on halo1 at
+`/home/halo/.local/share/venturi-web/deliveries/venturi-web-rust-notices-2dbc9697d6e7.tar`,
+with a same-name `.sha256` companion. Its SHA256 is
+`fefc4a4ea98d9edab61944adf3040b9a09f931cbf910ddbe5ae1e796711b3c57`.
+This supplements the binary archive without changing its verified bytes.
+
+It contains488 original license/notice files, totalling2,432,786 text bytes,
+from257 of the265 third-party packages in the scoped Linux normal dependency
+inventory. Each cached `.crate` archive matches its Cargo.lock checksum; the
+collected files and completed archive are independently hashed. The index binds
+the inventory, candidate binary and source commits separately. Both root Cargo
+manifest/lock git-blob hashes match the inventory; no network or cache walk was
+needed. The bounded service peaks at67,821,568B and terminates successfully.
+
+Eight exact crate archives lack conventionally named license/notice text:
+`dasp_sample 0.11.0`, `ffmpeg-sys-next 9.0.0`, `harfrust 0.5.2`,
+`nom-language 0.1.0`, `profiling 1.0.18`, `spirv 0.4.0+sdk-1.4.341.0`,
+`tract-extra 0.23.8` and `tract-transformers 0.23.8`. Their declared SPDX terms
+are retained, without substituting invented attribution text. Host/system-library
+and font notices, alternate borrowed-code locations, build/dev scope and final
+distribution review remain separate. See
+[the collection evidence](evidence/f7-third-party-notice-texts.json).

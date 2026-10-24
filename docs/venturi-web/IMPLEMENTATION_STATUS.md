@@ -1,5 +1,25 @@
 # Implementation status
 
+## Offline Rust notice-text companion — 2026-10-24
+
+The prebuilt candidate now has a persistent companion archive containing488
+verbatim license/notice files (2,432,786 text bytes) from257 of265 scoped normal
+third-party crates. Every original cached crate archive matches its Cargo.lock
+checksum; each selected text has a recorded hash and the resulting archive is
+stream-verified. No downloads, recursive cache scan, build or editor write.
+One halo1 CPU/512MiB/noSwap; peak67,821,568B; finite service exits successfully.
+
+Eight published crate archives contain no conventionally named notice text;
+the index lists them rather than inventing generic SPDX attribution. Both root
+Cargo manifest/lock git-blob hashes still match the scoped inventory. The first
+attempt stops on an absent unpacked checksum map; R2 uses complete cached crate
+checksums instead. All raw evidence is retained. See
+`evidence/f7-third-party-notice-texts.json` and BINARY_DELIVERY.md.
+
+System-library/font and complete distribution review, physical/representative
+media and full integrated M7 acceptance remain open. Ledger stays61 done/29
+partial/2 excluded; this does not promote any functional capability row.
+
 ## Verified prebuilt candidate bundle — 2026-10-24
 
 The existing `2dbc9697d6e7` Linux executable now has a persistent halo1 candidate

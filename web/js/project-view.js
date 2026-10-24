@@ -6,6 +6,7 @@ const frame=value=>Number.isSafeInteger(value) && value>=0 && value<=MAX_FRAME;
 const revision=value=>typeof value==='string' && /^[0-9a-f]{64}$/.test(value);
 const end=timeline=>{let result=0;for(const track of timeline.tracks)for(const clip of track.clips)result=Math.max(result,clip.start_frame+clip.length_frames);return result;};
 const clamp=(timeline,value)=>Math.max(0,Math.min(end(timeline),value));
+export {clamp as clampTimelineFrame};
 const restoreFrame=(timeline,value)=>Math.min(clamp(timeline,value),Math.max(0,end(timeline)-1));
 const defaultApi=(path,body,{signal})=>request(path,body,(url,init)=>fetch(url,{...init,keepalive:body.persist===true,signal:AbortSignal.any([init.signal,signal])}));
 

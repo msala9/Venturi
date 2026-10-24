@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createProjectView,nativeProjectView} from '../js/project-view.js';
+import {createProjectView,nativeProjectView,clampTimelineFrame} from '../js/project-view.js';
 
 const rev=number=>number.toString(16).padStart(64,'0');
 const document=()=>({project_epoch:'epoch:1',generation:'0',project_name:'Project.vvproj',unsaved:false,view_revision:rev(1),view:{active_timeline:'1',playheads:{'1':12,'2':4}},timelines:[
@@ -70,6 +70,35 @@ test('native end positions validate inclusively but restore at the last content 
     assert.equal(h.controller.frame('1'),40);assert.equal(h.controller.frame('2'),0);assert.equal(h.state.document.view.playheads['1'],100);
     h.state.document={...h.state.document,timelines:[{...h.state.document.timelines[0],tracks:[]}]};h.controller.refresh();assert.equal(h.controller.frame('1'),0);
     for(const position of [-1,1.5,1_000_000_001])assert.throws(()=>nativeProjectView({active_timeline:'1',playheads:{'1':position}},h.state.document));
+  }finally{h.controller.dispose();}
+});
+
+test('installing timeline bounds keeps live cursors inclusive through shrink, growth and empty timelines',()=>{
+  const timeline=end=>({tracks:end?[{clips:[{start_frame:0,length_frames:end}]}]:[]});
+  assert.equal(clampTimelineFrame(timeline(176),199),176);
+  assert.equal(clampTimelineFrame(timeline(176),120),120);
+  assert.equal(clampTimelineFrame(timeline(176),176),176);
+  assert.equal(clampTimelineFrame(timeline(300),176),176);
+  assert.equal(clampTimelineFrame(timeline(50),199),50);
+  assert.equal(clampTimelineFrame(timeline(0),199),0);
+  assert.equal(clampTimelineFrame(timeline(176),-1),0);
+  assert.equal(clampTimelineFrame(timeline(1_000_000_000),1_000_000_000),1_000_000_000);
+});
+
+test('a live Ripple-shrunk cursor flushes the new exclusive end and reopens on its last content frame',async()=>{
+  const h=harness({api:(path,body,options,response)=>{
+    assert.equal(path,'/projects/view');assert.equal(body.query.frame,176);
+    return Promise.resolve(response(body,{view:{active_timeline:'1',playheads:{'1':176,'2':4}}}));
+  }});try{
+    const original={...h.state.timeline,tracks:[{clips:[{start_frame:0,length_frames:200}]}]};
+    h.state.document={...h.state.document,view:{active_timeline:'1',playheads:{'1':199,'2':4}},timelines:[original,h.state.document.timelines[1]]};h.state.timeline=original;h.state.frame=199;
+    assert.equal(h.controller.frame('1'),199);
+    const shrunken={...original,revision:'ripple-revision',tracks:[{clips:[{start_frame:0,length_frames:176}]}]};
+    h.state.document={...h.state.document,generation:'1',unsaved:true,timelines:[shrunken,h.state.document.timelines[1]]};h.state.timeline=shrunken;h.state.frame=clampTimelineFrame(shrunken,h.state.frame);
+    assert.equal(h.state.frame,176);assert.equal(await h.controller.update(),true);
+    assert.equal(h.calls.length,1);assert.equal(h.changes[0].view.playheads['1'],176);assert.equal(h.controller.frame('1'),176);assert.deepEqual(h.notices,[]);
+    h.state.document={...h.state.document,project_epoch:'epoch:2',generation:'0',unsaved:false};h.controller.refresh();
+    assert.equal(h.controller.frame('1'),175);assert.equal(h.state.document.view.playheads['1'],176);
   }finally{h.controller.dispose();}
 });
 

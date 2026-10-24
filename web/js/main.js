@@ -61,7 +61,7 @@ import {createPresetShortcuts} from './preset-shortcuts.js';
 import {createViewerTransformOverlay} from './viewer-transform-overlay.js';
 import {createViewerMaskOverlay} from './viewer-mask-overlay.js';
 import {createCompoundNavigation,compoundNavigationAction} from './compound-navigation.js';
-import {createProjectView} from './project-view.js';
+import {createProjectView,clampTimelineFrame} from './project-view.js';
 import {resolveMarkRange,setMarkIn,setMarkOut,markRangeContext,markRangeAction} from './mark-range.js';
 
 const $ = (id) => document.getElementById(id);
@@ -1228,6 +1228,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   audioMeters?.invalidate();
   canvasTimeline.cancel();
   timeline = next;
+  view.playhead = clampTimelineFrame(next,view.playhead);
   syncProgramMarks();exportPanel?.invalidate?.();
   viewerZoom?.refresh();
   view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;

@@ -95,7 +95,7 @@ The existing Apply and Remove controls remain available.
 
 `POST /api/v1/preview/inspector-choice` accepts a strict `{query, clip_ids,
 choice}` body. `query` is the full current FrameQuery. The allowed choices are
-`{kind:"mask_mode", index, mode}`, `{kind:"blur_direction", filter, direction}`
+`{kind:"mask_mode", index, mode}`, `{kind:"blur_direction", filter, direction}`,
 `{kind:"title_case", case}`, `{kind:"blend_mode", blend}` and
 `{kind:"track_matte", matte}`. Mask modes are Add/Subtract/Intersect and require
 one clip with the existing mask index. Blur filters are BoxBlur/GaussianBlur,

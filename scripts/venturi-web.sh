@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd -- "$(dirname -- "$0")/.."
+binary="${VENTURI_WEB_BINARY:-.runtime/vv-web}"
+if [[ "$binary" != /* ]]; then binary="$PWD/$binary"; fi
+if [[ ! -f "$binary" || ! -x "$binary" ]]; then
+  printf 'Venturi Web prebuilt executable is missing or not executable: %s\n' "$binary" >&2
+  printf 'Set VENTURI_WEB_BINARY to a prebuilt vv-web executable, or place one at %s/.runtime/vv-web.\n' "$PWD" >&2
+  printf 'This launcher does not build or install binaries.\n' >&2
+  exit 127
+fi
 for argument in "$@"; do
   if [[ "$argument" == --software-preview ]]; then
     software_icd=""
@@ -11,11 +19,4 @@ for argument in "$@"; do
     export VK_DRIVER_FILES="$software_icd" LP_NUM_THREADS=2 TOKIO_WORKER_THREADS=2
   fi
 done
-if [[ -x .runtime/vv-web ]]; then
-  exec .runtime/vv-web --projects-root "$HOME/VenturiWeb" "$@"
-fi
-if ! command -v cargo >/dev/null && [[ -f "$HOME/.cargo/env" ]]; then
-  source "$HOME/.cargo/env"
-fi
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$HOME/.cache/venturi-target}"
-exec cargo run -p vv-web -- --projects-root "$HOME/VenturiWeb" "$@"
+exec -- "$binary" --projects-root "$HOME/VenturiWeb" "$@"

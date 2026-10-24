@@ -1,0 +1,474 @@
+{
+  "source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+  "first_three_choices_commit": "2c587b7c047be8f3cdece098d3efc79b669e7596",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "96ad852146602abd7c5a46e1491af4ad0ff53a7ed6fb2452b3ce6058672c7330",
+    "crates/vv-web/src/inspector_choice_preview.rs": "bd05d5a4de37f87f6f6e79c95d76cb7280394a0b1bf5fb60fce5e0cfcab0db30",
+    "crates/vv-web/src/main.rs": "38740f0a22a69f3b21a32a22911f8e0424a38d165d8dea8480a6df1787e23217",
+    "crates/vv-web/src/tests/api.rs": "c3d2e63276079f395250b92602559cf22d0a870363de5f6b26f9823deaa10e5a",
+    "crates/vv-web/src/tests/inspector_choice_preview.rs": "91eb1541d9ac98be161c29f766b169abc32619657d83669a10ed4094f788029b",
+    "web/js/inspector.js": "cc20da6ed0b3c2340b90f4f8def74da7a57ef2d04c0a5ff9657510908cfc8a61",
+    "web/js/main.js": "11bcd193b8bcab436526e63d62c385a4381a6c3b58334d2230516138718551c9",
+    "web/js/masks.js": "978a91d04326ba09e2a066a6200bd7b1e16c74b751cbd01bfcd270e2617eba30",
+    "web/js/transition-controls.js": "2c35bac288c175d39b20e82b4ba4aeed15efdc378950a97d8a639667235da102",
+    "web/js/viewer.js": "9b8fb3ed44981034a1ae01e92710977bae4cd1e81733ad7719cf3d25daf5bd14",
+    "web/js/visual.js": "bd2a366b03a4cad9719a13a21728b9a872de319d6f8241b634d774b8d1d4c15f",
+    "web/style/app.css": "e80d851e9cc6c4e91b020e32633aa2e0b56c1d3a10f03c6600ad0d3f71e19def",
+    "web/test/inspector-selection.test.js": "34fab23f9915c7d30afad2ad297e53dec637a980a02b7726c28a641ee38477d5",
+    "web/test/masks.test.js": "ea14d83636d6a028e9fb4aa77059bbe2d73614fbd73b1d21992824daeec7e59a",
+    "web/test/transition-controls.test.js": "a42d0d3ad57ba503b50457d03df6d605b3014b183ec24dd5e6d5fbe55a9ddbe4",
+    "web/test/viewer.test.js": "b175c16d85ade9731a5fd372b8e19998494f68a02612f5957761ffa10e359fa8"
+  },
+  "runtime": {
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7",
+    "sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+    "bytes": 80252472
+  },
+  "final_unit": "ActiveState=active\nMainPID=351463\nResult=success\nMemoryCurrent=110960640\nMemoryPeak=192913408\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "native_contract": "Private FrameSnapshot, original native mask/selected Inspector/batch-property commands, existing bounded native draft renderer; no mutable live Session, generation, writer lease or history changes.",
+  "gates": {
+    "r2_state": {
+      "phase": "passed",
+      "started_unix": 1792801478.8055282,
+      "updated_unix": 1792801597.3815036,
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-9a619eebab31",
+      "sha256": "9a619eebab3123f64e3f44a340a3b0bb3e0a9f470df98140768414a163581bff",
+      "bytes": 80221480,
+      "source_hashes": {
+        "crates/vv-web/src/api.rs": "96ad852146602abd7c5a46e1491af4ad0ff53a7ed6fb2452b3ce6058672c7330",
+        "crates/vv-web/src/inspector_choice_preview.rs": "bb779e137b83b0e1cf631bdd960edd8ccac02f5ef91fb3600b87fb593fb43dc2",
+        "crates/vv-web/src/main.rs": "38740f0a22a69f3b21a32a22911f8e0424a38d165d8dea8480a6df1787e23217",
+        "crates/vv-web/src/tests/api.rs": "c3d2e63276079f395250b92602559cf22d0a870363de5f6b26f9823deaa10e5a",
+        "crates/vv-web/src/tests/inspector_choice_preview.rs": "d9ab661379118f23d3bca706cda9fbf0455256a87e3c334186cd1f2a0695d53e",
+        "web/js/inspector.js": "5da1101e98ae58bb928b1d36e999cd783c7533059193095ae8f4740ebea8c443",
+        "web/js/main.js": "e7b7e2f7842a7eb1894dcebc87aa3647bcdd74e95846fef52637e4ad8851a75a",
+        "web/js/masks.js": "978a91d04326ba09e2a066a6200bd7b1e16c74b751cbd01bfcd270e2617eba30",
+        "web/js/transition-controls.js": "2c35bac288c175d39b20e82b4ba4aeed15efdc378950a97d8a639667235da102",
+        "web/js/viewer.js": "9b8fb3ed44981034a1ae01e92710977bae4cd1e81733ad7719cf3d25daf5bd14",
+        "web/js/visual.js": "bd2a366b03a4cad9719a13a21728b9a872de319d6f8241b634d774b8d1d4c15f",
+        "web/style/app.css": "e80d851e9cc6c4e91b020e32633aa2e0b56c1d3a10f03c6600ad0d3f71e19def",
+        "web/test/inspector-selection.test.js": "63ee97d550e646d474f6c45af8b1dc59cf8d867b519a33697ce2837aecbd8715",
+        "web/test/masks.test.js": "ea14d83636d6a028e9fb4aa77059bbe2d73614fbd73b1d21992824daeec7e59a",
+        "web/test/transition-controls.test.js": "a42d0d3ad57ba503b50457d03df6d605b3014b183ec24dd5e6d5fbe55a9ddbe4",
+        "web/test/viewer.test.js": "b175c16d85ade9731a5fd372b8e19998494f68a02612f5957761ffa10e359fa8"
+      },
+      "native_audio_source_hashes": {
+        "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+        "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+        "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+        "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+      },
+      "memory_peak_bytes": 2098089984,
+      "reused_native_gate": "native-library-thumbnails-r2; AdvancedSpeed/key-editor gates; native4K R2 export"
+    },
+    "r2_terminal": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+    "r3_state": {
+      "phase": "passed",
+      "started_unix": 1792802395.3078027,
+      "updated_unix": 1792802510.25877,
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7",
+      "sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+      "bytes": 80252472,
+      "source_hashes": {
+        "crates/vv-web/src/inspector_choice_preview.rs": "bd05d5a4de37f87f6f6e79c95d76cb7280394a0b1bf5fb60fce5e0cfcab0db30",
+        "crates/vv-web/src/tests/inspector_choice_preview.rs": "91eb1541d9ac98be161c29f766b169abc32619657d83669a10ed4094f788029b",
+        "web/js/inspector.js": "cc20da6ed0b3c2340b90f4f8def74da7a57ef2d04c0a5ff9657510908cfc8a61",
+        "web/js/main.js": "11bcd193b8bcab436526e63d62c385a4381a6c3b58334d2230516138718551c9",
+        "web/test/inspector-selection.test.js": "34fab23f9915c7d30afad2ad297e53dec637a980a02b7726c28a641ee38477d5"
+      },
+      "native_audio_source_hashes": {
+        "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+        "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+        "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+        "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+      },
+      "memory_peak_bytes": 2114867200,
+      "reused_native_gate": "native-library-thumbnails-r2; AdvancedSpeed/key-editor gates; native4K R2 export"
+    },
+    "r3_terminal": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+    "r1": "201 of202 client cases passed; one fake DOM fixture lacked tagName/parentNode. Fixed fixture only, with owner/listener disposal regression. R1 stopped before Rust compilation.",
+    "r2": "10 affected popup cases and10 native cases passed; Clippy all targets and embedded binary build passed. The201 unchanged R1 client passes are reused, not added as new unique cases.",
+    "r3": "158 affected client cases and7 native cases passed; Clippy all targets8.63s and embedded build41.84s. Unchanged viewer/popup/font/transition/cache gates reused.",
+    "warnings": "R3 Node fixtures emit MaxListenersExceededWarning. Focused source review finds ordinary ColorCorrection mounts10 numeric scrubs plus2 ranges on a fresh EventTarget, above Node default10. visual.test.js58-70 creates a new window and disposes controllers; main.js disposes old visual owners, and transition-controls.dispose removes global listeners with passing zero-listener assertions. No accumulating production leak is evidenced; Windows runtime console is empty. Test process is not claimed warning-free."
+  },
+  "live_png_checks": [
+    {
+      "label": "title-case",
+      "request": {
+        "query": {
+          "project_epoch": "1792802533893961407:1",
+          "if_generation": "0",
+          "timeline_id": "1",
+          "revision": "b9576df4a636f7dd",
+          "frame": 12,
+          "width": 960
+        },
+        "clip_ids": [
+          "12"
+        ],
+        "choice": {
+          "kind": "title_case",
+          "case": "Upper"
+        }
+      },
+      "images": {
+        "baseline": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/title-case-before.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        },
+        "draft": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/title-case-draft.png",
+          "bytes": 298305,
+          "sha256": "e3a8886dabc9e7e22fb05be479cb1e74c11be7044599149b0ddaa8cd1d26c896",
+          "width": 960,
+          "height": 540
+        },
+        "after": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/title-case-after.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        }
+      },
+      "original_restored_exact": true,
+      "response_no_store": true
+    },
+    {
+      "label": "blur-direction",
+      "request": {
+        "query": {
+          "project_epoch": "1792802533893961407:1",
+          "if_generation": "0",
+          "timeline_id": "1",
+          "revision": "b9576df4a636f7dd",
+          "frame": 12,
+          "width": 960
+        },
+        "clip_ids": [
+          "1"
+        ],
+        "choice": {
+          "kind": "blur_direction",
+          "filter": "GaussianBlur",
+          "direction": "Horizontal"
+        }
+      },
+      "images": {
+        "baseline": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blur-direction-before.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        },
+        "draft": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blur-direction-draft.png",
+          "bytes": 304183,
+          "sha256": "5821ffc461242af7954935b4be00930e93c43b09f3cd14f0b3a53cc97207f07a",
+          "width": 960,
+          "height": 540
+        },
+        "after": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blur-direction-after.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        }
+      },
+      "original_restored_exact": true,
+      "response_no_store": true
+    },
+    {
+      "label": "mask-mode",
+      "request": {
+        "query": {
+          "project_epoch": "1792802533893961407:1",
+          "if_generation": "0",
+          "timeline_id": "2",
+          "revision": "73abd968dfee316b",
+          "frame": 12,
+          "width": 960
+        },
+        "clip_ids": [
+          "20"
+        ],
+        "choice": {
+          "kind": "mask_mode",
+          "index": 0,
+          "mode": "Subtract"
+        }
+      },
+      "images": {
+        "baseline": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/mask-mode-before.png",
+          "bytes": 287337,
+          "sha256": "5eb0e92d613e14425544ead181a0d0c706fbe043fecc97dce234cb12aaf69fb3",
+          "width": 960,
+          "height": 540
+        },
+        "draft": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/mask-mode-draft.png",
+          "bytes": 645395,
+          "sha256": "d33a327d09c5eb5176c01d2612fdfc03094c4b370a6f3e161445d6e468c22603",
+          "width": 960,
+          "height": 540
+        },
+        "after": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/mask-mode-after.png",
+          "bytes": 287337,
+          "sha256": "5eb0e92d613e14425544ead181a0d0c706fbe043fecc97dce234cb12aaf69fb3",
+          "width": 960,
+          "height": 540
+        }
+      },
+      "original_restored_exact": true,
+      "response_no_store": true
+    },
+    {
+      "label": "blend-mode",
+      "request": {
+        "query": {
+          "project_epoch": "1792802533893961407:1",
+          "if_generation": "0",
+          "timeline_id": "1",
+          "revision": "b9576df4a636f7dd",
+          "frame": 12,
+          "width": 960
+        },
+        "clip_ids": [
+          "12"
+        ],
+        "choice": {
+          "kind": "blend_mode",
+          "blend": "Multiply"
+        }
+      },
+      "images": {
+        "baseline": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blend-mode-before.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        },
+        "draft": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blend-mode-draft.png",
+          "bytes": 293739,
+          "sha256": "40f59601a81f5458e1ef4c17c88bd7080b37cfdd455704bc0dd5546bc2261831",
+          "width": 960,
+          "height": 540
+        },
+        "after": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/blend-mode-after.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        }
+      },
+      "original_restored_exact": true,
+      "response_no_store": true
+    },
+    {
+      "label": "track-matte",
+      "request": {
+        "query": {
+          "project_epoch": "1792802533893961407:1",
+          "if_generation": "0",
+          "timeline_id": "1",
+          "revision": "b9576df4a636f7dd",
+          "frame": 12,
+          "width": 960
+        },
+        "clip_ids": [
+          "12"
+        ],
+        "choice": {
+          "kind": "track_matte",
+          "matte": "LumaInverted"
+        }
+      },
+      "images": {
+        "baseline": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/track-matte-before.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        },
+        "draft": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/track-matte-draft.png",
+          "bytes": 298796,
+          "sha256": "ca5c94cf5616125db6d569cb8dc86b10ebf7a5cd11d3bef6f9bbb3fbd9d34312",
+          "width": 960,
+          "height": 540
+        },
+        "after": {
+          "path": "/home/halo/.cache/venturi-build/inspector-choice-modes-live-r3/track-matte-after.png",
+          "bytes": 298658,
+          "sha256": "c0ebef9bae497d083938a2dae6e4957630c859d945c99c69ff789d75e2c9acec",
+          "width": 960,
+          "height": 540
+        }
+      },
+      "original_restored_exact": true,
+      "response_no_store": true
+    }
+  ],
+  "served_module_hashes": {
+    "js/inspector.js": {
+      "bytes": 73194,
+      "sha256": "cc20da6ed0b3c2340b90f4f8def74da7a57ef2d04c0a5ff9657510908cfc8a61"
+    },
+    "js/main.js": {
+      "bytes": 199864,
+      "sha256": "11bcd193b8bcab436526e63d62c385a4381a6c3b58334d2230516138718551c9"
+    },
+    "js/masks.js": {
+      "bytes": 23501,
+      "sha256": "978a91d04326ba09e2a066a6200bd7b1e16c74b751cbd01bfcd270e2617eba30"
+    },
+    "js/transition-controls.js": {
+      "bytes": 17562,
+      "sha256": "2c35bac288c175d39b20e82b4ba4aeed15efdc378950a97d8a639667235da102"
+    },
+    "js/viewer.js": {
+      "bytes": 6452,
+      "sha256": "9b8fb3ed44981034a1ae01e92710977bae4cd1e81733ad7719cf3d25daf5bd14"
+    },
+    "js/visual.js": {
+      "bytes": 27510,
+      "sha256": "bd2a366b03a4cad9719a13a21728b9a872de319d6f8241b634d774b8d1d4c15f"
+    },
+    "style/app.css": {
+      "bytes": 35927,
+      "sha256": "e80d851e9cc6c4e91b020e32633aa2e0b56c1d3a10f03c6600ad0d3f71e19def"
+    }
+  },
+  "browser_mask": {
+    "url": "http://127.0.0.1:8855/",
+    "clipId": "20",
+    "frame": 199,
+    "modeBefore": "Add",
+    "modeAfter": "Add",
+    "labelAfter": "Add",
+    "popupClosed": true,
+    "originalImageRestored": true,
+    "previewShown": true,
+    "input": "Existing Windows browser keyboard ArrowDown/Escape",
+    "scope": "Popup preview and cancel only. The playhead is outside clip20; pixel-change qualification uses the separate live frame12 API checks. No pointer or screenshot claim.",
+    "finalConsole": [],
+    "finalSaved": true,
+    "finalConnectedWriter": true,
+    "viewport": [
+      1536,
+      864
+    ],
+    "screenshot": "Page.captureScreenshot timed out; no screenshot artifact created."
+  },
+  "browser_blend_matte": {
+    "url": "http://127.0.0.1:8855/",
+    "clipId": "20",
+    "frame": 199,
+    "input": "Windows browser ArrowDown/Escape",
+    "checks": [
+      {
+        "label": "Blend mode",
+        "before": "Normal",
+        "after": "Normal",
+        "previewShown": true,
+        "popupOpened": true,
+        "popupClosed": true,
+        "originalImageRestored": true
+      },
+      {
+        "label": "Track matte",
+        "before": "None",
+        "after": "None",
+        "previewShown": true,
+        "popupOpened": true,
+        "popupClosed": true,
+        "originalImageRestored": true
+      }
+    ],
+    "scope": "Keyboard popup/preview/cancel only. Frame199 is outside clip20; changed pixels are qualified separately through frame12 native API PNGs. No pointer or screenshot acceptance.",
+    "console": [],
+    "saved": true,
+    "finalDom": {
+      "inspectorTitle": "Timeline",
+      "viewport": [
+        1536,
+        864
+      ]
+    }
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "export_evidence_reuse": {
+    "artifact": "f7-native-4k-export-workflow.json",
+    "unchanged_source_hashes": {
+      "crates/vv-web/src/program.rs": "8ad1d92e970ced7f1cf2761cc15ff44692e6ea39a3e7fada38487d6a9f4d697f",
+      "crates/vv-web/src/preview.rs": "b78bf744df65b820f8d824ef6501ad01aa1715cf47785a4a1913ebd462aea827",
+      "crates/vv-web/src/source.rs": "dc733937664ae492b2cb2aca594a6a661a7b2cd2c3b5d6fedc84f9fcd351be47",
+      "crates/vv-session/src/export.rs": "4baaa825bc1be394b6e9ad88210a66138192c6df23ee6926592b52e0afefb13e",
+      "crates/vv-media/src/encode.rs": "5705c7a4623ae2f6a5fa037a313005650cbda72cafdf9391ae697e77f80d1efe",
+      "crates/vv-web/examples/verify_preview.rs": "6ea8178c8bf1d7fc994b23bc9b2c2e818f8d1807180f79699baff0735dd18826"
+    },
+    "scope": "Previous actual48-frame native4K export is reused for unchanged rendering/export paths; no fresh full4K export is claimed for this binary."
+  },
+  "limitations": [
+    "Windows keyboard popup/preview/Escape restoration only; frame199 outside clip20 does not qualify changed pixels. Separate native frame12 PNGs qualify them.",
+    "Pointer and screenshot capture remain unavailable in the existing browser automation; no screenshot/physical-DPI acceptance claimed.",
+    "The first320px blur probe quantized radius3 below visible output;960px live rendering proves the actual direction change without a product modification.",
+    "Long real footage, physical audio/device workflow, broad UI parity and full F1-F7/M7 acceptance remain open."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

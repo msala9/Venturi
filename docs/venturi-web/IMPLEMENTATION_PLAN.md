@@ -22,7 +22,7 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 The owner accepted the usable workflow and resumed the full plan. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) for the active F1–F7 delivery blocks:
-complete the 41 remaining partial capabilities, preserve the 49 already accepted and finish
+complete the 29 remaining partial capabilities, preserve the 61 already accepted and finish
 M7 release qualification. The two explicitly NOT-PLANNED rows remain excluded.
 [DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the completed regression baseline.
 Preserve the protected editor and any new work in the delivered candidate.
@@ -36,15 +36,18 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8850/**, confirmed permanent
-saved-preset Delete (`ebbafda`), preserving the portable Library/preset editor on
-8849. See the
-current [implementation status](IMPLEMENTATION_STATUS.md) and
-`evidence/f5-preset-delete-workflow.json` for qualification and runtime identity.
-The ledger remains **49 done / 41 partial / 2 excluded**; both F5 rows remain
-partial. Continue connected effects/font/background, moving filter/Adjustment
-and audio-fade output work, then the remaining F1-F7/M7 criteria; reuse already
-qualified default-font and transform references.
+The current halo1 delivery is **http://127.0.0.1:8855/**, source `b8d6133`,
+runtime `2dbc9697d6e7`. All five native Inspector choice previews now pass their
+affected gate and live native draft/cancel checks; the actual native-resolution
+4K import/save/reopen/export workflow also passes within its synthetic48-frame
+scope. See [implementation status](IMPLEMENTATION_STATUS.md),
+`evidence/f3-native-inspector-choice-previews.json` and
+`evidence/f7-native-4k-export-workflow.json` for exact acceptance boundaries.
+The ledger remains **61 done / 29 partial / 2 excluded**. Continue coherent
+remaining functionality and representative-footage/physical acceptance, then
+the integrated F1-F7/M7 release gates. The prebuilt launcher must not initiate
+compilation; current operation and guarded runback are in [RUNNING.md](RUNNING.md).
+Older deliveries below remain protected historical instances.
 
 Preserved shared-originals delivery: **http://127.0.0.1:8840/**, source `dc42d2a`,
 binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.

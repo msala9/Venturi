@@ -6,11 +6,11 @@ The server can read and write user media and utilize an expensive GPU. Treat it 
 
 - Bind `127.0.0.1:8787` by default; connect from Windows with `ssh -N -L 8787:127.0.0.1:8787 user@server`, browse `http://127.0.0.1:8787` on Windows.
 - If connecting via VPN/Tailscale and exposing beyond loopback, require explicit host/origin/auth controls, TLS/security review. Never default to port open on all interfaces.
-- Systemd user service or shell-driven process, not privileged root; sandbox filesystem when feasible. No GNOME, KDE or desktop startup.
+- The deployed halo1 host is a transient system-manager service with explicit `User=halo` and `Group=halo`; inspect it with plain `systemctl`. The editor process is unprivileged. Do not confuse it with the preserved halo2 user services or enable a new boot service.
 
 ## Filesystem policy
 
-- Configure `projects_root`, `media_roots`, `exports_root`, `cache_root` in server config; all explicit paths.
+- Configure approved roots through the implemented `--projects-root`, `--assets-root` and `--presets-root` CLI options. The shared roots are explicit opt-ins; project writes and source browsing remain scoped to their approved authority. Export/cache storage is managed by the existing bounded stores, not fictitious extra configuration-file settings.
 - User-facing file choices are via server-authorized tokens/IDs derived from directory listing; no request accepting arbitrary unrestricted host paths.
 - Canonicalize and validate paths AND check symlink/race conditions. For writes, use directory handles/openat-style or similarly safe resolution if available; never rely on a naive starts_with prefix alone.
 - Upload size/type/duration caps, quotas for disk cache and temp outputs. Sanitize filenames and download content type. No arbitrary shell execution from request fields; do not invoke a shell to build FFmpeg arguments.
@@ -25,22 +25,31 @@ The server can read and write user media and utilize an expensive GPU. Treat it 
 - Session lock or ownership token for single-writer semantics; no persistent browser secrets in localStorage; secure same-site cookie if adding auth.
 - Audit logs: operation IDs, state transitions, sanitized paths, no prompt/media data leakage by default.
 
-## Minimal service approach (proposal only)
+## Implemented deployment and operational boundary
 
-Install `vv-web` binary as unprivileged user; configure `~/.config/venturi-web/config.toml` with allowed roots and device selection; `systemctl --user start venturi-web` only when editing, stop afterwards if desired. Enable lingering only after user explicitly asks for background service lifetime. Project/export jobs do not survive server process termination unless persisted job state/restore is implemented; browser tab close alone should not stop the running process.
+The host uses CLI arguments; a `config.toml` reader is not implemented.
+The supported options are `--listen`, `--projects-root`, `--assets-root`,
+`--presets-root`, `--library-url`, `--gpu-device`, `--software-preview` and
+`--gpu-lock`. `--listen` refuses non-loopback addresses; hardware and software
+preview are alternative explicit modes. RUNNING.md records the exact delivered
+arguments, environment, resource properties and immutable executable hashes.
 
-## Manual baseline smoke
+Keep the existing Windows SSH forward and work tab. The current endpoint is
+`http://127.0.0.1:8855/`; this document does not authorize creating duplicate
+tunnels, a default service, boot enablement, lingering or a restart loop.
+The launcher selects a prebuilt executable with an optional `VENTURI_WEB_BINARY`
+override; it does not build or install the host. During runback, select the
+recorded immutable executable and preserve the explicit CLI roots and bounds.
 
-```bash
-# On Ubuntu: when vv-web exists
-./target/debug/vv-web --listen 127.0.0.1:8787
-# On Windows (PowerShell):
-ssh -N -L 8787:127.0.0.1:8787 user@linux-server
-# Browser: http://127.0.0.1:8787
-```
-
-`--listen` is implemented by vv-web and refuses non-loopback addresses. The
-actual development commands and bounds are maintained in RUNNING.md.
+Refuse stop, upgrade or runback while Unsaved, while Undo/Redo has any entries,
+or while client drafts, unresolved command outcomes, playback/capture or jobs
+remain active. Save alone does not clear history, and server Saved status does
+not prove the browser has no drafts. Recheck unit/PID/binary/root/port ownership
+and preserve saved bytes/sidecars before an explicitly planned operation.
+RUNNING.md contains the gate and bounded system-unit runback template; the
+retained prior binary is not a backup of unsaved state or live Undo. Browser
+tab closure does not stop the service. Saved data and durable export records
+can reopen; transient render work and Undo chains do not resume after restart.
 
 ## Implemented local ownership and saved recovery
 
@@ -70,10 +79,15 @@ should still be closed while saving the same project from the web.
 The full editing soak and release review remain open. The failed/interrupted
 earlier backend soaks are retained as failure evidence, not release acceptance.
 The owner's current development checkpoint uses the unprivileged, resource-limited
-`venturi-web-halo1-advanced-speed-controls.service` on halo1, bound to loopback port8855
-and reached through the existing Windows SSH tunnel. It is a transient systemd
-unit running as `halo`, not a newly enabled boot service. Source `0f1e355` and
-runtime `228bae5e27c1` are bound in `evidence/f1-native-advanced-speed-controls.json`.
+`venturi-web-halo1-inspector-choice-modes.service` on halo1, bound to loopback
+port 8855 and reached through the existing Windows SSH tunnel (captured PID 23536).
+It is a transient system-manager unit running its process as `halo:halo`, not a
+newly enabled boot service. Tested source is
+`b8d6133dda5d8194ebb945d47169e7656fa9d088`, executable
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7`, captured
+PID 351463. RUNNING.md binds its full SHA256/configuration and the retained
+`2c587b7` / `vv-web-9a619eebab31` runback binary. The captured project was Saved
+with empty history; this must be checked again before any operational change.
 Earlier protected halo1/halo2 editor services remain live. No public listener
 is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
 client drafts and Undo chains. A saved project alone does not authorize restarting

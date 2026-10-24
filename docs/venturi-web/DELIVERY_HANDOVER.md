@@ -1,6 +1,40 @@
 # Usable editing workflow — handover
 
-## Current halo1 native transition controls — 2026-10-23
+## Current owned delivery — 2026-10-24
+
+Use **http://127.0.0.1:8855/** in the existing Windows browser and keep its
+existing SSH tunnel (captured PID 23536). Tested source is
+`b8d6133dda5d8194ebb945d47169e7656fa9d088`; the transient system-manager unit is
+`venturi-web-halo1-inspector-choice-modes.service`, captured PID 351463, running
+unprivileged as `halo:halo`. Use plain `systemctl` to inspect this unit, not
+`systemctl --user`.
+
+Executable `/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7`
+has SHA256 `2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94`.
+The project root is `/home/halo/VenturiWeb-color-audio-controls-20261023`;
+`Venturi_Library_Replacement_V1.vvproj` was Saved with empty Undo/Redo at the
+checkpoint. Re-read live state before any operation: this may since have changed.
+
+[RUNNING.md](RUNNING.md#current-working-instance--2026-10-24) contains the actual
+CLI, environment, bounds, identity checks and runback procedure. Refuse restart
+or runback when Unsaved, when Undo/Redo is nonempty, or while client drafts,
+unresolved commands, capture/playback or jobs remain active. Save alone does not
+clear history. Preserve the 39 prior Sessions/40 PIDs, 11 Saved files, NAS
+assets/presets and shared proxy; no background enablement or driver/browser
+changes are authorized by this handover.
+
+The immutable prior source `2c587b7` and binary `vv-web-9a619eebab31` are retained
+for guarded runback; the full path/hash and verification steps are in RUNNING.md.
+Selecting that binary does not restore live Undo or unsaved state. Full F1-F7/M7,
+the final soak and reboot/runback acceptance remain open.
+
+## Historical workflow deliveries
+
+The sections below retain version-specific proof. Their URLs, process IDs and
+limits are historical, not instructions to operate or restart the current
+editor. Leave those protected instances untouched; follow the current runbook.
+
+### Preserved native transition controls — 2026-10-23
 
 Open **http://127.0.0.1:8853/**, source `1e6d910`, binary `9d4623b93873`, service
 `venturi-web-halo1-transition-controls.service` (PID230298). Saved project
@@ -328,10 +362,10 @@ qualified editing/effects/compound projects. New UI evidence and screenshots:
 Port 8811 now has an unsaved InsertClips edit; its old service and existing tab
 were preserved. Port 8790 also retains all five unsaved moves. Do not reload,
 restart or save these other editors to upgrade their appearance. The new
-interface does not contain their unsaved changes. The existing 8812 Windows
-tunnel must remain connected. Save any new work before restarting only
-`venturi-web-native-ui.service`. Its previous binary remains available for rollback;
-never apply rollback or restart commands to either protected editor.
+interface does not contain their unsaved changes. Its historical tunnel and
+editor remain protected. Do not restart `venturi-web-native-ui.service` or the
+other editors from this handover. Use the current runbook's identity and
+idle-state gate for an explicitly planned operation.
 
 ## Earlier usable workflow baseline (port 8811)
 
@@ -400,19 +434,13 @@ has not yet been qualified. No gapless playback claim is made.
 
 ## Operations
 
-On halo2, inspect `systemctl --user status venturi-web-delivery.service`.
-Restart only this candidate with
-`systemctl --user restart venturi-web-delivery.service` after saving its project.
-It automatically reopens the last saved project. Completed exports remain in
-its project root. Never substitute the protected port-8790 service in these
-commands.
+Use the current8855 configuration and guarded procedure in RUNNING.md. Earlier
+halo2 unit names and port8811 tunnel helpers are historical; do not restart them
+or replace their forwards to operate this delivery. The existing Windows tunnel
+must remain connected. If it fails, inspect the existing forward's ownership
+before arranging a replacement; do not start a duplicate on an occupied port.
 
-The current Windows SSH tunnel must remain connected for the URL to work. If it
-has exited, the existing workstation helper
-`python K:\AI-lab\venturi\start-windows-ui-tunnel.py` restores port 8811 using
-the already configured halo2 access; do not run it while that port is occupied.
-No browser installation, Windows build or local rendering is needed.
-
-Use the delivered candidate tab when available. A second tab may be read-only
-while the first holds its writer lease. Close the other candidate tab and use
-Reconnect after its lease expires; the protected port-8790 editor is independent.
+Keep one existing work tab. If a writer lease has naturally expired, use
+Reconnect after confirming the intended session; never force or steal another
+tab's lease, close a foreign editor, or reload a tab containing unconfirmed work.
+No browser installation, Windows build or local rendering is required.

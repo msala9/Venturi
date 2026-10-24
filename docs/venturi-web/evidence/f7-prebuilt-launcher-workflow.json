@@ -1,0 +1,58 @@
+{
+  "status": "passed",
+  "root": "/home/halo/.cache/venturi-build/prebuilt-launcher-r1",
+  "source_hashes": {
+    "scripts/venturi-web.sh": "833f2037d360cca5128e32334923d1e7adc501311a56b8a41ff29d31886b543c",
+    "scripts/tests/venturi-web-launcher.sh": "f21c49f6762ded33b01e103bfacec8e8693eac4bde58c2679f9a655c965b8cf2"
+  },
+  "checks": [
+    {
+      "args": [
+        "bash",
+        "-n",
+        "scripts/venturi-web.sh",
+        "scripts/tests/venturi-web-launcher.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "bash",
+        "scripts/tests/venturi-web-launcher.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "Prebuilt-only launcher checks passed\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "launcher",
+        "--help"
+      ],
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7",
+      "exit_code": 0,
+      "stdout": "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY] [--assets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview.\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "Shell fixture and real prebuilt --help only; no server, build, renderer, driver, install or project write.512MiB address-space/12CPU-second bounds; low priority; temporary fixture cleans only its own unique directory.",
+  "runtime_source_commit": "b8d6133dda5d8194ebb945d47169e7656fa9d088",
+  "runtime_sha256": "2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94",
+  "operational_docs": {
+    "RUNNING.md": "6bbd9d8517efd1d09494d460e49a11e3ea612c1cd326751378fa7fb90c8b770c",
+    "DELIVERY_HANDOVER.md": "7fedc108ca8b404ce031f37c31eb33dd61c2ca9e61b65705b668c0574dbd6f6b",
+    "SECURITY_DEPLOY.md": "1cb7b17d9a7bfa1b6d9ab276c6d53a54a30eb5fcd7d644e4ef1a438911ac206c"
+  },
+  "remaining": [
+    "Verified binary bundle, runtime system-library/assets/notices inventory and final distribution review.",
+    "Representative long footage, physical UI/audio/device qualification, integrated final regression, realistic editing soak and guarded reboot/runback qualification."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

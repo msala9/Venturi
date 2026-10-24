@@ -1,5 +1,48 @@
 # Active completion plan — full Venturi Web scope
 
+## Prebuilt-only startup and current operational handover — 2026-10-24
+
+The launcher now selects `.runtime/vv-web` or explicit `VENTURI_WEB_BINARY`.
+Missing/nonexecutable binaries fail with an actionable message and never invoke
+Cargo, install tools or source a Cargo environment. Arguments, explicit roots,
+exit status and optional lavapipe behavior are preserved. Focused shell cases
+and actual immutable runtime `--help` pass on halo1 without starting a server,
+render or build. See `evidence/f7-prebuilt-launcher-workflow.json`.
+
+RUNNING, DELIVERY_HANDOVER and SECURITY_DEPLOY now bind the actual8855 system
+unit, unprivileged process, CLI/environment/resource bounds, immutable binary
+hashes and guarded runback. Historical editors stay protected. Save alone is
+insufficient for restart: nonempty Undo/Redo, drafts, unresolved commands or
+active work also prevent it. No config.toml reader or boot service is claimed.
+
+The runnable binary bundle and complete system-library/assets/notices inventory
+remain open alongside representative-footage, physical and integrated M7 gates.
+The running binary is unchanged; ledger stays61 done/29 partial/2 excluded.
+
+## Five native Inspector choice previews — 2026-10-24
+
+Source `b8d6133` and runtime `2dbc9697d6e7` now serve halo1/8855.
+Mask mode, blur direction, Title case, Blend mode and Track matte use the
+existing compact choice popup with a bounded native draft before confirmation.
+Escape, focus loss, hidden/collapsed/disposed or stale owners cancel the draft;
+one confirmation uses the existing native command. Blend/matte retain native
+batch broadcast, including a primary no-op with changed peers. No live project,
+Undo, generation or writer lease is changed by preview.
+
+The final affected gate passes158 client cases,7 native cases, Clippy and build
+within8CPU/4GiB/noSwap; peak2,114,867,200B. Earlier unchanged gates are reused.
+All five live960x540 draft PNGs differ from their confirmed baseline; subsequent
+confirmed frames restore the exact original bytes. Windows keyboard tests prove
+Mask/Blend/Track matte popup, preview and Escape restoration without confirming
+an edit. Pointer/screenshot and physical-DPI acceptance are not claimed.
+
+The final Saved session has explicitly empty history. All39 protected Sessions,
+40 PIDs,11 Saved files,5 project media,4 NAS files and shared proxy remain exact.
+See `evidence/f3-native-inspector-choice-previews.json`. The prior native4K
+export remains valid for unchanged render/export source; no repeat4K export
+was required. Ledger stays **61 done /29 partial /2 excluded**. Full F1-F7/M7,
+representative long footage, physical audio and final release remain open.
+
 ## Native-resolution 4K A/V import, persistence and export — 2026-10-24
 
 The unchanged `228bae5e27c1` runtime now passes a finite native-resolution4K

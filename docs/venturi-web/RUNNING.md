@@ -1,6 +1,162 @@
 # Running the implemented host
 
-## Current halo1 working instance
+## Current working instance — 2026-10-24
+
+Open **http://127.0.0.1:8855/** through the existing Windows SSH tunnel
+(captured PID 23536). Keep that tunnel and the existing browser intact. No local
+server, browser installation, driver change or new boot service is required.
+This is a tested development delivery; full F1-F7/M7 release acceptance remains
+open. Current feature and acceptance details are in IMPLEMENTATION_STATUS.md
+and COMPLETION_PLAN.md.
+
+| Binding | Verified value |
+|---|---|
+| Source | `b8d6133dda5d8194ebb945d47169e7656fa9d088` |
+| Unit | `venturi-web-halo1-inspector-choice-modes.service` |
+| Captured process | PID 351463; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7` |
+| Executable SHA256 | `2dbc9697d6e77b0e60a415a0e04c85bf751a6d9174f63bfa0aec12aaedc67f94` |
+| Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
+| Captured saved project | `Venturi_Library_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
+
+These are checkpoint facts, not permission to restart later. The owner may have
+created new edits, history, drafts or jobs since this capture. The 39 prior
+Sessions/40 PIDs, 11 Saved files, NAS assets/presets and shared proxy remain
+protected; do not restart, save, clear or migrate them as part of this delivery.
+
+### Actual host configuration
+
+The host uses CLI arguments; no `config.toml` reader is implemented. Its recorded
+argument vector, after the executable above, is:
+
+```text
+--listen 127.0.0.1:8855
+--projects-root /home/halo/VenturiWeb-color-audio-controls-20261023
+--assets-root /mnt/madrock-share/madrock-library
+--presets-root /mnt/madrock-share/madrock-library/presets
+--library-url http://127.0.0.1:8787
+--gpu-device 0x7551
+--gpu-lock /tmp/HALO_BENCHMARK.lock
+```
+
+This is a transient **system-manager** unit, inspected with plain `systemctl`,
+not `systemctl --user`. The process runs as `halo:halo` with `CPUQuota=800%`,
+`MemoryMax=4G`, `MemorySwapMax=0`, `Nice=19`, `IOWeight=10`,
+`OOMScoreAdjust=1000`, `TasksMax=128`, `Restart=no`, `TimeoutStopSec=30`,
+`KillMode=control-group`, `UMask=0077` and `NoNewPrivileges=yes`. Its environment is:
+
+```text
+XDG_RUNTIME_DIR=/home/halo/VenturiWeb-color-audio-controls-20261023/.xdg
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json
+WGPU_BACKEND=vulkan
+TOKIO_WORKER_THREADS=4
+```
+
+Standard output and error append to `.server.log` inside this project root.
+The GPU lock is acquired nonblocking by the application; never delete it, wait
+in a retry loop or hold it across HTTP. Preserve the explicit root arguments:
+omitting them selects different local catalogs. The launcher
+`scripts/venturi-web.sh` selects a prebuilt executable, with
+`VENTURI_WEB_BINARY` available to select an explicit binary; it does not build or
+install the host. For this delivery, use the immutable executable above and the
+explicit root arguments rather than relying on launcher defaults.
+
+Read-only identity checks on halo1:
+
+```bash
+systemctl show venturi-web-halo1-inspector-choice-modes.service \
+  -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
+  -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
+  -p MemorySwapMax -p Restart
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-2dbc9697d6e7
+curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
+```
+
+### Stop, upgrade and runback gate
+
+1. Re-read the exact unit's current executable, PID, arguments and resource
+   properties; verify the executable SHA256 and loopback port 8855 ownership. Read
+   `/api/v1/health` and `/api/v1/session` from that endpoint. Never substitute a
+   protected editor's unit, project root or port.
+2. Refuse to stop if the session is Unsaved **or** its history has any labels
+   (including Redo) or a nonzero position. Save alone does not clear Undo. Also
+   refuse while the browser has unconfirmed Inspector/Viewer/recording drafts,
+   an unresolved command outcome, playback/capture, or queued/running preview,
+   import, export or Library work. Server Saved status cannot prove that client
+   drafts are absent. Do not clear history or discard work merely to pass this
+   gate; keep the editor running and arrange a separate owned candidate.
+3. Once the owner confirms the eligible idle state, preserve the saved project,
+   its required local media/sidecars, current configuration and hashes before
+   stopping only this exact owned service. Revalidate immediately before stop.
+   Confirm its MainPID is 0 and port 8855 has no listener before starting a
+   replacement. Never kill a process discovered on that port or retry blindly.
+   The stop command, only after this gate, is
+   `sudo systemctl stop venturi-web-halo1-inspector-choice-modes.service`.
+4. Select a verified immutable executable and use the recorded arguments,
+   environment and limits above. No boot enablement, lingering, automatic
+   restart loop or generic default-service replacement is part of this change.
+   Check at least 8 GiB available host memory and preserve the single-heavy-workload
+   policy before qualification work.
+5. Verify health, the new PID/executable SHA, session epoch and reopened saved
+   project; compare native composition and sidecars with the preserved baseline.
+   Restart restores saved state, not the former process's Undo chain or
+   transient render jobs. Interrupted durable exports remain reviewable and do
+   not resume automatically. Keep the Windows tunnel; reconnect the existing
+   work tab only after confirming its drafts were safely resolved.
+
+### Immutable prior binary for runback
+
+The retained prior source is `2c587b7`, executable
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-9a619eebab31`, SHA256
+`9a619eebab3123f64e3f44a340a3b0bb3e0a9f470df98140768414a163581bff`.
+Verify this hash before selecting it. A runback follows the same refusal gate
+and bounded configuration; it does not overwrite the newer executable, saved
+project, backups, receipts or caches. Validate reopening on a preserved project
+copy in a separate approved candidate before allowing writes from an older
+binary. If current edits/history/drafts/jobs exist, leave the live service
+untouched. Restoring a binary does not restore an earlier unsaved session.
+Final reboot/runback qualification remains open; these instructions do not
+claim it has been performed.
+
+After the gate, the following bounded system-unit template selects that prior
+binary. First verify the proposed unit name is unused. This is a manual runback
+procedure, not an instruction to execute it against the working editor now.
+
+```bash
+sudo systemd-run --unit=venturi-web-halo1-inspector-choice-runback.service \
+  --property=User=halo --property=Group=halo \
+  --property=WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023 \
+  --property=CPUQuota=800% --property=MemoryMax=4G --property=MemorySwapMax=0 \
+  --property=Nice=19 --property=IOWeight=10 --property=OOMScoreAdjust=1000 \
+  --property=TasksMax=128 --property=Restart=no --property=TimeoutStopSec=30 \
+  --property=KillMode=control-group --property=UMask=0077 --property=NoNewPrivileges=yes \
+  --property=Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-color-audio-controls-20261023/.xdg \
+  --property=Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json \
+  --property=Environment=WGPU_BACKEND=vulkan --property=Environment=TOKIO_WORKER_THREADS=4 \
+  --property=StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
+  --property=StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
+  /home/halo/.local/share/venturi-web/.runtime/vv-web-9a619eebab31 \
+  --listen 127.0.0.1:8855 \
+  --projects-root /home/halo/VenturiWeb-color-audio-controls-20261023 \
+  --assets-root /mnt/madrock-share/madrock-library \
+  --presets-root /mnt/madrock-share/madrock-library/presets \
+  --library-url http://127.0.0.1:8787 --gpu-device 0x7551 \
+  --gpu-lock /tmp/HALO_BENCHMARK.lock
+```
+
+Observe the actual new unit/PID and its health; a launch failure is not permission
+to stop another listener, change the NAS or retry with different roots. Recheck
+the current version's immutable hash before using the same template for a
+forward restoration, with a new unused unit name and the current executable.
+
+## Historical deliveries and workflow notes
+
+The following sections retain earlier evidence and version-specific behavior.
+Their URLs, process IDs, limitations and service names are historical, not
+current operating instructions. Do not restart or overwrite those instances.
+Use the current configuration and refusal gate above for any planned operation.
+
+### Preserved durable-proxy instance
 
 Use **http://127.0.0.1:8831/** in the existing Windows browser. Source `6764b2d`,
 binary `vv-web-4a11e6f7c63e`, runs as unprivileged `halo` in
@@ -350,7 +506,13 @@ Before replacing the current halo1 process, inspect its Saved/Unsaved state,
 history and client drafts. Its source bootstrap is not a project migration:
 the earlier dirty halo2 projects and live Undo chains were never copied.
 
-## General host setup
+## Historical general host setup
+
+This section and the later workflow notes retain earlier implementation-stage
+instructions and limitations. Current feature scope is maintained in
+IMPLEMENTATION_STATUS.md/COMPLETION_PLAN.md; current deployment and stop/runback
+instructions are at the top of this document. Historical requests to save before
+stopping do not override the empty-history, draft and active-job refusal gate.
 
 Venturi Web currently provides native project/timeline editing over loopback.
 It is an incremental editor with exact composed GPU frames and Source playback
@@ -662,7 +824,11 @@ nosniff are implemented. This is a local development host, not a hardened
 public service. M7 threat modeling, process-crash recovery, long soak, playback
 and hardware encode validation remain outstanding.
 
-## halo2 development deployment
+## Historical halo2 development deployment
+
+The commands below describe the former setup, not a current launch procedure.
+Port8790 and the earlier halo2 editors are protected. Do not run these commands
+against them or replace their tunnels; the owned working endpoint is8855.
 
 The selected adapter is R9700 device 0x7551, not integrated Strix Halo 0x1586.
 The runtime can be built on matching Ubuntu/WSL and copied as a stripped binary
@@ -689,8 +855,9 @@ Program/Export holds one reservation for its complete bounded preparation;
 cancel it to release that reservation at the next native cancellation point.
 Uncached exact seeks return GPU_BUSY during that preparation. This prevents
 another agent from acquiring the GPU between that job's native stages.
-If startup finds the lock busy, editing stays available with preview disabled;
-restart only the Venturi process during an idle slot to enable it. A server
+If startup finds the lock busy, editing stays available with preview disabled.
+Do not restart a preserved editor to enable it; any planned replacement requires
+the current runback gate. A server
 that already initialized returns GPU_BUSY for frames until the lock is free.
 Retained images are labeled stale. Only userspace Vulkan and multimedia
 dependencies were authorized; no kernel driver/ROCm/inference changes.

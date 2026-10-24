@@ -1,5 +1,23 @@
 # Active completion plan — full Venturi Web scope
 
+## Static asset transfer reduced - 2026-10-25
+
+Source `d0ee294` / runtime `9e29a444f47b` is active on halo1/8855.
+The same93 initial static JavaScript modules now transfer454887B instead of
+1626238B, a72.03% reduction. Build-time deterministic gzip adds no runtime
+compression or frontend change. All93 served modules decompress byte-exact;
+identity/explicit refusal, HEAD, MIME, security and Session neutrality pass.
+Seven fresh native HTTP/pure cases, Clippy and build pass at2129899520B
+peak with zero memory events. Unchanged31-client/six-Preview proof is reused
+through five direct source hashes. Actual Chrome reload restores CURRENT
+960x540 preview/frame621, Saved/empty history. All17 Saved, Recovery, NAS
+and40foreign PIDs/39 Sessions remain exact. See
+`evidence/f1-static-compression-workflow.json`. The below100KB indicative
+target and all response/FPS/physical/OS/device/held/long/M7 criteria remain
+open; ledger stays62 done/28 partial/2 excluded. R11 remains immutable and
+older; no new package or runback was created for this block.
+
+
 ## Native preview diagnostics delivered - 2026-10-24
 
 Source `c1f03e4` / runtime `b36f5c0dd542` is active on halo1/8855.

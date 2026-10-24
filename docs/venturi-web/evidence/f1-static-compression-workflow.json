@@ -1,0 +1,213 @@
+{
+  "schema": "venturi-static-precompression-workflow-v1",
+  "date": "2026-10-25",
+  "source_commit": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+  "source_manifest_count": 622,
+  "source_manifest_sha256": "26c25b6d9dcae0befc66468646595f54d672064f00a526df1fa79eb17ec2f47c",
+  "source_hashes": {
+    "Cargo.lock": "d4ad6d9730c18b1c5f9520231b1701ca227a7f5c86a9588cfbfff459d67b01d3",
+    "crates/vv-web/Cargo.toml": "38db8c75bfbac65262f1ec31320a7c95dfff6965ecd030d906e0b8c7429a3542",
+    "crates/vv-web/build.rs": "bbc70c394ec5402467f27aa6718253c17174266c5b51f0378f3bb97a8415bef5",
+    "crates/vv-web/src/api.rs": "15d3c19ba6f55f939c1af995e9d95e19bafd1c6e8af1ca7583498d32ba7e5da3",
+    "crates/vv-web/src/tests/api.rs": "0e33ca1d8dbd3885237248d71499caad07944db404df2251ab85bb3b5cac99ff"
+  },
+  "implementation": {
+    "build": "Deterministic gzip mtime0/OS255 for index.html and sorted web/js/style text assets, generated once into Cargo OUT_DIR and embedded. flate2=1.1.10 is build/dev only, already in Cargo.lock; normal dependency declarations and every locked package record/checksum remain unchanged except vv-web referencing this existing package. No runtime compression/filesystem/cache, new frontend framework or source bundle.",
+    "http": "Whitelisted static route negotiates gzip or identity across all Accept-Encoding fields, strict q-values, explicit identity preference, wildcard and conservative duplicate refusals. Vary/MIME/selected Content-Length/HEAD empty body preserve security/no-store; API, missing routes and Host/Origin refusals remain uncompressed.",
+    "reference": "https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.3"
+  },
+  "qualification": {
+    "native_counts": {
+      "precompressed_static": {
+        "passed": 5,
+        "failed": 0,
+        "ignored": 0
+      },
+      "health_assets_snapshot_and_host_boundary": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "embedded_editor_module_imports_are_served_with_javascript_mime": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "steps": [
+      {
+        "label": "native-precompressed_static",
+        "exit_code": 0,
+        "elapsed_seconds": 111.41,
+        "failure": null
+      },
+      {
+        "label": "native-health_assets_snapshot_and_host_boundary",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      },
+      {
+        "label": "native-embedded_editor_module_imports_are_served_with_javascript_mime",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "exit_code": 0,
+        "elapsed_seconds": 14.773,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "exit_code": 0,
+        "elapsed_seconds": 71.104,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "exit_code": 0,
+        "elapsed_seconds": 0.752,
+        "failure": null
+      }
+    ],
+    "memory_peak_bytes": 2129899520,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "prior_proofs": [
+      {
+        "observation": "halo1-preview-observability-r1-observed.json",
+        "observation_sha256": "472f1cc0e699ede80e7e1e78fdfc20dadaa98663e5f44132dd9ace0b09ed1876",
+        "root": "preview-observability-r1",
+        "unit": "venturi-halo1-preview-observability-r1-20261024.service",
+        "source_commit": "c1f03e45af5e9f2bd05993de3bbaa2ffa4863300",
+        "state_sha256": "a0629ba42ee8eae0da4349b3b685f6ca4fd96ddee0e6884a9e31f57b894af178",
+        "unchanged_source_hashes": {
+          "crates/vv-web/src/preview.rs": "8244351cd492560e091276ace3cbdfb428c57e17338aae33478e22883d3e65a9",
+          "crates/vv-web/src/tests/preview.rs": "98df61469851bf5ea9e61a4d868246a5bf8ab4d0f1fb031480dfe628252cee93",
+          "web/js/main.js": "c0b708a4d212d249723c01668828b5d17ddadb335507f4435e7ed033c4f91430",
+          "web/js/workspace-performance.js": "4a64700fa35d6fe8a07fb36638f9bb0447a87a24cf7bb31c313835933c19714f",
+          "web/test/workspace-performance.test.js": "3f3988baba8ad7b10b3e6139c6674cebabd0e2b9deb339b441afc0a190dc6f7b"
+        },
+        "native_case_count": 6,
+        "historical_client_total": 31,
+        "scope": "Prior31 client and6 pure Preview cases retained by the exact unchanged five direct inputs. HTTP static wiring/Cargo inputs change and receive fresh native tests/Clippy/build; no JS rerun or old Clippy credit."
+      }
+    ],
+    "fresh_client_execution": false,
+    "unchanged_normal_dependency_declarations": true,
+    "unchanged_lock_package_records_except_existing_build_dev_reference": true
+  },
+  "runtime": {
+    "unit": "venturi-web-halo1-static-compression.service",
+    "pid": "565076",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-9e29a444f47b",
+    "sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f",
+    "bytes": 81064904,
+    "port": 8855,
+    "memory_peak_after_gui": 112230400
+  },
+  "http": {
+    "module_count": 93,
+    "source_bytes": 1626238,
+    "gzip_wire_bytes": 454887,
+    "reduction_percent": 72.03,
+    "main": {
+      "source_bytes": 214355,
+      "wire_bytes": 51373,
+      "source_sha256": "c0b708a4d212d249723c01668828b5d17ddadb335507f4435e7ed033c4f91430",
+      "wire_sha256": "03e8db9ec23df70e4dd5c2340951aad7627a2a0aaef6dee96bbbf0333faf766a"
+    },
+    "all93_decompress_exact_to_unchanged_source": true,
+    "identity_and_explicit_gzip_refusal_exact": true,
+    "head_selected_headers_and_empty_body": true,
+    "session_exact": true,
+    "request_count": 98,
+    "scope": "main.js recursively follows static import/export-from declarations; dynamic Worklet/previews excluded. No browser timing/FPS or process-memory claim.",
+    "module_witness_sha256": "81e2a29a1e1d56c2f8735526db64ab62e754a5ac037024733d8249b201aea336",
+    "under_100kb_target": false
+  },
+  "chrome": {
+    "project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "connection": "Connected \u00b7 writer",
+    "program_frame": "621",
+    "preview": [
+      {
+        "complete": true,
+        "height": 540,
+        "width": 960
+      }
+    ],
+    "dialogs": 0,
+    "menus": 0,
+    "paused": true,
+    "browser": "Existing Windows Chrome tab2032848735, one reload at http://127.0.0.1:8855/",
+    "capture_method": "Read-only CUA DOM result and inline screenshot show CURRENT composed preview, original Saved project and unchanged workspace. No filesystem screenshot artifact claimed."
+  },
+  "preservation": {
+    "full_session_exact_except_restart_epoch": true,
+    "all17_saved_exact": true,
+    "recovery_exact": true,
+    "all5_assets_and2_presets_and_owned_versions_exact": true,
+    "foreign_pids": 40,
+    "foreign_sessions": 39,
+    "foreign_pid_changes": {},
+    "foreign_session_changes": {}
+  },
+  "private_receipts": {
+    "halo1-static-compression-before.json": {
+      "bytes": 874,
+      "sha256": "c3ca8a5bcf3dd1425d30ad4c8eb1d412f28c4ec750f6766dbb491451f1ec1c3b"
+    },
+    "halo1-static-compression-r1-start.json": {
+      "bytes": 3874,
+      "sha256": "b10691af35fa3c6be31479b047dca6d52b20c692788a7514e769a75f0f91af89"
+    },
+    "halo1-static-compression-r1-observed.json": {
+      "bytes": 9893,
+      "sha256": "26d7ae5068c207fa2595800549fe0c81dac1f15f5160e2194c0d001fa6985ae4"
+    },
+    "halo1-static-compression-r1-deployed.json": {
+      "bytes": 167247,
+      "sha256": "8674cd2eaea5a388aa347f4c51d2a9d34d562dccc7e78aa921fc7efd2b44044b"
+    },
+    "halo1-static-compression-http.json": {
+      "bytes": 26209,
+      "sha256": "db1307e85289393525e790bba76f867790624c184360d75b72872bb25d12a345"
+    },
+    "halo1-static-compression-chrome.json": {
+      "bytes": 519,
+      "sha256": "efc2ed52a19485f1db95e960418cffa08619de28b67b0d9fdf5f31baefe97d69"
+    },
+    "halo1-final-gui-static_compression_before.json": {
+      "bytes": 89420,
+      "sha256": "a03dd651276b81c39910b230797f0bb0d2764b54b902f0fccec8d3feca2453e0"
+    },
+    "halo1-final-gui-static_compression_after.json": {
+      "bytes": 89246,
+      "sha256": "b79cb511808cf0bf13300363ecd896dd3b5a402327dc1dec27535d1af64f7b34"
+    }
+  },
+  "limitations": [
+    "454887 bytes remains above the indicative initial compressed JS target below100KB. This transfer-size check does not qualify navigation latency, one-frame editing response,60FPS, browser/process memory, hardware/device/OS/held input, sustained playback or M7.",
+    "R11 remains the immutable older development package bound to sourcec2b49b0/docse738612. No new package, runback or reboot is claimed."
+  ]
+}

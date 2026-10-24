@@ -516,11 +516,22 @@ Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo tes
 
 ## Observability and performance proof
 
-RPC JSON and software input-to-Canvas-callback timing now have bounded source
+RPC JSON and software input-to-Canvas-callback timing have bounded source
 implementation and actual Chrome evidence in `evidence/f1-workspace-rpc-input-workflow.json`
-(source229aabd). The one217.10ms selection sample does not meet or qualify the
-one-frame target. Queue occupancy/cache-hit/VRAM measurements remain explicitly
-unavailable; direct-fetch/media timing, physical latency and M7 stay unqualified.
+(source229aabd). The earlier217.10ms and537.30ms selection samples do not qualify
+the one-frame target. Sourcec1f03e4 adds actual nonblocking waiting-queue and
+composed-frame cache/lookup snapshots plus optional current-video browser
+counters: `evidence/f1-native-preview-diagnostics-workflow.json`. Its unchanged
+five direct inputs remain bound in the d0ee294 compression gate. VRAM, physical
+latency and M7 stay unqualified; browser counters do not measure device timing.
+
+Source d0ee294 reduces the same93 initial static JavaScript modules from1626238B
+to454887B over HTTP gzip (72.03%). All served modules decompress byte-exact;
+seven native HTTP/pure cases, fresh Clippy/build and actual Chrome reload pass.
+See `evidence/f1-static-compression-workflow.json`. Compression happens during
+build, with existing normal dependencies and every locked package/checksum
+unchanged; no runtime compressor is added. This remains above the indicative
+below100KB target and does not qualify loading latency, FPS or memory growth.
 
 Canvas draw CPU/accounted media-cache diagnostics are implemented and checked in
 `evidence/f1-workspace-performance-workflow.json` (source f91792d). This is not

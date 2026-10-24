@@ -1,5 +1,19 @@
 # Running the implemented host
 
+## Current live development runtime - 2026-10-25
+
+Source `d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1` is active as
+`venturi-web-halo1-static-compression.service`, captured PID565076, port8855.
+Binary: `/home/halo/.local/share/venturi-web/.runtime/vv-web-9e29a444f47b`.
+SHA256: `9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f`.
+Use the existing Windows tunnel/browser at `http://127.0.0.1:8855/`.
+The native Library Source/Mixer fixes, preview diagnostics and precompressed
+static modules are included. Session/17 Saved/Recovery/NAS remain preserved.
+The newest immutable archive is earlier R11, separately bound to sourcec2b49b0
+and docse738612; see BINARY_DELIVERY.md. Full acceptance stays in FINAL_CHECKS.
+Older runtime/package headers below are historical and version-bound.
+
+
 ## Current immutable R10 development delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8e190ba8189f-r10-f1858d8a6e20.tar`.

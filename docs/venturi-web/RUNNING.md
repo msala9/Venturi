@@ -11,11 +11,11 @@ and COMPLETION_PLAN.md.
 
 | Binding | Verified value |
 |---|---|
-| Source | `5959f90df52678cdbcb47ab7dcb353c666979f37` |
-| Unit | `venturi-web-halo1-relative-scrub.service` |
-| Captured process | PID 413887; re-read before operating, never use a remembered PID as ownership proof |
-| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114` |
-| Executable SHA256 | `59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e` |
+| Source | `bf0b322f15bd86660701308b9ce3713e40502e24` |
+| Unit | `venturi-web-halo1-review-quality.service` |
+| Captured process | PID 417052; re-read before operating, never use a remembered PID as ownership proof |
+| Executable | `/home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452` |
+| Executable SHA256 | `77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81` |
 | Project root / working directory | `/home/halo/VenturiWeb-color-audio-controls-20261023` |
 | Captured saved project | `Venturi_Keyframe_Replacement_V1.vvproj`, Saved with explicitly empty Undo/Redo history |
 
@@ -64,11 +64,11 @@ explicit root arguments rather than relying on launcher defaults.
 Read-only identity checks on halo1:
 
 ```bash
-systemctl show venturi-web-halo1-relative-scrub.service \
+systemctl show venturi-web-halo1-review-quality.service \
   -p ActiveState -p SubState -p MainPID -p User -p Group -p ExecStart \
   -p WorkingDirectory -p Environment -p CPUQuotaPerSecUSec -p MemoryMax \
   -p MemorySwapMax -p Restart
-sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114
+sha256sum /home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452
 curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 ```
 
@@ -91,7 +91,7 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
    Confirm its MainPID is 0 and port 8855 has no listener before starting a
    replacement. Never kill a process discovered on that port or retry blindly.
    The stop command, only after this gate, is
-   `sudo systemctl stop venturi-web-halo1-relative-scrub.service`.
+   `sudo systemctl stop venturi-web-halo1-review-quality.service`.
 4. Select a verified immutable executable and use the recorded arguments,
    environment and limits above. No boot enablement, lingering, automatic
    restart loop or generic default-service replacement is part of this change.
@@ -106,17 +106,19 @@ curl --fail --silent --show-error http://127.0.0.1:8855/api/v1/health
 
 ### Immutable prior binary for runback
 
-The retained prior source is `78cb76f`, executable
-`/home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d`, SHA256
-`67ef4854a13d1dd0d95b11e3bb54abae2058d8bd8777d38492faac4d3e8d358a`.
+The retained immediate-prior source is `5959f90`, executable
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114`, SHA256
+`59b6a3cc01140140d6d37ce49eb1bcdbce952e0800212cb8f8b75ad5be30d70e`.
 Verify this hash before selecting it. A runback follows the same refusal gate
 and bounded configuration; it does not overwrite the newer executable, saved
 project, backups, receipts or caches. Validate reopening on a preserved project
 copy in a separate approved candidate before allowing writes from an older
 binary. If current edits/history/drafts/jobs exist, leave the live service
 untouched. Restoring a binary does not restore an earlier unsaved session.
-The isolated packaged/prior/forward runback is now qualified in
+The earlier isolated packaged59b6 ->67ef ->59b6 runback is qualified in
 `evidence/f7-current-prebuilt-workflow.json`; it preserves the working editor.
+The current77d7 client increment has not repeated that packaging/runback check;
+its focused build and actual guarded upgrade are qualified separately.
 M7 requires reload/recovery and documented operation, not a whole-host reboot.
 
 After the gate, the following bounded system-unit template selects that prior
@@ -124,7 +126,7 @@ binary. First verify the proposed unit name is unused. This is a manual runback
 procedure, not an instruction to execute it against the working editor now.
 
 ```bash
-sudo systemd-run --unit=venturi-web-halo1-audio-export-runback.service \
+sudo systemd-run --unit=venturi-web-halo1-review-quality-runback.service \
   --property=User=halo --property=Group=halo \
   --property=WorkingDirectory=/home/halo/VenturiWeb-color-audio-controls-20261023 \
   --property=CPUQuota=800% --property=MemoryMax=4G --property=MemorySwapMax=0 \
@@ -136,7 +138,7 @@ sudo systemd-run --unit=venturi-web-halo1-audio-export-runback.service \
   --property=Environment=WGPU_BACKEND=vulkan --property=Environment=TOKIO_WORKER_THREADS=4 \
   --property=StandardOutput=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
   --property=StandardError=append:/home/halo/VenturiWeb-color-audio-controls-20261023/.server.log \
-  /home/halo/.local/share/venturi-web/.runtime/vv-web-67ef4854a13d \
+  /home/halo/.local/share/venturi-web/.runtime/vv-web-59b6a3cc0114 \
   --listen 127.0.0.1:8855 \
   --projects-root /home/halo/VenturiWeb-color-audio-controls-20261023 \
   --assets-root /mnt/madrock-share/madrock-library \
@@ -154,7 +156,9 @@ Current audio-source/Voiceover qualification: `evidence/f4-f7-original-audio-exp
 
 Current numeric-scrub qualification: `evidence/f1-native-relative-scrub-workflow.json`.
 
-Current candidate/archive and isolated immediate-prior/forward startup: BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. The package binds binary source5959f90 separately from its versioned documentation and immutable prior notice index. Full M7 acceptance remains open.
+Current A/B quality qualification: `evidence/f6-review-quality-workflow.json`.
+
+The latest packaged snapshot and its isolated prior/forward startup are in BINARY_DELIVERY.md and `evidence/f7-current-prebuilt-workflow.json`. That archive remains bound to5959f90/59b6 and excludes the current A/B quality increment; use the live immutable executable above for this increment. Full M7 acceptance remains open.
 
 ## Historical deliveries and workflow notes
 

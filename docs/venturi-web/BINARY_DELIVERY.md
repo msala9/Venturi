@@ -1,9 +1,13 @@
 # Prebuilt Linux development candidate
 
-## Current verified candidate — 2026-10-24
+## Latest verified packaged snapshot — 2026-10-24
 
-The current development package contains the same tested binary as the live 8855
-editor, including original-audio/Voiceover and continuous numeric-scrub changes.
+The latest packaged snapshot binds5959f90/59b6, including original-audio/Voiceover
+and continuous numeric-scrub changes. Live8855 now runsbf0b322/77d7f5fe4452
+with the additional A/B quality selector; see RUNNING.md and
+`evidence/f6-review-quality-workflow.json`. This focused client increment has not
+been repackaged or subjected to another isolated runback. The archive identities
+and earlier startup/render evidence below remain bound to their recorded version.
 
 | Item | Verified value |
 |---|---|
@@ -47,7 +51,8 @@ No whole-host reboot is required by M7.
 ## Earlier candidate — 2dbc9697d6e7
 
 The following evidence is retained for the earlier binary and its original
-artifact bytes; use the current candidate above for the latest code.
+artifact bytes; use the snapshot above for the latest verified archive and
+RUNNING.md for the current live executable.
 
 
 2026-10-24. The qualified halo1 executable is packaged without rebuilding or

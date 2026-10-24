@@ -1,0 +1,330 @@
+{
+  "date": "2026-10-24",
+  "scope": "F6 shared A/B native Source quality; full F1-F7/M7 scope remains active",
+  "source_commit": "bf0b322f15bd86660701308b9ce3713e40502e24",
+  "implementation": {
+    "files": [
+      "web/index.html",
+      "web/js/review.js",
+      "web/test/review.test.js",
+      "docs/venturi-web/API_CONTRACT.md"
+    ],
+    "qualities": [
+      "low",
+      "medium",
+      "high",
+      "original"
+    ],
+    "initial_quality": "low",
+    "persistence": "controller lifetime, including reopen/swap; no browser reload persistence",
+    "semantics": "Pause, snapshot verified or requested absolute per-pane frames and audition stream ordinals, invalidate Plan and both displayed generations, prepare serially through existing SourcePlayer. Preserve pair and replacement policies; explicit retry after errors. Show decoded dimensions only for verified current data; separate original dimensions, original stills and audio-only sources. Native Original uses source-size prepared H264/AAC.",
+    "engine_changes": false,
+    "new_endpoints": false,
+    "new_browser_pipeline": false
+  },
+  "qualification": {
+    "unit": "venturi-halo1-review-quality-r1-20261024.service",
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "tests": {
+      "suites": [
+        "web/test/review.test.js",
+        "web/test/source.test.js",
+        "web/test/slip.test.js"
+      ],
+      "passed": 158,
+      "failed": 0,
+      "new_review_cases": 5
+    },
+    "steps": [
+      {
+        "label": "syntax-0",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/js/review.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/review-quality-r1/syntax-0.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--check",
+          "web/test/review.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/review-quality-r1/syntax-1.log",
+        "log_bytes": 0,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "args": [
+          "/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb",
+          "--test",
+          "--test-concurrency=1",
+          "test/review.test.js",
+          "test/source.test.js",
+          "test/slip.test.js"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source/web",
+        "exit_code": 0,
+        "elapsed_seconds": 0.502,
+        "log": "/home/halo/.cache/venturi-build/review-quality-r1/focused-client.log",
+        "log_bytes": 16084,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "args": [
+          "/home/halo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+          "build",
+          "--locked",
+          "--offline",
+          "-p",
+          "vv-web",
+          "--bin",
+          "vv-web"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 70.099,
+        "log": "/home/halo/.cache/venturi-build/review-quality-r1/web-build.log",
+        "log_bytes": 153,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "args": [
+          "/usr/bin/strip",
+          "--strip-debug",
+          "/home/halo/.local/share/venturi-web/.runtime/.review-quality-r1-de86d6d062234f64a678dd79f9baa996"
+        ],
+        "cwd": "/home/halo/.cache/venturi-build/source",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "log": "/home/halo/.cache/venturi-build/review-quality-r1/strip.log",
+        "log_bytes": 0,
+        "failure": null
+      }
+    ],
+    "memory_peak_bytes": 1454854144,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "resource_limits": {
+      "cpu_max": 8,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "nice": 19,
+      "io_weight": 10,
+      "oom_score_adjust": 1000,
+      "tasks_max": 128,
+      "global_lock": "nonblocking /tmp/HALO_BENCHMARK.lock; no HTTP render while held"
+    },
+    "source_hashes": {
+      "web/index.html": "e5d19cc0086ac9a1c232190f935585f2091aaac055ca0c48ea547e26f8c0a946",
+      "web/js/review.js": "802d9b72a26b2fa93b15c36f3ed1b457d82b5547e0ffaef05e55332f73d797a5",
+      "web/test/review.test.js": "e382a29240dedc2516d167c5b4c66de21475b6585f3bc9f027f297512e16d0c2"
+    },
+    "reused": "Native Source codec/window/selected-stream, render/audio/export, Host/revision and Clippy gates unchanged."
+  },
+  "live": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-review-quality.service",
+    "captured_pid": "417052",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-77d7f5fe4452",
+    "sha256": "77d7f5fe4452d9610c7e3b88aa627945448d7df5a619a59585ad1dee1fce9d81",
+    "served_module": {
+      "route": "/js/review.js",
+      "bytes": 42275,
+      "sha256": "802d9b72a26b2fa93b15c36f3ed1b457d82b5547e0ffaef05e55332f73d797a5",
+      "content_type": "text/javascript"
+    },
+    "saved_project": "Venturi_Keyframe_Replacement_V1.vvproj",
+    "project_epoch": "1792813613063283752:1",
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "memory_properties": "ActiveState=active\nMainPID=417052\nResult=success\nMemoryCurrent=335015936\nMemoryPeak=337395712\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+    "final_resource_observation": {
+      "unit": {
+        "ActiveState": "active",
+        "MainPID": "417052",
+        "ControlGroup": "/system.slice/venturi-web-halo1-review-quality.service",
+        "MemoryCurrent": "332169216",
+        "MemoryPeak": "337395712"
+      },
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0,
+        "sock_throttled": 0
+      },
+      "shared_lock_available_and_released": true
+    }
+  },
+  "windows_browser": {
+    "single_existing_tab": true,
+    "playback_started": false,
+    "observations": [
+      {
+        "quality": "low",
+        "take_a": "River_AV_11s.mp4",
+        "take_b": "River_AV_11s.mp4",
+        "absolute_frames": [
+          48,
+          24
+        ],
+        "actual_decoded_dimensions": [
+          [
+            640,
+            360
+          ],
+          [
+            640,
+            360
+          ]
+        ],
+        "original_dimensions": [
+          [
+            1920,
+            1080
+          ],
+          [
+            1920,
+            1080
+          ]
+        ],
+        "paused": [
+          true,
+          true
+        ]
+      },
+      {
+        "quality": "original",
+        "take_a": "River_AV_11s.mp4",
+        "take_b": "River_AV_11s.mp4",
+        "absolute_frames": [
+          48,
+          24
+        ],
+        "native_windows": [
+          [
+            48,
+            264
+          ],
+          [
+            24,
+            264
+          ]
+        ],
+        "actual_decoded_dimensions": [
+          [
+            1920,
+            1080
+          ],
+          [
+            1920,
+            1080
+          ]
+        ],
+        "audition_streams": [
+          0,
+          0
+        ],
+        "paused": [
+          true,
+          true
+        ]
+      },
+      {
+        "quality": "medium",
+        "take_a": "River_AV_11s.mp4",
+        "take_b": "River_Two_Streams_3s.mkv",
+        "absolute_frames": [
+          48,
+          30
+        ],
+        "native_windows": [
+          [
+            48,
+            264
+          ],
+          [
+            30,
+            91
+          ]
+        ],
+        "actual_decoded_dimensions_a": [
+          960,
+          540
+        ],
+        "audition_streams": [
+          0,
+          1
+        ],
+        "take_b_display": "Audio-only source",
+        "paused": [
+          true,
+          true
+        ]
+      }
+    ],
+    "final": "Review closed; Saved/CURRENT, no dialogs, all media paused, no pointer lock, no warning/error console entries",
+    "screenshot": "No screenshot captured: previously verified provider failure, with no provider change observed. No physical pointer acceptance inferred."
+  },
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 12,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true,
+    "all_native_timeline_snapshots_unchanged": true,
+    "all_saved_project_hashes_unchanged": true,
+    "proxy_settings_and_cache_unchanged": true
+  },
+  "package": "Existing 5959f90/59b6 prebuilt archive remains version-qualified prior snapshot; no repack or download for this focused client increment. Live immutable binary above contains new quality control.",
+  "remaining": [
+    "Sustained full-resolution comparison of representative long real footage",
+    "Physical audio, microphone, pointer/DPI and 500-clip performance acceptance",
+    "Nine native app audio-clock cases remain unqualified; no hardware proof inferred",
+    "Bounded typical-editing soak and remaining distribution scope"
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2
+  }
+}

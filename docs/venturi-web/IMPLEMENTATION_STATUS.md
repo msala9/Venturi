@@ -1,5 +1,37 @@
 # Implementation status
 
+## Native A/B source quality — 2026-10-24
+
+Source `bf0b322` / runtime `77d7f5fe4452` is active on port8855,
+unit `venturi-web-halo1-review-quality.service`, captured PID417052.
+Review offers shared Low/Medium/High/Original quality through existing serial
+native Source players. A change pauses comparison, preserves absolute per-pane
+frames and audition streams, invalidates the replacement Plan and both old
+display generations, and keeps take selections/replacement policies. Quality
+survives controller reopen/swap. Actual decoded dimensions are distinguished
+from original media, unchanged original stills and audio-only sources. Original
+requests source-size prepared H264/AAC under existing native limits.
+
+Three affected client suites pass158 cases, including5 new quality regressions;
+one embedded build passes in70.1s. The serial halo1 job within8CPU/4GiB/noSwap
+peaks1,454,854,144B with zero memory-limit/OOM/kill events and terminates MainPID0.
+Unchanged native codec/window/audio/render/export/Host/Clippy checks are reused.
+Actual existing Windows A/B Low640x360 -> Original1920x1080 retains independent
+frames48/24 with both previews paused. A subsequent Medium change retains
+A48 at960x540 and audio-only B30 with audition stream1. Review closes Saved/CURRENT,
+no warnings/errors, playback, dialogs or pointer lock. All12 Saved hashes,
+native timelines,39 foreign Sessions/40 PIDs,5 local media,4 NAS files and proxy
+remain unchanged. See `evidence/f6-review-quality-workflow.json`.
+
+This closes the Low-only implementation gap; sustained real long full-resolution
+comparison, physical audio/input/DPI/dense/soak and remaining distribution
+qualification stay open. Ledger remains61 done/29 partial/2 excluded. The latest
+packaged59b6 archive remains the prior qualified snapshot, without this client
+increment; RUNNING.md identifies the current immutable executable. No repeat
+render/export matrix, package refresh or Windows heavy workload was run.
+
+
+
 ## Current prebuilt package and immediate-prior runback — 2026-10-24
 
 The persistent candidate now matches live source 5959f90/runtime 59b6a3cc0114:

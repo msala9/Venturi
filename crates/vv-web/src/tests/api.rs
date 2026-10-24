@@ -3649,6 +3649,7 @@ async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
         }
     }
     assert!(seen.contains("/js/project-view.js"));
+    assert!(seen.contains("/js/arrow-hold.js"));
     assert!(seen.contains("/js/timeline/input.js"));
 }
 

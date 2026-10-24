@@ -10,6 +10,7 @@ import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} fr
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import {createProxyControls} from "./proxies.js";
 import { createViewer } from "./viewer.js";
+import {createArrowHold,programArrowContext} from './arrow-hold.js';
 import {createViewerZoom,isViewerFullscreenShortcut} from './viewer-zoom.js';
 import { createSourcePlayer, sourceSelection, sourceMediaPath, sourceMediaQuery } from "./source.js";
 import {createSourcePlacement} from './source-placement.js';
@@ -429,7 +430,7 @@ const view = {
 let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
-let seek = () => {};
+let seek = () => {},programArrowHold=null;
 let viewer = null, viewerZoom=null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null, sourceLibraryItem=null, sourcePreviewAttempt=null;
@@ -510,6 +511,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  programArrowHold?.cancel();
   cancelInspectorDraft();
   cancelSourcePreview();
   if(mode!==viewerMode)nativePlacementIntent++;
@@ -1157,6 +1159,7 @@ function updateTime() {
   canvasTimeline.invalidate();
 }
 function installTimeline(next,{transitionSelection=null}={}) {
+  programArrowHold?.cancel();
   retimeMenu?.close();
   audioMeters?.invalidate();
   canvasTimeline.cancel();
@@ -1257,6 +1260,7 @@ $("fit").addEventListener("click", () => {
   canvasTimeline.invalidate();
 });
 function step(delta) {
+  programArrowHold?.cancel();
   if (viewerMode === "source") {
     const media = currentSourceItem();
     const fps = media?.fps;
@@ -1277,14 +1281,22 @@ $('program-position').addEventListener('input',()=>{view.playhead=Number($('prog
 $('program-position').addEventListener('change',()=>{syncPlayheadSelection(false);void seek();selected();void projectView?.update();});
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));
+programArrowHold=createArrowHold({
+  getState:()=>programArrowContext({document:documentState,timeline,mode:viewerMode,frame:view.playhead,inputOwner:commandOwnership.owner(document.activeElement),blocked:busy || Boolean(unresolved) || view.recording || document.hidden || Boolean(document.querySelector('dialog[open]')) || !canvasTimeline.navigationIdle() || isTextTarget(document.activeElement) || Boolean(document.activeElement?.closest?.('[role="combobox"],[role="listbox"],[role="slider"],[data-key-editor-window],.app-menu[open]'))}),
+  onStart:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();},
+  onFrame:frame=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();},
+  onSeek:()=>seek(),
+  onSettled:()=>{selected();audioScrub?.request();void projectView?.update();},
+  notice,
+});
 document.addEventListener("keydown", (event) => {
   if (!globalEditingShortcut(event,{allowRepeat:true})) return;
   if (event.altKey) return;
   const mark=markRangeAction(event,{textTarget:isTextTarget(event.target),dialogOpen:Boolean(document.querySelector('dialog[open]'))});
   if(mark){event.preventDefault();$(viewerMode==='source'?mark==='in'?'source-mark-in':'source-mark-out':mark==='in'?'program-mark-in':'program-mark-out').click();}
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-    event.preventDefault();
-    step(event.key === "ArrowLeft" ? -1 : 1);
+    if(viewerMode==='source'){event.preventDefault();step(event.key==='ArrowLeft'?-1:1);}
+    else if(programArrowHold.keydown(event))event.preventDefault();
   }
 });
 

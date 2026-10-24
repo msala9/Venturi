@@ -181,8 +181,8 @@ test('readonly Mixer reads EQ and compressor curves on open and reopen while all
   const doc=new EventTarget();doc.hidden=false;doc.createElement=tag=>new Element(tag);globalThis.document=doc;
   globalThis.Option=class extends Element{constructor(label,value){super('option');this.textContent=label;this.value=value;}};
   const eqGraph={frequency_hz:[20,20000],display_db:[-27,27],gain_db:[-24,24],q_wheel_factor:Math.fround(1.15),shape_has_gain:{HighPass:false,LowShelf:true,Peak:true,HighShelf:true,LowPass:false}};
-  const eq={enabled:true,kind:{Equalizer:{bands:Array.from({length:6},(_,index)=>({enabled:true,shape:'Peak',freq_hz:[80,200,600,2000,6000,12000][index],gain_db:0,q:1}))}};
-  const compressor={enabled:true,kind:{MultibandCompressor:{crossovers_hz:[200,2000],bands:Array.from({length:3},()=>({threshold_db:-12,ratio:2,attack_ms:10,release_ms:100,makeup_db:0}))}};
+  const eq={enabled:true,kind:{Equalizer:{bands:Array.from({length:6},(_,index)=>({enabled:true,shape:'Peak',freq_hz:[80,200,600,2000,6000,12000][index],gain_db:0,q:1}))}}};
+  const compressor={enabled:true,kind:{MultibandCompressor:{crossovers_hz:[200,2000],bands:Array.from({length:3},()=>({threshold_db:-12,ratio:2,attack_ms:10,release_ms:100,makeup_db:0}))}}};
   const catalog={defaults:{Equalizer:eq,MultibandCompressor:compressor},
     eq:{graph:eqGraph,freq_hz:[20,20000],gain_db:[-24,24],q:[.1,18],shapes:Object.keys(eqGraph.shape_has_gain)},
     compressor:{graph:{frequency_hz:[20,20000],display_db:[-30,24],min_crossover_ratio:Math.fround(1.2),response_kind:'makeup_only'},crossovers_hz:[20,20000],makeup_db:[-24,24],threshold_db:[-60,0],ratio:[1,20],attack_ms:[.1,200],release_ms:[1,2000]}};

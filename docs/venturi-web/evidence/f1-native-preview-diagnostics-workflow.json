@@ -1,0 +1,278 @@
+{
+  "schema": "venturi-native-preview-diagnostics-v1",
+  "date": "2026-10-24",
+  "source_commit": "c1f03e45af5e9f2bd05993de3bbaa2ffa4863300",
+  "source_manifest_count": 621,
+  "source_manifest_sha256": "97ff156bda93a768b9056098151ac0a14056fada3972c9ee46bd5eb5eefa2a3b",
+  "source_hashes": {
+    "crates/vv-web/src/preview.rs": "8244351cd492560e091276ace3cbdfb428c57e17338aae33478e22883d3e65a9",
+    "crates/vv-web/src/tests/preview.rs": "98df61469851bf5ea9e61a4d868246a5bf8ab4d0f1fb031480dfe628252cee93",
+    "web/js/main.js": "c0b708a4d212d249723c01668828b5d17ddadb335507f4435e7ed033c4f91430",
+    "web/js/workspace-performance.js": "4a64700fa35d6fe8a07fb36638f9bb0447a87a24cf7bb31c313835933c19714f",
+    "web/test/workspace-performance.test.js": "3f3988baba8ad7b10b3e6139c6674cebabd0e2b9deb339b441afc0a190dc6f7b"
+  },
+  "implementation": {
+    "backend": "Existing diagnostics route snapshots actual single waiting-slot occupancy, composed-frame bytes/entries and saturating process-lifetime lookup hit/miss/source-validation-rejection counters through nonblocking try_lock. Active worker is excluded; busy/poisoned/disabled data stays explicitly unavailable. Existing source validation, cache admission/eviction, priority and queue replacement are unchanged.",
+    "frontend": "Existing Diagnostics panel reads once per hidden/closed to visible transition, with bounded abort timeout. Existing visible-only one-second local formatter shows snapshot age; no new polling, timer or RAF. Close/hidden/epoch changes abort and clear; stale responses cannot publish or retry until reopening. Optional current attached video playback API counters reject stale/unsupported/still/audio-only elements."
+  },
+  "qualification": {
+    "client_counts": {
+      "tests": 31,
+      "pass": 31,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "native_counts": {
+      "preview_observability_": {
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0
+      },
+      "guarded_frame_cache_": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "cache_eviction_": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "newest_pending_seek_": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "title_draft_cache_": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "steps": [
+      {
+        "label": "syntax-0",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "failure": null
+      },
+      {
+        "label": "syntax-1",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "failure": null
+      },
+      {
+        "label": "syntax-2",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "failure": null
+      },
+      {
+        "label": "focused-client",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      },
+      {
+        "label": "native-preview_observability",
+        "exit_code": 0,
+        "elapsed_seconds": 109.402,
+        "failure": null
+      },
+      {
+        "label": "native-guarded_frame_cache",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      },
+      {
+        "label": "native-cache_eviction",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      },
+      {
+        "label": "native-newest_pending_seek",
+        "exit_code": 0,
+        "elapsed_seconds": 0.252,
+        "failure": null
+      },
+      {
+        "label": "native-title_draft_cache",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      },
+      {
+        "label": "web-clippy",
+        "exit_code": 0,
+        "elapsed_seconds": 13.271,
+        "failure": null
+      },
+      {
+        "label": "web-build",
+        "exit_code": 0,
+        "elapsed_seconds": 71.099,
+        "failure": null
+      },
+      {
+        "label": "strip",
+        "exit_code": 0,
+        "elapsed_seconds": 0.251,
+        "failure": null
+      }
+    ],
+    "memory_peak_bytes": 2097860608,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0,
+      "sock_throttled": 0
+    },
+    "terminal_unit": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "MainPID": "0",
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "[not set]"
+    },
+    "prior_proofs": [
+      {
+        "observation": "halo1-library-source-r2-observed.json",
+        "observation_sha256": "8aa7c7a9014af1388f6c667f05eeba8fd66915f4db5ef0320d748d787c7ebf3a",
+        "root": "library-source-r2",
+        "unit": "venturi-halo1-library-source-r2-20261024.service",
+        "source_commit": "c2b49b0dd0850c2e24bacf4c3d5d9bd1fb36b5ec",
+        "state_sha256": "8f3cc5f2a1bf5be401f3e874f9f2fa04b798e92b33418df1a692f9ac0a4f7e23",
+        "unchanged_source_hashes": {
+          "crates/vv-web/src/api.rs": "5903e2f23c4a11905d988914f2ef52889454cbac049ba50ffbad76f05636eea4",
+          "crates/vv-web/src/commands.rs": "0999577401805db92c92ebc37c138d017b563e6bc3188e7e338570eccb54433f",
+          "crates/vv-web/src/host.rs": "2464be78abea69934025a14c876af1ef4f96dc23ae4896442f7805054a646769",
+          "crates/vv-web/src/source.rs": "cae14f3c700a9446df68a9f15b0fae66c5849c2335af9b7263738abceb1bb495",
+          "crates/vv-web/src/tests/api.rs": "afc329092964fab84e112b7c0ad1e658c13a0fbab2d408c8d6f765371ac1259b",
+          "crates/vv-web/src/tests/commands.rs": "d01b2bf24a8b2e3268a45cc93261d86bb50f24f0314d928b3b799de46f3c1fce",
+          "crates/vv-web/src/tests/host.rs": "7179faad1708ab414ccd866adb53fe2bb1487bc0fdae94d293de55f751032704",
+          "crates/vv-web/src/tests/source.rs": "9b4cfacfae75792671f7d3c77c162c98b533871b21a73e8d60171b25bef22c5c",
+          "web/js/source-assets.js": "fa09ca8baf7ef1f5fd0ff5d3b4c4a4cdd66640b5410ceaa7072c8f6a4cb17a24",
+          "web/js/source-placement.js": "6dced8d5c4884f56f286dfefac06b723a5d804986f9004698f94c8595c68706d",
+          "web/js/source-waveform.js": "f6b6c1251fb8d4f3b341a7b380c8807796b507d6fbbcb0a17b42eafe01a34338",
+          "web/test/source-assets.test.js": "0f794de3ecbe7cf16438b708a91aff5d9b10e08bf2c3a4de41452955521a8b20",
+          "web/test/source-placement.test.js": "0bca4e1e34e541e520496398b95783f7b5d8d653644b152b38dec1fcc83128dc",
+          "web/test/source-waveform.test.js": "56ef366acd54ebe7ef7c3d201a63cf1f48ddbedd0c616770eb37b62ed2c01def"
+        },
+        "native_case_count": 21,
+        "historical_client_total": 262,
+        "scope": "Historical Library qualification bound to14 unchanged direct inputs. Main wiring changes, so the prior262 client total is not full current-UI credit. No recursive prior steps are copied."
+      }
+    ]
+  },
+  "runtime": {
+    "unit": "venturi-web-halo1-preview-observability.service",
+    "pid": "562585",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-b36f5c0dd542",
+    "sha256": "b36f5c0dd542a18d4112878baf0ab5b2cc07e688264a92ddd87a8416b136fb10",
+    "bytes": 80558480,
+    "port": 8855,
+    "memory_peak_after_gui": 113610752
+  },
+  "chrome": {
+    "browser": "Existing Windows Chrome tab2032848735",
+    "action": "Open existing Diagnostics; close and reload the same paused Saved project once; reopen Diagnostics. Ordinary cached frame reuse increases actual native lookup hits without editing.",
+    "first": {
+      "frame_queue": {
+        "available": true,
+        "capacity": 1,
+        "scope": "waiting_only",
+        "waiting": 0
+      },
+      "composed_frame_cache": {
+        "available": true,
+        "byte_capacity": 16777216,
+        "bytes": 286151,
+        "entries": 1,
+        "entry_capacity": 8,
+        "lookup_hits": 0,
+        "lookup_misses": 1,
+        "scope": "process_lifetime_program_draft_scopes_balance",
+        "source_validation_rejections": 0
+      }
+    },
+    "reloaded": {
+      "frame_queue": {
+        "available": true,
+        "capacity": 1,
+        "scope": "waiting_only",
+        "waiting": 0
+      },
+      "composed_frame_cache": {
+        "available": true,
+        "byte_capacity": 16777216,
+        "bytes": 286151,
+        "entries": 1,
+        "entry_capacity": 8,
+        "lookup_hits": 1,
+        "lookup_misses": 1,
+        "scope": "process_lifetime_program_draft_scopes_balance",
+        "source_validation_rejections": 0
+      }
+    },
+    "visible_output": "Timeline draw CPU \u00b7 p50 1.00 ms \u00b7 p95 1.40 ms \u00b7 max 1.40 ms \u00b7 sample window 8\nRPC JSON roundtrip (excludes direct fetch/media) \u00b7 p50 6.30 ms \u00b7 p95 65.80 ms \u00b7 max 65.80 ms \u00b7 sample window 19\nRPC outcomes \u00b7 success 19 \u00b7 http_error 0 \u00b7 invalid_json 0 \u00b7 aborted 0 \u00b7 network_error 0\nSoftware input dispatch \u2192 Canvas callback (not hardware/display latency) \u00b7 p50 \u2014 ms \u00b7 p95 \u2014 ms \u00b7 max \u2014 ms \u00b7 sample window 0\nAccounted media cache \u00b7 0.89 / 64.00 MiB \u00b7 9 / 64 items\nPreview snapshot \u00b7 captured once on open \u00b7 7.0 s old\nNative preview queue \u00b7 0 / 1 waiting (excludes active worker)\nComposed frame cache \u00b7 0.27 / 16.00 MiB \u00b7 1 / 8 entries \u00b7 process-lifetime lookups: hits 1, misses 1, source-validation rejections 0\nCurrent video element playback counters \u00b7 unavailable\nDecoder choice / VRAM / physical A/V drift: unavailable",
+    "final": "Original Saved project, Program viewer, paused videos, closed menus and no dialogs or tool windows."
+  },
+  "preservation": {
+    "full_session_exact_except_restart_epoch": true,
+    "all17_saved_exact": true,
+    "recovery_exact": true,
+    "all5_assets_and2_presets_and_owned_versions_exact": true,
+    "foreign_pids": 40,
+    "foreign_sessions": 39,
+    "foreign_pid_changes": {},
+    "foreign_session_changes": {}
+  },
+  "private_receipts": {
+    "halo1-preview-observability-r1-start.json": {
+      "bytes": 5140,
+      "sha256": "936863d7bc35f834c8b5681904e715378632dbbc5314c7240f8748254e049898"
+    },
+    "halo1-preview-observability-r1-observed.json": {
+      "bytes": 14453,
+      "sha256": "472f1cc0e699ede80e7e1e78fdfc20dadaa98663e5f44132dd9ace0b09ed1876"
+    },
+    "halo1-preview-observability-r1-deployed.json": {
+      "bytes": 168414,
+      "sha256": "e3287f9cedf8a76c528475e0b773a26097e29f6b69645f625c790bf05074da6f"
+    },
+    "halo1-final-gui-native_cache_before.json": {
+      "bytes": 89245,
+      "sha256": "0eeadaf12c08f6c8335e0f795222461d7330c6d5fc23831daf9488a12391c132"
+    },
+    "halo1-final-gui-native_cache_after.json": {
+      "bytes": 89250,
+      "sha256": "53f176f4b73abbf291d02e3783cc03e087fa587a5519fce40b31a7fb33ee0254"
+    },
+    "halo1-native-preview-diagnostics-first.json": {
+      "bytes": 969,
+      "sha256": "4504ecf58bb041cbdac009101e234811d189166c33b07ffba12cdd25cc48ee6e"
+    },
+    "halo1-native-preview-diagnostics-reloaded.json": {
+      "bytes": 969,
+      "sha256": "ab4b4b7f63ad0eea659014a312cc4899e8b9b46cb1107efd7a9096f2affa1f3e"
+    },
+    "halo1-native-preview-chrome.json": {
+      "bytes": 1413,
+      "sha256": "91c99eef27b1b02151f8625a354f2991aeb0c47cde155489fc1d31defcf99d3e"
+    }
+  },
+  "limitations": [
+    "No FPS, physical pointer/display latency, physical A/V drift, VRAM, OS/device/held/fullscreen, cache-pressure/sustained or M7 criterion is qualified by these snapshots.",
+    "R11 remains the immutable earlier development package bound to sourcec2b49b0/docse738612; this runtime is newer. No archive was rebuilt for this diagnostics block."
+  ]
+}

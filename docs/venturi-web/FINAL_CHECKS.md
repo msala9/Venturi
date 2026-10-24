@@ -1,5 +1,23 @@
 # Checks reserved for final acceptance
 
+## Native preview diagnostics delivered - 2026-10-24
+
+Source `c1f03e4` / runtime `b36f5c0dd542` is active on halo1/8855.
+Existing Diagnostics now shows actual waiting-slot occupancy, composed-frame
+cache bytes/entries and process-lifetime lookup hits/misses/validation rejections.
+Nonblocking snapshots preserve source checks; busy values remain unavailable.
+One read per panel opening is aborted on close/hidden/project change; existing
+local formatting shows age and optional current-video browser frame counters.
+All31 focused client cases, six pure native cases, fresh Clippy and build pass;
+peak2097860608B, zero memory events. Actual Chrome paused reload
+raises cache hits from0 to1; original Session except epoch,17 Saved,
+Recovery, five assets/two presets and40foreign PIDs/39 Sessions remain exact.
+See `evidence/f1-native-preview-diagnostics-workflow.json`. No response/FPS,
+physical/device/OS/held/fullscreen/long/M7 acceptance is inferred; these remain
+in FINAL_CHECKS.md. Ledger stays62 done/28 partial/2 excluded. Immutable R11
+contains the earlier Library/Mixer source; no package was rebuilt here.
+
+
 [Pending checks](#pending-checks)
 
 ## Current immutable R11 development delivery - 2026-10-24
@@ -245,9 +263,9 @@ REMAINING_WORK.md remains the capability map; evidence stays version-bound.
 | Remaining speed input | Actual percentage draft scrub/Cancel, Keep length/Ripple, Canvas endpoint, strip preset/Cancel, overlap refusal and five Undo/Redo/Save/reopen pass in evidence/f3-chrome-retime-live-end-workflow.json. Source5ce758c also repairs live Program cursor/preview after end shrink. | Qualify continuous edge-relative input, held modifiers/mid-gesture cancellation and dense/required OS scaling. | One existing Windows tab with short paused interaction; no synthetic held-pointer or OS scaling substitution. |
 | Long browser playback and comparison | Actual public FullHD/4K initial60s Source preparation from0 and4K final5s EOF19037 pass in evidence/f2-real-public-source-clock-workflow.json. Current718 short-start Source/Program/A-B450-to2250 rollover also passes in evidence/f2-playback-short-start-workflow.json;782 late5s A/B/five-frame Program EOF is separately bound in evidence/f2-real-public-ab-program-tail-workflow.json. Existing native export proof remains valid. | Qualify sustained Source/Program/A-B browser playback, cold-pressure and actual audio/device behavior; retain the bounded Source proof without repeating it. | Existing unmodified sources only; no new downloads/copies or prolonged Windows workload contrary to owner resource constraints. |
 | Dense editing and cache demand | Actual500clips/250linked A/V pairs pass pan/zoom, Canvas Ctrl/Shift/Ctrl+A, linked move, exact Undo/Redo and Save/reopen; see evidence/f1-chrome-dense500-editing-workflow.json. Cold derived-cache ready/reuse for its repeated source also passes in evidence/f1-chrome-dense500-cold-assets-workflow.json; this is not an HTTP count or pressure/eviction/FPS proof. The older5002-key/4clip fixture is separate. | Qualify broader cold/multiasset pressure,60fps and browser-memory performance; retain required OS/held/cancel and soak gates. | Reuse the owned Venturi_Dense500_Chrome_V1.vvproj; no new footage/render or500-command flood. Bounded halo1 preparation only; Windows interaction stays short. |
-| Performance instrumentation and response target | Source229aabd exposes bounded Canvas CPU, RPC JSON and software input timing; actual10-clip Control+A gives one217.10ms input sample, which does not qualify the one-frame target. See evidence/f1-workspace-rpc-input-workflow.json. | Profile safely before claiming response/FPS acceptance; add authoritative queue/cache-hit measurements if available and retain explicit VRAM unavailable. | No Windows benchmark/soak, pressure tests, inferred hardware latency or fabricated counters. |
+| Performance instrumentation and response target | Sourcec1f03e4 adds actual nonblocking waiting-queue and composed-frame cache/counter snapshots plus optional current-video browser counters; actual paused reload raises hits0to1. See evidence/f1-native-preview-diagnostics-workflow.json. Existing Canvas/RPC/software input measurements remain; the earlier217.10ms and537.30ms single samples do not qualify one-frame response. | Profile safely before claiming response/FPS acceptance; retain explicit VRAM unavailable and distinguish browser counters from physical display/audio timing. | No Windows benchmark/soak, pressure tests, inferred hardware latency or fabricated counters. |
 | Two-hour integrated editing | The full M7 gate still requires realistic editing and browser memory observation. A backend loop cannot substitute. | Run the existing integrated scenario with original resource assertions and preserve projects/history. | Do not launch a Windows soak under the current workstation restriction. Park this gate while ordinary work continues. |
-| Final delivery and regression receipt | Current8f549e225421/sourcec2b49b0 is packaged in verified internal-development R11 with docse738612 separately bound; see evidence/f7-current-prebuilt-r11-workflow.json. All62 members/52 frozen Git inputs, launcher help, three notice companions,189 libraries and199 notice texts pass; full live Session/17 Saved/Recovery and R10 remain exact. | Current package assembly is complete; release_ready remains false pending functional/physical/response/soak gates. Historical runback remains version-bound. | This publication postdates the immutable packaged docs snapshot. Preserve all old archives/manifests/notices; no new runback/reboot or M7 completion claim. |
+| Final delivery and regression receipt | Liveb36f5c0dd542/sourcec1f03e4 adds qualified preview diagnostics. Immutable internal-development R11 retains earlier8f549e225421/sourcec2b49b0 and docse738612; see evidence/f7-current-prebuilt-r11-workflow.json. Its62 members/52 frozen Git inputs, launcher help, three notice companions,189 libraries and199 notice texts remain verified. New runtime preservation covers full Session/17 Saved/Recovery and40foreign PIDs/39 Sessions. | Consolidate a final source-bound package after remaining acceptance; release_ready remains false pending functional/physical/response/soak gates. Reuse prior qualification where direct inputs are unchanged. | Preserve immutable R11 and older archives/manifests/notices; no repeated package for each small change, new runback/reboot or M7 completion claim. |
 | Permanent shared-library deletion | Confirmation/cancel is exercised on the new owned preset; no permanent NAS deletion was submitted. Existing transaction/controller evidence remains valid. | If required for final acceptance, confirm and delete only explicitly identified owned fixtures, then verify existing catalog entries remain exact. | Action-time confirmation is required for irreversible deletion; defer it without interrupting other work. |
 
 When a check becomes executable, perform it once and link its evidence here.

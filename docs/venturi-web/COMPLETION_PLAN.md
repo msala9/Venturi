@@ -1,5 +1,23 @@
 # Active completion plan — full Venturi Web scope
 
+## Native preview diagnostics delivered - 2026-10-24
+
+Source `c1f03e4` / runtime `b36f5c0dd542` is active on halo1/8855.
+Existing Diagnostics now shows actual waiting-slot occupancy, composed-frame
+cache bytes/entries and process-lifetime lookup hits/misses/validation rejections.
+Nonblocking snapshots preserve source checks; busy values remain unavailable.
+One read per panel opening is aborted on close/hidden/project change; existing
+local formatting shows age and optional current-video browser frame counters.
+All31 focused client cases, six pure native cases, fresh Clippy and build pass;
+peak2097860608B, zero memory events. Actual Chrome paused reload
+raises cache hits from0 to1; original Session except epoch,17 Saved,
+Recovery, five assets/two presets and40foreign PIDs/39 Sessions remain exact.
+See `evidence/f1-native-preview-diagnostics-workflow.json`. No response/FPS,
+physical/device/OS/held/fullscreen/long/M7 acceptance is inferred; these remain
+in FINAL_CHECKS.md. Ledger stays62 done/28 partial/2 excluded. Immutable R11
+contains the earlier Library/Mixer source; no package was rebuilt here.
+
+
 ## Current immutable R11 development delivery - 2026-10-24
 
 The current archive is `/home/halo/.local/share/venturi-web/deliveries/venturi-web-linux-x86_64-8f549e225421-r11-5f578ea9bb6a.tar`.

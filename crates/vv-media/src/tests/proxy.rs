@@ -205,9 +205,11 @@ fn ranged_proxy_holds_the_first_picture_without_rebasing_a_delayed_video_stream(
         Err(crate::MediaError::Cancelled)
     ));
     assert!(!canceled.exists());
-    assert!(!canceled
-        .with_extension(format!("tmp-{}.mp4", std::process::id()))
-        .exists());
+    assert!(
+        !canceled
+            .with_extension(format!("tmp-{}.mp4", std::process::id()))
+            .exists()
+    );
     std::fs::remove_dir_all(directory).unwrap();
 }
 

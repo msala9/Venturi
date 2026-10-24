@@ -199,7 +199,9 @@ fn ranged_proxy_holds_the_first_picture_without_rebasing_a_delayed_video_stream(
     }
     let canceled = directory.join("canceled.mp4");
     assert!(matches!(
-        generate_proxy_range_at(&source, &canceled, ProxyQuality::Low, 0..6, 1, |frames| frames < 1),
+        generate_proxy_range_at(&source, &canceled, ProxyQuality::Low, 0..6, 1, |frames| {
+            frames < 1
+        }),
         Err(crate::MediaError::Cancelled)
     ));
     assert!(!canceled.exists());

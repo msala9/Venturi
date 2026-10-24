@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-24",
+  "scope": "Reconcile a superseded acceptance note; no new implementation or runtime qualification.",
+  "inspected_source_commit": "586e22e",
+  "evidence": {
+    "path": "evidence/f5-library-copies-workflow.json",
+    "sha256": "2eabdabf5424b1d33157433b6c13ccd6b02850dfaee7b27142d9fa96671a756b",
+    "hash_scope": "Tracked Git blob bytes at inspected_source_commit; checkout newline conversion excluded"
+  },
+  "existing_acceptance": {
+    "source_title_clip_id": "12",
+    "destination_solid_clip_id": "14",
+    "preset_id": "ab83b9ee-0ac8-4198-b801-fe7279369130",
+    "actual_crossproject_apply": true,
+    "one_native_apply_undo_redo": true,
+    "exact_filter_stack": true,
+    "unaffected_inspected_properties": true,
+    "saved_reopen": true,
+    "nas_identity_and_bytes_unchanged": true
+  },
+  "action": "Correct only the linked_groups evidence field; do not repeat the proposed two-Title project check.",
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  },
+  "remaining": [
+    "Physical pointer and DPI acceptance",
+    "Broader shared-library/offline lifecycle",
+    "Other row-specific and full F1-F7/M7 requirements"
+  ],
+  "resources": "No build, test, render, export, new editor, tunnel, NAS write or project mutation.",
+  "bounded_readonly_audit": {
+    "native_and_web_git_blob_sha256": {
+      "crates/vv-app/src/properties_panel.rs": "e90b71e21e1b354621f60a14bce4e4c2690882909604a82528519942292381d2",
+      "crates/vv-app/src/mask_panel.rs": "6090d3df56386bf88df2c026cbc7c20017d5f7fd94692b7e2de70f10072eaac5",
+      "crates/vv-app/src/transport.rs": "baebfa06bb7dcb39d0494a91a7da854740e9a832dd56914ec236dcaa7c4bf030",
+      "web/js/inspector.js": "189e9e4d8611b9e7d499269080c271bf8b570872aed6be11a65605914ac458dd",
+      "web/js/masks.js": "978a91d04326ba09e2a066a6200bd7b1e16c74b751cbd01bfcd270e2617eba30",
+      "web/js/timeline/geometry.js": "b09d7d7f94134d5dbcf1b1c33432cf1b5f1c2b090d8ea2db9b86e25031529e14",
+      "web/js/timeline/input.js": "fbe57f7758381faf47598c2727f63af92c1f91eac57abb9dc01c71ed67188649"
+    },
+    "scope": "F1/F3 navigation/transport/clip fades/Title/Solid/mask controls; excludes whole-project parity, runtime behavior and physical acceptance",
+    "finding": "No source-proven missing production workflow found in this inspected subset",
+    "unqualified": [
+      "Physical continuous pointer/screen-edge and cancel/focus",
+      "Windows scaling 100/125/150 percent and row-specific physical gestures",
+      "TS-014 500-clip pan/zoom/drag and bounded browser memory",
+      "Prolonged uncached Slip",
+      "Actual audio/microphone",
+      "Representative long full-resolution media",
+      "Two-hour typical editing with browser memory observation"
+    ]
+  },
+  "soak_decision": {
+    "action": "No new backend-only job",
+    "reason": "TEST_PLAN.md typical-editing memory requirement and RELEASE_CHECKLIST.md browser memory observation cannot be qualified by another native/API loop; workstation soak remains prohibited",
+    "prior_interrupted_and_failed_soaks_reused_as_failure_evidence": true
+  }
+}

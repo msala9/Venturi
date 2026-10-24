@@ -1,5 +1,35 @@
 # Active completion plan — full Venturi Web scope
 
+## Acceptance reconciliation: reuse the existing cross-project preset workflow — 2026-10-24
+
+The `linked_groups` evidence field still described cross-project preset Apply as
+pending after the later `f5-library-copies-workflow.json` had qualified it.
+That existing Windows workflow applies the native Title12 filters-only shared
+preset to Solid14 in another Saved project, checks one ApplyPreset Undo/Redo,
+exact filters and unaffected inspected properties, unchanged NAS identity/bytes,
+and Save As/reopen. `shared_presets` already references that acceptance correctly.
+The stale field is corrected; no second two-Title project trial is needed.
+See `evidence/f5-preset-acceptance-reconciliation.json` for the evidence hash.
+
+A bounded read-only comparison of native and Web F1/F3 navigation, transport,
+clip fades, Title/Solid and mask controls found no source-proven missing
+production workflow in that inspected subset. This is not whole-project parity
+acceptance. Physical continuous scrubbing/screen-edge cancellation, mouse
+gestures, Windows scaling, dense timelines, prolonged uncached Slip, actual
+audio/microphone, representative long full-resolution media and the integrated
+editing soak remain open under their existing requirements.
+
+TEST_PLAN requires browser memory observation during two hours of typical editing
+as well as halo1 stability. Another backend-only polling or editing loop would
+not satisfy that complete gate. Do not repeat the failed/interrupted old soaks or
+start a workstation soak contrary to the owner's resource constraint. Use the
+existing Windows browser for short checks and halo1 for authorized bounded work.
+No build, test, rendering, export, new service/tunnel, NAS write or project edit
+is performed for this reconciliation. Current code/runtime/package remain the
+qualified bf0b322/77d7 delivery. Ledger remains61 done/29 partial/2 excluded;
+the full F1-F7/M7 objective stays active.
+
+
 ## Current package with all notice companions and actual runback — 2026-10-24
 
 The current bf0b322/77d7 executable and committed4231ecf documentation are now

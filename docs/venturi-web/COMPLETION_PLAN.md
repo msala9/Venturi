@@ -1,5 +1,21 @@
 # Active completion plan — full Venturi Web scope
 
+## Actual Chrome transition workflow - 2026-10-24
+
+Currentadc69/source39b3ae3 passes explicit Push creation, closed direction/ease
+wheel, clamped no-op, pure popup cancellation with exact confirmed preview
+restoration, paired seconds/frames scrubbing and curve drag. Explicit replacement
+with CrossDissolve/SmoothCut and both Push/SmoothCut Canvas duration handles pass.
+Eleven native Transition commands, twelve Undo and eleven Redo restore the exact
+native model. Undoing only Remove leaves SmoothCut20; Save/reopen retains it and
+all earlier masks, title, transforms, filters and color keys. Four compound cache
+counters change as derived native state; every other media field is unchanged.
+All14 other Saved and NAS metadata remain exact; the original clean project is
+restored. See evidence/f3-chrome-transition-input-workflow.json. No source change,
+build, render/export, restart or repack was needed. Required OS scaling, held Alt
+copy, HTML drop and actual window-blur checks remain in FINAL_CHECKS.md; prior
+moving SmoothCut/native export proof is retained. Ledger62/28/2 is unchanged.
+
 ## Actual Chrome ruler seek retains transport - 2026-10-24
 
 On unchanged currentadc69/source39b3ae3, actual Canvas ruler clicks while playing

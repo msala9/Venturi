@@ -1,5 +1,19 @@
 # Implementation status
 
+## Actual Chrome transition input - 2026-10-24
+
+Currentadc69/source39b3ae3 passes explicit Push/CrossDissolve/SmoothCut creation
+and replacement, closed direction/ease wheel and clamped no-op, pure popup cancel
+with exact preview restoration, paired seconds/frames and curve scrubs, and both
+Push/SmoothCut Canvas duration handles. Eleven native commands, twelve Undo and
+eleven Redo plus edited Save/reopen retain full native effects and prior keys.
+Only the transition and derived revision/compound cache counters change; all14
+other Saved and NAS metadata remain exact. Original clean project restored.
+See evidence/f3-chrome-transition-input-workflow.json. No source/build/render/
+restart/repack; immutable R6 retained. Held Alt-copy, HTML drop/window blur and
+required OS scaling remain FINAL_CHECKS. Ledger62done/28partial/2excluded.
+
+
 ## Actual Chrome ruler seek retains transport - 2026-10-24
 
 On unchanged currentadc69/source39b3ae3, actual Canvas ruler clicks while playing

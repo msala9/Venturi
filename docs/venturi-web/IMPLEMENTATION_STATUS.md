@@ -1,5 +1,20 @@
 # Implementation status
 
+## Chrome transform and curve editing checkpoint — 2026-10-24
+
+On unchanged455662c/runtime8b975, actual paused Chrome passes Viewer move/left
+crop, numeric softness/PositionX scrub, position diamonds, graph multi-key
+marquee/drag, EaseInOut, Bezier Apply and first tangent drag. Nine menu Undo
+and nine Redo restore exact native timelines and full title effects/keys.
+Actual SaveAs retains history; a new Venturi_Chrome_Effects_V1.vvproj reopens
+with exact native timelines/media/effects/keys and15 Saved hashes. All14 prior
+Saved and NAS catalog/version metadata stay exact; original clean project is
+restored. See evidence/f1-f3-chrome-transform-curves-save-workflow.json.
+No source/build/export/soak/package change. Remaining Viewer handles, edge/cancel,
+held modifiers, cross-parameter lane/wheel, required OS scaling/dense/device/long
+acceptance stay FINAL_CHECKS. Ledger62done/28partial/2excluded is unchanged.
+
+
 ## Chrome selection and safe-move checkpoint — 2026-10-24
 
 On unchanged source455662c/runtime8b975, actual Chrome passes two reverse

@@ -78,6 +78,12 @@ and two-hour M7 remain open. No new package or whole-release acceptance.
 
 ## Row-specific residuals
 
+The subsequent evidence/f1-f3-chrome-transform-curves-save-workflow.json adds actual Viewer
+move/crop, numeric scrub, graph multi-key drag and Bezier tangent proof, with
+complete nine-entry Undo/Redo and edited SaveAs/reopen. The new owned effects
+project is retained; all14 earlier Saved files and NAS metadata remain exact.
+Unchanged source/package evidence is reused; remaining requirements below stay open.
+
 The later evidence/f1-chrome-selection-snapping-safe-move.json additionally qualifies
 ordinary Ctrl/Shift Clip-list selection, Canvas marquee/all/locked exclusion,
 Snap on/off and blocked overlap/locked-peer moves in actual Chrome. Exact Undo
@@ -112,9 +118,9 @@ feature passes every requirement or cannot contain defects.
 | snapping | Actual linked move snaps to playhead48 versus46 with Snap off at observed DPR1.25; qualify remaining ruler/edge snapping across required DPI and dense timelines. |
 | slip_tool | Qualification: prolonged uncached held-Slip continuity and physical/DPI operation. |
 | speed_handles_constant | Qualification: physical relative scrub, handles, modifiers, cancellation and dense/DPI operation. |
-| keyframe_editing | Qualification: physical multi-key graph/lane gestures and dense/DPI operation; explicit native destination replacement is delivered. |
-| curve_easing_bezier | Qualification: physical tangent/modifier/wheel interactions and dense/DPI operation. |
-| transform_crop_softness | Qualification: physical continuous/edge scrub, cancellation and DPI; retain native/API frame equivalence. |
+| keyframe_editing | Actual position diamonds, graph marquee/two-key drag and complete Undo/Redo/edited SaveAs/reopen pass; qualify remaining cross-parameter lanes, held modifiers/cancel and dense/DPI operation. Native destination replacement remains delivered. |
+| curve_easing_bezier | Actual EaseInOut, Bezier Apply and first tangent drag pass; qualify remaining held modifiers, wheel/cancel and dense/DPI operation. |
+| transform_crop_softness | Actual Viewer move/left crop and numeric softness/PositionX scrub pass; qualify remaining scale/rotation/anchor handles, continuous edge scrub, cancellation and required DPI; retain native/API frame equivalence. |
 | title_font_style_bg | Qualification: physical popup/font/color/relative-scrub interactions and scaling; retain existing render/history/export workflow. |
 | solid_color | Qualification: physical generator drag/color/key interactions and DPI; retain native color/render/history/export proof. |
 | masks_rect_ellipse_bezier | Qualification: physical Viewer pen/handles/choice/scrub and DPI; retain native moving-frame/export proof. |

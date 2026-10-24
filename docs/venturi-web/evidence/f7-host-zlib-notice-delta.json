@@ -1,0 +1,1413 @@
+{
+  "date": "2026-10-24",
+  "status": "read-only delta verified; package assembly independently fenced",
+  "binary_source_commit": "5567359d14ac2a1539e05ff2750e413a20146f1e",
+  "binary_sha256": "87bc10633ec7d69478431bb33fd92800e68cf9bb34a4b786204d72db5e0f4aff",
+  "loader_count": 189,
+  "unchanged_loader_count": 188,
+  "changed_loader_count": 1,
+  "removed": [
+    {
+      "loader_name": "libz.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "bytes": 121272,
+      "sha256": "47b61967895b30e8c0c6818dd633ffeb87711cf637c688f981896f0dd84ce23b",
+      "packages": [
+        "zlib1g:amd64"
+      ]
+    }
+  ],
+  "added": [
+    {
+      "loader_name": "libz.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "bytes": 121272,
+      "sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+    }
+  ],
+  "original_host_archive_sha256": "5dabeba73e0f4ae1a263e4b36b1727977b1198488b69833835928b6f4052702c",
+  "notice": {
+    "package": {
+      "binary_package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.2",
+      "architecture": "amd64"
+    },
+    "text": {
+      "installed_path": "/usr/share/doc/zlib1g/copyright",
+      "resolved_path": "/usr/share/doc/zlib1g/copyright",
+      "bytes": 2927,
+      "sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+      "utf8": "Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nUpstream-Name: zlib\nUpstream-Contact: zlib@gzip.org\nSource: http://zlib.net/\nComment: This is the pre-packaged Debian Linux version of the zlib compression\n library.  It was packaged by Michael Alan Dorman <mdorman@debian.org>\n from sources originally retrieved from ftp.uu.net in the directory\n /pub/archiving/zip/zlib as the file zlib-1.0.4.tar.gz.\n .\n The deflate format used by zlib was defined by Phil Katz. The deflate\n and zlib specifications were written by Peter Deutsch. Thanks to all the\n people who reported problems and suggested various improvements in zlib;\n they are too numerous to cite here.\nFiles-Excluded:\n contrib/ada\n contrib/amd64\n contrib/asm686\n contrib/blast\n contrib/delphi\n contrib/dotzlib\n contrib/gcc_gvmat64\n contrib/infback9\n contrib/inflate86\n contrib/iostream\n contrib/iostream2\n contrib/iostream3\n contrib/masmx64\n contrib/masmx86\n contrib/pascal\n contrib/puff\n contrib/testzlib\n contrib/untgz\n contrib/vstudio\n doc/rfc1950.txt\n doc/rfc1951.txt\n doc/rfc1952.txt\n win32\n\nFiles: *\nCopyright: 1995-2013 Jean-loup Gailly and Mark Adler\nLicense: Zlib\n\nFiles: amiga/Makefile.pup\nCopyright: 1998 by Andreas R. Kleinert\nLicense: Zlib\n\nFiles: contrib/minizip/*\nCopyright: 1998-2010 Gilles Vollant\n           2007-2008 Even Rouault\n           2009-2010 Mathias Svensson\nLicense: Zlib\n\nFiles: debian/*\nCopyright: 2000-2017 Mark Brown\nLicense: Zlib\n\nLicense: Zlib\n This software is provided 'as-is', without any express or implied\n warranty.  In no event will the authors be held liable for any damages\n arising from the use of this software.\n .\n Permission is granted to anyone to use this software for any purpose,\n including commercial applications, and to alter it and redistribute it\n freely, subject to the following restrictions:\n .\n 1. The origin of this software must not be misrepresented; you must not\n    claim that you wrote the original software. If you use this software\n    in a product, an acknowledgment in the product documentation would be\n    appreciated but is not required.\n 2. Altered source versions must be plainly marked as such, and must not be\n    misrepresented as being the original software.\n 3. This notice may not be removed or altered from any source distribution.\n .\n Jean-loup Gailly        Mark Adler\n jloup@gzip.org          madler@alumni.caltech.edu\n .\n If you use the zlib library in a product, we would appreciate *not* receiving\n lengthy legal documents to sign.  The sources are provided for free but without\n warranty of any kind.  The library has been entirely written by Jean-loup\n Gailly and Mark Adler; it does not include third-party code.\n .\n If you redistribute modified sources, we would appreciate that you include in\n the file ChangeLog history information documenting your changes.  Please read\n the FAQ for more information on the distribution of modified source versions.\n"
+    },
+    "library": {
+      "path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "bytes": 121272,
+      "sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+    },
+    "prior_package": {
+      "requested_package": "zlib1g:amd64",
+      "binary_package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1ubuntu3.1",
+      "architecture": "amd64",
+      "text": {
+        "path": "copyright/zlib1g:amd64/copyright",
+        "installed_path": "/usr/share/doc/zlib1g/copyright",
+        "resolved_path": "/usr/share/doc/zlib1g/copyright",
+        "bytes": 2927,
+        "sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6"
+      }
+    },
+    "copyright_bytes_sha_equal": true
+  },
+  "current_inventory": [
+    {
+      "loader_name": "libavutil.so.60",
+      "path": "/usr/lib/x86_64-linux-gnu/libavutil.so.60",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavutil.so.60.8.100",
+      "bytes": 1235136,
+      "sha256": "56557dd89c99afd4c7c1f62297fc0f4c19ed97e29bd903937fac480d38fbe3a5"
+    },
+    {
+      "loader_name": "libavformat.so.62",
+      "path": "/usr/lib/x86_64-linux-gnu/libavformat.so.62",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavformat.so.62.3.100",
+      "bytes": 3176672,
+      "sha256": "727804ca2781f4d2c7a12ab01b3180b7f071e535718c713241b073e58db96868"
+    },
+    {
+      "loader_name": "libavfilter.so.11",
+      "path": "/usr/lib/x86_64-linux-gnu/libavfilter.so.11",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavfilter.so.11.4.100",
+      "bytes": 15622312,
+      "sha256": "575548609243e80579208bdaff748f6c00d4d19c44e87e5a2cd3040124522290"
+    },
+    {
+      "loader_name": "libavdevice.so.62",
+      "path": "/usr/lib/x86_64-linux-gnu/libavdevice.so.62",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavdevice.so.62.1.100",
+      "bytes": 174304,
+      "sha256": "aeb1ed5637ba63f0d292ef26f4e05266a70aae21bcd8b23e7969dc69d28dbc99"
+    },
+    {
+      "loader_name": "libswscale.so.9",
+      "path": "/usr/lib/x86_64-linux-gnu/libswscale.so.9",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libswscale.so.9.1.100",
+      "bytes": 1312920,
+      "sha256": "89facd7d55f3e9839bc2ad35ca26511438062f7640d5b5372ab7e42fbaa023cf"
+    },
+    {
+      "loader_name": "libswresample.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libswresample.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libswresample.so.6.1.100",
+      "bytes": 182424,
+      "sha256": "2d7816cb7ab4785d17bb34a9bdead9e1f0dfe5b8c64f2aa999a395d3e5c60f40"
+    },
+    {
+      "loader_name": "libavcodec.so.62",
+      "path": "/usr/lib/x86_64-linux-gnu/libavcodec.so.62",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavcodec.so.62.11.100",
+      "bytes": 28258856,
+      "sha256": "f2f7634772627cd3180700f2c7bfb81377d6367042136a576fea9230c45a0beb"
+    },
+    {
+      "loader_name": "libgcc_s.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "bytes": 187120,
+      "sha256": "9d339ecb409578d6a5d587e6c537a8f9589b8a13fefba30d167433a4b5758bee"
+    },
+    {
+      "loader_name": "libm.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "bytes": 1198376,
+      "sha256": "1c488db6f4fe8cecb72456bc018de000b7a9b539c2994864b0416b5e8371b3d8"
+    },
+    {
+      "loader_name": "libc.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "bytes": 2190608,
+      "sha256": "85e64f97e348786a8fb4d9f3d52fec289e2fb86bba20f0731dfe61990525e0f7"
+    },
+    {
+      "loader_name": "ld-linux-x86-64.so.2",
+      "path": "/lib64/ld-linux-x86-64.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "bytes": 254864,
+      "sha256": "bda779ea9e9ad234f60315477d7cfd0bdde861cd8ddd9df8cdaf62f18c4cec14"
+    },
+    {
+      "loader_name": "libva-drm.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libva-drm.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libva-drm.so.2.2300.0",
+      "bytes": 14488,
+      "sha256": "c08daf7ae0bb66e575f8e717906490481caa3bfa20fdc8e63e98fec3b090ebeb"
+    },
+    {
+      "loader_name": "libva.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libva.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libva.so.2.2300.0",
+      "bytes": 227560,
+      "sha256": "4a6b851f244e5d3c0ca08ba6861106050f3caaa631721e3f87d621caeec34065"
+    },
+    {
+      "loader_name": "libva-x11.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libva-x11.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libva-x11.so.2.2300.0",
+      "bytes": 26896,
+      "sha256": "8390231e0db104d6c9c52f7f8b9d34002559d6868c6f2d77e06cbad1442df2fa"
+    },
+    {
+      "loader_name": "libvdpau.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libvdpau.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvdpau.so.1.0.0",
+      "bytes": 18672,
+      "sha256": "cae9e0febd72ccd4e916369718be24feb9a00d1c9729f33a616c01687662a5ae"
+    },
+    {
+      "loader_name": "libX11.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libX11.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0",
+      "bytes": 1318648,
+      "sha256": "badd43566333da97d916ab365c61227751d49cd5c0df5d49dabdbd67b8c6fd19"
+    },
+    {
+      "loader_name": "libdrm.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libdrm.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdrm.so.2.131.0",
+      "bytes": 92848,
+      "sha256": "c8be7d3863453898666977c12b0b392014a1c728d84215d885d574882d6e7b89"
+    },
+    {
+      "loader_name": "libvpl.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libvpl.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvpl.so.2.16",
+      "bytes": 401112,
+      "sha256": "d50e163f0b5c3152fbbb207fbd3503a64978df62e4583442bf9dba766965083d"
+    },
+    {
+      "loader_name": "libOpenCL.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libOpenCL.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libOpenCL.so.1.0.0",
+      "bytes": 89848,
+      "sha256": "3a24c22deedc682eb864596ef301a75d54dea23ca4c35a50deda9480694137c2"
+    },
+    {
+      "loader_name": "libxml2.so.16",
+      "path": "/usr/lib/x86_64-linux-gnu/libxml2.so.16",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxml2.so.16.1.2",
+      "bytes": 1449112,
+      "sha256": "302dfa1295c6f917758243ef0f118f7144026b51a5f5cd1610fba849c968f73b"
+    },
+    {
+      "loader_name": "libbz2.so.1.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4",
+      "bytes": 83120,
+      "sha256": "7138aeb748f73c150b1d34d67de69139a441910cd7b269076ba3c8b986dea9a7"
+    },
+    {
+      "loader_name": "libdvdnav.so.4",
+      "path": "/usr/lib/x86_64-linux-gnu/libdvdnav.so.4",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdvdnav.so.4.4.0",
+      "bytes": 92232,
+      "sha256": "589331edb16993fcda37501907d93144c17c8f4009d5676d326d78a6c270f7b3"
+    },
+    {
+      "loader_name": "libdvdread.so.8",
+      "path": "/usr/lib/x86_64-linux-gnu/libdvdread.so.8",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdvdread.so.8.1.0",
+      "bytes": 149576,
+      "sha256": "0ce539aed83f81ea84d6007196fcb31d90564e23e9067046d9ecf9cf7fb417fc"
+    },
+    {
+      "loader_name": "libgme.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libgme.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgme.so.0.6.4",
+      "bytes": 330224,
+      "sha256": "1bd5a58ea762650628769b2ea850b2eea7a1e839fc4a7c92167399943dd9e3a6"
+    },
+    {
+      "loader_name": "libopenmpt.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libopenmpt.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libopenmpt.so.0.5.5",
+      "bytes": 1812920,
+      "sha256": "e9f76dbb9c1416d7d87201c45717103d3089fb6426c75157665e41a5a7b42650"
+    },
+    {
+      "loader_name": "libchromaprint.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libchromaprint.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libchromaprint.so.1.6.0",
+      "bytes": 68192,
+      "sha256": "91852be92eb98554b9d39f1875d410c2743941de98de05d6bd52fad5ff379717"
+    },
+    {
+      "loader_name": "libbluray.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libbluray.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbluray.so.3.1.0",
+      "bytes": 285752,
+      "sha256": "396aeb0837ab654383f78677051372979fe584a5f3426d8324c662983a0553bb"
+    },
+    {
+      "loader_name": "libz.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "bytes": 121272,
+      "sha256": "27fa6c6cb94fb5b099ead61758a300dbc392d1dbf307fff6c16a9b8e57fdc9de"
+    },
+    {
+      "loader_name": "libgnutls.so.30",
+      "path": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30.41.1",
+      "bytes": 2148528,
+      "sha256": "ebcc6a4dfae904dc956feb61cef5c36917cf36c19c5718d3c2be7e377ac65d27"
+    },
+    {
+      "loader_name": "librabbitmq.so.4",
+      "path": "/usr/lib/x86_64-linux-gnu/librabbitmq.so.4",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librabbitmq.so.0.15.0",
+      "bytes": 92312,
+      "sha256": "e611180266c7ad589293e0b59d8d665deb567538c98458bc1969f70d17374bbb"
+    },
+    {
+      "loader_name": "librist.so.4",
+      "path": "/usr/lib/x86_64-linux-gnu/librist.so.4",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librist.so.4.4.0",
+      "bytes": 170248,
+      "sha256": "54ceda75a057b49a60ee169855b838e346af89a0d15f03ad367c4efa9a5c37f6"
+    },
+    {
+      "loader_name": "libsrt-gnutls.so.1.5",
+      "path": "/usr/lib/x86_64-linux-gnu/libsrt-gnutls.so.1.5",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsrt-gnutls.so.1.5.4",
+      "bytes": 842792,
+      "sha256": "30af7a9de19c8644f76fcb3f8c0b269bc48b98271deaca497cfdc6ff4ed099b6"
+    },
+    {
+      "loader_name": "libssh.so.4",
+      "path": "/usr/lib/x86_64-linux-gnu/libssh.so.4",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libssh.so.4.10.3",
+      "bytes": 511560,
+      "sha256": "8ae94cd73cf654c2cc9bafe7c7cb8abefd084e8484e04bc6f3a8a8db4ae315fe"
+    },
+    {
+      "loader_name": "libzmq.so.5",
+      "path": "/usr/lib/x86_64-linux-gnu/libzmq.so.5",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libzmq.so.5.2.5",
+      "bytes": 667752,
+      "sha256": "bf55a43f63a1ce519412922de844fc3e9b42000d2cdc87f6b30a1ff8e3293e7d"
+    },
+    {
+      "loader_name": "libbs2b.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libbs2b.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbs2b.so.0.0.0",
+      "bytes": 26784,
+      "sha256": "9e9e5500f8ad44a2925205a5b332e4c19d5955e0b9b4009aad8170c7102b80e8"
+    },
+    {
+      "loader_name": "liblilv-0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/liblilv-0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/liblilv-0.so.0.26.2",
+      "bytes": 108696,
+      "sha256": "52096e12f36f809e6cc0dbc56466c3af6e7b06b955be04f83fa69857b2356894"
+    },
+    {
+      "loader_name": "librubberband.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/librubberband.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librubberband.so.3.0.0",
+      "bytes": 407800,
+      "sha256": "e297b540e9e2e7347b37cf9432ef903a56b0e988d8a82868a4e5578b6da28e0c"
+    },
+    {
+      "loader_name": "libmysofa.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libmysofa.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmysofa.so.1.3.3",
+      "bytes": 63560,
+      "sha256": "51dabadd3f2eb1916da8917728274296b0e05ad60f4b02e0ad89c8b0c47995ed"
+    },
+    {
+      "loader_name": "libflite_cmu_us_awb.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_awb.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_awb.so.2.2",
+      "bytes": 4147416,
+      "sha256": "65b8f66ebd404faa19314da460ab020920d285631b3358c048154564637a4add"
+    },
+    {
+      "loader_name": "libflite_cmu_us_kal.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal.so.2.2",
+      "bytes": 1460480,
+      "sha256": "7ff36611ff6e806103da6ce2c0a59904c7baaae6409a09b06233de59d400b67f"
+    },
+    {
+      "loader_name": "libflite_cmu_us_kal16.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal16.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_kal16.so.2.2",
+      "bytes": 4032768,
+      "sha256": "2e9e093bbce8770cd82b5c12c69aeaf0f63e1b0a7bdbfe875d584b8500a27553"
+    },
+    {
+      "loader_name": "libflite_cmu_us_rms.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_rms.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_rms.so.2.2",
+      "bytes": 4819160,
+      "sha256": "ccde98bbf5721ab1b25c193d52d559bda7a06807bc96cfc614e94484f8bf2d5c"
+    },
+    {
+      "loader_name": "libflite_cmu_us_slt.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_slt.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmu_us_slt.so.2.2",
+      "bytes": 4155608,
+      "sha256": "0b0aa0c780bd2ed32514ed3058cca368533fe2326f7329261a77210e55f8fa81"
+    },
+    {
+      "loader_name": "libflite.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite.so.2.2",
+      "bytes": 235768,
+      "sha256": "c7a9e7b19ffb843e4c80b900bed4b34ff7c992d71dc098e6410f0ef45ec56b9a"
+    },
+    {
+      "loader_name": "libharfbuzz.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0.61232.0",
+      "bytes": 1220816,
+      "sha256": "b330ca2b82b22fbce5e1a15dabfeffdd97e9976c3a3e48a2696628bfd34526d5"
+    },
+    {
+      "loader_name": "libfribidi.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libfribidi.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libfribidi.so.0.4.0",
+      "bytes": 121112,
+      "sha256": "c122a34c3e9cab264c9a07b21b75f16443a646cc8db4e84ac91e800daa7e03ce"
+    },
+    {
+      "loader_name": "libplacebo.so.360",
+      "path": "/usr/lib/x86_64-linux-gnu/libplacebo.so.360",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libplacebo.so.360",
+      "bytes": 9868968,
+      "sha256": "e9ea83f10d4675b7471ffdde2a2f781b39ab60da9ee076c48a970a0dda7959aa"
+    },
+    {
+      "loader_name": "libass.so.9",
+      "path": "/usr/lib/x86_64-linux-gnu/libass.so.9",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libass.so.9.4.1",
+      "bytes": 264520,
+      "sha256": "2c1c6f5d513bff2174b570e6a9e0d580d34a9265a4e83dfee9fe59590a7b6825"
+    },
+    {
+      "loader_name": "libvidstab.so.1.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libvidstab.so.1.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvidstab.so.1.1",
+      "bytes": 80432,
+      "sha256": "9d3eb9ec4d59446766b7a2f0a48271cfdefc4897a557f640629ee8c8623e09db"
+    },
+    {
+      "loader_name": "libzimg.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libzimg.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libzimg.so.2.0.0",
+      "bytes": 584648,
+      "sha256": "5c25ae4b8cb49cb091978f444bee57e5918ba196191ec5b96ae14bb41aca5e6a"
+    },
+    {
+      "loader_name": "libstdc++.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35",
+      "bytes": 2735712,
+      "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3"
+    },
+    {
+      "loader_name": "libfontconfig.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.16.1",
+      "bytes": 338080,
+      "sha256": "cabcdfea3d61540e8aa7f93a29642da1d1e35c8f5fd13549f4b8ee2ee0ab28f0"
+    },
+    {
+      "loader_name": "libfreetype.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.5",
+      "bytes": 870552,
+      "sha256": "36be278a8138d3e5773eb3f8491ff3fe73122a3051a9b36d1f86457ce0fad22d"
+    },
+    {
+      "loader_name": "libraw1394.so.11",
+      "path": "/usr/lib/x86_64-linux-gnu/libraw1394.so.11",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libraw1394.so.11.1.0",
+      "bytes": 63968,
+      "sha256": "43b84c441835228441f0bf581ea8c40076270fe66df2e5b81529faf7a2c21e08"
+    },
+    {
+      "loader_name": "libavc1394.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libavc1394.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libavc1394.so.0.3.0",
+      "bytes": 22848,
+      "sha256": "0faba22d6aae3806c43aa170e2f52f21d7861ddbd2fc91a2151bd4e9e959ed8c"
+    },
+    {
+      "loader_name": "librom1394.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/librom1394.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librom1394.so.0.3.0",
+      "bytes": 18696,
+      "sha256": "1d2e78a21b8acb19b4fafb3fe3efbb32656e133e063bab0f71a6ccb531110305"
+    },
+    {
+      "loader_name": "libiec61883.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libiec61883.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libiec61883.so.0.1.1",
+      "bytes": 59528,
+      "sha256": "442eefc6526515b896806942fdefdc50cf0e9fe89e9187cad712682c6df963a7"
+    },
+    {
+      "loader_name": "libjack.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libjack.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libjack.so.0.1.0",
+      "bytes": 338464,
+      "sha256": "869743de61436ec7e49c57b5b795670477fcdc68bf52396f14e1d8bee732f578"
+    },
+    {
+      "loader_name": "libopenal.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libopenal.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libopenal.so.1.25.1",
+      "bytes": 1781136,
+      "sha256": "202db5d4539312cf23e1e525ff622eb796ef5e1bf0eebead7bf13df762e3a3c2"
+    },
+    {
+      "loader_name": "libxcb.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
+      "bytes": 170680,
+      "sha256": "6af94be329e17e57f1cc0f5e4afb5bdfe669a5168accdc31b03274110b937b41"
+    },
+    {
+      "loader_name": "libxcb-shm.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0",
+      "bytes": 14632,
+      "sha256": "58fcb847e2009affbd7eeb1f6d39949f29ccc153f230e0b0d23de00d2b5c1353"
+    },
+    {
+      "loader_name": "libxcb-shape.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb-shape.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-shape.so.0.0.0",
+      "bytes": 14616,
+      "sha256": "7c9790843b91da1804e020e87ec34ab138e3ef2002ba13b47ae9e1200466d167"
+    },
+    {
+      "loader_name": "libxcb-xfixes.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0",
+      "bytes": 35096,
+      "sha256": "37c933b3e89f66330a930207b3133ce5b2c7aade777c7711b70945cc7d4b2333"
+    },
+    {
+      "loader_name": "libcdio_paranoia.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcdio_paranoia.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcdio_paranoia.so.2.0.0",
+      "bytes": 35168,
+      "sha256": "988cd2da66ac8587e75adcb5e8e54b52f7d69ff69cf9bb2e63e31ad9cdd5b6a4"
+    },
+    {
+      "loader_name": "libcdio_cdda.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcdio_cdda.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcdio_cdda.so.2.0.0",
+      "bytes": 35048,
+      "sha256": "02b2d8e932eaa615bed342686b3b29453908af4b86b87daffeb35142912d94fd"
+    },
+    {
+      "loader_name": "libdc1394.so.25",
+      "path": "/usr/lib/x86_64-linux-gnu/libdc1394.so.25",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdc1394.so.25.0.0",
+      "bytes": 229496,
+      "sha256": "126195cbf6a6a69549ec9f30bf484d869504f08948970d46c907ff303e0b8f42"
+    },
+    {
+      "loader_name": "libasound.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libasound.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libasound.so.2.0.0",
+      "bytes": 1174336,
+      "sha256": "40247a1edec481d7bbb229bbad85f3574448f689c3da7efc4768d4dcc7ef2dff"
+    },
+    {
+      "loader_name": "libpulse.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpulse.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpulse.so.0.24.3",
+      "bytes": 326936,
+      "sha256": "07882f385f01f6c8ef0beb151521a3276f6305fa1917bdb7d9008bbfefc4789e"
+    },
+    {
+      "loader_name": "libXv.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libXv.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXv.so.1.0.0",
+      "bytes": 27160,
+      "sha256": "f273f9006db2f3363e9479b1d11e733b6f134bedd413399cc86d0ce1d86711c0"
+    },
+    {
+      "loader_name": "libXext.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libXext.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0",
+      "bytes": 77592,
+      "sha256": "9e358938dc783704b75a8a27f07b9a2cc7dfb7ff73fd05cbcfe634b8c2afc74a"
+    },
+    {
+      "loader_name": "libsoxr.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsoxr.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsoxr.so.0.1.2",
+      "bytes": 203984,
+      "sha256": "b58125b279394eaeeae0f83580218d7b807aabf06262a92eda3f5271c8d60124"
+    },
+    {
+      "loader_name": "libvpx.so.12",
+      "path": "/usr/lib/x86_64-linux-gnu/libvpx.so.12",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvpx.so.12.0.0",
+      "bytes": 3897496,
+      "sha256": "9903e780cdb6d369e2a84e1ba872739c9713f11b30da936840b13760a6f0ec26"
+    },
+    {
+      "loader_name": "libwebpmux.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.1.1",
+      "bytes": 55696,
+      "sha256": "73bf84036a6e1c50971a159484ae8f194b4f5109348e680e3b01d5141f83478b"
+    },
+    {
+      "loader_name": "liblzma.so.5",
+      "path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5",
+      "resolved": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.3",
+      "bytes": 215448,
+      "sha256": "515749273a91ca5e3b273b4025dc2c1f8827f90005baea0ab85ffb594e74f72f"
+    },
+    {
+      "loader_name": "libdav1d.so.7",
+      "path": "/usr/lib/x86_64-linux-gnu/libdav1d.so.7",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdav1d.so.7.0.0",
+      "bytes": 1775696,
+      "sha256": "2a010803950349d783cac5e1ced297e38fce12ed799149dd210b475933c69c4f"
+    },
+    {
+      "loader_name": "librsvg-2.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/librsvg-2.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librsvg-2.so.2.61.3",
+      "bytes": 5645592,
+      "sha256": "bf76e24f36f6e2edaffd108236d5a1ddf3e7d457999389b26dea8178124e6a07"
+    },
+    {
+      "loader_name": "libcairo.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcairo.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcairo.so.2.11804.4",
+      "bytes": 1366968,
+      "sha256": "f8ed09b8ed35a1c19be81434bf7cb0fde1c1a0355b8ac74b7d3cf97788bdffe6"
+    },
+    {
+      "loader_name": "libgobject-2.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.8800.0",
+      "bytes": 403928,
+      "sha256": "8137127af8315f304e7099591a37a5a922801aaa39e10dc03daaf3c725066975"
+    },
+    {
+      "loader_name": "libglib-2.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8800.0",
+      "bytes": 1404616,
+      "sha256": "3cc1aeae827f436a296ec488b80e6c45c150dccfb4525e7db275cc08772d322f"
+    },
+    {
+      "loader_name": "libzvbi.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libzvbi.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libzvbi.so.0.13.2",
+      "bytes": 593856,
+      "sha256": "c4fffa630e7d7b560a63923c7b288ec3d65faf8d2f338aadbcc9369734406e60"
+    },
+    {
+      "loader_name": "libsnappy.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libsnappy.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsnappy.so.1.2.2",
+      "bytes": 47448,
+      "sha256": "7096393769ed4f8dce61c48559ff516e31e381c04ebd8c5ce5aa53962ce1caf6"
+    },
+    {
+      "loader_name": "libaom.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libaom.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libaom.so.3.13.1",
+      "bytes": 5529928,
+      "sha256": "92d8b38ea0b9d0c545ce1653e371bc21f11e804dac3727f095785cccab05b9eb"
+    },
+    {
+      "loader_name": "libcodec2.so.1.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcodec2.so.1.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcodec2.so.1.2",
+      "bytes": 16883384,
+      "sha256": "b45be32055f1263ca9158e5c4901ac7d3ea3f3bb463bd3b2917cc43ecfeae22d"
+    },
+    {
+      "loader_name": "libgsm.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libgsm.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgsm.so.1.0.19",
+      "bytes": 63728,
+      "sha256": "a109b49518ac37b504ab9fbfc2de2b0cc59114d10854f01044f2a35c7a1ace5f"
+    },
+    {
+      "loader_name": "libjxl.so.0.11",
+      "path": "/usr/lib/x86_64-linux-gnu/libjxl.so.0.11",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libjxl.so.0.11.1",
+      "bytes": 4049120,
+      "sha256": "f6d96ce21d5d4b1ccac292ed3b5f92ce8fa77703d626edfc81ec1243c486b495"
+    },
+    {
+      "loader_name": "libjxl_threads.so.0.11",
+      "path": "/usr/lib/x86_64-linux-gnu/libjxl_threads.so.0.11",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libjxl_threads.so.0.11.1",
+      "bytes": 18816,
+      "sha256": "029817aa29d252f3865aa86e3ca21b4f3146658d0f090e09c59e44dfa101349e"
+    },
+    {
+      "loader_name": "libmp3lame.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libmp3lame.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmp3lame.so.0.0.0",
+      "bytes": 247960,
+      "sha256": "250a2c40cd76bd3019f00685f5cf4f5d638bd6698eb419d08560a2810a8e944a"
+    },
+    {
+      "loader_name": "libopenjp2.so.7",
+      "path": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.7",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.4",
+      "bytes": 456856,
+      "sha256": "267df1e339d524b501ef4b3567b8ab7ba9eb0bfdfe26adbaff149b54aaf03259"
+    },
+    {
+      "loader_name": "libopus.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libopus.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libopus.so.0.11.1",
+      "bytes": 4282792,
+      "sha256": "5f01eaf11e7326d83f9c341a1d943851a0b00e3444668697dd663c14b138476e"
+    },
+    {
+      "loader_name": "librav1e.so.0.8",
+      "path": "/usr/lib/x86_64-linux-gnu/librav1e.so.0.8",
+      "resolved": "/usr/lib/x86_64-linux-gnu/librav1e.so.0.8.1",
+      "bytes": 3330672,
+      "sha256": "0ef5c4fe4226208726026ecd3b52c72587da758e9af75e02fdc897d3763258bc"
+    },
+    {
+      "loader_name": "libshine.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libshine.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libshine.so.3.0.1",
+      "bytes": 43320,
+      "sha256": "a97be4a266b1c227360e34be93da5857b047ea77ab1ab0697fa04a612b90f1c3"
+    },
+    {
+      "loader_name": "libspeex.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libspeex.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libspeex.so.1.5.2",
+      "bytes": 129176,
+      "sha256": "b33ab83259722f77ab70905816a96bd71987fbb1f0920bf238a27b77b5efe1f8"
+    },
+    {
+      "loader_name": "libSvtAv1Enc.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libSvtAv1Enc.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libSvtAv1Enc.so.2.3.0",
+      "bytes": 8017584,
+      "sha256": "f4a938d9aa170d98afbede811524ba8d1b41042239589294e202a574cbf20528"
+    },
+    {
+      "loader_name": "libtheoraenc.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libtheoraenc.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libtheoraenc.so.2.2.1",
+      "bytes": 211168,
+      "sha256": "5a06e5df441bd7ecfa1198d9f29df98388deb7759450541e7cc01a29b64ec30f"
+    },
+    {
+      "loader_name": "libtheoradec.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libtheoradec.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libtheoradec.so.2.1.1",
+      "bytes": 104672,
+      "sha256": "58e951561d86f99bb31948f4e0940f75968e1da22fef9d11f80c017ba9462a15"
+    },
+    {
+      "loader_name": "libtwolame.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libtwolame.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libtwolame.so.0.0.0",
+      "bytes": 133272,
+      "sha256": "06711b2aa649b344bc55d75abb85434be556c186ce47527fd87ec98cdcfae6da"
+    },
+    {
+      "loader_name": "libvorbis.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libvorbis.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvorbis.so.0.4.9",
+      "bytes": 186520,
+      "sha256": "518db59c055b4754e6c07ac81e86ed30ef5dfc0c10a1d2a3cbb19eb120fe3ec5"
+    },
+    {
+      "loader_name": "libvorbisenc.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libvorbisenc.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvorbisenc.so.2.0.12",
+      "bytes": 694488,
+      "sha256": "66a7009084fa7eef7a21321fd5462b9e7dd355bcfcf35ddcc39852a65e600501"
+    },
+    {
+      "loader_name": "libwebp.so.7",
+      "path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10",
+      "bytes": 592520,
+      "sha256": "0b477702bb43d90a1205813a9c211faa8dfef025a258b9d60663b37311b87c08"
+    },
+    {
+      "loader_name": "libx264.so.165",
+      "path": "/usr/lib/x86_64-linux-gnu/libx264.so.165",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libx264.so.165",
+      "bytes": 1912544,
+      "sha256": "5331dc304a788428ab86c6f1130e8e61d23e65fb06c62fb7acf6ba2b3a540f8f"
+    },
+    {
+      "loader_name": "libx265.so.215",
+      "path": "/usr/lib/x86_64-linux-gnu/libx265.so.215",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libx265.so.215",
+      "bytes": 16880560,
+      "sha256": "3fa0e6c8eaf249f6d418822ff128d42ba3e99a538173501c3f0a77a5a914889b"
+    },
+    {
+      "loader_name": "libxvidcore.so.4",
+      "path": "/usr/lib/x86_64-linux-gnu/libxvidcore.so.4",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxvidcore.so.4.3",
+      "bytes": 666000,
+      "sha256": "8ba0e00b73a9a017ed899705e6b322e8d4377c6e21fa15e044507f5a7f34cbf0"
+    },
+    {
+      "loader_name": "libXfixes.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0",
+      "bytes": 26880,
+      "sha256": "04f371370ab65d552b214c9d57ac8b05c8fd9127b1bd55e29bd297f417241de0"
+    },
+    {
+      "loader_name": "libX11-xcb.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0",
+      "bytes": 14104,
+      "sha256": "6a9047ac83e4e1afb8032e62332aa449e7c6307c731f621054c9c0573a460899"
+    },
+    {
+      "loader_name": "libxcb-dri3.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.1.0",
+      "bytes": 22824,
+      "sha256": "d2f0488a28a351718192c01bba15f60556f514db555dfbce9a132dedd1401e98"
+    },
+    {
+      "loader_name": "libmpg123.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libmpg123.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmpg123.so.0.49.4",
+      "bytes": 388712,
+      "sha256": "97c50f2bc117d0edd3721d7886809a76e92a96c9572b84549d4c34fea4fe11e0"
+    },
+    {
+      "loader_name": "libvorbisfile.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libvorbisfile.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvorbisfile.so.3.3.8",
+      "bytes": 38984,
+      "sha256": "08f99c21b1533c850030e7f01beefccec27f8f87e011e809259bbc24324b7131"
+    },
+    {
+      "loader_name": "libudfread.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libudfread.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libudfread.so.3.0.0",
+      "bytes": 39064,
+      "sha256": "a7fef12100eafc0779ac343e569c4b6002c33e9ce3bc4648144af7343c9e689e"
+    },
+    {
+      "loader_name": "libp11-kit.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0.4.8",
+      "bytes": 1937960,
+      "sha256": "2611eeb039dbed48839d90afe3d9ad3e5bd9edca2989af05dc62a93c3ff41fed"
+    },
+    {
+      "loader_name": "libidn2.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libidn2.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0",
+      "bytes": 133272,
+      "sha256": "cdb48484c43a795c3722e286c31eb6238b4b7c3780043895dd9fa6b6041f78da"
+    },
+    {
+      "loader_name": "libunistring.so.5",
+      "path": "/usr/lib/x86_64-linux-gnu/libunistring.so.5",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libunistring.so.5.2.0",
+      "bytes": 1988864,
+      "sha256": "c762a289c02f716a12549d544a811715126067b9a6377057671d3fad9453a1fc"
+    },
+    {
+      "loader_name": "libtasn1.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.5",
+      "bytes": 92384,
+      "sha256": "1255353abfae7b9f52aedb0264876cd4c852f13c2acf3e2203ebd2aab79bce02"
+    },
+    {
+      "loader_name": "libhogweed.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6.11",
+      "bytes": 301280,
+      "sha256": "67bdc12f1ffe643142d5e185a6a8f654fd38cd14e77bae68201cf9aa71b00b61"
+    },
+    {
+      "loader_name": "libnettle.so.8",
+      "path": "/usr/lib/x86_64-linux-gnu/libnettle.so.8",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libnettle.so.8.11",
+      "bytes": 354640,
+      "sha256": "68c2f760d329a85ce1aa5cfc5e48ffece235258159005726798ad14e6f96a789"
+    },
+    {
+      "loader_name": "libgmp.so.10",
+      "path": "/usr/lib/x86_64-linux-gnu/libgmp.so.10",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgmp.so.10.5.0",
+      "bytes": 543168,
+      "sha256": "fda9699eef15deda5f1c626e9140377a7f5d88c41516a54278ac02429cb20fa5"
+    },
+    {
+      "loader_name": "libssl.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "bytes": 1114280,
+      "sha256": "63b47f444efa588e291e9b650a5ba2ab02f856356f2d50f13a2e477db9119e09"
+    },
+    {
+      "loader_name": "libcrypto.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "bytes": 6386528,
+      "sha256": "5385f0436ac2e284ba8c5fb1488874057c29c04be72dea32add832694f381e28"
+    },
+    {
+      "loader_name": "libmbedcrypto.so.16",
+      "path": "/usr/lib/x86_64-linux-gnu/libmbedcrypto.so.16",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmbedcrypto.so.3.6.5",
+      "bytes": 592320,
+      "sha256": "811e07a0b295829a748ee5d307c2bb375ea7cd9f237cf8306f364983f29b20e3"
+    },
+    {
+      "loader_name": "libcjson.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libcjson.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcjson.so.1.7.19",
+      "bytes": 35080,
+      "sha256": "47eb4b2dd59fcfe5839255dff2877a1852503a40d1c7c3806463be5ff8bcc19f"
+    },
+    {
+      "loader_name": "libgssapi_krb5.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2",
+      "bytes": 355160,
+      "sha256": "18e2ba0b2f421b780e7265337e52996f382857df63d0f9e63f391a75a14cdbe7"
+    },
+    {
+      "loader_name": "libbsd.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbsd.so.0.12.2",
+      "bytes": 81048,
+      "sha256": "c71b8a0d7e94c5e34f6c328c5dd1ba7f325d3300c97a54a7c69ef9a6c2caa8b3"
+    },
+    {
+      "loader_name": "libsodium.so.23",
+      "path": "/usr/lib/x86_64-linux-gnu/libsodium.so.23",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsodium.so.23.3.0",
+      "bytes": 367408,
+      "sha256": "f9fdc530581d9c0978097c3838d12e33b12d7496106699c796635e97a0407421"
+    },
+    {
+      "loader_name": "libpgm-5.3.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpgm-5.3.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpgm-5.3.so.0.0.128",
+      "bytes": 289760,
+      "sha256": "7f3d86409d99880c436246f6b0d8cb8e489f132198dba4ce713f7204c12de82e"
+    },
+    {
+      "loader_name": "libnorm.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libnorm.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libnorm.so.1",
+      "bytes": 379128,
+      "sha256": "0291e63eefed9eb16bc91ee0faeb01876c2b73a920327af1a9f6e0aaf3e7872a"
+    },
+    {
+      "loader_name": "libserd-0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libserd-0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libserd-0.so.0.32.6",
+      "bytes": 96328,
+      "sha256": "4b28ea2b117f23eb807a7cf75c1a788208a858d7d96b7e21430da347922bc1db"
+    },
+    {
+      "loader_name": "libsord-0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsord-0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsord-0.so.0.16.20",
+      "bytes": 34888,
+      "sha256": "164dd7a25321c04c3b7a6505262504aa1f0c3c36804696a15f76100df4836539"
+    },
+    {
+      "loader_name": "libsratom-0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsratom-0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsratom-0.so.0.6.20",
+      "bytes": 43080,
+      "sha256": "50737f19d89b9ca3660da3ba89c976a5e0e4f0275c98fdc2629063848a3a9e9b"
+    },
+    {
+      "loader_name": "libzix-0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libzix-0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libzix-0.so.0.8.0",
+      "bytes": 51912,
+      "sha256": "2e57ca1dd8754e5545a991c7ac80787e9e252532c0f131917d4109cd97ef89c8"
+    },
+    {
+      "loader_name": "libfftw3.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libfftw3.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libfftw3.so.3.6.10",
+      "bytes": 2242720,
+      "sha256": "de77e73eb77a10462e27cb851c0a68e9064d0b6d72b90f6be3edcf64b6d2bdc7"
+    },
+    {
+      "loader_name": "libsamplerate.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsamplerate.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsamplerate.so.0.2.2",
+      "bytes": 1501952,
+      "sha256": "51384a99b784ab85ee51fc274536cb40ab2c52d3338195824826b572e59063bb"
+    },
+    {
+      "loader_name": "libflite_usenglish.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_usenglish.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_usenglish.so.2.2",
+      "bytes": 170288,
+      "sha256": "6d05ba6a689da7b1af789742b647fcdffe3a03b9bd34b58aceb23cdbd5108236"
+    },
+    {
+      "loader_name": "libflite_cmulex.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libflite_cmulex.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libflite_cmulex.so.2.2",
+      "bytes": 612656,
+      "sha256": "e48fd974a5a4606311d895cb1988eca9a2bada8462a9fe0cc87c6d19e9143ada"
+    },
+    {
+      "loader_name": "libgraphite2.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3.2.1",
+      "bytes": 149856,
+      "sha256": "3f1376e8965733a4d31386d5de99c829b7704beba3b07987da9220d53f192da2"
+    },
+    {
+      "loader_name": "libvulkan.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libvulkan.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libvulkan.so.1.4.341",
+      "bytes": 588520,
+      "sha256": "def4af45e9e5784cf65eaaaa289530a5c73546b01015da4c0920ef0a144fe189"
+    },
+    {
+      "loader_name": "liblcms2.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2.0.17",
+      "bytes": 419056,
+      "sha256": "046e89ccd894994728028a8f00c2424b79cff4e3d9832530f964edddf1078d1b"
+    },
+    {
+      "loader_name": "libunibreak.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libunibreak.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libunibreak.so.6.0.1",
+      "bytes": 133384,
+      "sha256": "5ada1e7d80a673ded1c03a37041e0d5e2b6412e1fee942dc1d3fe3b35a9ce1c9"
+    },
+    {
+      "loader_name": "libgomp.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libgomp.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "bytes": 385208,
+      "sha256": "645478cbe100d1465b9d45f7047bca3965358f4d399937e544f55ac7a924d5a3"
+    },
+    {
+      "loader_name": "libexpat.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.11.2",
+      "bytes": 186704,
+      "sha256": "2e5f66e2784c2746775567ff9916f6e7503182a8f1f2deb8ca729dfc1463849f"
+    },
+    {
+      "loader_name": "libpng16.so.16",
+      "path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.57.0",
+      "bytes": 231648,
+      "sha256": "2a570998f08a406b4083b06888e528fa0c5d6cc3bef77b40026d661c91cbfb90"
+    },
+    {
+      "loader_name": "libbrotlidec.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.2.0",
+      "bytes": 55688,
+      "sha256": "eb8768f85e9c367cd74772919b5668bbe0045cb71b65d75aafc32828e7acb1b7"
+    },
+    {
+      "loader_name": "libdb-5.3.so",
+      "path": "/usr/lib/x86_64-linux-gnu/libdb-5.3.so",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdb-5.3.so",
+      "bytes": 1826464,
+      "sha256": "66319e2bbca33c46b6bfb6b1315c49ce90ee19e2e8d2d3f9c5dc30f8ebbd9e29"
+    },
+    {
+      "loader_name": "libXau.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0",
+      "bytes": 18776,
+      "sha256": "2b742de65acd00f154ed156720af66c0c0af9a58360ba041f25a41e2f775fab5"
+    },
+    {
+      "loader_name": "libXdmcp.so.6",
+      "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0",
+      "bytes": 26856,
+      "sha256": "24beecbb0faf600d1a646b5edfc8c144da6f2965cb427598f4e17edc1285a733"
+    },
+    {
+      "loader_name": "libcdio.so.19",
+      "path": "/usr/lib/x86_64-linux-gnu/libcdio.so.19",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcdio.so.19.0.0",
+      "bytes": 154064,
+      "sha256": "e66927d807874cf70ab8a71e47bc72c7ff531171a38033f2ca1ed0e2c8f5aab2"
+    },
+    {
+      "loader_name": "libusb-1.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libusb-1.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libusb-1.0.so.0.5.0",
+      "bytes": 129272,
+      "sha256": "e422dc361a501e8175a94e16228704de7ca6376037fc29a0e7272e8fe2c8edc1"
+    },
+    {
+      "loader_name": "libpulsecommon-17.0.so",
+      "path": "/usr/lib/x86_64-linux-gnu/pulseaudio/libpulsecommon-17.0.so",
+      "resolved": "/usr/lib/x86_64-linux-gnu/pulseaudio/libpulsecommon-17.0.so",
+      "bytes": 510360,
+      "sha256": "6a374d51a541e98f124434cd9de2cae76208a82113fd94574c4314dad4f4d104"
+    },
+    {
+      "loader_name": "libdbus-1.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libdbus-1.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdbus-1.so.3.38.3",
+      "bytes": 321920,
+      "sha256": "bb0b37afa67c7b6d664ca189f63fb92e75a690a340c4c13a149cc4dfbd8249ff"
+    },
+    {
+      "loader_name": "libgio-2.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.8800.0",
+      "bytes": 1941032,
+      "sha256": "015bde05a0741bbc56b5af15f87eac3eb6e25767c69d8a499686a533b69a35d4"
+    },
+    {
+      "loader_name": "libgdk_pixbuf-2.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so.0.4400.5",
+      "bytes": 216304,
+      "sha256": "cff4a3872f06723a646be0e086d0e3b385a50bc3d27fac5ebfb83875b03c2c3a"
+    },
+    {
+      "loader_name": "libcairo-gobject.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcairo-gobject.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcairo-gobject.so.2.11804.4",
+      "bytes": 43000,
+      "sha256": "3a7ae8610a5608a7d416e02eb5ea1c7f17b127729baf2b7bc0fbb7175662b081"
+    },
+    {
+      "loader_name": "libpangocairo-1.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpangocairo-1.0.so.0.5700.0",
+      "bytes": 67792,
+      "sha256": "c159cd8c2f4b85893bd8a0a5247c0c65cd12b4b8d0a74a5ee36aa844fb7850fb"
+    },
+    {
+      "loader_name": "libpango-1.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpango-1.0.so.0.5700.0",
+      "bytes": 458600,
+      "sha256": "5c2d126df8d1e1beb793bf400c9bed6a3384e95b16d54cea85643bad046973f3"
+    },
+    {
+      "loader_name": "libXrender.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libXrender.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
+      "bytes": 43712,
+      "sha256": "708d1c6a5d8aa5169d61e5b79973bf012047de0fb881d2836d44b3167a1a51a5"
+    },
+    {
+      "loader_name": "libxcb-render.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libxcb-render.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0",
+      "bytes": 55608,
+      "sha256": "ee3c4a0893f4d944acbc83433234a97d94556e10c6a238e533f82b7a6bbe821b"
+    },
+    {
+      "loader_name": "libpixman-1.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpixman-1.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpixman-1.so.0.46.4",
+      "bytes": 747768,
+      "sha256": "8740b21b15423da495da1c89e83d0fb64ca871bd4da47341d0422d7afb3b25e3"
+    },
+    {
+      "loader_name": "libffi.so.8",
+      "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libffi.so.8.2.0",
+      "bytes": 64184,
+      "sha256": "1a0dc86f787f73e025a6e521056360afcbe70f2a82cd808132fefc2b4ee95daa"
+    },
+    {
+      "loader_name": "libatomic.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libatomic.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libatomic.so.1.2.0",
+      "bytes": 35120,
+      "sha256": "eac440708f874c4d446671efb5353cebeaa829bd1f18cd8d5065cd6efefa387b"
+    },
+    {
+      "loader_name": "libpcre2-8.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.14.0",
+      "bytes": 699056,
+      "sha256": "4a6b6b2078685b074869d75cb068664d7da6b3036df7bca0442b1bbbd4ac7e65"
+    },
+    {
+      "loader_name": "libjxl_cms.so.0.11",
+      "path": "/usr/lib/x86_64-linux-gnu/libjxl_cms.so.0.11",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libjxl_cms.so.0.11.1",
+      "bytes": 96632,
+      "sha256": "066577157ef78a8d1c3b045a0a5dc2148c0683a163115bb8f4e086edb91a7a9a"
+    },
+    {
+      "loader_name": "libhwy.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libhwy.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libhwy.so.1.3.0",
+      "bytes": 55696,
+      "sha256": "5c0606edcfa98ed9a9ae251074b0154a39c2f4ada88f0a677e78ad19583f1486"
+    },
+    {
+      "loader_name": "libbrotlienc.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libbrotlienc.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbrotlienc.so.1.2.0",
+      "bytes": 686936,
+      "sha256": "82dd80ab6b6504637b55d32985cf5826de56caac7031ed0f04b93b03051a02f4"
+    },
+    {
+      "loader_name": "libogg.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libogg.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libogg.so.0.8.6",
+      "bytes": 38984,
+      "sha256": "cb4b444d7f473530c04e31a70347bd572abd5e53a8b28e0f653fe76cf2255bc8"
+    },
+    {
+      "loader_name": "libmvec.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libmvec.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmvec.so.1",
+      "bytes": 1022240,
+      "sha256": "2f2e7f4ad88e1b13f2f8345c826b25f85ba61c93527d91e59dd0d2943eac6e80"
+    },
+    {
+      "loader_name": "libsharpyuv.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1",
+      "bytes": 26888,
+      "sha256": "fced0bf76ec62fcce9b2cea1a91a9c61fbf6828e9e66b194cc6d779798907ff2"
+    },
+    {
+      "loader_name": "libnuma.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libnuma.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libnuma.so.1.0.0",
+      "bytes": 52328,
+      "sha256": "658ab7f42c68efdced0d9d05cfdb860c5145b121df886f332ab5425164e0db38"
+    },
+    {
+      "loader_name": "libzstd.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7",
+      "bytes": 796824,
+      "sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80"
+    },
+    {
+      "loader_name": "libkrb5.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3.3",
+      "bytes": 831744,
+      "sha256": "aca607790a4349c5053390fa22b24e717b2c5ea101d7b468ece6507140c6ff7b"
+    },
+    {
+      "loader_name": "libk5crypto.so.3",
+      "path": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1",
+      "bytes": 178728,
+      "sha256": "ee77156da39841edfaa7c5fcdca4cf98ae34d60323095617b484188a4d9965e3"
+    },
+    {
+      "loader_name": "libcom_err.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libcom_err.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libcom_err.so.2.1",
+      "bytes": 18584,
+      "sha256": "6fb3115b11fe7e14c26f3e086c4dc1fb41061130869a66c976e0ea69fdb912d6"
+    },
+    {
+      "loader_name": "libkrb5support.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1",
+      "bytes": 52080,
+      "sha256": "8cc61cecc016710e7134c1621b5a6537c55eea91d2a074f6f05fa6f6e36ec8d6"
+    },
+    {
+      "loader_name": "libmd.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmd.so.0.1.0",
+      "bytes": 55608,
+      "sha256": "f115fa619f586e47ddfbec21bfd50069fbe5d21f388f8d9a07a984cb075d7efa"
+    },
+    {
+      "loader_name": "libbrotlicommon.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.2.0",
+      "bytes": 141712,
+      "sha256": "fb353cab2ea4ecd90814b46f872c21e1034c92bd86c3c677415748b4d16b5ad1"
+    },
+    {
+      "loader_name": "libudev.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libudev.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libudev.so.1.7.12",
+      "bytes": 289288,
+      "sha256": "17a934f550b880125c51294a261da6569ee7b8fae089730aeea6db8a8166f403"
+    },
+    {
+      "loader_name": "libsndfile.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libsndfile.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsndfile.so.1.0.37",
+      "bytes": 582840,
+      "sha256": "dd944b9bf1d06df6bb1c4f730fdcb3321d114aace43f66560ece7eeb726ed1c4"
+    },
+    {
+      "loader_name": "libsystemd.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libsystemd.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libsystemd.so.0.42.0",
+      "bytes": 1127960,
+      "sha256": "9405c27411b652140806ab7576f7d76610f67bde662ba730efc7aa7171785011"
+    },
+    {
+      "loader_name": "libasyncns.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libasyncns.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libasyncns.so.0.3.1",
+      "bytes": 30792,
+      "sha256": "3ac7affcdca7e7e71934378bd988de033dea97644b9e6c15454d746dda948670"
+    },
+    {
+      "loader_name": "libapparmor.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libapparmor.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libapparmor.so.1.30.7",
+      "bytes": 89056,
+      "sha256": "fba87c63e1c716620ed844df5d2fcee7de06cbfb0895d109f9de9a9d6f0245cd"
+    },
+    {
+      "loader_name": "libgmodule-2.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0.8800.0",
+      "bytes": 22816,
+      "sha256": "aa2f41237a20b7b28e99ef9706d2b0bad3097e313f51272cfd14dadff8b195cb"
+    },
+    {
+      "loader_name": "libmount.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libmount.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libmount.so.1.1.0",
+      "bytes": 338728,
+      "sha256": "ada01a744a6b665fae43097f3b93400aa74b20d6b59e2d51b9dd28c8747cccbb"
+    },
+    {
+      "loader_name": "libselinux.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libselinux.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libselinux.so.1",
+      "bytes": 199120,
+      "sha256": "7538ee77765a27966563c0d22437a3080dcdb346ff76cc16d71a3ce3379a716a"
+    },
+    {
+      "loader_name": "libglycin-2.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libglycin-2.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libglycin-2.so.0",
+      "bytes": 4150584,
+      "sha256": "631f4349222697432f6b39258f1ba2a9fb3316d1e00dc097abbe5c439b91a10f"
+    },
+    {
+      "loader_name": "libpangoft2-1.0.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libpangoft2-1.0.so.0.5700.0",
+      "bytes": 129184,
+      "sha256": "e80bafce7e827bc43dd5d519a6332786943ee167dddb698cdcbef15387c97dc2"
+    },
+    {
+      "loader_name": "libthai.so.0",
+      "path": "/usr/lib/x86_64-linux-gnu/libthai.so.0",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libthai.so.0.3.2",
+      "bytes": 44304,
+      "sha256": "dedacba149b8f955a4f37eb5793fad3128adcbfb4796da963e4a4a640f96e670"
+    },
+    {
+      "loader_name": "libkeyutils.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1.10",
+      "bytes": 22680,
+      "sha256": "c0c8f8d5adec4abe76fa462d8ad7c010f50c61e2b67b9feaa6f44e462c12cf41"
+    },
+    {
+      "loader_name": "libresolv.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+      "bytes": 68104,
+      "sha256": "6b99ecf94bcb81732ed1e81615084a5cfe7383eb89ce83106fa51077409ce609"
+    },
+    {
+      "loader_name": "libFLAC.so.14",
+      "path": "/usr/lib/x86_64-linux-gnu/libFLAC.so.14",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libFLAC.so.14.0.0",
+      "bytes": 407728,
+      "sha256": "575e74dd5c9f2c3e6acfe7d3647f7dc10eb9c37f106d588c66aba8d7648aae5d"
+    },
+    {
+      "loader_name": "libblkid.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libblkid.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0",
+      "bytes": 240696,
+      "sha256": "c6c40ef148122df950ba53c4e44f7b45860da2381bf59fa8d4a645e7bfa55cb8"
+    },
+    {
+      "loader_name": "libseccomp.so.2",
+      "path": "/usr/lib/x86_64-linux-gnu/libseccomp.so.2",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libseccomp.so.2.6.0",
+      "bytes": 186888,
+      "sha256": "df995d80c824876afc38528b5e71d258e1844eb524cd9d34f9a7898562fd99e7"
+    },
+    {
+      "loader_name": "libdatrie.so.1",
+      "path": "/usr/lib/x86_64-linux-gnu/libdatrie.so.1",
+      "resolved": "/usr/lib/x86_64-linux-gnu/libdatrie.so.1.4.1",
+      "bytes": 30872,
+      "sha256": "4f82932cdedfe2cfa2e306fddb71c770249cc45375176b850ac3e25f2cc9c7e2"
+    }
+  ],
+  "failed_assembly": {
+    "state": {
+      "phase": "failed",
+      "started_unix": 1792835815.232829,
+      "updated_unix": 1792835815.5649486,
+      "error": "AssertionError('Configured host loader identities changed; refuse stale notice binding')"
+    },
+    "unit": {
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "MainPID": "0",
+      "Result": "exit-code",
+      "ExecMainStatus": "1",
+      "MemoryCurrent": "[not set]",
+      "MemoryPeak": "113729536"
+    },
+    "tail": "Traceback (most recent call last):\n  File \"/home/halo/.cache/venturi-build/current-prebuilt-r3/worker.py\", line 64, in <module>\n    assert canonical(libraries)==canonical(companions['host-notices']['index']['recorded_main_loader_libraries']),'Configured host loader identities changed; refuse stale notice binding'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Configured host loader identities changed; refuse stale notice binding\n"
+  },
+  "scope": "The host contains a zlib1g patch update; this work installed or updated no host package. Preserve all original companions and indices. Candidate binding must explicitly record188 unchanged loader tuples plus this one replacement and verify the exact same installed/archived copyright text and current package metadata before and after assembly. No claim of189 identities matching the original index; no arbitrary loader changes accepted. No full F1-F7/M7 release or optional-path redistribution claim."
+}

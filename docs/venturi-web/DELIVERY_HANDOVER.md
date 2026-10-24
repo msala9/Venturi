@@ -55,8 +55,10 @@ Current A/B quality and guarded live upgrade: `evidence/f6-review-quality-workfl
 BINARY_DELIVERY.md identifies the immutable 77d7 package with4231ecf
 documentation, not the newer live 87bc binary; the archive is unchanged.
 NOTICES.md describes its three immutable Rust/host companions.
-All189 fresh loader identities match the host notice index. Earlier packages
-remain unchanged. Real-media native export is accepted by
+The prior77d7 package matched all189 loader identities to its host notice index.
+Current87bc binding needs188 unchanged identities plus the reviewed zlib patch
+with identical copyright in `evidence/f7-host-zlib-notice-delta.json`. Earlier
+packages remain unchanged. Real-media native export is accepted by
 `evidence/f7-public-real-media-export-workflow.json`:634.6s FullHD and300s4K,
 with bounded resources and the original live Session preserved. The ledger is
 62done/28partial/2excluded. Physical/DPI/device, long Source/Program browser

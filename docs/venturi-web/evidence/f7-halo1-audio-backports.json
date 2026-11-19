@@ -30,8 +30,22 @@
     "gpu_devices_hidden": true,
     "oom_kills": 0
   },
+  "full_session_audio_tests": {
+    "unit": "venturi-audio-package-7e58ba5.service",
+    "invocation_id": "56da46a5e9fa46faa607674ceb49d1c8",
+    "command": "cargo test --offline --locked -p vv-session --lib audio_render::tests::",
+    "passed": 34,
+    "failed": 0,
+    "ignored": 0,
+    "filtered_out": 88,
+    "test_seconds": 8.49,
+    "cpu_quota": "100%",
+    "memory_limit_bytes": 1610612736,
+    "memory_swap_max_bytes": 0,
+    "gpu_devices_hidden": true
+  },
   "limitations": [
-    "The full vv-session build reached its own 1280 MiB cgroup limit while compiling tract-core. The one recorded OOM kill was confined to that service, and the full package test target did not run.",
+    "An earlier vv-session build reached its own 1280 MiB cgroup limit while compiling tract-core. The one recorded OOM kill was confined to that service. The later full-package audio test run at 1536 MiB supersedes the missing test result.",
     "The module harness supplies the direct audio regression evidence. It does not cover linking or deploying a current vv-web binary.",
     "The browser coexistence evidence uses the previously qualified runtime and is recorded separately in f7-halo1-aux-r9700-coexistence.json."
   ]

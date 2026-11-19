@@ -868,6 +868,13 @@ fn measured_parts_survive_the_disk() {
     }
 }
 
+#[test]
+fn levels_measured_with_block_rate_fades_are_rejected() {
+    let mut bytes = encode_parts(&[], &LevelParts::Peak(0.25));
+    bytes[4..8].copy_from_slice(&2_u32.to_le_bytes());
+    assert_eq!(decode_parts(&bytes), None);
+}
+
 /// A normalizing timeline was collected whole until its levels were
 /// measured apart.
 #[test]
@@ -1103,6 +1110,94 @@ fn a_cancelled_render_stops_at_the_next_chunk() {
 }
 
 #[test]
+fn sibling_read_ahead_is_bounded_without_losing_late_packets() {
+    let (tx, decoded) = sync_channel(4);
+    let frames = 4;
+    let samples = vec![0.25; frames * PROJECT_CHANNELS as usize];
+    for (slot, at) in [(1, 0), (1, READ_AHEAD_FRAMES + 100), (0, 0)] {
+        tx.send(Decoded::Samples {
+            slot,
+            at,
+            samples: samples.clone(),
+        })
+        .unwrap();
+    }
+    tx.send(Decoded::End(Ok(()))).unwrap();
+
+    let mut reader = Reader {
+        path: PathBuf::from("skewed.mkv"),
+        streams: vec![0, 1],
+        decoded,
+        kept: (0..2)
+            .map(|_| KeptStream {
+                first: 0,
+                blocks: VecDeque::new(),
+                filling: new_block(),
+                discarded_tail: false,
+            })
+            .collect(),
+        ended: false,
+        read_from: vec![None; 2],
+        used: false,
+    };
+    let window = 0..frames as u64;
+    assert_eq!(
+        reader
+            .read(0, window.clone())
+            .unwrap()
+            .to_vec(window.clone()),
+        samples
+    );
+    assert_eq!(reader.kept[1].end(), READ_AHEAD_FRAMES);
+    assert!(reader.serves(&reader.path, 1, &window));
+    assert!(!reader.serves(&reader.path, 1, &(0..READ_AHEAD_FRAMES + 1)));
+}
+
+#[test]
+fn a_short_stream_does_not_buffer_or_lose_the_long_stream_tail() {
+    let path = source(
+        "short-long-buffer.mkv",
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:sample_rate=48000:duration=1",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=660:sample_rate=48000:duration=14",
+            "-map",
+            "0",
+            "-map",
+            "1",
+            "-c:a",
+            "pcm_s16le",
+        ],
+    );
+    let mut reader = Reader::open(path.clone(), vec![0, 1], 0, None);
+    let rate = PROJECT_SAMPLE_RATE as u64;
+    let short = reader.read(0, 0..2 * rate).unwrap();
+    assert!(reader.ended);
+    assert!((rate - BLOCK_FRAMES..2 * rate).contains(&short.end()));
+    assert_eq!(reader.kept[1].end(), READ_AHEAD_FRAMES);
+    drop(reader);
+
+    let mut project = Project::default();
+    let file = media(&mut project, path, 48_000, 2);
+    let mut long = clip(2, file, 0, 350, 0);
+    long.audio_stream_index = 1;
+    let tl = timeline(vec![
+        audio_track(vec![clip(1, file, 0, 75, 0)]),
+        audio_track(vec![long]),
+    ]);
+    let range = samples(0..350);
+    assert_eq!(
+        rendered(&project, &tl, range.clone()),
+        mixed_whole(&project, &tl, range)
+    );
+}
+
+#[test]
 fn a_decode_thread_gone_without_an_end_fails_the_render() {
     let (tx, decoded) = sync_channel(1);
     drop(tx);
@@ -1114,6 +1209,7 @@ fn a_decode_thread_gone_without_an_end_fails_the_render() {
             first: 0,
             blocks: VecDeque::new(),
             filling: new_block(),
+            discarded_tail: false,
         }],
         ended: false,
         read_from: vec![None],

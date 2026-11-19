@@ -1005,7 +1005,7 @@ impl<'c> StreamingAudio<'c> {
             let reader = match self
                 .readers
                 .iter()
-                .position(|r| r.serves(path, *stream, frames.start))
+                .position(|r| r.serves(path, *stream, frames))
             {
                 Some(reader) => reader,
                 None => {
@@ -1165,6 +1165,8 @@ struct KeptStream {
     first: u64,
     blocks: VecDeque<Arc<Vec<f32>>>,
     filling: Vec<f32>,
+    /// A later window outside this retained prefix must open a new decoder.
+    discarded_tail: bool,
 }
 
 impl KeptStream {
@@ -1263,6 +1265,7 @@ impl Reader {
                     first,
                     blocks: VecDeque::new(),
                     filling: new_block(),
+                    discarded_tail: false,
                 })
                 .collect(),
             ended: false,
@@ -1271,7 +1274,7 @@ impl Reader {
         }
     }
 
-    fn serves(&self, path: &Path, stream: usize, start: u64) -> bool {
+    fn serves(&self, path: &Path, stream: usize, frames: &Range<u64>) -> bool {
         self.path == path
             && self
                 .streams
@@ -1279,16 +1282,26 @@ impl Reader {
                 .position(|s| *s == stream)
                 .is_some_and(|slot| {
                     let kept = &self.kept[slot];
-                    kept.start() <= start && start <= kept.end() + READ_AHEAD_FRAMES
+                    kept.start() <= frames.start
+                        && if kept.discarded_tail {
+                            frames.end <= kept.end()
+                        } else {
+                            frames.start <= kept.end().saturating_add(READ_AHEAD_FRAMES)
+                        }
                 })
     }
 
     /// Up to the end of the file if it comes first.
     fn read(&mut self, stream: usize, frames: Range<u64>) -> Result<SampleBlocks, ExportError> {
         let slot = self.streams.iter().position(|s| *s == stream).unwrap();
+        debug_assert!(!self.kept[slot].discarded_tail || frames.end <= self.kept[slot].end());
         while self.kept[slot].end() < frames.end && !self.ended {
             match self.decoded.recv() {
-                Ok(Decoded::Samples { slot, at, samples }) => self.append(slot, at, &samples),
+                Ok(Decoded::Samples {
+                    slot: incoming,
+                    at,
+                    samples,
+                }) => self.append(incoming, at, &samples, incoming == slot),
                 Ok(Decoded::End(Err(e))) => return Err(ExportError::Failed(e)),
                 Ok(Decoded::End(Ok(()))) => self.ended = true,
                 // The decode thread panicked: its audio would play as silence.
@@ -1307,19 +1320,32 @@ impl Reader {
     }
 
     /// A gap in the stream plays as silence, as in the preview.
-    fn append(&mut self, slot: usize, at: u64, samples: &[f32]) {
+    fn append(&mut self, slot: usize, at: u64, samples: &[f32], requested: bool) {
         let ch = PROJECT_CHANNELS as u64;
         let kept = &mut self.kept[slot];
+        if kept.discarded_tail {
+            return;
+        }
         let end = kept.end();
-        let to = at + samples.len() as u64 / ch;
+        let mut to = at + samples.len() as u64 / ch;
+        if !requested {
+            let limit = kept.start().saturating_add(READ_AHEAD_FRAMES).max(end);
+            if to > limit {
+                kept.discarded_tail = true;
+                to = limit;
+            }
+        }
         if to <= end {
             return;
         }
         if at > end {
-            kept.push(at - end, None);
+            kept.push(at.min(to) - end, None);
         }
-        let skip = end.saturating_sub(at);
-        kept.push(to - at - skip, Some(&samples[(skip * ch) as usize..]));
+        let from = at.max(end);
+        if from < to {
+            let range = ((from - at) * ch) as usize..((to - at) * ch) as usize;
+            kept.push(to - from, Some(&samples[range]));
+        }
     }
 
     /// Drops the blocks before the first frame read in this chunk: the

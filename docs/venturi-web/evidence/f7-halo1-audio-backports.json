@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-19",
+  "source_commit": "7e58ba591665040e114d5dc01ed843507620234b",
+  "host": "halo1",
+  "deepseek_flash_4_remained_active": true,
+  "mixer_package_tests": {
+    "unit": "venturi-audio-cpu-7e58ba5.service",
+    "command": "cargo test --locked -p vv-audio --lib fade",
+    "passed": 8,
+    "failed": 0
+  },
+  "audio_render_module_tests": {
+    "unit": "venturi-audio-module-linux-7e58ba5.service",
+    "invocation_id": "eeb11d60ac9c4cfdb4b6a4083c0a1f17",
+    "build_scope": "External harness includes the original audio_render.rs and its out-of-line tests unchanged, with the exact ExportError and PROJECT_CHANNELS definitions from export.rs. Uses production vv-core, vv-audio and vv-media with versions and checksums matched to the source lockfile.",
+    "source_sha256": "0b94b34b75550ea1a0afef66382e4325bfe860feb0022f5610782be3b12ca3bd",
+    "test_source_sha256": "82c573b373783d0c8c7eb81ca921ea256abdd4da5d6c1ef48136bb33b12d011b",
+    "export_source_sha256": "75c4ae92c6c27f16641a958f5503056d62736e95446cb1494db5360083a80b00",
+    "passed": [
+      "an_in_memory_measure_is_rechecked_when_its_source_changes",
+      "levels_measured_with_block_rate_fades_are_rejected",
+      "sibling_read_ahead_is_bounded_without_losing_late_packets",
+      "a_short_stream_does_not_buffer_or_lose_the_long_stream_tail",
+      "the_streams_of_a_file_read_at_the_same_place_share_one_decode"
+    ],
+    "failed": 0,
+    "cpu_quota": "100%",
+    "memory_peak_bytes": 929857536,
+    "memory_swap_max_bytes": 0,
+    "gpu_devices_hidden": true,
+    "oom_kills": 0
+  },
+  "limitations": [
+    "The full vv-session build reached its own 1280 MiB cgroup limit while compiling tract-core. The one recorded OOM kill was confined to that service, and the full package test target did not run.",
+    "The module harness supplies the direct audio regression evidence. It does not cover linking or deploying a current vv-web binary.",
+    "The browser coexistence evidence uses the previously qualified runtime and is recorded separately in f7-halo1-aux-r9700-coexistence.json."
+  ]
+}

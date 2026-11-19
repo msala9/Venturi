@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-19",
+  "scope": "Bounded Chrome editing and export on the auxiliary GPU while DeepSeek Flash uses four GPUs across the Halo pair",
+  "runtime_source": "d0ee2946adf8dbbcbfade7031c563c9e15c1f7d1",
+  "runtime_sha256": "9e29a444f47bf957e04edcfde833d4a9078c90923cd432f0a1c5b4a18ef0439f",
+  "device": {
+    "host": "halo1",
+    "pci": "0000:6a:00.0",
+    "render_node": "/dev/dri/renderD129",
+    "device_policy": "closed",
+    "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201), Vulkan"
+  },
+  "project": "Venturi_Aux_GPU_QA.vvproj",
+  "source": "TestVenturi.mp4, 960x540, 24 fps, six seconds, audio and video",
+  "browser": {
+    "writer_reconnect": true,
+    "import_and_insert_linked_av": true,
+    "program_playback_end_frame_exclusive": 144,
+    "split_frame": 14,
+    "clips_after_undo": 2,
+    "clips_after_redo": 4,
+    "clips_after_save_and_reopen": 4,
+    "stopped_track_gain_edit_db": -12,
+    "explicit_play_after_edit_end_frame_exclusive": 144,
+    "track_gain_after_save_and_reopen_db": -12
+  },
+  "exports": {
+    "width": 1920,
+    "height": 1080,
+    "frames": 144,
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "baseline_sha256": "3ffdd5b1b1e957f4b4214290dff5ef004fa029e7f7f5f8dafbb1d6611796a27f",
+    "gain_edit_sha256": "7a0f2fc32a66cddde11d0bff45c5bc2db5c077acf22d31b1ef7cc94c51fdc529",
+    "gain_edit_rms_delta_db": -12.006,
+    "download_http_status": 200,
+    "download_response_matches_gain_edit_file": true,
+    "chrome_file_save_verified": false
+  },
+  "deepseek_flash_4_remained_active": true,
+  "peak_editor_memory_bytes_observed": 625942528,
+  "limitations": [
+    "Temporary isolated Venturi service rather than Madrock OS application lifecycle.",
+    "Short synthetic clip; desktop input, physical audio devices and sustained performance remain in FINAL_CHECKS.md.",
+    "The Chrome download event timed out. The HTTP attachment body was verified independently.",
+    "This browser runtime predates the audio backports."
+  ]
+}

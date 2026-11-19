@@ -1,0 +1,151 @@
+{
+  "date": "2026-11-19",
+  "source_commit": "7e58ba591665040e114d5dc01ed843507620234b",
+  "runtime_sha256": "6ff513e87dd1addebf263473fe78cdbdf3623deaa1172e47b4f8c877d5711e07",
+  "host": "halo1",
+  "gpu_pci": "0000:6a:00.0",
+  "deepseek_flash_4_remained_active": true,
+  "real_media_program": {
+    "project": "Soak_Public_Real_V2.vvproj",
+    "original_dimensions": [1920, 1080],
+    "preview_dimensions": [960, 540],
+    "fps": 30,
+    "playback_start_frame": 0,
+    "playback_end_frame_exclusive": 19038,
+    "duration_seconds": 634.6,
+    "user_confirmed_audible_without_perceived_interruptions": true,
+    "physical_audio_clock_measured": false
+  },
+  "dense_timeline": {
+    "project": "Soak_Dense500.vvproj",
+    "clips_total": 500,
+    "clips_selected": 500,
+    "zoom_clicks": 12,
+    "canvas_draw_cpu_samples": 19,
+    "canvas_draw_cpu_p50_ms": 1.0,
+    "canvas_draw_cpu_p95_ms": 3.0,
+    "fps_or_physical_input_latency_measured": false,
+    "saved_marker_frame": 4790
+  },
+  "physical_input": {
+    "voiceover": {
+      "project": "Soak_Voiceover_QA.vvproj",
+      "source": "User-recorded Windows microphone in Chrome",
+      "codec": "pcm_f32le",
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "duration_seconds": 4.898667,
+      "placed_audio_clips_after_save_reopen": 1,
+      "clip_start": 0,
+      "clip_length_frames": 118
+    },
+    "alt_copy": {
+      "project": "Soak_Physical_QA.vvproj",
+      "native_commands": ["DuplicateClips"],
+      "original_clips_preserved": 4,
+      "new_linked_clips": 2,
+      "new_pair_start": 144,
+      "new_pair_length_frames": 14,
+      "saved_max_frame_exclusive_after_restart": 158
+    }
+  },
+  "preliminary_tmpfs_limits": {
+    "path_type": "tmpfs",
+    "preview_cache_observed_mib": 557,
+    "source_4k": "450-frame first window played at 3840x2160. Continuation refused memory at 1536 and 1792 MiB. At 2048 MiB it entered preparation then reported INVALID_OPERATION.",
+    "ab_original": "At 2560 MiB both mixed-FPS originals crossed the first window. Take A failed admission at the second transition."
+  },
+  "disk_restart": {
+    "unit": "venturi-aux-disk-qa-20261119.service",
+    "cache_filesystem": "ext4 on halo1",
+    "ram_limit_bytes": 2415919104,
+    "swap_limit_bytes": 0,
+    "chrome_memory_sampling_started_utc": "2026-11-19T14:57:57.7812598Z",
+    "status": "superseded by the bounded UHD continuation candidate",
+    "source_4k_reproduction": {
+      "initial_mp4_bytes": 119636757,
+      "continuation_video_temp_bytes_observed_before_mux": 513540144,
+      "job_max_bytes": 536870912,
+      "continuation_error": "INVALID_OPERATION"
+    }
+  },
+  "bounded_uhd_candidate": {
+    "source_commit": "b5b4fcee8cec3a05a2dd52e77787ccc695e1e322",
+    "runtime_sha256": "707b474fe5c84d46433e91462432db7461eaa88cb4534d37091a336457c9d0b9",
+    "unit": "venturi-aux-final-b5b4fce.service",
+    "invocation": "86e273d8543448588fe61ba735d13d26",
+    "ram_limit_mib": 2176,
+    "swap_limit_bytes": 0,
+    "cache_filesystem": "ext4 on halo1",
+    "source_and_review_tests_passed": 171,
+    "source_and_review_tests_failed": 0,
+    "source_4k_original": {
+      "dimensions_observed_in_chrome": [3840, 2160],
+      "fps": 30,
+      "audio_mode": "all",
+      "windows_observed": [[0, 450], [450, 900], [900, 1350], [1350, 1800], [1800, 2250]],
+      "last_confirmed_playing_frame": 1909,
+      "autoplay_resumed_at_each_observed_transition": true,
+      "visible_preparation_pauses": true
+    },
+    "ab_original": {
+      "fps": [30, 24],
+      "dimensions_observed_in_chrome": [[1920, 1080], [1920, 800]],
+      "take_a_windows_observed": [[0, 450], [450, 2250], [2250, 4050]],
+      "take_b_windows_observed": [[0, 360], [360, 1800], [1800, 3240]],
+      "frames_observed_playing_after_second_transition": [2312, 1851],
+      "visible_preparation_pauses": true,
+      "rapid_initial_changes": "Both panes received SOURCE_BUSY when changes competed with existing Source jobs. Sequential preparation recovered in the same session."
+    },
+    "full_hd_export_excerpt": {
+      "job_id": "1795101234546766976",
+      "start_frame": 0,
+      "end_frame_exclusive": 900,
+      "dimensions": [1920, 1080],
+      "fps": 30,
+      "audio": "AAC stereo 48000 Hz",
+      "video": "H.264 (x264, composed on the aux R9700)",
+      "bytes": 17992462,
+      "output_sha256": "0b8e422459ebd14989f161dcb332e0e61fdc8b17d64bc8409fc364888c0a0e8f",
+      "chrome_preview_metadata_loaded": true,
+      "chrome_download_event_observed": false
+    },
+    "full_hd_export_complete": {
+      "job_id": "1795101322970768411",
+      "project": "Soak_Public_Real_V2.vvproj",
+      "start_frame": 0,
+      "end_frame_exclusive": 19038,
+      "dimensions": [1920, 1080],
+      "fps": 30,
+      "video_duration_seconds": 634.6,
+      "audio_duration_seconds": 634.602,
+      "audio": "AAC stereo 48000 Hz",
+      "video": "H.264 (x264, composed on the aux R9700)",
+      "bytes": 372266151,
+      "output_sha256": "4eef91b57746a0c730169388ddc21bded0b1591584dabe478d27b8e969ee45f1",
+      "export_elapsed_seconds": 228,
+      "full_decode": {
+        "invocation": "dfc82ebd99b0432daf7f70bbeb53c269",
+        "exit_status": 0,
+        "elapsed_seconds": 51.519,
+        "streams": ["video", "audio"],
+        "memory_peak_mib": 55.4,
+        "swap_bytes": 0
+      }
+    },
+    "chrome_sampling": {
+      "started_utc": "2026-11-19T15:07:37.5857679Z",
+      "scope": "Aggregate Chrome process memory across all tabs and subprocesses",
+      "status": "in progress",
+      "editing_checkpoint": {
+        "project": "Soak_Integrated_20261119.vvproj",
+        "program_preview_dimensions": [960, 540],
+        "split_frame": 1073,
+        "native_command": "SplitClips",
+        "clip_count_undo": 3,
+        "clip_count_redo": 6,
+        "saved": true
+      }
+    }
+  }
+}

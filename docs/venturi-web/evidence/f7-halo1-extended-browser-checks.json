@@ -57,7 +57,26 @@
     },
     "browser_download": {
       "owner_observed_a_save_dialog_for_30_second_excerpt": true,
-      "status": "awaiting confirmation that the file was saved"
+      "status": "passed",
+      "downloaded_export_job_id": "1795101234546766976",
+      "user_confirmed_saved_on_windows": true,
+      "user_confirmed_local_video_plays": true,
+      "user_reported_duration_seconds": 30,
+      "separate_complete_export": {
+        "job_id": "1795103925825765762",
+        "server_state": "ready",
+        "http_head_status": 200,
+        "content_type": "video/mp4",
+        "content_disposition_is_attachment": true,
+        "bytes": 424429643,
+        "duration_seconds": 634.602,
+        "video_frames": 19038,
+        "owner_reported_browser_message": "Bloccato dalla tua organizzazione",
+        "chrome_download_restriction_registry_values_found": false,
+        "owner_found_download_restrictions_or_download_connector_in_chrome_policy": false,
+        "windows_defender_event_match_found": false,
+        "blocking_rule_identified": false
+      }
     }
   },
   "preliminary_tmpfs_limits": {
@@ -90,6 +109,14 @@
     "cache_filesystem": "ext4 on halo1",
     "source_and_review_tests_passed": 171,
     "source_and_review_tests_failed": 0,
+    "final_host_observation": {
+      "service_restarts": 0,
+      "memory_peak_bytes_including_temporary_uhd_limit": 2415919104,
+      "cgroup_memory_events": {"max": 14797, "oom": 0, "oom_kill": 0, "oom_group_kill": 0, "sock_throttled": 8},
+      "kernel_oom_log_lines_during_observation": 0,
+      "deepseek_same_supervisor_and_worker_observed": true,
+      "watchdog_active_at_end": true
+    },
     "source_4k_original": {
       "dimensions_observed_in_chrome": [3840, 2160],
       "fps": 30,
@@ -163,8 +190,23 @@
     },
     "chrome_sampling": {
       "started_utc": "2026-11-19T15:07:37.5857679Z",
+      "ended_utc": "2026-11-19T17:08:23.5055562Z",
+      "elapsed_seconds": 7246.05,
+      "samples": 121,
       "scope": "Aggregate Chrome process memory across all tabs and subprocesses",
-      "status": "in progress",
+      "status": "completed",
+      "private_bytes": {"start": 2307457024, "peak": 4196036608, "end": 2139770880},
+      "working_set_bytes": {"start": 2782666752, "peak": 5103308800, "end": 2901581824},
+      "chrome_process_count": {"start": 19, "peak": 32, "end": 21},
+      "minimum_windows_available_kib": 16047208,
+      "private_trace_sha256": "dcbea31899c5ddd88396a4fad8e05f691bdba651dcce7627dc83bb5db7d5a712",
+      "final_ui": {
+        "project": "Soak_Integrated_20261119.vvproj",
+        "position_at_final_pause": 14952,
+        "saved": true,
+        "writer_connected": true,
+        "viewport_css": [1745, 925]
+      },
       "editing_checkpoint": {
         "project": "Soak_Integrated_20261119.vvproj",
         "program_preview_dimensions": [960, 540],
@@ -180,7 +222,14 @@
         "clips": 500,
         "started_at_frame": 9580,
         "last_confirmed_playing_frame": 13219,
-        "program_preview_dimensions": [960, 540]
+        "program_preview_dimensions": [960, 540],
+        "late_session_pass": {
+          "started_at_frame": 23950,
+          "playing_frame_before_seek": 31368,
+          "seek_target": 36158,
+          "resumed_playing_frame": 36479,
+          "reached_end_frame_exclusive": 47904
+        }
       },
       "mix_and_filter_checkpoint": {
         "project": "Soak_Integrated_20261119.vvproj",
@@ -188,7 +237,69 @@
         "applied_while_stopped": true,
         "explicit_play_reached_frame": 8470,
         "exposure_stops_saved": 0.5,
-        "exposure_keyframe_saved": true
+        "exposure_keyframe_saved": true,
+        "exposure_value_and_key_verified_after_reopen": true,
+        "edited_program_playback_start_frame": 0,
+        "edited_program_playback_end_frame_exclusive": 19038,
+        "edited_program_playback_reached_end": true
+      },
+      "active_playback_diagnostics_checkpoint": {
+        "project": "Soak_Integrated_20261119.vvproj",
+        "canvas_cpu_p95_ms": 1.3,
+        "canvas_cpu_sample_window": 128,
+        "rpc_json_p95_ms": 43.9,
+        "rpc_json_sample_window": 128,
+        "rpc_json_success_samples": 128,
+        "software_input_to_canvas_callback_p95_ms": 3.8,
+        "software_input_sample_window": 14,
+        "current_video_element_total_frames": 1583,
+        "current_video_element_dropped_frames": 2,
+        "measurement_scope": "Venturi Diagnostics UI during Program playback. Video counters cover only the current Chrome video element, and software timing does not measure screen or device latency."
+      },
+      "linked_trim_checkpoint": {
+        "native_command": "TrimClips",
+        "project": "Soak_Integrated_20261119.vvproj",
+        "clip_start_frame": 1073,
+        "end_before_and_after_undo": 19038,
+        "end_after_redo_on_each_of_three_linked_clips": [19020, 19020, 19020],
+        "saved": true
+      },
+      "second_real_program_playback": {
+        "project": "Soak_Integrated_20261119.vvproj",
+        "public_source": "Tears of Steel",
+        "original_dimensions": [1920, 800],
+        "preview_dimensions": [960, 400],
+        "fps": 24,
+        "start_frame": 0,
+        "end_frame_exclusive": 17620,
+        "reached_end": true
+      },
+      "source_range_insertion_checkpoint": {
+        "project": "Soak_Integrated_SourceQA.vvproj",
+        "native_command": "InsertClips",
+        "destination": "V1 and A1 in the empty Timeline 1",
+        "selection": [24, 72],
+        "linked_clip_count": 2,
+        "inserted_at_frame": 0,
+        "duration_frames_per_clip": 48,
+        "program_reached_end_frame_exclusive": 48,
+        "saved_and_reopened": true,
+        "program_in_out_export": {
+          "job_id": "1795106861840960578",
+          "timeline_range": [10, 39],
+          "frame_count": 29,
+          "state": "ready"
+        }
+      },
+      "uhd_program_playback": {
+        "project": "Soak_Integrated_SourceQA.vvproj",
+        "public_source": "Big Buck Bunny, Sunflower remaster",
+        "original_dimensions": [3840, 2160],
+        "preview_dimensions": [960, 540],
+        "fps": 30,
+        "start_frame": 0,
+        "end_frame_exclusive": 19038,
+        "reached_end": true
       }
     }
   },
@@ -227,5 +338,12 @@
       "renderer_for_desktop_test_fixtures": "llvmpipe; the audio output was the real analog device",
       "swap_bytes": 0
     }
-  }
+  },
+  "remaining_release_acceptance": [
+    "Identify the Chrome or Windows client-side rule reported by the separate large-download attempt.",
+    "Qualify the planned physical DPI matrix, remaining held/cancelled gestures, native HTML drag-and-drop, fullscreen transport reveal and presentation/input latency.",
+    "Qualify real microphone denial, disconnect and device latency.",
+    "Measure memory attributable to the Venturi tab and its renderer if a per-tab leak qualification is required.",
+    "Qualify the consolidated Madrock OS release with automatic GPU reservation, launch, stop and rollback."
+  ]
 }

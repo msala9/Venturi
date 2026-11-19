@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-19",
+  "source_commit": "7e58ba591665040e114d5dc01ed843507620234b",
+  "build": {
+    "host": "halo1",
+    "unit": "venturi-audio-package-7e58ba5.service",
+    "command": "cargo build --offline --locked -p vv-web",
+    "sha256": "6ff513e87dd1addebf263473fe78cdbdf3623deaa1172e47b4f8c877d5711e07",
+    "exit_status": 0,
+    "memory_peak_bytes": 1610612736,
+    "memory_limit_events": 7568,
+    "oom_kills": 0,
+    "swap_limit_bytes": 0
+  },
+  "runtime": {
+    "unit": "venturi-aux-current-20261119.service",
+    "pci": "0000:6a:00.0",
+    "render_node": "/dev/dri/renderD129",
+    "device_policy": "closed",
+    "memory_limit_bytes": 1610612736,
+    "swap_limit_bytes": 0,
+    "deepseek_flash_4_remained_active": true
+  },
+  "chrome": {
+    "project": "Venturi_Aux_GPU_QA.vvproj",
+    "writer": true,
+    "program_end_frame_exclusive": 144,
+    "saved_project_before_and_after_sha256": "0f8f7c3e2db1db7987ad00ff228427fd531785afe79c0190fd317bb901f72504",
+    "export_job": "1795097796160584668",
+    "export_frames": 144,
+    "export_dimensions": [1920, 1080],
+    "export_codecs": ["h264", "aac"],
+    "export_sha256": "7a0f2fc32a66cddde11d0bff45c5bc2db5c077acf22d31b1ef7cc94c51fdc529",
+    "matches_prior_minus_12_db_reference": true
+  },
+  "limitations": [
+    "Development candidate, not the signed Madrock OS package.",
+    "Short integration check. It does not establish desktop device and DPI behavior, long-session memory stability or Chrome file download."
+  ]
+}

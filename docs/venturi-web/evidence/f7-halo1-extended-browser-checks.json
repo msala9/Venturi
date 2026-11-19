@@ -47,6 +47,17 @@
       "new_pair_start": 144,
       "new_pair_length_frames": 14,
       "saved_max_frame_exclusive_after_restart": 158
+    },
+    "fullscreen": {
+      "user_reported_working": true,
+      "actual_button_location": "Top-right of the viewer",
+      "normal_view_restored_after_user_test": true,
+      "viewport_after_exit_css": [1745, 925],
+      "bottom_edge_transport_reveal_separately_confirmed": false
+    },
+    "browser_download": {
+      "owner_observed_a_save_dialog_for_30_second_excerpt": true,
+      "status": "awaiting confirmation that the file was saved"
     }
   },
   "preliminary_tmpfs_limits": {
@@ -133,6 +144,23 @@
         "swap_bytes": 0
       }
     },
+    "uhd_export_excerpt": {
+      "job_id": "1795102177981989309",
+      "start_frame": 0,
+      "end_frame_exclusive": 450,
+      "dimensions": [3840, 2160],
+      "fps": 30,
+      "audio": "AAC stereo 48000 Hz",
+      "video": "H.264 (x264, composed on the aux R9700)",
+      "bytes": 29980623,
+      "sha256": "deab24709bde73e23dd674f6104eaa9009e894d9de8ab01c83700e4ac4755874",
+      "export_elapsed_seconds": 21,
+      "admission_at_2176_mib": "EXPORT_MEMORY_PRESSURE",
+      "successful_temporary_limit_mib": 2304,
+      "original_limit_restored_after_export": true,
+      "full_decode_exit_status": 0,
+      "full_decode_invocation": "6e52ff28b04d4fad824e9a2cfb969788"
+    },
     "chrome_sampling": {
       "started_utc": "2026-11-19T15:07:37.5857679Z",
       "scope": "Aggregate Chrome process memory across all tabs and subprocesses",
@@ -144,8 +172,60 @@
         "native_command": "SplitClips",
         "clip_count_undo": 3,
         "clip_count_redo": 6,
-        "saved": true
+        "saved": true,
+        "clip_starts_after_reopen": [0, 1073, 0, 1073, 0, 1073]
+      },
+      "dense_playback_checkpoint": {
+        "project": "Soak_Dense500.vvproj",
+        "clips": 500,
+        "started_at_frame": 9580,
+        "last_confirmed_playing_frame": 13219,
+        "program_preview_dimensions": [960, 540]
+      },
+      "mix_and_filter_checkpoint": {
+        "project": "Soak_Integrated_20261119.vvproj",
+        "a1_gain_db": -3,
+        "applied_while_stopped": true,
+        "explicit_play_reached_frame": 8470,
+        "exposure_stops_saved": 0.5,
+        "exposure_keyframe_saved": true
       }
+    }
+  },
+  "native_audio_clock": {
+    "status": "all nine cases passed on physical ALSA with the isolated buffer profile",
+    "bounded_build_unit": "venturi-native-clock-build-b5b4fce.service",
+    "build_invocation": "d9d91e5218d4431098c612d632b1103b",
+    "first_build_exit": "Test workspace did not include the tracked Desktop icon required by include_bytes. Transferred only the exact committed icon and retried.",
+    "successful_build_invocation": "00c6317b34f744c3aaf3bb45e61396de",
+    "test_binary_sha256": "7c2daf4df60b9b562310272f5af5fd18e97b00d42cbc3651a554558f9d36699b",
+    "alsa_device": "Realtek ALC233 analog output via hw:3,0",
+    "private_default_pcm_probe": "successful open and close",
+    "probe_invocation": "a92d9f17ad3141f283ff76d26c62186f",
+    "physical_default_tests": {
+      "invocation": "296717fdf5744e1296bc6cd2dda42ea4",
+      "original_assertions": true,
+      "hardware_pcm_running_observed_in_all_nine_cases": true,
+      "passed": 6,
+      "failed": {
+        "tests::space_plays_the_media_pool_preview_instead_of_leaving_it": "Preview playhead stayed at zero at the first check.",
+        "timeline_audio::tests::clock_advances_while_playing_and_stops_on_pause": "After 300 ms, the playhead was at frame 117, outside the expected 103–112 from frame 100.",
+        "timeline_audio::tests::seeking_outside_the_window_restarts_fast_forward_from_there": "The first ready window was present, and playback position was still exactly 60 s at the assertion."
+      }
+    },
+    "physical_buffered_tests": {
+      "final_invocation": "d63ee73f0dc3404da09691ad3da2f8d0",
+      "original_assertions": true,
+      "passed": 9,
+      "failed": 0,
+      "hardware_pcm_verified_running_in_all_nine_cases": true,
+      "sample_rate_hz": 48000,
+      "channel_count": 2,
+      "period_frames": 256,
+      "buffer_frames": 1024,
+      "profile_scope": "Only the test service used this ALSA configuration. These tests establish working clocks with this buffer, not arbitrary device defaults.",
+      "renderer_for_desktop_test_fixtures": "llvmpipe; the audio output was the real analog device",
+      "swap_bytes": 0
     }
   }
 }

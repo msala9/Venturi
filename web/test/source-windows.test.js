@@ -18,12 +18,12 @@ class Video extends EventTarget {
   nativeSeek(seconds){this.position=seconds;this.ended=false;this.seeking=true;this.dispatchEvent(new Event('seeking'));}
   finishSeek(){this.seeking=false;this.dispatchEvent(new Event('seeked'));}
 }
-function harness({api,onStateChange,onReady,fetcher,windowed=true,asset='source.mp4'}={}){
+function harness({api,onStateChange,onReady,fetcher,canPrefetch,windowed=true,asset='source.mp4'}={}){
   const video=new Video(),image=new EventTarget(),cancel=new EventTarget(),status={textContent:''},states=[],requests=[],notifications=[],timers=new Map();let timerID=0;
   image.src='';image.removeAttribute=()=>{image.src='';};
   const item={id:'media',name:'Source',duration_frames:5_000,fps:{num:24,den:1},has_video:true,has_audio:true};
   const ready=(body,id=`job${requests.length}`)=>({id,state:'ready',source_asset:asset,project_epoch:body.project_epoch,...(body.window?{source_window:{...body.window,total_frames:item.duration_frames,fps:item.fps,source_version:'file-version'}}:{})});
-  const player=createSourcePlayer({video,image,cancel,status,windowed,onStateChange:value=>{states.push(value);onStateChange?.(value);},onReady:value=>{notifications.push(value);onReady?.(value);},
+  const player=createSourcePlayer({video,image,cancel,status,windowed,canPrefetch,onStateChange:value=>{states.push(value);onStateChange?.(value);},onReady:value=>{notifications.push(value);onReady?.(value);},
     api:async(path,body)=>{requests.push(body);return api?api(body,ready):ready(body);},fetcher:fetcher || (async()=>{throw Error('Unexpected status request');}),
     setTimer:(callback,delay)=>{const id=++timerID;timers.set(id,{callback,delay});return id;},clearTimer:id=>timers.delete(id)});
   const finish=()=>{const range=notifications.at(-1).source_window;video.position=(range.end_frame-range.start_frame)/24;video.ended=true;video.pause();video.dispatchEvent(new Event('ended'));};
@@ -234,6 +234,22 @@ test('retained manual boundary seeks keep the old picture but use fifteen second
       assert.deepEqual(h.requests[1].window,{start_frame:360,end_frame:advance?1800:720});
       ack.resolve(h.ready(h.requests[1],'boundary-next'));await moving;
       assert.equal(h.player.current().frame,360);assert.equal(h.player.current().source_version,old.source_version);assert.equal(h.video.paused,true);assert.equal(h.video.plays,0);
+    }finally{h.player.dispose();}
+  }
+});
+
+test('native UHD prefetch uses short windows without lowering the requested quality',async()=>{
+  for(const [width,height,quality,end] of [
+    [3840,2160,'original',720],
+    [3840,2160,'medium',1800],
+    [1920,1080,'original',1800],
+  ]){
+    const h=harness({canPrefetch:()=>true});
+    try{
+      await h.player.open({...h.item,width,height},'epoch',quality,0);
+      await h.player.toggle();await settle();
+      assert.deepEqual(h.requests.map(body=>body.window),[{start_frame:0,end_frame:360},{start_frame:360,end_frame:end}]);
+      assert.equal(h.requests[1].quality,quality);
     }finally{h.player.dispose();}
   }
 });

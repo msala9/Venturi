@@ -170,11 +170,13 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   const descriptorMode=value=>value?.audio_mode===undefined?'selected':value.audio_mode;
   const descriptorAudio=(value,audio)=>value?.audio_stream_index===undefined && !audio.explicit && audio.mode!=='all'?0:value?.audio_stream_index;
   const sameWindow=(a,b,audio)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den && descriptorMode(b)===a.audio_mode && a.audio_stream_index===descriptorAudio(b,audio);
-  function requestedWindow(item,start,advance=false){
+  function requestedWindow(item,start,advance=false,quality='original'){
     if(!validFPS(item.fps) || !Number.isSafeInteger(item.duration_frames) || item.duration_frames<=0 || !Number.isSafeInteger(start) || start<0 || start>=item.duration_frames)throw Error('Source frame must be inside the media');
     const maximum=Number(60n*BigInt(item.fps.num)/BigInt(item.fps.den));
     if(!Number.isSafeInteger(maximum) || maximum<1)throw Error('Source frame rate cannot form a bounded window');
-    const span=Math.max(1,Number((advance?60n:15n)*BigInt(item.fps.num)/BigInt(item.fps.den)));
+    // Original UHD windows can hit the job budget while the video and muxed output coexist.
+    const originalUhd=quality==='original' && item.width*item.height>=3840*2160;
+    const span=Math.max(1,Number((advance && !originalUhd?60n:15n)*BigInt(item.fps.num)/BigInt(item.fps.den)));
     return {start_frame:start,end_frame:start+Math.min(span,item.duration_frames-start)};
   }
   function checkedWindow(value,item,requested,version,audio){
@@ -242,7 +244,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     invalidatePrefetch();
     const value=binding;
     if(future || !windowed || !canPrefetch() || !playbackIntent || video.paused || !ready || preparing || nativeSeeking || !value?.window || !value.verified || !attached(value) || value.window.end_frame===value.window.total_frames)return;
-    const ticket={from:value,item:structuredClone(value.item),audioSelection:{...value.audioSelection},request:requestedWindow(value.item,value.window.end_frame,true),controller:new AbortController(),timer:null,state:'preparing',id:null,path:null,error:null,range:null,job:null,promoted:false,owner:null};
+    const ticket={from:value,item:structuredClone(value.item),audioSelection:{...value.audioSelection},request:requestedWindow(value.item,value.window.end_frame,true,value.quality),controller:new AbortController(),timer:null,state:'preparing',id:null,path:null,error:null,range:null,job:null,promoted:false,owner:null};
     future=ticket;ticket.promise=prepareFuture(ticket);announcePrefetch();
   }
   function pauseVideo(){if(video.paused===false)ignoredPauses++;internalPause=true;try{video.pause();}finally{internalPause=false;}}
@@ -309,7 +311,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,advance=false,autoplay=false,version,audioSelection={index:0,explicit:false,mode:'selected'},reason=continuation?'window':'open',candidate=null}={}){
     if(disposed)return;
     let requested;
-    try{requested=requestedWindow(item,startFrame,advance);}catch(error){status.textContent=error.message;return;}
+    try{requested=requestedWindow(item,startFrame,advance,quality);}catch(error){status.textContent=error.message;return;}
     const previous=binding;
     if(!continuation){const resetSequence=sequence+1;reset();if(sequence!==resetSequence)return;}
     if(disposed)return;
